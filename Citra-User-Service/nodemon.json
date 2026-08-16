@@ -1,9 +1,0 @@
-{
-  "watch": ["src", "functions", "routes", "server.js"],
-  "ext": "js,json",
-  "ignore": ["node_modules", "logs", "tmp"],
-  "delay": "250ms",
-  "env": {
-    "NODE_ENV": "development"
-  }
-}
