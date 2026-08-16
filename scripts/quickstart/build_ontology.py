@@ -7,6 +7,15 @@
 # production use requires a commercial licence until the Change Date, after
 # which this file converts to Apache-2.0. See LICENSE at the repository root.
 
+#!/usr/bin/env python3
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
 """Build a sources.json by asking a model to interview you about your database.
 
 Introspection derives STRUCTURE — tables, columns, types, keys. It can never
@@ -238,29 +247,50 @@ class Tools:
             ans = ""
         return {"answer": ans or "(no answer — decide sensibly and say what you assumed)"}
 
-    def validate_draft(self, sources_json: str) -> Any:
+    @staticmethod
+    def run_validator(sources_json: str) -> tuple[bool, str]:
+        """Run the REAL validator — the same one the MCP boots with — on this text.
+
+        Shelling out to `validate_sources.py` rather than reimplementing any of
+        it is the point: a second opinion that agrees with the first is worth
+        nothing. If the MCP would refuse to boot on this registry, this must
+        refuse to write it.
+        """
         try:
             json.loads(sources_json)
         except json.JSONDecodeError as e:
-            return {"valid": False, "problems": [f"not valid JSON: {e}"]}
+            return False, f"not valid JSON: {e}"
         with tempfile.NamedTemporaryFile("w", suffix=".sources.json", delete=False,
                                          encoding="utf-8") as fh:
             fh.write(sources_json)
             tmp = fh.name
-        p = subprocess.run([sys.executable, str(MCP / "validate_sources.py"), tmp],
-                           capture_output=True, text=True, encoding="utf-8", errors="replace")
-        os.unlink(tmp)
-        ok = p.returncode == 0
+        try:
+            p = subprocess.run([sys.executable, str(MCP / "validate_sources.py"), tmp],
+                               capture_output=True, text=True,
+                               encoding="utf-8", errors="replace")
+        finally:
+            os.unlink(tmp)
+        return p.returncode == 0, (p.stdout or "") + (p.stderr or "")
+
+    def validate_draft(self, sources_json: str) -> Any:
+        ok, report = self.run_validator(sources_json)
         self.validated_ok = ok
-        return {"valid": ok, "report": (p.stdout or "") + (p.stderr or "")}
+        return {"valid": ok, "report": report}
 
     def save(self, sources_json: str) -> Any:
-        if not self.validated_ok:
-            return {"error": "call validate_draft first and fix what it reports"}
-        try:
-            json.loads(sources_json)
-        except json.JSONDecodeError as e:
-            return {"error": f"not valid JSON: {e}"}
+        """Validate the EXACT bytes being saved, not a flag set by a past call.
+
+        `validated_ok` is sticky: the model could validate draft A, then call
+        save() with draft B, and the old gate passed because it only looked at
+        the flag. save() took its own argument and never re-checked it. A gate
+        that can be walked around is not a gate, so the validator runs again
+        here on precisely what is about to be written.
+        """
+        ok, report = self.run_validator(sources_json)
+        self.validated_ok = ok
+        if not ok:
+            return {"error": "this draft does not validate — fix it and save again",
+                    "report": report}
         self.saved = sources_json
         return {"saved": True, "note": "done — stop calling tools and summarise for the user"}
 
@@ -454,7 +484,26 @@ def main() -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(tools.saved, encoding="utf-8")
     print(f"  wrote {out}")
-    print(f"  next: python {MCP.name}/validate_sources.py {out}")
+
+    # Validate what LANDED, not what we intended to write. Everything before
+    # this validated a string in memory; this is the only check that covers the
+    # write itself -- encoding, truncation, a half-written file on a full disk.
+    # It used to print `next: validate_sources.py ...` and leave it to the
+    # human, which makes verification optional in practice.
+    #
+    # Exits non-zero on failure BUT leaves the file in place: you need to read
+    # it to see what went wrong, and a registry the MCP will refuse to boot on
+    # is more useful than no registry at all -- as long as nobody is told it
+    # passed.
+    ok, report = Tools.run_validator(out.read_text(encoding="utf-8"))
+    if not ok:
+        print("\n  [FAIL] the file on disk does NOT validate:", file=sys.stderr)
+        print(report.rstrip(), file=sys.stderr)
+        print(f"\n  It was left at {out} so you can inspect it. Do NOT boot an "
+              f"MCP against it — the registry is strict and would fail at "
+              f"startup.", file=sys.stderr)
+        return 1
+    print(f"  [ok] validates against {MCP.name}/validate_sources.py")
     return 0
 
 

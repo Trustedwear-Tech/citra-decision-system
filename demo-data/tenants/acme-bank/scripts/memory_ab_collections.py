@@ -22,7 +22,7 @@ sys.path.insert(0, r"C:/Github/Citra-AI/demo-data/tenants/acme-bank/scripts")
 import acme_bank_e2e as E
 
 SLUG = "acme-bank-collections-priority"
-PG = dict(host="localhost", port=15444, dbname="acme_bank",
+PG = dict(host="localhost", port=5444, dbname="acme_bank",
           user="acme_bank", password="acme_bank_demo_pw")
 
 

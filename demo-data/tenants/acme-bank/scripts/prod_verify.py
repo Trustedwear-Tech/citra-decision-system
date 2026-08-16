@@ -12,7 +12,7 @@ import httpx, jwt
 
 SECRET = sys.stdin.read().strip()
 SA = "http://localhost:9100"
-MCP = "http://172.31.39.51:18504"
+MCP = "http://172.31.39.51:8504"
 DEPTS = ["lending", "collections", "claims", "sales_distribution", "central_ops"]
 fails = []
 

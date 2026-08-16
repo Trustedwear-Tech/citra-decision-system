@@ -75,7 +75,7 @@ import acme_bank_e2e as E  # noqa: E402 — shares the JWT/secret helpers
 SLUG = "loan-application-triage"
 CLAUSE = "C-002"
 SMART_APP = "http://localhost:9100"
-PG = dict(host="localhost", port=15444, dbname="acme_bank",
+PG = dict(host="localhost", port=5444, dbname="acme_bank",
           user="acme_bank", password="acme_bank_demo_pw")
 
 #: The officers' remedy, in the words a recommendation would use. Crude on

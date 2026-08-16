@@ -41,7 +41,7 @@ class MilvusConfig:
         
         # Vector dimensions — must match the embedding model's output dim.
         # Driven by EMBEDDING_DIMENSION so the whole stack moves together.
-        # Keep at 768 (Qwen3-Embedding via MRL truncation, text-embedding-3-small, etc.).
+        # Keep at 768 (bge-m3 / Qwen3-Embedding truncated via the `dimensions` param).
         self.dense_vector_dim = int(os.getenv("EMBEDDING_DIMENSION", "768"))
         self.enable_hybrid_search = False  # BM25 disabled - using pure dense COSINE search
         
@@ -50,21 +50,37 @@ class MilvusConfig:
         self.dense_metric_type = "COSINE"
         
         # ── Search threshold configuration (pure dense COSINE scores) ──
-        # Primary similarity thresholds. NOTE: the legacy `saas` Milvus
-        # collection has been retired; vault file metadata is now read from
-        # MongoDB (`structured_file_metadata` + `unstructured_file_metadata`),
-        # so SAAS_SIMILARITY_THRESHOLD is no longer used.
-        self.personal_similarity_threshold = float(os.getenv('PERSONAL_SIMILARITY_THRESHOLD', '0.3'))
-        self.absolute_min_score = float(os.getenv('MILVUS_ABSOLUTE_MIN_SCORE', '0.10'))
-        
-        # Multi-signal relevance rejection
-        self.top_score_minimum = float(os.getenv('TOP_SCORE_MINIMUM', '0.50'))
+        # CALIBRATED FOR bge-m3 (2026-08-10). bge-m3 has a much higher score
+        # floor than text-embedding-3-small: clearly-unrelated text scores
+        # 0.24–0.47 (mean 0.34) where OpenAI scored it near 0, and genuinely
+        # related text scores 0.63–0.79. The old OpenAI-era floors (0.10 /
+        # 0.30) therefore admitted almost everything. Separation sits ~0.50.
+        # Re-derive these if EMBEDDING_MODEL changes again — they are NOT
+        # model-portable.
+        #
+        # NOTE: the legacy `saas` Milvus collection has been retired; vault
+        # file metadata is now read from MongoDB (`structured_file_metadata` +
+        # `unstructured_file_metadata`), so SAAS_SIMILARITY_THRESHOLD is unused.
+        # LIVE — these two are the only thresholds any code actually reads
+        # (llamaindex_query_engine.py:198 / :389, reached via agentic_rag/tools
+        # and reranker). Retuning them is what changes retrieval behaviour.
+        self.personal_similarity_threshold = float(os.getenv('PERSONAL_SIMILARITY_THRESHOLD', '0.50'))
+        self.absolute_min_score = float(os.getenv('MILVUS_ABSOLUTE_MIN_SCORE', '0.35'))
+
+        # ── DEAD CONFIG (verified 2026-08-10: `git grep` finds no consumer of
+        # any name below outside this file, and get_search_thresholds() itself
+        # is called by nothing). They are kept so the env vars keep parsing,
+        # but changing them has NO effect. Do not tune them expecting an
+        # outcome; wire them up first.
+        #
+        # If they are ever revived, note the bge-m3 measurement taken on the
+        # real 12-doc-per-org SOP corpus: top1-top2 gap ran 0.049-0.161
+        # (mean 0.086), so a 0.15 standout requirement would have rejected
+        # 5 of 6 queries INCLUDING correctly-retrieved ones. Full spread ran
+        # 0.147-0.278, comfortably above score_spread_threshold=0.03.
+        self.top_score_minimum = float(os.getenv('TOP_SCORE_MINIMUM', '0.55'))
         self.top_score_standout = float(os.getenv('TOP_SCORE_STANDOUT', '0.15'))
-        
-        # Single-result floor
-        self.single_result_min_floor = float(os.getenv('SINGLE_RESULT_MIN_FLOOR', '0.40'))
-        
-        # Score compression detection
+        self.single_result_min_floor = float(os.getenv('SINGLE_RESULT_MIN_FLOOR', '0.55'))
         self.score_spread_threshold = float(os.getenv('SCORE_SPREAD_THRESHOLD', '0.03'))
         self.score_low_std_multiplier = float(os.getenv('SCORE_LOW_STD_MULTIPLIER', '1.5'))
         
@@ -99,11 +115,11 @@ class MilvusConfig:
         return self.api_key
     
     def get_vector_dim(self) -> int:
-        """Get dense vector dimension (OpenAI text-embedding-3-small)"""
+        """Get dense vector dimension (EMBEDDING_DIMENSION)"""
         return self.dense_vector_dim
     
     def get_dense_vector_dim(self) -> int:
-        """Get dense vector dimension (OpenAI text-embedding-3-small)"""
+        """Get dense vector dimension (EMBEDDING_DIMENSION)"""
         return self.dense_vector_dim
     
     def get_environment(self) -> str:
@@ -120,7 +136,7 @@ class MilvusConfig:
         
         Returns schema with:
         - id: Primary key (string)
-        - dense_vector: Dense embeddings from OpenAI text-embedding-3-small (768 dim, COSINE)
+        - dense_vector: Dense embeddings from the configured model (768 dim, COSINE)
         - sparse_vector: Sparse embeddings from BM25 (IP metric) - if hybrid enabled
         - Dynamic fields for metadata
         """

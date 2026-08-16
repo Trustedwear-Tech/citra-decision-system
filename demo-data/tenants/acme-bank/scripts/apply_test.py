@@ -17,7 +17,7 @@ import httpx, psycopg2
 sys.path.insert(0, r"C:/Github/Citra-AI/demo-data/tenants/acme-bank/scripts")
 import acme_bank_e2e as E
 
-PG = dict(host="localhost", port=15444, dbname="acme_bank",
+PG = dict(host="localhost", port=5444, dbname="acme_bank",
           user="acme_bank", password="acme_bank_demo_pw")
 SLUG = "acme-bank-claim-triage"
 CLAIM = "CLM-NEEDLE-004"

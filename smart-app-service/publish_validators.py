@@ -1677,3 +1677,110 @@ def validate_case_signature_confirmed(app_spec) -> List[Dict[str, Any]]:
             ),
         }]
     return []
+
+
+# ---------------------------------------------------------------------------
+# M-01 — an item tool must say what KIND of item it analyses
+# ---------------------------------------------------------------------------
+
+# The tool kinds whose findings are bucketed by ``task_type``. Each one analyses
+# ONE item per call and folds the officer's verdict into memory keyed
+# (tenant, app, modality, task_type) — see tools_v2_dispatch.py, where the same
+# value is also written to the item ledger as ``item_type``.
+_ITEM_TOOL_KINDS = ("image_analyze", "doc_extract", "check_evaluate")
+
+# What the runtime falls back to when the field is absent (three sites in
+# tools_v2_dispatch.py: `entry.get("task_type") or "generic"`). The models make
+# the field required, so this value is only reachable by authoring it — which
+# opts every item in the app into one shared bucket, deliberately.
+_TASK_TYPE_FALLBACK = "generic"
+
+
+def validate_item_tools_declare_task_type(agent_spec) -> List[Dict[str, Any]]:
+    """Two item tools must not share one learning bucket, and none may claim the
+    runtime's fallback name.
+
+    ``task_type`` is not a label. It is the bucket key for everything the app
+    learns about a KIND of item: the learned rubric, the cached SOP, the clause
+    memory scope, and ``item_type`` on the item ledger are all keyed
+    (tenant, app, modality, task_type). One tool per kind is the whole design —
+    ten accident photos on one claim are ten calls sharing ONE bucket, which is
+    why they also share one SOP fetch.
+
+    PRESENCE IS ALREADY ENFORCED, and not here. ImageAnalyzeTool, DocExtractTool
+    and CheckEvaluateTool each declare ``task_type: str`` with ``min_length=1``,
+    so a spec that omits or empties it is rejected by the model layer before any
+    of this runs. The empty-value branch below is a backstop for callers that
+    reach a validator holding plain dicts, not the main event.
+
+    What the model layer CANNOT see is the two failures this rule exists for:
+
+      * ``"generic"`` — a perfectly valid non-empty string, and precisely the
+        value the runtime substitutes when the field is absent
+        (``entry.get("task_type") or "generic"``, three sites in
+        tools_v2_dispatch.py). Authoring it by hand opts into the merged bucket
+        deliberately, which is almost never what was meant.
+      * a COLLISION — two tools carrying the same task_type. Pydantic validates
+        each tool on its own and cannot compare across the list, so nothing else
+        notices. Sharing is occasionally right (front and back of one form,
+        taught together); usually it is a copy-paste, and the cost is silent:
+        judgement learned about bank statements is retrieved when reviewing an
+        accident photo, with no error anywhere and nothing an officer could
+        report.
+
+    The collision is reported on the SECOND tool and names the first, so the
+    message describes the clash rather than blaming an arbitrary half of it.
+    """
+    if agent_spec is None:
+        return []
+
+    out: List[Dict[str, Any]] = []
+    seen: Dict[str, str] = {}          # task_type -> first tool name that used it
+
+    for tool in (getattr(agent_spec, "tools_v2", None) or []):
+        kind = getattr(tool, "kind", None)
+        if kind not in _ITEM_TOOL_KINDS:
+            continue
+        name = getattr(tool, "name", None) or "?"
+        raw = getattr(tool, "task_type", None)
+        task_type = (raw or "").strip()
+
+        if not task_type or task_type.lower() == _TASK_TYPE_FALLBACK:
+            out.append({
+                "rule_id": "M-01",
+                "location": f"agent_spec.tools_v2[{name}]",
+                "code": "item_tool_missing_task_type",
+                "reason": (
+                    f"tool {name!r} ({kind}) does not declare a task_type"
+                    + (f" (it is {task_type!r}, the runtime's fallback)" if task_type else "")
+                    + ". task_type is the bucket key for this app's learned rubric, "
+                    "its cached SOP, its clause-memory scope and item_type on the "
+                    "item ledger. Without it every item this app analyses folds "
+                    "into one bucket, so judgement learned about one kind of "
+                    "document is retrieved when reviewing another — quietly, with "
+                    "no error and no way for an officer to report it. Name the "
+                    "kind of item this tool reads, e.g. 'bank-statement', "
+                    "'accident-photo', 'damage-closeup'."
+                ),
+            })
+            continue
+
+        prior = seen.get(task_type)
+        if prior and prior != name:
+            out.append({
+                "rule_id": "M-01",
+                "location": f"agent_spec.tools_v2[{name}]",
+                "code": "item_tools_share_task_type",
+                "reason": (
+                    f"tool {name!r} declares task_type {task_type!r}, already used "
+                    f"by {prior!r}. They will share one rubric, one SOP and one "
+                    "precedent pool. That is correct only if they genuinely read "
+                    "the same KIND of item (front and back of one form); if they "
+                    "read different kinds, give each its own task_type so what is "
+                    "learned about one does not steer the other."
+                ),
+            })
+        else:
+            seen.setdefault(task_type, name)
+
+    return out

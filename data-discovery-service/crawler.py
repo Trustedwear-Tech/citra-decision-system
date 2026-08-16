@@ -14,17 +14,12 @@ Per-MCP pipeline:
   1. Discover registered datasets via GET /datasets
   2. For each dataset: GET /datasets/{id}, GET /datasets/{id}/sample
   3. Run the rule-based PII / semantic-type classifier
-  4. Compute a schema fingerprint, so a later pass can tell whether the
-     physical schema actually changed
-  5. Upsert the CatalogueEntry into ``data_catalogue``
-
-The crawl calls NO LLM, and never renames anything — see the note at the
-``assemble columns`` step below. Names are carried verbatim from the source,
-because a helpfully-renamed column breaks the query that has to run against
-the real one. LLM-drafted *descriptions* exist, but only behind the
-human-reviewed ``/catalogue/{id}/draft-descriptions`` →
-``PUT /catalogue/{id}/descriptions`` endpoints in ``main.py``, which write
-nothing on their own.
+  4. Compute a schema fingerprint and check the existing Mongo doc:
+       — if fingerprint unchanged AND a mapping already exists, reuse it
+       — else, if any name is cryptic, call the configured OpenAI-compatible
+         LLM (OpenRouter in the cloud deployment) to propose semantic
+         ``name`` + ``description`` for the table and columns
+  5. Upsert the enriched CatalogueEntry into ``data_catalogue``
 
 Top-level ``crawl_all`` fans out across MCPs in parallel with a bounded
 ``asyncio.gather`` (cap from ``settings.crawl_max_parallel_mcps``), then makes

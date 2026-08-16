@@ -18,8 +18,8 @@ sys.path.insert(0, r"C:/Github/Citra-AI/demo-data/tenants/acme-bank/scripts")
 import acme_bank_e2e as E
 
 SECRET = E._secret()
-SA, DISC, DD, MCP = ("http://localhost:9100", "http://localhost:9010",
-                     "http://localhost:8095", "http://localhost:18504")
+SA, DISC, DD, MCP = ("http://localhost:9100", "http://localhost:9000",
+                     "http://localhost:8095", "http://localhost:8504")
 
 
 def tok(user, org, depts, roles=("org_admin",)):

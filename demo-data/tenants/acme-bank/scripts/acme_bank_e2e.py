@@ -16,7 +16,7 @@ decides whether an app can learn at all.
 Only needs httpx + pyjwt. Every step prints PASS/FAIL, is collected, summarised
 and written to a markdown report next to this script.
 
-Run it with the stack up (MCP :18504, discovery :9000, data-discovery :8095,
+Run it with the stack up (MCP :8504, discovery :9000, data-discovery :8095,
 smart-app-service :9100):
 
     cd c:/Github/Citra-AI/demo-data/tenants/acme-bank
@@ -137,8 +137,8 @@ def _user_jwt(secret: str, roles=("org_admin",)) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--mcp-url", default="http://localhost:18504")
-    ap.add_argument("--discovery-url", default="http://localhost:9010")
+    ap.add_argument("--mcp-url", default="http://localhost:8504")
+    ap.add_argument("--discovery-url", default="http://localhost:9000")
     ap.add_argument("--data-discovery-url", default="http://localhost:8095")
     ap.add_argument("--smart-app-url", default="http://localhost:9100")
     args = ap.parse_args()

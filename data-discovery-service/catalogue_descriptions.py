@@ -8,14 +8,12 @@
 
 """Draft-then-review catalogue descriptions (Wave 2 #9).
 
-The crawl itself calls no LLM — it carries names and descriptions through
-verbatim. This module is the on-demand path that adds drafted descriptions
-with a human in the loop: a DBA drafts (enricher.enrich_dataset), reviews and
-edits, then APPLIES approved descriptions to the catalogue — which flow
-straight into the NL→SQL planner's system prompt
-(runtime._render_dataset_directory_block), so better descriptions = better
-answers. This shrinks the onboarding curation clock: the DBA corrects a draft
-instead of writing from scratch.
+The crawl already LLM-drafts table/column descriptions (enricher.enrich_dataset).
+What was missing is the human step: a DBA drafts on demand, reviews/edits, and
+APPLIES approved descriptions to the catalogue — which then flow straight into
+the NL→SQL planner's system prompt (runtime._render_dataset_directory_block),
+so better descriptions = better answers. This shrinks the onboarding curation
+clock: the DBA corrects a draft instead of writing from scratch.
 
 This module holds the PURE cores (shape a draft for review; merge approved
 descriptions onto a catalogue entry). The LLM draft is enricher.enrich_dataset

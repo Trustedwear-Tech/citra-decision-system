@@ -66,12 +66,12 @@ Usage:
         C:/Github/Citra-AI/Citra-Service/myenv/Scripts/python.exe seed_postgres.py
 
     python seed_postgres.py [--conn <pg-uri>] [--dry-run]
-    Default connection: postgresql://acme_bank:acme_bank_demo_pw@localhost:15444/acme_bank
+    Default connection: postgresql://acme_bank:acme_bank_demo_pw@localhost:5444/acme_bank
     Override with env ACME_BANK_PG_CONN or --conn.
     --dry-run generates in memory and writes nothing.
 
 Bring the database up first:
-    cd ../mcp && docker compose up -d citra-ds-acme-bank-postgres
+    cd ../mcp && docker compose up -d acme-bank-postgres
 """
 from __future__ import annotations
 
@@ -93,7 +93,7 @@ SCHEMA_SQL = SCRIPT_DIR / "schema.sql"
 SEED = 20260728
 DEFAULT_CONN = os.environ.get(
     "ACME_BANK_PG_CONN",
-    "postgresql://acme_bank:acme_bank_demo_pw@localhost:15444/acme_bank",
+    "postgresql://acme_bank:acme_bank_demo_pw@localhost:5444/acme_bank",
 )
 
 random.seed(SEED)

@@ -98,9 +98,7 @@ async def semantic_search_endpoint(
     """Search a semantic source's dept collection → ranked chunks. Dept‑scoped:
     the caller must belong to the source's dept (or be org/super admin), unless
     the source is org‑wide (``public_within_org``). Scope is resolved SERVER‑side
-    from the discovery registry (see ``resolve_source_scoping``; the retired
-    central ``dept_sources`` collection is no longer read) — the request's
-    ``dept_id`` is only a fallback hint."""
+    from ``dept_sources`` — the request's ``dept_id`` is only a fallback hint."""
     get_secure_user_id(request)  # 401 if unauthenticated
     scoping = await resolve_source_scoping(body.source_id, jwt_token=_bearer(request))
     # A source that isn't ACTIVELY registered — never registered OR retired

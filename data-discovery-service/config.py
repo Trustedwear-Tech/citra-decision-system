@@ -122,9 +122,9 @@ class Settings(BaseSettings):
     catalogue_milvus_collection: str = "data_catalogue"
     # Embedding endpoint (OpenAI-compatible). dim MUST match the dim the
     # builder/query side embeds with; 768 mirrors the demo Milvus collections.
-    embedding_base_url: str = "https://api.openai.com/v1"
+    embedding_base_url: str = "https://openrouter.ai/api/v1"
     embedding_api_key: str = ""
-    embedding_model: str = "text-embedding-3-small"
+    embedding_model: str = "baai/bge-m3"
     embedding_dimension: int = 768
     embedding_timeout: float = 30.0
 

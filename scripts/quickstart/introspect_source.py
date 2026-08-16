@@ -7,6 +7,10 @@
 # production use requires a commercial licence until the Change Date, after
 # which this file converts to Apache-2.0. See LICENSE at the repository root.
 
+#!/usr/bin/env python3
+# Copyright (c) 2024-2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# PROPRIETARY - all rights reserved. See LICENSE.md. NOT an open-source grant.
+# SPDX-License-Identifier: LicenseRef-Citra-AI-Proprietary
 """
 introspect_source.py — scan a live data source → a sources.json registry entry.
 
@@ -30,11 +34,8 @@ boot without SOURCES_FILE or SOURCES_JSON. Writing `dept_sources` today
 populates a collection nothing reads, so every Mongo path is gone from here.
 
 The registry model is `extra="forbid"`, so the entry this builds is validated
-by source-mcp-template/validate_sources.py -- which runs the pydantic models,
-NOT the JSON schema. That distinction matters: the generated JSON Schema
-cannot express the cross-field rules (e.g. "type=mongodb requires
-connection.collection"), so a schema-only check would pass files that will not
-boot. An unknown key is a hard MCP boot failure, not a warning.
+against source-mcp-template/schema/sources.schema.json before you are told it
+worked. An unknown key is a hard MCP boot failure, not a warning.
 
 Credentials are passed only to introspect. The emitted entry stores a
 `connection.env_prefix` naming the env vars the MCP reads creds from -- never
@@ -323,9 +324,7 @@ def introspect_mongo(conn_str: str, wanted: List[str]) -> List[Dict[str, Any]]:
             approx = None
         datasets.append(
             {
-                # "mongodb", not "mongo" — DatasetKind's value is mongodb, and an
-                # unknown enum value is a hard boot failure, not a warning.
-                "physical_name": cname, "name": _humanize(cname), "kind": "mongodb",
+                "physical_name": cname, "name": _humanize(cname), "kind": "mongo",
                 "description": f"(undocumented) auto-introspected collection '{cname}'"
                 + (f" — ~{approx} docs" if approx is not None else ""),
                 "columns": columns,
@@ -497,8 +496,7 @@ def introspect_salesforce(conn_str: str, wanted: List[str]) -> List[Dict[str, An
             continue
         columns = _sf_columns_from_describe(desc)
         datasets.append({
-            # "soql", not "salesforce" — that is the DatasetKind enum value.
-            "physical_name": name, "name": desc.get("label") or _humanize(name), "kind": "soql",
+            "physical_name": name, "name": desc.get("label") or _humanize(name), "kind": "salesforce",
             "description": f"(undocumented) Salesforce object '{name}'",
             "columns": columns, "_sample_rows": [],
         })
@@ -541,10 +539,8 @@ def _openapi_columns(schema: Dict[str, Any]) -> List[Dict[str, Any]]:
             col["is_primary_key"] = True
         if pdef.get("enum"):
             col["distinct_values"] = [str(v) for v in pdef["enum"]][:ENUM_MAX_CARDINALITY]
-        # The column model has no `required` field and forbids unknown keys, so
-        # emitting one is a hard boot failure. `nullable` is the modelled way to
-        # say the same thing, inverted.
-        col["nullable"] = pname not in required
+        if pname in required:
+            col["required"] = True
         columns.append(col)
     return columns
 
@@ -696,30 +692,12 @@ def describe_datasets(datasets: List[Dict[str, Any]], cfg: Dict[str, str]) -> Li
 
 # ── Phase 3: decision/history tables + proposed write_actions ───────────────
 def tag_decision_history(datasets: List[Dict[str, Any]], decision: str, history: str) -> None:
-    """
-    Tag the decision table (app acts on it) and history table (few-shot signal).
-
-    Emits the ONTOLOGY fields the registry actually models. The earlier
-    `decision_table` / `history_table` booleans were read by nothing — dataset
-    blocks are extra="forbid", so they were a hard MCP boot failure rather than
-    a hint. The modelled equivalents are `decision_history` on the dataset and
-    `supports_history` on the source.
-
-    `declared: true` marks the dataset as the record of completed decisions;
-    the outcome column and which of its values count as good or bad cannot be
-    introspected, so they are left for the operator to fill in. Underscore keys
-    are transient markers for later phases and are stripped before writing.
-    """
+    """Tag the decision table (app acts on it) and history table (few-shot signal)."""
     for ds in datasets:
         if decision and ds["physical_name"] == decision:
-            ds["_is_decision_table"] = True
-            block: Dict[str, Any] = {"declared": True}
-            pks = [c["name"] for c in ds.get("columns", []) if c.get("is_primary_key")]
-            if len(pks) == 1:
-                block["key_field"] = pks[0]
-            ds["decision_history"] = block
+            ds["decision_table"] = True
         if history and ds["physical_name"] == history:
-            ds["_is_history_table"] = True
+            ds["history_table"] = True
 
 
 def _pk_of(ds: Dict[str, Any]) -> List[str]:
@@ -846,7 +824,7 @@ def propose_writes(datasets: List[Dict[str, Any]], cfg: Dict[str, str]) -> int:
     """Propose write_actions for every dataset tagged decision_table. Returns count."""
     total = 0
     for ds in datasets:
-        if not ds.get("_is_decision_table"):
+        if not ds.get("decision_table"):
             continue
         try:
             obj = _parse_json(_call_llm(cfg, _propose_writes_prompt(ds)))
@@ -862,34 +840,14 @@ def propose_writes(datasets: List[Dict[str, Any]], cfg: Dict[str, str]) -> int:
 
 # ── Assemble ONE sources.json registry entry ────────────────────────────────
 def build_registry_source(args, datasets: List[Dict[str, Any]], needs_review: bool = True) -> Dict[str, Any]:
-    supports_history = False
     for ds in datasets:
         ds["id"] = f"{args.source}.{ds['physical_name']}"
         ds.pop("_sample_rows", None)  # transient — never persisted
-        # Underscore markers drive later phases only. Dataset blocks are
-        # extra="forbid", so leaving one in would fail the MCP's boot gate.
-        ds.pop("_is_decision_table", None)
-        if ds.pop("_is_history_table", None):
-            supports_history = True
     _prefix_suffix = {"mongo": "MONGO", "odata": "ODATA", "sap": "ODATA", "salesforce": "SF",
                       "rest": "REST", "api": "REST"}.get(args.kind.lower(), "SQL")
     conn = {"type": args.type, "env_prefix": args.env_prefix or f"{args.source.upper()}_{_prefix_suffix}"}
     if args.kind.lower() in ("odata", "sap", "rest", "api", "openapi", "swagger"):
         conn["endpoint"] = args.conn  # OData/REST URL (no embedded credentials)
-    if _TOP_TYPE.get(args.kind.lower()) == "mongodb":
-        # A mongodb source without connection.collection fails the registry's
-        # cross-field validator: every read errors and introspection returns
-        # zero columns, so the dataset reads as schema-less rather than broken.
-        # One MCP source == one collection, so name the first one introspected.
-        first = datasets[0]["physical_name"] if datasets else ""
-        conn["collection"] = args.collection or first
-        if args.mongo_db:
-            conn["mongo_db"] = args.mongo_db
-        pks = [c["name"] for c in (datasets[0].get("columns") if datasets else []) or []
-               if c.get("is_primary_key")]
-        # Always a list — a bare string would be iterated character-by-character
-        # and silently mark no key at all.
-        conn["primary_key"] = pks or ["_id"]
     return {
         "org_id": args.org,
         "dept_id": args.dept,
@@ -923,64 +881,7 @@ def build_registry_source(args, datasets: List[Dict[str, Any]], needs_review: bo
         #                      see it, because there is nowhere typed to put it.
         "created_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "tags": (["needs-review"] if needs_review else []),
-        # Set when --history-table named a table here: tells the builder this
-        # source can back a "Refresh from History" workflow.
-        **({"supports_history": True} if supports_history else {}),
     }
-
-
-# Ontology fields a human authors and introspection can never re-derive. A
-# straight replace on re-run silently deleted every one of them, and because
-# they are all optional the file still validated and the MCP still booted —
-# fraud screening simply stopped happening.
-_AUTHORED_SOURCE_KEYS = (
-    "domain", "organization", "rag", "taxonomy", "options", "is_demo",
-    "workflow_id", "supports_history", "visibility", "$schema", "schema_ref",
-)
-_AUTHORED_DATASET_KEYS = (
-    "domain", "fraud_screening", "decision_history", "value_semantics",
-    "mandatory_when_used", "read_via", "input_schema", "write_actions",
-)
-_AUTHORED_COLUMN_KEYS = (
-    "artifact_role", "reuse_policy", "column_kind", "mime_hint",
-    "sensitivity", "is_foreign_key", "foreign_ref",
-)
-
-
-def _preserve_authored(old: dict, new: dict) -> dict:
-    """
-    Carry hand-authored ontology from the existing entry onto the freshly
-    introspected one.
-
-    Introspection re-derives structure (tables, columns, types, keys). It
-    cannot re-derive MEANING — the domain triple, what a document column is
-    for, which table records decisions, what "value" means. Those are written
-    by a person, so a re-run must not drop them just because it did not
-    produce them itself. Anything the new run *did* produce wins, so a genuine
-    schema change still lands.
-    """
-    merged = dict(new)
-    for k in _AUTHORED_SOURCE_KEYS:
-        if k in old and k not in merged:
-            merged[k] = old[k]
-
-    old_ds = {d.get("id"): d for d in (old.get("datasets") or []) if isinstance(d, dict)}
-    for ds in merged.get("datasets") or []:
-        prev = old_ds.get(ds.get("id"))
-        if not prev:
-            continue
-        for k in _AUTHORED_DATASET_KEYS:
-            if k in prev and k not in ds:
-                ds[k] = prev[k]
-        prev_cols = {c.get("name"): c for c in (prev.get("columns") or []) if isinstance(c, dict)}
-        for col in ds.get("columns") or []:
-            pcol = prev_cols.get(col.get("name"))
-            if not pcol:
-                continue
-            for k in _AUTHORED_COLUMN_KEYS:
-                if k in pcol and k not in col:
-                    col[k] = pcol[k]
-    return merged
 
 
 def merge_into_sources_file(path: str, doc: dict) -> str:
@@ -1009,7 +910,7 @@ def merge_into_sources_file(path: str, doc: dict) -> str:
     out, replaced = [], False
     for entry in existing:
         if (entry.get("org_id"), entry.get("dept_id"), entry.get("source_id")) == key:
-            out.append(_preserve_authored(entry, doc)); replaced = True
+            out.append(doc); replaced = True
         else:
             out.append(entry)
     if not replaced:
@@ -1028,19 +929,12 @@ def main() -> int:
     ap.add_argument("--org", default="")
     ap.add_argument("--dept", default="")
     ap.add_argument("--source", default="", help="source_id (composite key with org/dept)")
-    ap.add_argument("--kind", default="sql",
-                    help="source kind: sql | mongo | odata | sap | salesforce | rest "
-                         "(aliases: api, openapi, swagger)")
+    ap.add_argument("--kind", default="sql", help="source kind: sql | mongo (SAP/Salesforce/BigQuery/REST planned)")
     ap.add_argument("--tables", default="", help="comma-separated tables/collections; blank = all")
     ap.add_argument("--name", default="")
     ap.add_argument("--description", default="")
     ap.add_argument("--type", default="", help="connection.type override (defaults from --kind)")
     ap.add_argument("--env-prefix", default="", help="connection.env_prefix the MCP reads creds from")
-    ap.add_argument("--collection", default="",
-                    help="mongodb only: connection.collection (required by the registry). "
-                         "Defaults to the first collection introspected.")
-    ap.add_argument("--mongo-db", default="", dest="mongo_db",
-                    help="mongodb only: connection.mongo_db, if it differs from the URI default")
     ap.add_argument("--out", default="",
                     help="sources.json to merge this source into (created if absent). "
                          "Omit to print the entry to stdout.")

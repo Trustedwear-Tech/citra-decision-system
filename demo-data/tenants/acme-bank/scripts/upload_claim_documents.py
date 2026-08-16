@@ -40,7 +40,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 TENANT_DIR = SCRIPT_DIR.parent
 ENV = TENANT_DIR / "mcp" / ".env"
 
-PG = dict(host="localhost", port=15444, dbname="acme_bank",
+PG = dict(host="localhost", port=5444, dbname="acme_bank",
           user="acme_bank", password="acme_bank_demo_pw")
 
 

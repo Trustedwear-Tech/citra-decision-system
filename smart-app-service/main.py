@@ -161,6 +161,7 @@ from publish_validators import (
     validate_case_signature_confirmed,
     validate_case_signature_stable,
     validate_factor_checks_can_score,
+    validate_item_tools_declare_task_type,
     validate_factor_set_mode_stable,
     validate_rubric_finding_matches_declaration,
     validate_icons,
@@ -5068,6 +5069,7 @@ async def save_app_spec(slug: str, payload: dict, request: Request) -> AppDetail
             ("FS-02", validate_factor_set_mode_stable(_app, _prev)),
             ("FS-05", validate_rubric_finding_matches_declaration(_app)),
             ("FS-06", validate_factor_checks_can_score(_app, _agent)),
+            ("M-01", validate_item_tools_declare_task_type(_agent)),
         ):
             for _e in (_errs or []):
                 _d = _e if isinstance(_e, dict) else {"detail": str(_e)}
@@ -12844,11 +12846,20 @@ async def builder_validate(
         _collect("W-06", validate_direct_write_buttons_confirm(app_model, agent_model))
         _collect("F-01", validate_no_media_columns(app_model))
         _collect("FS-06", validate_factor_checks_can_score(app_model, agent_model))
+        _collect("M-01", validate_item_tools_declare_task_type(agent_model))
+        # Pure, spec-only rules that /publish also enforces. They ran ONLY at
+        # publish/spec-edit, so the builder could be told passed:true and then
+        # be rejected — the one thing this endpoint exists to prevent. The
+        # remaining publish-only rules (data bindings, source refs, panel
+        # columns, tool sources) are async and resolve against the live
+        # catalogue, so they genuinely cannot run on a stateless spec.
+        _collect("lookup_bound", validate_required_lookup_is_bound(agent_model))
     _collect("S-01", validate_internal_audience(app_model))
     _collect("V-CHART-01", validate_chart_axes(app_model))
     _collect("I-01", validate_icons(app_model))
     _collect("CS-01", validate_case_signature(app_model))
     _collect("CS-02", validate_case_signature_projection(app_model))
+    _collect("CS-04", validate_case_signature_confirmed(app_model))
     _collect("FS-01", validate_factor_set(app_model))
     _collect("FS-05", validate_rubric_finding_matches_declaration(app_model))
 

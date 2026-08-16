@@ -67,7 +67,7 @@ def test_search_parses_hits_in_rank_order(monkeypatch):
     monkeypatch.setattr(cv, "_get_client", lambda _s: _FakeClient())
 
     out = asyncio.run(
-        cv.search(s, query="unpaid bills", tenant_id="acme-power", top_k=5)
+        cv.search(s, query="unpaid bills", tenant_id="bsphcl", top_k=5)
     )
     assert out == [
         ("billing", "billing.bills"),
@@ -91,14 +91,14 @@ def test_search_dept_filter_expr(monkeypatch):
     monkeypatch.setattr(cv, "_get_client", lambda _s: _FC())
 
     # dept-scoped caller → filter has tenant + public + unstamped + dept-in
-    asyncio.run(cv.search(s, query="x", tenant_id="acme-power", dept_ids=["billing_revenue"], top_k=5))
+    asyncio.run(cv.search(s, query="x", tenant_id="bsphcl", dept_ids=["billing_revenue"], top_k=5))
     f = captured["filter"]
-    assert 'tenant_id == "acme-power"' in f
+    assert 'tenant_id == "bsphcl"' in f
     assert 'public == "1"' in f and 'dept_id == ""' in f
     assert 'dept_id in ["billing_revenue"]' in f
 
     # all_depts (org_admin/super) → no dept clause at all
-    asyncio.run(cv.search(s, query="x", tenant_id="acme-power", dept_ids=["billing_revenue"], top_k=5, all_depts=True))
+    asyncio.run(cv.search(s, query="x", tenant_id="bsphcl", dept_ids=["billing_revenue"], top_k=5, all_depts=True))
     assert "dept_id" not in captured["filter"] and "public" not in captured["filter"]
 
 

@@ -8,140 +8,94 @@
 
 import asyncio
 import logging
-import math
 import os
 import re
 import hashlib
 from typing import List, Optional
 
-import openai
 from openai import AsyncOpenAI
 from fastapi import HTTPException
 from citra_mongo import get_sync_database
 
-# LLM SDK removed � all LLM calls routed through llm_oss
-genai = None
-genai_types = None
-_llm_AVAILABLE = False
-
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# ----------- Embedding Configuration (unified EMBEDDING_* with legacy fallback) -----------
-# New unified vars: EMBEDDING_BASE_URL, EMBEDDING_API_KEY, EMBEDDING_MODEL, EMBEDDING_DIMENSION
-# Legacy fallback:  USE_OPENAI_EMBEDDING, OPENAI_EMBEDDING_MODEL, OPENAI_EMBEDDING_DIMENSION, OPENAI_API_KEY
-_EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "").strip()
-_EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "").strip()
-USE_OPENAI_EMBEDDING = os.getenv("USE_OPENAI_EMBEDDING", "true").lower() == "true"
-OPENAI_EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL") or os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
-OPENAI_EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION") or os.getenv("OPENAI_EMBEDDING_DIMENSION", "768"))
-OPENAI_API_KEY = _EMBEDDING_API_KEY or os.getenv("OPENAI_API_KEY")
+# ----------- Embedding Configuration -----------
+# One OpenAI-compatible embedding endpoint, configured entirely by EMBEDDING_*.
+# The platform default is `baai/bge-m3` served by OpenRouter at 768 dimensions
+# (bge-m3's native output is 1024; we send `dimensions` so the provider returns
+# a re-normalised 768-d vector matching the Milvus collection dim).
+# Point EMBEDDING_BASE_URL at any compatible server (vLLM, Infinity, ...) to
+# self-host the same model.
+EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "").strip()
+EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "").strip()
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "baai/bge-m3")
+EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "768"))
 
-# embedding configuration
-_llm_MODEL = os.getenv("llm_EMBED_MODEL", "text-multilingual-embedding-002")
-_DEFAULT_QUERY_TASK = os.getenv("llm_EMBED_QUERY_TASK", "RETRIEVAL_QUERY")
-_DEFAULT_DOCUMENT_TASK = os.getenv("llm_EMBED_DOCUMENT_TASK", "RETRIEVAL_DOCUMENT")
-_RAW_DIMENSION = os.getenv("llm_EMBED_DIM") or os.getenv("EMBED_DIM")
-_llm_DIMENSION = int(_RAW_DIMENSION) if _RAW_DIMENSION else None
+_DEFAULT_QUERY_TASK = "RETRIEVAL_QUERY"
+_DEFAULT_DOCUMENT_TASK = "RETRIEVAL_DOCUMENT"
 
 # ----------- Query-instruction prefix (Qwen3-Embedding et al.) -----------
 # Instruction-aware embedders (Qwen3-Embedding) score ~1-5% higher on retrieval
 # when the QUERY carries a task instruction; DOCUMENTS are always embedded as-is.
-# This is a no-op for OpenAI / text-embedding models (they'd treat it as noise).
+# This is a no-op for bge-m3 and other non-instruction models (they'd treat it
+# as noise).
 #   EMBEDDING_QUERY_INSTRUCTION unset  -> auto: default instruction iff model looks Qwen-family
 #   EMBEDDING_QUERY_INSTRUCTION="off"  -> disabled (bare queries even on Qwen)
 #   EMBEDDING_QUERY_INSTRUCTION=<text> -> use <text> as the instruction for every query embed
 _DEFAULT_QUERY_INSTRUCTION = "Given a search query, retrieve relevant passages that answer the query"
 _EMBEDDING_QUERY_INSTRUCTION_RAW = os.getenv("EMBEDDING_QUERY_INSTRUCTION", "").strip()
 
-_llm_client = None  # Deprecated � llm removed
-_llm_lock: Optional[asyncio.Lock] = None
-_openai_client: Optional[AsyncOpenAI] = None
-_openai_lock: Optional[asyncio.Lock] = None
+_embedding_client: Optional[AsyncOpenAI] = None
+_embedding_lock: Optional[asyncio.Lock] = None
 
 
-def _ensure_llm_available() -> None:
-    """llm removed - always raises."""
-    raise HTTPException(status_code=500, detail="llm removed - use llm_oss or OpenAI embeddings")
+async def _get_embedding_client() -> AsyncOpenAI:
+    """Get or create the embedding client for the configured EMBEDDING_* endpoint."""
+    global _embedding_client
+    global _embedding_lock
 
+    if _embedding_client is not None:
+        return _embedding_client
 
-async def _get_openai_embedding_client() -> AsyncOpenAI:
-    """Get or create OpenAI embedding client."""
-    global _openai_client
-    global _openai_lock
-    
-    if _openai_client is not None:
-        return _openai_client
-    
-    if not OPENAI_API_KEY:
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY environment variable is not set")
-    
-    if _openai_lock is None:
-        _openai_lock = asyncio.Lock()
-    
-    async with _openai_lock:
-        if _openai_client is None:
-            # base_url lets us point at any OpenAI-compatible embedding endpoint
-            # (OpenRouter, a local vLLM/Infinity server, etc.). Empty => OpenAI default.
-            _openai_client = AsyncOpenAI(
-                api_key=OPENAI_API_KEY,
-                base_url=_EMBEDDING_BASE_URL or None,
+    if not EMBEDDING_API_KEY:
+        raise HTTPException(status_code=500, detail="EMBEDDING_API_KEY environment variable is not set")
+    if not EMBEDDING_BASE_URL:
+        raise HTTPException(status_code=500, detail="EMBEDDING_BASE_URL environment variable is not set")
+
+    if _embedding_lock is None:
+        _embedding_lock = asyncio.Lock()
+
+    async with _embedding_lock:
+        if _embedding_client is None:
+            # Any OpenAI-compatible embedding endpoint: OpenRouter (default),
+            # a local vLLM/Infinity server, etc.
+            _embedding_client = AsyncOpenAI(
+                api_key=EMBEDDING_API_KEY,
+                base_url=EMBEDDING_BASE_URL,
                 max_retries=5,
             )
             logging.info(
-                f"Embedding client initialized ({OPENAI_EMBEDDING_MODEL}, {OPENAI_EMBEDDING_DIMENSION}D) "
-                f"via {_EMBEDDING_BASE_URL or 'api.openai.com (default)'}"
+                f"Embedding client initialized ({EMBEDDING_MODEL}, {EMBEDDING_DIMENSION}D) "
+                f"via {EMBEDDING_BASE_URL}"
             )
-    
-    return _openai_client
 
-
-async def _get_llm_client():
-    """llm removed � always raises."""
-    raise HTTPException(status_code=500, detail="llm removed � use llm_oss or OpenAI embeddings")
-
-
-def _build_embed_config(task_type: Optional[str]):
-    if task_type is None and _llm_DIMENSION is None:
-        return None
-
-    config_kwargs = {}
-    if task_type:
-        config_kwargs["task_type"] = task_type
-    if _llm_DIMENSION:
-        config_kwargs["output_dimensionality"] = _llm_DIMENSION
-
-    if not config_kwargs:
-        return None
-
-    if genai_types is not None:
-        return genai_types.EmbedContentConfig(**config_kwargs)
-    return config_kwargs
-
-
-def _normalize_embedding(values: List[float]) -> List[float]:
-    if not values:
-        return values
-    if _llm_DIMENSION and _llm_DIMENSION < 3072:
-        norm = math.sqrt(sum(v * v for v in values))
-        if norm:
-            return [v / norm for v in values]
-    return values
+    return _embedding_client
 
 
 def _active_query_instruction() -> Optional[str]:
     """Resolve the instruction to prepend to QUERY embeddings, or None for a no-op.
 
-    Documents are never instructed. OpenAI / text-embedding models resolve to
-    None (auto-branch), so this stays a strict no-op unless the model is
-    Qwen-family or an explicit instruction is configured via env.
+    Documents are never instructed. Non-instruction models (bge-m3 and friends)
+    resolve to None (auto-branch), so this stays a strict no-op unless the model
+    is Qwen-family or an explicit instruction is configured via env.
     """
     val = _EMBEDDING_QUERY_INSTRUCTION_RAW
     if val:
         if val.lower() in ("off", "none", "false", "0"):
             return None
         return val
-    if "qwen" in (OPENAI_EMBEDDING_MODEL or "").lower():
+    if "qwen" in (EMBEDDING_MODEL or "").lower():
         return _DEFAULT_QUERY_INSTRUCTION
     return None
 
@@ -253,7 +207,7 @@ def sanitize_container_name(unique_code: str) -> str:
     
     return container_name
 
-# OpenAI text-embedding-3-small hard limit is 8192 tokens (~32K chars).
+# bge-m3's context window is 8192 tokens (same ceiling text-embedding-3-small had).
 # We truncate at a safe ceiling so long inputs (e.g., users pasting 50K-char log
 # blocks as a query) embed the leading portion instead of crashing the API call.
 # 28000 chars ≈ 7000 tokens, well under the 8192-token cap.
@@ -276,7 +230,6 @@ def _truncate_for_embedding(text: str, label: str = "embed_text") -> str:
 async def embed_text(text: str, *, task_type: Optional[str] = None) -> List[float]:
     """Create an embedding for a single text string.
     
-    Uses OpenAI or llm based on USE_OPENAI_EMBEDDING env var.
     Returns empty list if text is empty (allows graceful handling for audio-only queries).
     """
     # Allow empty text for audio-only queries - return empty embedding
@@ -287,51 +240,26 @@ async def embed_text(text: str, *, task_type: Optional[str] = None) -> List[floa
 
     text = _truncate_for_embedding(text, label="embed_text")
 
-    if USE_OPENAI_EMBEDDING:
-        # Single-embed defaults to a QUERY; instruction-aware models get the prefix.
-        resolved_task = task_type or _DEFAULT_QUERY_TASK
-        payload = _instruct_query(text) if _is_query_task(resolved_task) else text
-        client = await _get_openai_embedding_client()
-        try:
-            response = await client.embeddings.create(
-                model=OPENAI_EMBEDDING_MODEL,
-                input=payload,
-                dimensions=OPENAI_EMBEDDING_DIMENSION
-            )
-            return response.data[0].embedding
-        except Exception as exc:
-            logging.error(f"OpenAI embed_text failed: {exc}")
-            raise HTTPException(status_code=502, detail=f"OpenAI embedding request failed: {exc}")
-    else:
-        # Use embedding
-        client = await _get_llm_client()
-        resolved_task = task_type or _DEFAULT_QUERY_TASK
-        config = _build_embed_config(resolved_task)
-
-        def _embed_sync() -> List[float]:
-            kwargs = {"model": _llm_MODEL, "contents": text}
-            if config is not None:
-                kwargs["config"] = config
-            response = client.models.embed_content(**kwargs)
-            if not response.embeddings:
-                raise ValueError("embedding response did not include embeddings")
-            return list(response.embeddings[0].values)
-
-        try:
-            embedding = await asyncio.to_thread(_embed_sync)
-            return _normalize_embedding(embedding)
-        except HTTPException:
-            raise
-        except Exception as exc:  # pragma: no cover - runtime errors
-            logging.error(f"llm embed_text failed: {exc}")
-            raise HTTPException(status_code=502, detail=f"embedding request failed: {exc}")
+    # Single-embed defaults to a QUERY; instruction-aware models get the prefix.
+    resolved_task = task_type or _DEFAULT_QUERY_TASK
+    payload = _instruct_query(text) if _is_query_task(resolved_task) else text
+    client = await _get_embedding_client()
+    try:
+        response = await client.embeddings.create(
+            model=EMBEDDING_MODEL,
+            input=payload,
+            dimensions=EMBEDDING_DIMENSION
+        )
+        return response.data[0].embedding
+    except Exception as exc:
+        logging.error(f"embed_text failed ({EMBEDDING_MODEL}): {exc}")
+        raise HTTPException(status_code=502, detail=f"embedding request failed: {exc}")
 
 
 async def embed_texts_batch(texts: List[str], *, task_type: Optional[str] = None) -> List[List[float]]:
     """Create embeddings for multiple texts.
     
-    Uses OpenAI or llm based on USE_OPENAI_EMBEDDING env var.
-    Automatically splits large batches based on both text count and token limits.
+    Automatically splits large batches based on text count.
     Filters out empty strings to prevent embedding errors.
     """
     if not texts:
@@ -352,127 +280,43 @@ async def embed_texts_batch(texts: List[str], *, task_type: Optional[str] = None
         logging.warning("All texts in batch are empty - returning empty list")
         return []
 
-    if USE_OPENAI_EMBEDDING:
-        # Batch defaults to DOCUMENTS (never instructed); only a caller that
-        # explicitly passes a query task_type triggers the query-instruction path.
-        resolved_task = task_type or _DEFAULT_DOCUMENT_TASK
-        apply_instruction = _is_query_task(resolved_task)
-        MAX_TEXTS_PER_BATCH = 2048  # OpenAI allows up to 2048 texts per batch
+    # Batch defaults to DOCUMENTS (never instructed); only a caller that
+    # explicitly passes a query task_type triggers the query-instruction path.
+    resolved_task = task_type or _DEFAULT_DOCUMENT_TASK
+    apply_instruction = _is_query_task(resolved_task)
+    MAX_TEXTS_PER_BATCH = 2048  # provider cap for a single /embeddings call
 
-        async def _embed_openai_batch(batch_texts: List[str]) -> List[List[float]]:
-            client = await _get_openai_embedding_client()
-            payload = (
-                [_instruct_query(t) for t in batch_texts]
-                if apply_instruction else batch_texts
-            )
-            response = await client.embeddings.create(
-                model=OPENAI_EMBEDDING_MODEL,
-                input=payload,
-                dimensions=OPENAI_EMBEDDING_DIMENSION
-            )
-            return [item.embedding for item in response.data]
-        
-        # Split into batches if needed (using valid_texts)
-        if len(valid_texts) <= MAX_TEXTS_PER_BATCH:
-            try:
-                return await _embed_openai_batch(valid_texts)
-            except Exception as exc:
-                logging.error(f"OpenAI embed_texts_batch failed: {exc}")
-                raise HTTPException(status_code=502, detail=f"OpenAI batch embedding request failed: {exc}")
-        
-        # Process in batches
-        all_embeddings = []
-        for i in range(0, len(valid_texts), MAX_TEXTS_PER_BATCH):
-            batch = valid_texts[i:i + MAX_TEXTS_PER_BATCH]
-            try:
-                batch_embeddings = await _embed_openai_batch(batch)
-                all_embeddings.extend(batch_embeddings)
-            except Exception as exc:
-                logging.error(f"OpenAI batch {i//MAX_TEXTS_PER_BATCH + 1} failed: {exc}")
-                raise
-        return all_embeddings
-    
-    # embedding (original implementation, using valid_texts)
-    MAX_TEXTS_PER_BATCH = 100
-    MAX_TOKENS_PER_BATCH = 16000  # More conservative limit (actual is 20k, but headers add ~20-30% overhead)
-    
-    def estimate_tokens(text: str) -> int:
-        """Conservative estimate accounting for metadata headers: ~3 chars per token"""
-        return len(text) // 3 + 10  # Add 10 token buffer for API overhead
-    
-    def create_token_aware_batches(texts: List[str]) -> List[List[str]]:
-        """Split texts into batches respecting both count and token limits"""
-        batches = []
-        current_batch = []
-        current_tokens = 0
-        
-        for text in texts:
-            text_tokens = estimate_tokens(text)
-            
-            # Check if adding this text would exceed limits
-            if (len(current_batch) >= MAX_TEXTS_PER_BATCH or 
-                (current_tokens + text_tokens > MAX_TOKENS_PER_BATCH and current_batch)):
-                # Save current batch and start new one
-                batches.append(current_batch)
-                current_batch = [text]
-                current_tokens = text_tokens
-            else:
-                current_batch.append(text)
-                current_tokens += text_tokens
-        
-        # Add final batch if not empty
-        if current_batch:
-            batches.append(current_batch)
-        
-        return batches
-    
-    # Create token-aware batches from valid_texts
-    batches = create_token_aware_batches(valid_texts)
-    
-    # If only one batch, process directly
-    if len(batches) == 1:
-        client = await _get_llm_client()
-        resolved_task = task_type or _DEFAULT_DOCUMENT_TASK
-        config = _build_embed_config(resolved_task)
+    async def _embed_batch(batch_texts: List[str]) -> List[List[float]]:
+        client = await _get_embedding_client()
+        payload = (
+            [_instruct_query(t) for t in batch_texts]
+            if apply_instruction else batch_texts
+        )
+        response = await client.embeddings.create(
+            model=EMBEDDING_MODEL,
+            input=payload,
+            dimensions=EMBEDDING_DIMENSION
+        )
+        return [item.embedding for item in response.data]
 
-        def _embed_batch_sync() -> List[List[float]]:
-            kwargs = {"model": _llm_MODEL, "contents": batches[0]}
-            if config is not None:
-                kwargs["config"] = config
-            response = client.models.embed_content(**kwargs)
-            embeddings = []
-            for embedding_obj in response.embeddings or []:
-                embeddings.append(list(embedding_obj.values))
-            if len(embeddings) != len(batches[0]):
-                raise ValueError("embedding response count does not match input length")
-            return embeddings
-
+    # Split into batches if needed (using valid_texts)
+    if len(valid_texts) <= MAX_TEXTS_PER_BATCH:
         try:
-            raw_embeddings = await asyncio.to_thread(_embed_batch_sync)
-            return [_normalize_embedding(values) for values in raw_embeddings]
-        except HTTPException:
-            raise
-        except Exception as exc:  # pragma: no cover - runtime errors
-            logging.error(f"llm embed_texts_batch failed: {exc}")
-            raise HTTPException(status_code=502, detail=f"llm batch embedding request failed: {exc}")
-    
-    # Process multiple batches
-    logging.info(f"?? Token-aware batching: {len(valid_texts)} texts ? {len(batches)} batches (max {MAX_TEXTS_PER_BATCH} texts or {MAX_TOKENS_PER_BATCH} tokens per batch)")
+            return await _embed_batch(valid_texts)
+        except Exception as exc:
+            logging.error(f"embed_texts_batch failed ({EMBEDDING_MODEL}): {exc}")
+            raise HTTPException(status_code=502, detail=f"batch embedding request failed: {exc}")
+
+    # Process in batches
     all_embeddings = []
-    
-    for batch_idx, batch in enumerate(batches, 1):
-        estimated_tokens = sum(estimate_tokens(t) for t in batch)
-        logging.info(f"?? Processing batch {batch_idx}/{len(batches)} ({len(batch)} texts, ~{estimated_tokens} tokens)")
-        
+    for i in range(0, len(valid_texts), MAX_TEXTS_PER_BATCH):
+        batch = valid_texts[i:i + MAX_TEXTS_PER_BATCH]
         try:
-            # Recursively call for each batch (will hit single-batch path above)
-            batch_embeddings = await embed_texts_batch(batch, task_type=task_type)
+            batch_embeddings = await _embed_batch(batch)
             all_embeddings.extend(batch_embeddings)
         except Exception as exc:
-            logging.error(f"? Batch {batch_idx}/{len(batches)} failed: {exc}")
+            logging.error(f"embedding batch {i//MAX_TEXTS_PER_BATCH + 1} failed: {exc}")
             raise
-    
-    logging.info(f"? Successfully processed all {len(valid_texts)} valid texts in {len(batches)} batches")
     return all_embeddings
 
 

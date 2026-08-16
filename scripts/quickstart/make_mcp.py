@@ -7,6 +7,10 @@
 # production use requires a commercial licence until the Change Date, after
 # which this file converts to Apache-2.0. See LICENSE at the repository root.
 
+#!/usr/bin/env python3
+# Copyright (c) 2024-2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# PROPRIETARY - all rights reserved. See LICENSE.md. NOT an open-source grant.
+# SPDX-License-Identifier: LicenseRef-Citra-AI-Proprietary
 """
 Generate (and optionally start) a CUSTOM Citra MCP for an org's registered sources.
 
@@ -166,7 +170,7 @@ services:
       MILVUS_URI: ${{MILVUS_URI:-http://citra-milvus:19530}}
       MILVUS_TOKEN: ${{MILVUS_TOKEN:-}}
       EMBEDDING_BASE_URL: ${{EMBEDDING_BASE_URL:-https://openrouter.ai/api/v1}}
-      EMBEDDING_MODEL: ${{EMBEDDING_MODEL:-openai/text-embedding-3-small}}
+      EMBEDDING_MODEL: ${{EMBEDDING_MODEL:-baai/bge-m3}}
       EMBEDDING_API_KEY: ${{EMBEDDING_API_KEY:-${{LLM_API_KEY:-}}}}
       EMBEDDING_DIMENSION: ${{EMBEDDING_DIMENSION:-768}}
 
@@ -189,14 +193,14 @@ services:
       retries: 5
       start_period: 20s
     networks:
-      - citra-network
+      - citra-ai-net
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
 networks:
-  citra-network:
+  citra-ai-net:
     external: true
-    name: citra-network
+    name: citra-ai-net
 """
 
 

@@ -16,7 +16,7 @@ RULE #1 — fail loud: this helper RAISES :class:`PlannerLLMError` on any failur
 (network, auth, empty/null content, non-JSON body, bad shape) instead of
 returning ``None``. A silent ``None`` let callers treat "the planner LLM
 failed" as "the planner had nothing to say" and silently degrade to a worse
-plan (or fabricate) — the exact bug behind the ACME-POWER "weather=5" hallucination.
+plan (or fabricate) — the exact bug behind the BSPHCL "weather=5" hallucination.
 The raised error carries the real, actionable reason.
 """
 

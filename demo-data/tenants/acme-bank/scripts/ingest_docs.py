@@ -161,8 +161,12 @@ def _upload_to_bucket(docs: List[Path]) -> int:
         doc_path = doc.relative_to(RAW_ROOT).as_posix()
         key = _s3_key_for(doc_path)
         try:
+            # SSE is an AWS-S3-ism: MinIO rejects it with NotImplemented
+            # ("KMS not configured") unless a KMS backend is wired up. Send it
+            # only against real S3 — same conditional as addressing_style above.
+            extra = {} if endpoint_url else {"ServerSideEncryption": "AES256"}
             s3.put_object(Bucket=S3_BUCKET, Key=key, Body=doc.read_bytes(),
-                          ContentType=_content_type_for(doc), ServerSideEncryption="AES256")
+                          ContentType=_content_type_for(doc), **extra)
             log.info("  ↑ s3://%s/%s", S3_BUCKET, key)
             uploaded += 1
         except Exception as exc:  # noqa: BLE001

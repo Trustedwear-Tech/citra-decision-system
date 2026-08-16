@@ -119,6 +119,23 @@ def get_config():
 get_s3_config = get_config
 
 
+
+def _storage_class_kwargs() -> dict:
+    """``{'StorageClass': 'STANDARD_IA'}`` on real S3, ``{}`` on anything else.
+
+    Same reasoning as ``addressing_style`` above, and the same trigger: a custom
+    BUCKET_ENDPOINT_URL means an S3-COMPATIBLE service, not AWS. STANDARD_IA is
+    an AWS storage tier; MinIO rejects it outright with ``InvalidStorageClass``,
+    which fails the PutObject and takes the whole upload with it — so on a
+    MinIO-backed deployment NO document could be ingested at all.
+
+    Omitting the parameter is the correct fallback rather than sending
+    ``STANDARD``: the tier is a cost optimisation on AWS and has no meaning on a
+    single-node object store, and MinIO applies its own default.
+    """
+    return ({} if os.getenv('BUCKET_ENDPOINT_URL', '').strip()
+            else {'StorageClass': 'STANDARD_IA'})
+
 def upload_file(file_content: bytes, s3_key: str, content_type: str = 'application/octet-stream') -> str:
     """
     Upload file to bucket with environment-based folder structure.
@@ -146,7 +163,7 @@ def upload_file(file_content: bytes, s3_key: str, content_type: str = 'applicati
             Key=full_key,
             Body=file_content,
             ContentType=content_type,
-            StorageClass='STANDARD_IA'  # Cost-effective storage for infrequent access
+            **_storage_class_kwargs(),
         )
         
         # Return object URL
@@ -206,7 +223,7 @@ def upload_intermediate(file_content: bytes, *, user_id: str, job_id: str,
             Key=full_key,
             Body=file_content,
             ContentType=content_type,
-            StorageClass="STANDARD_IA",
+            **_storage_class_kwargs(),
             Tagging="citra-purpose=action-chat-intermediate",
             Metadata={
                 "citra-user-id": str(user_id),
@@ -252,7 +269,7 @@ def copy_file(source_key: str, dest_key: str) -> bool:
             Bucket=bucket_name,
             CopySource={'Bucket': bucket_name, 'Key': full_source},
             Key=full_dest,
-            StorageClass='STANDARD_IA'
+            **_storage_class_kwargs(),
         )
         logger.info(f"📋 Copied object: {full_source} → {full_dest}")
         return True

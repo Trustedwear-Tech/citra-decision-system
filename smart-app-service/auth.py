@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 # mint_system_workflow_token — re-exported from the shared citra-auth package
 # (the canonical signer) rather than duplicated here. smart-app-service now
-# depends on citra-auth (-e ../citra-common/citra-auth), so there is a single source of truth
+# depends on citra-auth (-e ../citra-auth), so there is a single source of truth
 # for the token payload; `from auth import mint_system_workflow_token` keeps
 # working for existing callers.
 from citra_auth import mint_system_workflow_token  # noqa: E402,F401

@@ -252,7 +252,7 @@ async def test_crawl_mcp_raises_on_tenant_mismatch():
     col = _MemCol()
     with pytest.raises(TenantMismatchError):
         await crawl_mcp(
-            {"tool_id": "acme-power-mcp", "base_url": "http://x", "org_ids": ["acme-power"]},
+            {"tool_id": "bsphcl-mcp", "base_url": "http://x", "org_ids": ["bsphcl"]},
             settings=settings,
             catalogue_col=col,
             auth_header=None,
@@ -326,21 +326,21 @@ def test_resolve_base_url_prefers_explicit_then_strips_query():
 async def test_crawl_all_dedupes_sources_to_one_mcp(monkeypatch):
     """discovery advertises one tool PER SOURCE sharing one MCP; crawl_all must
     crawl that MCP exactly ONCE (else it re-embeds the same datasets N times)."""
-    # 5 source-tools (mirrors acme-power) all pointing at one MCP's /query, plus a
+    # 5 source-tools (mirrors bsphcl) all pointing at one MCP's /query, plus a
     # second distinct MCP, plus one bad entry with no URL.
     tools = [
-        {"tool_id": "acme-power-billing-billing", "source_id": "billing",
-         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]},
-        {"tool_id": "acme-power-ami-smart_meter", "source_id": "smart_meter",
-         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]},
-        {"tool_id": "acme-power-dist-outage", "source_id": "outage_management",
-         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]},
-        {"tool_id": "acme-power-vig-field_ops", "source_id": "field_operations",
-         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]},
-        {"tool_id": "acme-power-pmu-policy", "source_id": "acme-power_policy_library",
-         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]},
-        {"tool_id": "other-mcp", "base_url": "http://mcp-b:18504", "org_ids": ["acme-power"]},
-        {"tool_id": "broken", "org_ids": ["acme-power"]},  # no URL → kept, reports error
+        {"tool_id": "bsphcl-billing-billing", "source_id": "billing",
+         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["bsphcl"]},
+        {"tool_id": "bsphcl-ami-smart_meter", "source_id": "smart_meter",
+         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["bsphcl"]},
+        {"tool_id": "bsphcl-dist-outage", "source_id": "outage_management",
+         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["bsphcl"]},
+        {"tool_id": "bsphcl-vig-field_ops", "source_id": "field_operations",
+         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["bsphcl"]},
+        {"tool_id": "bsphcl-pmu-policy", "source_id": "bsphcl_policy_library",
+         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["bsphcl"]},
+        {"tool_id": "other-mcp", "base_url": "http://mcp-b:8504", "org_ids": ["bsphcl"]},
+        {"tool_id": "broken", "org_ids": ["bsphcl"]},  # no URL → kept, reports error
     ]
 
     async def fake_list(settings, auth_header):
@@ -358,11 +358,11 @@ async def test_crawl_all_dedupes_sources_to_one_mcp(monkeypatch):
 
     reports, _, _ = await crawl_all(
         settings=Settings(), catalogue_col=_MemCol(),
-        auth_header=None, tenant_id="acme-power",
+        auth_header=None, tenant_id="bsphcl",
     )
 
     # 7 tool entries → 2 distinct MCPs (mcp-a once, mcp-b once) + 1 no-URL entry
-    assert sorted(crawled_bases) == ["<none>", "http://mcp-a:8503", "http://mcp-b:18504"]
+    assert sorted(crawled_bases) == ["<none>", "http://mcp-a:8503", "http://mcp-b:8504"]
     # 3 MCP-crawl reports + 1 platform-side semantic-discovery report (no-op here:
     # dept_sources_col is None, so it discovers nothing but still reports).
     assert len(reports) == 4
@@ -620,7 +620,7 @@ async def test_crawl_all_does_not_prune_a_source_seen_by_both_a_clean_and_a_fail
         {"tool_id": "t-a", "source_id": "billing",
          "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]},
         {"tool_id": "t-b", "source_id": "billing",
-         "query_endpoint": "http://mcp-b:18504/query", "org_ids": ["acme-power"]},
+         "query_endpoint": "http://mcp-b:8504/query", "org_ids": ["acme-power"]},
     ]
 
     async def fake_list(settings, auth_header):

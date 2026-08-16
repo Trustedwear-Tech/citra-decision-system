@@ -39,15 +39,7 @@ log = logging.getLogger(__name__)
 def _mint(secret: str, *, tenant_id: str, user_id: str = "demo-publisher") -> str:
     now = int(time.time())
     payload = {
-        # citra-auth's middleware requires literal "user_id" and "email"
-        # claims (see citra-auth/citra_auth/middleware.py verify_token) - a
-        # "sub"-only payload silently resolves to an empty user_id downstream
-        # (_publisher_own_work_sa can't derive a Work SA for "") rather than
-        # failing auth outright, surfacing as 400 work_sa_id_missing with no
-        # hint the actual defect is the claim name (confirmed live).
         "sub": user_id,
-        "user_id": user_id,
-        "email": user_id,
         "tenant_id": tenant_id,
         "org_id": tenant_id,
         "dept_ids": ["plant_ops", "quality", "sales_dispatch"],
@@ -71,12 +63,6 @@ def main() -> int:
                     help="Tenant id; apps are read from tenants/<tenant-id>/apps/ unless --apps-dir overrides")
     ap.add_argument("--apps-dir", default=None,
                     help="Override path to apps folder (defaults to tenants/<tenant-id>/apps/)")
-    ap.add_argument("--user-id", default="demo-publisher",
-                    help="sub claim for the minted token. The default 'demo-publisher' is a "
-                         "synthetic id that no bootstrap step ever provisions in Mongo, so "
-                         "smart-app-service's publish endpoint 400s with work_sa_id_missing "
-                         "(confirmed live) - pass a real, already-logged-in user's id/email "
-                         "(e.g. the seeded super-admin) to get a provisioned Work SA.")
     args = ap.parse_args()
 
     base = args.smart_app_url.rstrip("/")
@@ -88,7 +74,7 @@ def main() -> int:
         log.error("smart-app-service unreachable at %s: %s", base, exc)
         return 3
 
-    token = _mint(args.jwt_secret, tenant_id=args.tenant_id, user_id=args.user_id)
+    token = _mint(args.jwt_secret, tenant_id=args.tenant_id)
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
