@@ -1,0 +1,74 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml for discovery-service (tool / MCP registry, port 9000)
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/discovery-service:${IMAGE_TAG}
+# Config from Vault (no .env in prod).
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/discovery-service:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  ports:
+    # Pinned host port (was ephemeral) so dept-MCPs running on a DIFFERENT box
+    # can register/heartbeat at http://<AI-1-private-ip>:9000. Demo-prod is one
+    # box today so every MCP is local, but keep the pin: cross-host MCPs are
+    # normal in the customer topology (see docs/deployment-topology.md), and the
+    # acme-power demo MCP used this path when Citra-AI-Common existed.
+    # Internal callers still use the docker network name
+    # discovery-service-prod:9000 — unaffected.
+    - "9000:9000"
+  volumes:
+    - ~/citra-ai/logs/discovery-service:/app/logs
+  networks:
+    - citra-network
+    - citra-action-approved-egress
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+  healthcheck:
+    # python:slim has no curl — use urllib one-liner (always shipped with python)
+    test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:9000/health',timeout=3).status==200 else 1)\""]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 20s
+
+services:
+  discovery-service-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: discovery-service-prod
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "42db6f76-23f6-9a99-87c4-499a2648cd38"
+      VAULT_SECRET_PATH: "prod/discovery-service"
+
+  discovery-service-test:
+    <<: *common
+    profiles: [test]
+    container_name: discovery-service-test
+    environment:
+      TZ: "America/New_York"
+      ENVIRONMENT: "test"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: "test/discovery-service"
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network
+  citra-action-approved-egress:
+    external: true
+    name: citra-action-approved-egress

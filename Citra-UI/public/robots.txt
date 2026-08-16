@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /private/
+
+# Allow static SEO pages
+Allow: /static-seo/
+
+# Allow blog
+Allow: /blog/
+
+Sitemap: https://citra-ai.com/sitemap.xml

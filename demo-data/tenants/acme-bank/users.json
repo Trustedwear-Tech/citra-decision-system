@@ -1,0 +1,157 @@
+[
+  {
+    "_doc": "Personas for the acme-bank demo (SPEC.md §8). THREE officers minimum in every app-owning department — a team judgement needs 3 DISTINCT officers, so with fewer the memory demo can only ever show 'one officer's judgement' and never the promotion to team. Placeholders without passwords: reached via Impersonate User -> Demo personas.",
+    "email": "credit-pune@acme-bank-demo.citra.ai",
+    "name": "Ananya Deshpande (Credit Officer, Pune)",
+    "mobile": "+919820550101",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["lending"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "credit-blr@acme-bank-demo.citra.ai",
+    "name": "Rahul Iyer (Credit Officer, Bengaluru)",
+    "mobile": "+919820550102",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["lending"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "credit-mum@acme-bank-demo.citra.ai",
+    "name": "Farida Contractor (Credit Officer, Mumbai)",
+    "mobile": "+919820550103",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["lending"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "credit-manager@acme-bank-demo.citra.ai",
+    "name": "Vikram Sethi (Credit Manager, West)",
+    "mobile": "+919820550104",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["lending"],
+    "roles": ["dept_admin"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "collections-mum@acme-bank-demo.citra.ai",
+    "name": "Sameer Kulkarni (Collections Officer, Mumbai)",
+    "mobile": "+919820550105",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["collections"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "collections-hyd@acme-bank-demo.citra.ai",
+    "name": "Lakshmi Reddy (Collections Officer, Hyderabad)",
+    "mobile": "+919820550106",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["collections"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "collections-jai@acme-bank-demo.citra.ai",
+    "name": "Mohit Agarwal (Collections Officer, Jaipur)",
+    "mobile": "+919820550107",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["collections"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "collections-manager@acme-bank-demo.citra.ai",
+    "name": "Priya Nair (Collections Manager)",
+    "mobile": "+919820550108",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["collections", "lending"],
+    "roles": ["dept_admin"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "claims-motor@acme-bank-demo.citra.ai",
+    "name": "Arjun Malhotra (Claims Officer, Motor)",
+    "mobile": "+919820550109",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["claims"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "claims-health@acme-bank-demo.citra.ai",
+    "name": "Sneha Pillai (Claims Officer, Health)",
+    "mobile": "+919820550110",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["claims"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "claims-property@acme-bank-demo.citra.ai",
+    "name": "Imran Qureshi (Claims Officer, Property)",
+    "mobile": "+919820550111",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["claims"],
+    "roles": ["user"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "claims-manager@acme-bank-demo.citra.ai",
+    "name": "Devika Rao (Claims Manager)",
+    "mobile": "+919820550112",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["claims"],
+    "roles": ["dept_admin"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "sales-manager@acme-bank-demo.citra.ai",
+    "name": "Nikhil Bhatia (Branch Sales Manager)",
+    "mobile": "+919820550113",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["sales_distribution"],
+    "roles": ["dept_admin"],
+    "user_type": "paid",
+    "is_demo": true
+  },
+  {
+    "email": "coo@acme-bank-demo.citra.ai",
+    "name": "Meera Krishnan (COO, Central Operations)",
+    "mobile": "+919820550114",
+    "default_password": "Demo@Citra2026",
+    "entity_type": "corporate",
+    "dept_ids": ["central_ops", "lending", "collections", "claims", "sales_distribution"],
+    "roles": ["org_admin"],
+    "user_type": "paid",
+    "is_demo": true
+  }
+]

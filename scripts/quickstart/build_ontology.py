@@ -1,0 +1,462 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+"""Build a sources.json by asking a model to interview you about your database.
+
+Introspection derives STRUCTURE — tables, columns, types, keys. It can never
+derive MEANING: which table records decisions already made, what a document
+column IS, which column is money. A person has to say. Until now that person had
+to hand-edit JSON against a field reference.
+
+This is an AGENT, not a one-shot generator. It pulls your schema itself, asks
+clarifying questions, drafts, validates, and only then writes a file you confirm.
+
+    python build_ontology.py --kind postgres --conn "postgresql://u:p@host/db"
+    python build_ontology.py --kind mongo --conn "mongodb://localhost:27017/mydb"
+
+Two rules it runs under, both deliberate:
+
+  * YOUR CONNECTION STRING NEVER REACHES THE MODEL. This script holds it and runs
+    the queries; the agent asks for `describe_tables(["claims"])` and receives
+    schema. Credentials are never in a prompt, a tool argument, or a transcript.
+  * THE AGENT CANNOT RUN ARBITRARY SQL. It gets fixed introspection tools. Letting
+    a model write its own query would be remote code execution against your
+    production database in exchange for nothing.
+
+Nothing here is mandatory: templates and hand-authoring still work. This is the
+guided path, not the only one.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import urllib.error
+import urllib.request
+from pathlib import Path
+from typing import Any, Dict, List
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+MCP = REPO_ROOT / "source-mcp-template"
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "quickstart"))
+
+DEFAULT_MODEL = os.getenv("ONTOLOGY_MODEL", "deepseek/deepseek-v4-pro")
+MAX_ROUNDS = int(os.getenv("ONTOLOGY_MAX_TOOL_ROUNDS", "20"))
+MAX_INPUT_TOKENS = int(os.getenv("ONTOLOGY_MAX_INPUT_TOKENS", "200000"))
+MAX_OUTPUT_TOKENS = int(os.getenv("ONTOLOGY_MAX_OUTPUT_TOKENS", "200000"))
+
+# Rough chars-per-token; only used to decide WHEN to compact, never billed on.
+_CPT = 3.5
+
+
+# The model writes arrows, em-dashes and box characters. A Windows console
+# defaults to cp1252 and raises UnicodeEncodeError mid-run when it meets one,
+# killing an otherwise-good session several rounds in. Force UTF-8 and degrade
+# rather than crash.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):  # not a real stream (piped/captured)
+        pass
+
+
+def env(key: str, default: str = "") -> str:
+    """Environment FIRST, then .env. An explicitly exported value must win — the
+    other way round makes `KEY=x python build_ontology.py` silently do nothing,
+    which is a miserable thing to debug."""
+    if os.getenv(key):
+        return os.environ[key]
+    f = REPO_ROOT / ".env"
+    if f.exists():
+        for line in f.read_text(encoding="utf-8").splitlines():
+            if line.startswith(f"{key}="):
+                return line.split("=", 1)[1].strip()
+    return default
+
+
+# ── The contract the model is held to ───────────────────────────────────────
+def build_system_prompt() -> str:
+    """Assembled from the SHIPPED artefacts, never hand-copied — a prompt that
+    restates the schema in prose drifts from the models the moment either
+    changes, and the drift is invisible until a file fails to validate."""
+    schema = (MCP / "schema" / "sources.schema.json").read_text(encoding="utf-8")
+    grammar = (MCP / "templates" / "README.md").read_text(encoding="utf-8")
+    example = (MCP / "templates" / "banking-loan_recovery-IN.sources.json").read_text(encoding="utf-8")
+    return f"""You are an ontology author for Citra's `sources.json` registry.
+
+Your job is to turn someone's database into a registry that declares not just
+its STRUCTURE but its MEANING. Structure you can read with tools. Meaning you
+must ASK about — you cannot infer it reliably, and a confident wrong answer is
+worse than no answer, because screening then runs on the wrong document and
+looks correct.
+
+## How you work
+
+1. `list_tables` first. Never invent a table or column name.
+2. `describe_tables` in BATCHES — pass many names at once, not one per call.
+3. `ask_user` whenever meaning is unclear. You have a limited number of tool
+   rounds, so ask several things in one question rather than drip-feeding.
+4. Draft the registry, then `validate_draft` it. Fix what it reports and
+   validate again.
+5. `save` only once validation passes.
+
+## What you MUST ask about, never guess
+
+- **decision_history** — which table records decisions already made, and which
+  column IS the decision. Without it apps cannot ground in past cases.
+- **artifact_role** — for every document/image column: is it `evidence`
+  (fraud-relevant), `identity` (verification, duplicates are EXPECTED and must
+  never be flagged), `payment_proof` (pins the receipt-vs-ledger check), or
+  `supporting` (never fingerprinted)? Getting this wrong is the worst error you
+  can make here.
+- **value_semantics** — which column is money, and what it means. Drives ROI.
+- **domain** — ask LAST, and say it is OPTIONAL. Any industry and any ISO
+  country are valid; omitting it costs only locale packs and vertical defaults.
+
+## What you may infer without asking
+
+Types, primary keys, foreign keys, obvious descriptions, `semantic_type`, and
+whether a column looks like PII. State what you inferred so the user can correct
+it.
+
+## Hard rules
+
+- Unknown keys are a BOOT FAILURE (`extra="forbid"`). Only fields in the schema.
+- Never put credentials in the file. Use `connection.env_prefix`.
+- `fraud_screening` is opt-in. Absent means "no screening", which is a valid and
+  common choice — do not switch it on to look thorough.
+- If the user says they do not know, leave the field out and say what that costs.
+
+## THE SCHEMA (authoritative — every field, type and enum)
+
+{schema}
+
+## THE GRAMMAR (the four dataset parts and the four artifact roles)
+
+{grammar}
+
+## A COMPLETE WORKED EXAMPLE
+
+{example}
+"""
+
+
+TOOLS = [
+    {"type": "function", "function": {
+        "name": "list_tables",
+        "description": "List every table/collection name in the connected database. Call this first.",
+        "parameters": {"type": "object", "properties": {}, "required": []}}},
+    {"type": "function", "function": {
+        "name": "describe_tables",
+        "description": ("Full schema for the named tables: columns, types, primary keys, "
+                        "foreign keys, enum values, ranges and sample rows. Pass MANY names "
+                        "at once — each call costs a tool round."),
+        "parameters": {"type": "object", "properties": {
+            "names": {"type": "array", "items": {"type": "string"}}},
+            "required": ["names"]}}},
+    {"type": "function", "function": {
+        "name": "ask_user",
+        "description": ("Ask the human a clarifying question about MEANING. Combine several "
+                        "related questions into one call."),
+        "parameters": {"type": "object", "properties": {
+            "question": {"type": "string"}}, "required": ["question"]}}},
+    {"type": "function", "function": {
+        "name": "validate_draft",
+        "description": ("Validate a candidate sources.json. Returns hard problems that must be "
+                        "fixed, plus capability advisories describing what the file does NOT "
+                        "switch on."),
+        "parameters": {"type": "object", "properties": {
+            "sources_json": {"type": "string"}}, "required": ["sources_json"]}}},
+    {"type": "function", "function": {
+        "name": "save",
+        "description": "Write the final registry. Only call after validate_draft passes.",
+        "parameters": {"type": "object", "properties": {
+            "sources_json": {"type": "string"}}, "required": ["sources_json"]}}},
+]
+
+
+class Tools:
+    """Every tool runs HERE. The model sees results, never the connection string."""
+
+    def __init__(self, kind: str, conn: str, out: Path):
+        self.kind, self.conn, self.out = kind, conn, out
+        self._cache: Dict[str, Any] = {}
+        self.saved: str | None = None
+        self.validated_ok = False
+
+    def list_tables(self) -> Any:
+        import introspect_source as ins
+        try:
+            ds = ins.introspect(self.kind, self.conn, [])
+        except SystemExit as e:
+            return {"error": str(e)}
+        except Exception as e:  # noqa: BLE001
+            return {"error": self._driver_hint(e)}
+        names = [d.get("physical_name") or d.get("id") for d in ds]
+        for d in ds:
+            self._cache[d.get("physical_name") or d.get("id")] = d
+        return {"tables": names, "count": len(names)}
+
+    def describe_tables(self, names: List[str]) -> Any:
+        import introspect_source as ins
+        missing = [n for n in names if n not in self._cache]
+        if missing:
+            try:
+                for d in ins.introspect(self.kind, self.conn, missing):
+                    self._cache[d.get("physical_name") or d.get("id")] = d
+            except Exception as e:  # noqa: BLE001
+                return {"error": self._driver_hint(e)}
+        out = []
+        for n in names:
+            d = self._cache.get(n)
+            if not d:
+                out.append({"name": n, "error": "no such table — use a name from list_tables"})
+                continue
+            # Sample rows can carry real customer data; the model needs SHAPE,
+            # not content, so send a couple and let descriptions come from names.
+            d = dict(d)
+            if "_sample_rows" in d:
+                d["_sample_rows"] = d["_sample_rows"][:2]
+            out.append(d)
+        return {"tables": out}
+
+    def ask_user(self, question: str) -> Any:
+        print("\n  " + "\n  ".join(question.strip().splitlines()))
+        try:
+            ans = input("\n  your answer > ").strip()
+        except EOFError:
+            ans = ""
+        return {"answer": ans or "(no answer — decide sensibly and say what you assumed)"}
+
+    def validate_draft(self, sources_json: str) -> Any:
+        try:
+            json.loads(sources_json)
+        except json.JSONDecodeError as e:
+            return {"valid": False, "problems": [f"not valid JSON: {e}"]}
+        with tempfile.NamedTemporaryFile("w", suffix=".sources.json", delete=False,
+                                         encoding="utf-8") as fh:
+            fh.write(sources_json)
+            tmp = fh.name
+        p = subprocess.run([sys.executable, str(MCP / "validate_sources.py"), tmp],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        os.unlink(tmp)
+        ok = p.returncode == 0
+        self.validated_ok = ok
+        return {"valid": ok, "report": (p.stdout or "") + (p.stderr or "")}
+
+    def save(self, sources_json: str) -> Any:
+        if not self.validated_ok:
+            return {"error": "call validate_draft first and fix what it reports"}
+        try:
+            json.loads(sources_json)
+        except json.JSONDecodeError as e:
+            return {"error": f"not valid JSON: {e}"}
+        self.saved = sources_json
+        return {"saved": True, "note": "done — stop calling tools and summarise for the user"}
+
+    @staticmethod
+    def _driver_hint(exc: Exception) -> str:
+        """Turn SQLAlchemy's NoSuchModuleError into the pip command that fixes it."""
+        try:
+            import introspect_source as ins
+            for kind, pkg in getattr(ins, "_DIALECT_PKG", {}).items():
+                if kind in str(exc).lower():
+                    return f"{exc} — this source needs: pip install {pkg}"
+        except Exception:  # noqa: BLE001
+            pass
+        return str(exc)
+
+
+def _tokens(messages: List[Dict]) -> int:
+    return int(len(json.dumps(messages, default=str)) / _CPT)
+
+
+def _compact(messages: List[Dict]) -> List[Dict]:
+    """Drop the BODY of the oldest tool results, keeping their identity. Losing
+    early raw schema is survivable; failing at round 15 is not."""
+    for m in messages:
+        if m.get("role") == "tool" and len(m.get("content", "")) > 400:
+            try:
+                d = json.loads(m["content"])
+                names = [t.get("physical_name") or t.get("name") for t in d.get("tables", [])]
+                m["content"] = json.dumps({"compacted": True, "tables": names})
+            except Exception:  # noqa: BLE001
+                m["content"] = json.dumps({"compacted": True})
+            return messages
+    return messages
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--kind", required=True, help="postgres | mysql | mssql | oracle | mongo | odata | salesforce | rest | ...")
+    ap.add_argument("--conn", required=True, help="connection string — never sent to the model")
+    ap.add_argument("--out", default=str(REPO_ROOT / "my-source" / "sources.json"))
+    ap.add_argument("--model", default=DEFAULT_MODEL)
+    ap.add_argument("--rounds", type=int, default=MAX_ROUNDS)
+    ap.add_argument("--org-id", help="org_id for the registry — passed in so the agent never has to ask")
+    ap.add_argument("--dept", help="dept_id for the registry")
+    ap.add_argument("--yes", action="store_true", help="skip the write confirmation (scripted runs)")
+    args = ap.parse_args()
+
+    key = env("LLM_API_KEY")
+    base = env("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+    if not key:
+        print("  LLM_API_KEY not set — run the wizard first.", file=sys.stderr)
+        return 2
+
+    out = Path(args.out)
+    tools = Tools(args.kind, args.conn, out)
+
+    print(f"  model      : {args.model}")
+    print(f"  database   : {args.kind}  (connection string stays local)")
+    print(f"  round cap  : {args.rounds}")
+    print()
+
+    messages: List[Dict[str, Any]] = [
+        {"role": "system", "content": build_system_prompt()},
+        {"role": "user", "content":
+            "Build the sources.json for my database. Start by discovering what is in it, "
+            "then ask me whatever you need about what the tables MEAN.\n"
+            + (f"\nUse org_id={args.org_id!r} and dept_id={args.dept!r} on every source. "
+               "These are already decided — do not ask about them, and never write "
+               "REPLACE_ placeholders."
+               if (args.org_id and args.dept) else
+               "\nAsk me for org_id and dept_id before saving; never write REPLACE_ "
+               "placeholders, they make the catalogue unreachable.")},
+    ]
+
+    total_cost = 0.0
+    blank = 0
+    for rnd in range(1, args.rounds + 1):
+        while _tokens(messages) > MAX_INPUT_TOKENS:
+            before = _tokens(messages)
+            messages = _compact(messages)
+            if _tokens(messages) >= before:
+                break  # nothing left to compact
+            print(f"  [compacted older schema to stay under {MAX_INPUT_TOKENS:,} input tokens]")
+
+        body = {"model": args.model, "messages": messages, "tools": TOOLS,
+                "max_tokens": MAX_OUTPUT_TOKENS}
+        req = urllib.request.Request(f"{base}/chat/completions",
+                                     data=json.dumps(body).encode(),
+                                     headers={"Authorization": f"Bearer {key}",
+                                              "Content-Type": "application/json"})
+        try:
+            resp = json.loads(urllib.request.urlopen(req, timeout=600).read())
+        except urllib.error.HTTPError as e:
+            print(f"  LLM call failed: HTTP {e.code} {e.read().decode()[:300]}", file=sys.stderr)
+            return 1
+        if resp.get("error"):
+            print(f"  LLM error: {resp['error']}", file=sys.stderr)
+            return 1
+
+        usage = resp.get("usage") or {}
+        total_cost += float(usage.get("cost") or 0)
+        msg = resp["choices"][0]["message"]
+        messages.append(msg)
+
+        if msg.get("content"):
+            print(f"  {msg['content'].strip()[:1500]}")
+
+        calls = msg.get("tool_calls") or []
+        if not calls:
+            # The model asked in PROSE instead of calling ask_user. That is not
+            # "finished" — treating it as finished ends a good session two turns
+            # in, which is exactly what happened the first time this ran. Answer
+            # it and keep going; only an actual save (or the round cap) ends the
+            # loop.
+            if tools.saved:
+                break
+            try:
+                reply = input("\n  your answer > ").strip()
+            except EOFError:
+                reply = ""
+            if not reply:
+                blank += 1
+                if blank >= 2:
+                    print("  No further input — stopping.", file=sys.stderr)
+                    break
+                reply = ("Continue. Draft the registry now, call validate_draft, "
+                         "fix anything it reports, then save.")
+            else:
+                blank = 0
+            messages.append({"role": "user", "content": reply})
+            continue
+
+        for call in calls:
+            name = call["function"]["name"]
+            try:
+                a = json.loads(call["function"].get("arguments") or "{}")
+            except json.JSONDecodeError:
+                a = {}
+            fn = getattr(tools, name, None)
+            if fn is None:
+                result: Any = {"error": f"no such tool {name}"}
+            else:
+                print(f"  · {name}({', '.join(f'{k}={str(v)[:40]}' for k, v in a.items() if k != 'sources_json')})")
+                try:
+                    result = fn(**a)
+                except TypeError as e:
+                    result = {"error": f"bad arguments: {e}"}
+            messages.append({"role": "tool", "tool_call_id": call["id"],
+                             "content": json.dumps(result, default=str)[:60000]})
+
+        if tools.saved:
+            break
+    else:
+        print(f"\n  Reached the {args.rounds}-round cap. Saving the best draft so far "
+              f"rather than losing the work.", file=sys.stderr)
+
+    print(f"\n  cost this run: ${total_cost:.4f}")
+
+    if not tools.saved:
+        print("  The agent did not produce a validated registry. Nothing written.", file=sys.stderr)
+        return 1
+
+    # -- the human confirms before anything lands ----------------------------
+    doc = json.loads(tools.saved)
+    srcs = doc if isinstance(doc, list) else (doc.get("sources") or [])
+    print("\n  Proposed registry:")
+    for s in srcs:
+        print(f"    source {s.get('source_id')}  org={s.get('org_id')} dept={s.get('dept_id')}")
+        for d in s.get("datasets") or []:
+            roles = [c.get("artifact_role") for c in (d.get("columns") or []) if c.get("artifact_role")]
+            bits = []
+            if d.get("decision_history"):
+                bits.append("decision history")
+            if d.get("value_semantics"):
+                bits.append("value")
+            if roles:
+                bits.append("artifacts: " + ", ".join(sorted(set(roles))))
+            print(f"      - {d.get('id')}  {'| ' + '; '.join(bits) if bits else ''}")
+
+    if args.yes:
+        ok = True
+    else:
+        try:
+            ok = input(f"\n  Write this to {out}? (y/n) ").strip().lower() in ("y", "yes")
+        except EOFError:
+            ok = False
+    if not ok:
+        print("  Not written.")
+        return 1
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(tools.saved, encoding="utf-8")
+    print(f"  wrote {out}")
+    print(f"  next: python {MCP.name}/validate_sources.py {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

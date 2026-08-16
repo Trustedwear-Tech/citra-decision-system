@@ -1,0 +1,21 @@
+# Normalise to LF in the repository for every text file.
+#
+# This repo is generated from a CRLF working tree. Without this, scripts/*.sh
+# land with CRLF and a Linux or macOS evaluator gets
+# `bad interpreter: /bin/bash^M` on their FIRST run -- which is exactly the
+# 15-minute-install promise breaking on first contact.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.zip binary
+*.tar binary
+*.gz binary

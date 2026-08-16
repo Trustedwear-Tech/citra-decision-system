@@ -1,0 +1,243 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+http:
+  routers:
+    traefik:
+      entryPoints:
+        - web
+      rule: Host(`traefik.citra-ai.com`)
+      service: api@internal
+      middlewares:
+        - dashboard_auth
+        - secure_headers
+
+    # ── citra-workflow carve-out (Phase J split) ────────────────────
+    # Must be evaluated BEFORE the generic citra_ai router, otherwise
+    # /citra-ai/api/workflows/* gets swallowed by Citra-Service and
+    # 404s (workflow router was removed from citra-service in Phase J).
+    citra_workflow:
+      entryPoints:
+        - web
+      rule: Host(`api.citra-ai.com`) && (PathPrefix(`/citra-ai/api/workflows`) || PathPrefix(`/citra-ai/api/admin/workflows`) || PathPrefix(`/citra-ai/api/dept-sources`))
+      priority: 100
+      service: citra_workflow_svc
+      middlewares:
+        - cors_api
+        - secure_headers
+        - rate_limit_user
+        - strip_citra_ai
+        - retry_twice
+        - add_hostname
+
+    citra_ai:
+      entryPoints:
+        - web
+      rule: Host(`api.citra-ai.com`) && PathPrefix(`/citra-ai`)
+      service: citra_ai_svc
+      middlewares:
+        - cors_api
+        - secure_headers
+        - rate_limit_user
+        - strip_citra_ai
+        - retry_twice
+        - add_hostname
+
+    citra_ai_test:
+      entryPoints:
+        - web
+      rule: Host(`testapi.citra-ai.com`) && PathPrefix(`/citra-ai`)
+      service: citra_ai_test_svc
+      middlewares:
+        - cors_api
+        - secure_headers
+        - rate_limit_user
+        - strip_citra_ai
+        - retry_twice
+        - add_hostname
+
+    # ── smart-app-service ────────────────────────────────────────────
+    # UI: CONFIG.urls.smartAppService = https://api.citra-ai.com/smart-apps
+    # Backend mounts routes at root (/apps, /build/, /publish, /health).
+    # Strip /smart-apps before forwarding.
+    smart_app_service:
+      entryPoints:
+        - web
+      rule: Host(`api.citra-ai.com`) && PathPrefix(`/smart-apps`)
+      service: smart_app_service_svc
+      middlewares:
+        - cors_api
+        - secure_headers
+        - rate_limit_user
+        - strip_smart_apps
+        - retry_twice
+        - add_hostname
+
+    # ── action-chat-service ──────────────────────────────────────────
+    # UI: CONFIG.ACTIONCHAT_SERVICE_URL = https://api.citra-ai.com/action-chat
+    # Backend mounts /actionchat (no hyphen) routes. Strip /action-chat.
+    # Uses slow_timeouts transport because SSE streams are long-lived.
+    action_chat_service:
+      entryPoints:
+        - web
+      rule: Host(`api.citra-ai.com`) && PathPrefix(`/action-chat`)
+      service: action_chat_service_svc
+      middlewares:
+        - cors_api
+        - secure_headers
+        - rate_limit_user
+        - strip_action_chat
+        - add_hostname
+  services:
+    citra_ai_svc:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: slow_timeouts
+        servers:
+          - url: "http://citra-ai-prod-1:7001"
+          - url: "http://citra-ai-prod-2:7001"
+          - url: "http://citra-ai-prod-3:7001"
+          - url: "http://citra-ai-prod-4:7001"
+        healthCheck:
+          path: "/health"
+          interval: "1m"
+          timeout: "10s"
+
+    citra_ai_test_svc:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: slow_timeouts
+        servers:
+          - url: "http://citra-ai-test-1:7001"
+          - url: "http://citra-ai-test-2:7001"
+        healthCheck:
+          path: "/health"
+          interval: "1m"
+          timeout: "10s"
+
+    citra_workflow_svc:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: slow_timeouts
+        servers:
+          - url: "http://citra-workflow:9200"
+        healthCheck:
+          path: "/health"
+          interval: "30s"
+          timeout: "5s"
+
+    smart_app_service_svc:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: slow_timeouts
+        servers:
+          - url: "http://smart-app-service-prod:9100"
+        healthCheck:
+          path: "/health"
+          interval: "30s"
+          timeout: "5s"
+
+    action_chat_service_svc:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: slow_timeouts
+        servers:
+          - url: "http://action-chat-service-prod:8090"
+        healthCheck:
+          path: "/health"
+          interval: "30s"
+          timeout: "5s"
+  middlewares:
+    dashboard_auth:
+      basicAuth:
+        users:
+        - "admin:$apr1$s1rrvCxJ$e8hsMD97KSUWh.aBSXdd/."
+
+    add_hostname:
+      headers:
+        customResponseHeaders:
+          X-Server-Hostname: "{{ env `HOSTNAME` }}"
+
+    redirect_to_https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    secure_headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: strict-origin-when-cross-origin
+
+    cors_api:
+      headers:
+        accessControlAllowCredentials: true
+        accessControlAllowHeaders:
+          - "*"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginListRegex:
+          - "^https?://.*$"
+        accessControlExposeHeaders:
+          - Content-Length
+          - Content-Type
+          - Authorization
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+
+    rate_limit_user:
+      rateLimit:
+        average: 50
+        burst: 100
+
+    retry_twice:
+      retry:
+        attempts: 2
+        initialInterval: 200ms
+
+    strip_citra_ai:
+      stripPrefix:
+        prefixes:
+          - "/citra-ai"
+
+    strip_smart_apps:
+      stripPrefix:
+        prefixes:
+          - "/smart-apps"
+
+    strip_action_chat:
+      stripPrefix:
+        prefixes:
+          - "/action-chat"
+
+  serversTransports:
+    fast_timeouts:
+      forwardingTimeouts:
+        dialTimeout: "500ms"
+        responseHeaderTimeout: "2s"
+        idleConnTimeout: "90s"
+      maxIdleConnsPerHost: 200
+
+    slow_timeouts:
+      forwardingTimeouts:
+        # how long to wait to establish TCP connection to backend
+        dialTimeout: "10s"
+        # how long to wait for the first response headers (covers SSE streams)
+        responseHeaderTimeout: "1800s"   # 30 minutes
+        # how long to keep idle (keep-alive) connections
+        idleConnTimeout: "600s"
+      maxIdleConnsPerHost: 200

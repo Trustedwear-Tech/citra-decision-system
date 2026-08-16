@@ -1,0 +1,177 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+http:
+  routers:
+    ping:
+      entryPoints:
+        - web
+      rule: "Path(`/ping`) || PathPrefix(`/ping`)"
+      service: ping@internal
+      priority: 1000
+
+    traefik:
+      entryPoints:
+        - traefik
+      rule: Host(`traefik.citra-ai.com`)
+      service: api@internal
+      middlewares:
+        - dashboard_auth
+        - secure_headers
+
+    vault:
+      entryPoints:
+        - web
+      rule: "Host(`vault.internal`)"
+      service: vault
+
+    redis:
+      entryPoints:
+        - web
+      rule: "Host(`redis.internal`)"
+      service: redis
+
+    citra_ai_user_service:
+      entryPoints:
+        - web
+      rule: Host(`api.citra-ai.com`) && PathPrefix(`/user-service`)
+      service: citra_ai_user_service_svc
+      middlewares:
+        - cors_api
+        - secure_headers
+        - rate_limit_user
+        - strip_user_service
+        - retry_twice
+        - add_hostname
+
+    citra_ai_user_service_test:
+      entryPoints:
+        - web
+      rule: Host(`testapi.citra-ai.com`) && PathPrefix(`/user-service`)
+      service: citra_ai_user_service_test_svc
+      middlewares:
+        - cors_api
+        - secure_headers
+        - rate_limit_user
+        - strip_user_service
+        - retry_twice
+        - add_hostname
+
+  services:
+    vault:
+      loadBalancer:
+        servers:
+          - url: "http://vault:8200"
+
+    redis:
+      loadBalancer:
+        servers:
+          - url: "http://redis:6379"
+
+    citra_ai_user_service_svc:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://citra-ai-user-service-prod-1:7004"
+        healthCheck:
+          path: "/health"
+          interval: "1m"
+          timeout: "10s"
+
+    citra_ai_user_service_test_svc:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://citra-ai-user-service-test-1:7004"
+        healthCheck:
+          path: "/health"
+          interval: "1m"
+          timeout: "10s"
+
+  middlewares:
+    dashboard_auth:
+      basicAuth:
+        users:
+        - "admin:$apr1$s1rrvCxJ$e8hsMD97KSUWh.aBSXdd/."
+
+    add_hostname:
+      headers:
+        customResponseHeaders:
+          X-Server-Hostname: "{{ env `HOSTNAME` }}"
+
+    redirect_to_https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    secure_headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: strict-origin-when-cross-origin
+
+    cors_api:
+      headers:
+        accessControlAllowCredentials: true
+        accessControlAllowHeaders:
+          - "*"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginListRegex:
+          - "^https?://.*$"
+        accessControlExposeHeaders:
+          - Content-Length
+          - Content-Type
+          - Authorization
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+
+    rate_limit_user:
+      rateLimit:
+        average: 50
+        burst: 100
+
+    retry_twice:
+      retry:
+        attempts: 2
+        initialInterval: 200ms
+
+    strip_user_service:
+      stripPrefix:
+        prefixes:
+          - "/user-service"
+
+    websocket_headers:
+      headers:
+        customRequestHeaders:
+          Connection: "Upgrade"
+          Upgrade: "websocket"
+
+  serversTransports:
+    fast_timeouts:
+      forwardingTimeouts:
+        dialTimeout: "500ms"
+        responseHeaderTimeout: "2s"
+        idleConnTimeout: "90s"
+      maxIdleConnsPerHost: 200
+
+    slow_timeouts:
+      forwardingTimeouts:
+        dialTimeout: "10s"
+        responseHeaderTimeout: "1800s"
+        idleConnTimeout: "600s"
+      maxIdleConnsPerHost: 200

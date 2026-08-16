@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Settings - Citra AI</title>
+    <meta name="description" content="Manage your cookie preferences for Citra AI">
+    <link rel="canonical" href="https://citra-ai.com/cookie-settings">
+    <meta property="og:url" content="https://citra-ai.com/cookie-settings">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #ffffff;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: rgba(26, 31, 46, 0.95);
+            border-bottom: 1px solid rgba(79, 70, 229, 0.2);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4f46e5;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #6366f1;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 60px 0 40px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #9ca3af;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Cookie preference cards */
+        .preferences-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 40px auto 0;
+        }
+
+        .preference-card {
+            background-color: #1a1f2e;
+            border-radius: 16px;
+            padding: 24px 28px;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .preference-info {
+            flex: 1;
+        }
+
+        .preference-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-required {
+            background-color: rgba(79, 70, 229, 0.25);
+            color: #a5b4fc;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .preference-desc {
+            font-size: 14px;
+            color: #9ca3af;
+            line-height: 1.55;
+        }
+
+        /* Toggle switch */
+        .toggle-wrapper {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #374151;
+            border-radius: 28px;
+            transition: background-color 0.3s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        input:checked+.slider {
+            background-color: #4f46e5;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(24px);
+        }
+
+        input:disabled+.slider {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Action section */
+        .actions-section {
+            background-color: #1a1f2e;
+            border-radius: 16px;
+            padding: 28px;
+            margin: 20px auto 60px;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            text-align: center;
+        }
+
+        .actions-section p {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .actions-section p a {
+            color: #4f46e5;
+            text-decoration: underline;
+        }
+
+        .buttons-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #4f46e5;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: #6366f1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: #4f46e5;
+            border: 1.5px solid #4f46e5;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-danger {
+            background-color: transparent;
+            color: #d1d5db;
+            border: 1.5px solid #374151;
+        }
+
+        .btn-danger:hover {
+            border-color: #6b7280;
+            color: #ffffff;
+        }
+
+        /* Toast */
+        #toast {
+            visibility: hidden;
+            background-color: #1a1f2e;
+            border: 1px solid rgba(79, 70, 229, 0.4);
+            color: #e5e7eb;
+            border-radius: 10px;
+            padding: 14px 24px;
+            position: fixed;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            font-size: 14px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transition: opacity 0.3s;
+            opacity: 0;
+            white-space: nowrap;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1f2e;
+            border-top: 1px solid rgba(79, 70, 229, 0.2);
+            padding: 32px 0;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .footer-text {
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .footer-link:hover {
+            color: #6366f1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .preference-card {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .toggle-wrapper {
+                align-self: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+                    </svg>
+                    Citra AI
+                </a>
+                <a href="/" class="back-button">Back to Home</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Cookie Settings ⚙️</h1>
+            <p>Manage your cookie preferences below. Strictly necessary cookies cannot be disabled as they are required
+                for the service to work.</p>
+        </div>
+
+        <div class="preferences-wrapper">
+
+            <!-- Strictly Necessary -->
+            <div class="preference-card">
+                <div class="preference-info">
+                    <div class="preference-title">
+                        🔒 Strictly Necessary Cookies
+                        <span class="badge-required">Always Active</span>
+                    </div>
+                    <p class="preference-desc">
+                        These cookies are essential for you to browse our website and use its features — including
+                        authentication, session management, and storing your consent preferences. They cannot be
+                        disabled.
+                    </p>
+                </div>
+                <div class="toggle-wrapper">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-necessary" checked disabled>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Performance / Analytics -->
+            <div class="preference-card">
+                <div class="preference-info">
+                    <div class="preference-title">📊 Performance &amp; Analytics Cookies</div>
+                    <p class="preference-desc">
+                        These cookies help us understand how visitors interact with our service by collecting anonymised
+                        usage information (e.g., page views, session duration). We use Mixpanel and Sentry for analytics
+                        and error monitoring.
+                    </p>
+                </div>
+                <div class="toggle-wrapper">
+                    <span class="toggle-label" id="label-analytics">Off</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-analytics">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Functionality -->
+            <div class="preference-card">
+                <div class="preference-info">
+                    <div class="preference-title">⚡ Functionality Cookies</div>
+                    <p class="preference-desc">
+                        These cookies remember your choices and personalise your experience — such as theme preferences,
+                        language settings, panel states, and upload preferences — so you don't have to reconfigure them
+                        each visit.
+                    </p>
+                </div>
+                <div class="toggle-wrapper">
+                    <span class="toggle-label" id="label-functionality">Off</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-functionality">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Targeting -->
+            <div class="preference-card">
+                <div class="preference-info">
+                    <div class="preference-title">🎯 Targeting &amp; Advertising Cookies</div>
+                    <p class="preference-desc">
+                        These cookies may be used to deliver content more relevant to you and your interests, as well as
+                        to measure the effectiveness of our marketing campaigns. We do not sell your data to
+                        advertisers.
+                    </p>
+                </div>
+                <div class="toggle-wrapper">
+                    <span class="toggle-label" id="label-targeting">Off</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-targeting">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Actions -->
+        <div class="actions-section">
+            <p>
+                Your preferences will be saved in your browser. For more information, read our
+                <a href="/cookie-notice">Cookie Notice</a> or <a href="/privacy-policy">Privacy Policy</a>.
+            </p>
+            <div class="buttons-row">
+                <button class="btn btn-danger" onclick="rejectAll()">Reject All Optional</button>
+                <button class="btn btn-outline" onclick="acceptAll()">Accept All</button>
+                <button class="btn btn-primary" onclick="savePreferences()">Save My Preferences</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p class="footer-text">© 2026 Citra AI. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="/privacy-policy" class="footer-link">Privacy Policy</a>
+                <a href="/terms-of-service" class="footer-link">Terms of Service</a>
+                <a href="/cookie-notice" class="footer-link">Cookie Notice</a>
+                <a href="/cookie-settings" class="footer-link">Cookie Settings</a>
+                <a href="/contactus" class="footer-link">Contact Us</a>
+            </div>
+        </div>
+    </footer>
+
+    <div id="toast">✅ Your cookie preferences have been saved.</div>
+
+    <script>
+        const CONSENT_KEY = '@citra_cookie_consent';
+        const PREFS_KEY = '@citra_cookie_prefs';
+
+        const toggleAnalytics = document.getElementById('toggle-analytics');
+        const toggleFunctionality = document.getElementById('toggle-functionality');
+        const toggleTargeting = document.getElementById('toggle-targeting');
+
+        const labelAnalytics = document.getElementById('label-analytics');
+        const labelFunctionality = document.getElementById('label-functionality');
+        const labelTargeting = document.getElementById('label-targeting');
+
+        function updateLabel(toggle, label) {
+            label.textContent = toggle.checked ? 'On' : 'Off';
+            label.style.color = toggle.checked ? '#a5b4fc' : '#6b7280';
+        }
+
+        [
+            [toggleAnalytics, labelAnalytics],
+            [toggleFunctionality, labelFunctionality],
+            [toggleTargeting, labelTargeting],
+        ].forEach(([toggle, label]) => {
+            toggle.addEventListener('change', () => updateLabel(toggle, label));
+        });
+
+        // Load saved preferences
+        function loadPreferences() {
+            try {
+                const saved = localStorage.getItem(PREFS_KEY);
+                if (saved) {
+                    const prefs = JSON.parse(saved);
+                    toggleAnalytics.checked = !!prefs.analytics;
+                    toggleFunctionality.checked = !!prefs.functionality;
+                    toggleTargeting.checked = !!prefs.targeting;
+                } else {
+                    // Check legacy consent key
+                    const consent = localStorage.getItem(CONSENT_KEY);
+                    if (consent === 'accepted') {
+                        toggleAnalytics.checked = true;
+                        toggleFunctionality.checked = true;
+                        toggleTargeting.checked = true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load cookie preferences:', e);
+            }
+
+            updateLabel(toggleAnalytics, labelAnalytics);
+            updateLabel(toggleFunctionality, labelFunctionality);
+            updateLabel(toggleTargeting, labelTargeting);
+        }
+
+        function savePreferences() {
+            const prefs = {
+                necessary: true,
+                analytics: toggleAnalytics.checked,
+                functionality: toggleFunctionality.checked,
+                targeting: toggleTargeting.checked,
+                savedAt: new Date().toISOString(),
+            };
+
+            try {
+                localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+                // Also update the legacy consent key so the popup stays dismissed
+                const anyOptional = prefs.analytics || prefs.functionality || prefs.targeting;
+                localStorage.setItem(CONSENT_KEY, anyOptional ? 'accepted' : 'rejected');
+            } catch (e) {
+                console.warn('Could not save cookie preferences:', e);
+            }
+
+            showToast('✅ Your cookie preferences have been saved.');
+        }
+
+        function acceptAll() {
+            toggleAnalytics.checked = true;
+            toggleFunctionality.checked = true;
+            toggleTargeting.checked = true;
+            updateLabel(toggleAnalytics, labelAnalytics);
+            updateLabel(toggleFunctionality, labelFunctionality);
+            updateLabel(toggleTargeting, labelTargeting);
+            savePreferences();
+        }
+
+        function rejectAll() {
+            toggleAnalytics.checked = false;
+            toggleFunctionality.checked = false;
+            toggleTargeting.checked = false;
+            updateLabel(toggleAnalytics, labelAnalytics);
+            updateLabel(toggleFunctionality, labelFunctionality);
+            updateLabel(toggleTargeting, labelTargeting);
+            savePreferences();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        loadPreferences();
+    </script>
+</body>
+
+</html>

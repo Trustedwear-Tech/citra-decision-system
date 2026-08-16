@@ -1,0 +1,99 @@
+# docker-compose.yml for citra-app-runtime (Next.js multi-tenant runtime, port 3100)
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/citra-app-runtime:${IMAGE_TAG}
+#
+# Config: prod/test boot via vault-bootstrap.js (the image CMD), which logs in
+# with the service AppRole and overlays the KV v2 secret bag onto the
+# environment before starting Next.js — same AppRole pattern as the Python
+# services (project-vault-approle-rollout).
+#   * Bootstrap pointers (VAULT_ADDR, VAULT_ROLE_ID, VAULT_SECRET_PATH) and
+#     pure non-secret runtime flags are inlined under `environment:` below.
+#   * VAULT_SECRET_ID is loaded via env_file from .vault_secret (mode 0600 on
+#     the box, NOT committed).
+#   * All secrets and service URLs (JWT_SECRET, SMART_APP_SERVICE_URL,
+#     SENTRY_DSN, OTEL_EXPORTER_OTLP_ENDPOINT, ...) come FROM Vault at the path
+#     below — they are never inlined in compose.
+# For local dev, override with the top-level docker-compose.local.yml that adds
+# `build: .` and `env_file: .env`.
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/citra-app-runtime:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  ports:
+    - 3100
+  networks:
+    - citra-ai-net
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+  healthcheck:
+    # node:alpine ships wget. Hit the homepage — 200 OK confirms Next.js is
+    # serving. (Avoid /health: no such route in this Next app.)
+    # Use 127.0.0.1, NOT localhost: busybox wget on alpine resolves
+    # `localhost` to IPv6 [::1] first, and Next.js standalone binds IPv4 only.
+    test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/ >/dev/null || exit 1"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+
+services:
+  citra-app-runtime-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: citra-app-runtime-prod
+    # .vault_secret holds VAULT_SECRET_ID only (mode 0600, NOT committed).
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      NODE_ENV: "production"
+      # Next.js standalone binds to $HOSTNAME — Docker sets it to the container
+      # ID by default, so the server listens on eth0 only and `wget
+      # localhost:3100` inside the container gets Connection refused (breaks
+      # the healthcheck). Force all-interfaces here.
+      HOSTNAME: "0.0.0.0"
+      PORT: "3100"
+      LOG_LEVEL: "INFO"
+      OTEL_SERVICE_NAME: "citra-app-runtime"
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=prod"
+      OTEL_EXCLUDED_URLS: "/health,/metrics"
+      # Vault bootstrap pointers (non-secret). JWT_SECRET, JWT_ISSUER,
+      # SMART_APP_SERVICE_URL, SENTRY_DSN and OTEL_EXPORTER_OTLP_ENDPOINT all
+      # come from this Vault path at boot via vault-bootstrap.js.
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "${CITRA_APP_RUNTIME_VAULT_ROLE_ID:-}"
+      VAULT_SECRET_PATH: "prod/citra-app-runtime"
+
+  citra-app-runtime-test:
+    <<: *common
+    profiles: [test]
+    container_name: citra-app-runtime-test
+    # .vault_secret holds VAULT_SECRET_ID only (mode 0600, NOT committed).
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      NODE_ENV: "production"
+      # Next.js standalone binds to $HOSTNAME — Docker sets it to the container
+      # ID by default, so the server listens on eth0 only and `wget
+      # localhost:3100` inside the container gets Connection refused (breaks
+      # the healthcheck). Force all-interfaces here.
+      HOSTNAME: "0.0.0.0"
+      PORT: "3100"
+      LOG_LEVEL: "INFO"
+      OTEL_SERVICE_NAME: "citra-app-runtime"
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=test"
+      OTEL_EXCLUDED_URLS: "/health,/metrics"
+      # Vault bootstrap pointers (non-secret). All secrets + service URLs come
+      # from the test Vault path at boot via vault-bootstrap.js.
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "${CITRA_APP_RUNTIME_VAULT_ROLE_ID:-}"
+      VAULT_SECRET_PATH: "test/citra-app-runtime"
+
+networks:
+  citra-ai-net:
+    external: true
+    name: citra-ai-net

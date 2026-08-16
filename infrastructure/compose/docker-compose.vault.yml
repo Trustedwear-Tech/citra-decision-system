@@ -1,0 +1,49 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — Vault Module (secrets management, dev mode)
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: citra-vault
+    restart: unless-stopped
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-dev-root-token}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    networks:
+      - citra-network
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/file
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+      test: ["CMD", "vault", "status"]
+    logging: *default-logging
+
+volumes:
+  vault_data:
+    driver: local
+
+networks:
+  citra-network:
+    external: true

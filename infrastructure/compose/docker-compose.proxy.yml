@@ -1,0 +1,54 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — Reverse Proxy / Load Balancer Module (Traefik)
+# =============================================================================
+# Routes all traffic through a single ingress. Terminates TLS.
+# Load balances across service instances on each box.
+# =============================================================================
+
+services:
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    restart: unless-stopped
+    environment:
+      - HOSTNAME=${HOSTNAME}
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8082:8080"
+    networks:
+      - citra-network
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ../traefik/dynamic:/etc/traefik/dynamic:ro
+      - ../traefik/acme.json:/letsencrypt/acme.json
+      - ../logs/traefik:/logs
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+      test: ["CMD", "traefik", "healthcheck"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  citra-network:
+    external: true

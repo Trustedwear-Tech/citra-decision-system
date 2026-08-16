@@ -1,0 +1,135 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml for action-sandbox-host (per-VM scheduler)
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/action-sandbox-host:${IMAGE_TAG}
+# Citra-Service (stateless, any replica) sends HTTP requests here to
+# spawn/stop/upload sandboxes.
+#
+# IMPORTANT on each VM:
+#   1. Bootstrap the two egress networks before starting this:
+#         docker network create citra-action-egress
+#         docker network create citra-action-approved-egress
+#      (or use infrastructure/action-sandbox/docker-compose.action.yml)
+#   2. DOCKER_GID must match the host's docker group GID. Look it up with
+#         getent group docker
+#      and set in /home/ubuntu/citra-ai/services/action-sandbox-host/.env
+#      (just `DOCKER_GID=999` or whatever).
+#   3. Vault path prod/action-sandbox-host should contain SANDBOX_HOST_SECRET
+#      (matches CITRA_ACTION_SANDBOX_HOST_SECRET on the Citra-Service side).
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/action-sandbox-host:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  # Sandboxed containers spawned by us use publish=random in 31000-31999.
+  # Citra-Service VMs dial into {public_host}:{port}.
+  network_mode: host
+  # Need Docker API access; non-root inside container, group added below.
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:rw
+    - ~/citra-ai/logs/action-sandbox-host:/app/logs
+  # GID must match the host's docker group; set DOCKER_GID in .env next
+  # to this file.
+  group_add:
+    - "${DOCKER_GID:-988}"
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+  healthcheck:
+    # python:slim has no curl - use urllib one-liner (always shipped with python)
+    test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:7090/health',timeout=3).status==200 else 1)\""]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 10s
+
+services:
+  action-sandbox-host-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: action-sandbox-host-prod
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "37eed6c5-b16a-3b01-3831-30610c74cf02"
+      VAULT_SECRET_PATH: "prod/action-sandbox-host"
+      # Non-secret runtime knobs. SANDBOX_HOST_SECRET comes from Vault.
+      # SANDBOX_HOST_LISTEN_PORT: "7090"
+      # SANDBOX_HOST_PUBLIC_HOST: ${SANDBOX_HOST_PUBLIC_HOST:-sandbox-host-1}
+      # The action-chat overlay (persona + skills), NOT the bare base -
+      # the base ships an empty workspace-seed/. Built by deploy.yml's
+      # build-services matrix; symmetric to citra-app-builder.
+      # SANDBOX_HOST_IMAGE: ${SANDBOX_HOST_IMAGE:-ghcr.io/trustedwear-tech/citra-ai/citra-action-chat-sandbox:prod-latest}
+      # SANDBOX_HOST_BUILDER_IMAGE: ${SANDBOX_HOST_BUILDER_IMAGE:-ghcr.io/trustedwear-tech/citra-ai/citra-app-builder:prod-latest}
+      # SANDBOX_HOST_SANDBOX_NETWORK: ${SANDBOX_HOST_SANDBOX_NETWORK:-citra-action-egress}
+      # SANDBOX_HOST_APPROVED_EGRESS_NETWORK: ${SANDBOX_HOST_APPROVED_EGRESS_NETWORK:-citra-action-approved-egress}
+      # -- Resource caps - PRIMARY DEFAULT = Quick tier (2 GB / 2 cores) --
+      #
+      # Two-tier model since the tier patch:
+      #
+      #   1. Per-spawn resources come from action-sandbox-host/tiers.py
+      #      CATALOG (quick/standard/heavy). EVERY spawn looks the tier
+      #      up at request time and applies its mem_limit / cpu_quota /
+      #      tmpfs / DUCKDB_* - none of the env vars below are read on
+      #      a tier-aware spawn.
+      #
+      #   2. These values are the LEGACY FALLBACK for an untiered
+      #      ``profile="sandbox"`` spawn from an older Citra-Service
+      #      replica (and for ``cfg.duckdb_temp_directory`` which is a
+      #      path shared across tiers). They MUST track the Quick tier
+      #      so legacy callers don't accidentally get a larger box than
+      #      they asked for.
+      #
+      # To override per-VM (e.g. a heavier "analytics-tier" host that
+      # wants larger Quick spawns), set the matching env in /home/ubuntu/
+      # citra-ai/services/action-sandbox-host/.env.
+      # SANDBOX_HOST_CPU_QUOTA: ${SANDBOX_HOST_CPU_QUOTA:-200000}        # 2 cores @ 100ms
+      # SANDBOX_HOST_MEM_LIMIT: ${SANDBOX_HOST_MEM_LIMIT:-2g}
+      # SANDBOX_HOST_PIDS_LIMIT: ${SANDBOX_HOST_PIDS_LIMIT:-256}
+      # SANDBOX_HOST_TMPFS_WORKSPACE: ${SANDBOX_HOST_TMPFS_WORKSPACE:-512m}
+      # SANDBOX_HOST_TMPFS_HOME: ${SANDBOX_HOST_TMPFS_HOME:-512m}
+      # DuckDB temp directory - shared across tiers (per-tier sizes come
+      # from tiers.py). Path-only knob; sizes are NOT set here anymore.
+      # SANDBOX_HOST_DUCKDB_TEMP_DIRECTORY: ${SANDBOX_HOST_DUCKDB_TEMP_DIRECTORY:-/workspace/.duckdb-temp}
+      # RAM reserved for the host OS + this scheduler + any co-located
+      # services. Bump if you run Mongo / Redis / nginx on the same VM.
+      # SANDBOX_HOST_RESERVED_RAM_GB: ${SANDBOX_HOST_RESERVED_RAM_GB:-4}
+      # SANDBOX_HOST_PORT_MIN: ${SANDBOX_HOST_PORT_MIN:-31000}
+      # SANDBOX_HOST_PORT_MAX: ${SANDBOX_HOST_PORT_MAX:-31999}
+      # SANDBOX_HOST_STARTUP_TIMEOUT: ${SANDBOX_HOST_STARTUP_TIMEOUT:-45}
+      # Concurrency cap. The scheduler now does per-spawn RAM fit checks
+      # against /capacity's free_ram_bytes, so this is just a safety
+      # ceiling (e.g. for runaway request loops). On a typical 64 GB box
+      # with 4 GB reserved + Quick (2 GB) sandboxes you can host ~30
+      # concurrent before RAM runs out; 20 is a comfortable cap.
+      # SANDBOX_HOST_MAX_CONCURRENT: ${SANDBOX_HOST_MAX_CONCURRENT:-20}
+
+  action-sandbox-host-test:
+    <<: *common
+    profiles: [test]
+    container_name: action-sandbox-host-test
+    environment:
+      TZ: "America/New_York"
+      ENVIRONMENT: "test"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: "test/action-sandbox-host"
+      # SANDBOX_HOST_LISTEN_PORT: "7091"
+      # SANDBOX_HOST_PUBLIC_HOST: ${SANDBOX_HOST_PUBLIC_HOST:-sandbox-host-1}
+      # The action-chat overlay (persona + skills), NOT the bare base -
+      # the base ships an empty workspace-seed/. Built by deploy.yml's
+      # build-services matrix; symmetric to citra-app-builder.
+      # SANDBOX_HOST_IMAGE: ${SANDBOX_HOST_IMAGE:-ghcr.io/trustedwear-tech/citra-ai/citra-action-chat-sandbox:prod-latest}
+      # SANDBOX_HOST_BUILDER_IMAGE: ${SANDBOX_HOST_BUILDER_IMAGE:-ghcr.io/trustedwear-tech/citra-ai/citra-app-builder:prod-latest}
+      # SANDBOX_HOST_PORT_MIN: ${SANDBOX_HOST_PORT_MIN:-32000}
+      # SANDBOX_HOST_PORT_MAX: ${SANDBOX_HOST_PORT_MAX:-32999}

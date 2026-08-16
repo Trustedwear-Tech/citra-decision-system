@@ -1,0 +1,77 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — MinIO Module (application file storage, S3-compatible)
+# =============================================================================
+#   BUCKET_ACCESS_KEY=... BUCKET_SECRET_KEY=... \
+#     docker compose -f docker-compose.minio.yml up -d
+#
+# Services on citra-network reach it at http://minio:9000 — the container port
+# is unchanged. Only the HOST publish moves; see PORTS below.
+#
+# -----------------------------------------------------------------------------
+# PORTS — do not publish this on host 9000.
+#
+# MinIO's default API port is 9000, and that is discovery-service's port
+# (discovery-service/.env sets PORT=9000, with ~28 DISCOVERY_URL references
+# pointing at it). Publishing MinIO there silently hijacks discovery: dept MCPs
+# POST their tool registrations into MinIO and every one fails with
+#   400 Bad Request for http://host.docker.internal:9000/tools/register
+# which reads like an auth bug, not a port clash. So the host publish defaults
+# to 9002 (API) / 9003 (console).
+#
+# CLIENTS MUST USE PATH-STYLE ADDRESSING. boto3's virtual-hosted style builds
+# "<bucket>.<host>", which does not resolve for MinIO. Every client in this repo
+# selects path style whenever BUCKET_ENDPOINT_URL is set — see
+# Citra-Service/bucket.py and source-mcp-template/main.py.
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  minio:
+    image: minio/minio:RELEASE.2024-09-22T00-33-43Z
+    container_name: citra-minio
+    restart: unless-stopped
+    environment:
+      # No defaults. minioadmin/minioadmin on a public-IP host is an open
+      # object store; make the operator supply credentials.
+      MINIO_ROOT_USER: ${BUCKET_ACCESS_KEY:?BUCKET_ACCESS_KEY must be set}
+      MINIO_ROOT_PASSWORD: ${BUCKET_SECRET_KEY:?BUCKET_SECRET_KEY must be set}
+    command: minio server /data --console-address ":9001"
+    ports:
+      # host:container — the container keeps 9000/9001 so in-network clients
+      # use the conventional http://minio:9000.
+      - "${MINIO_API_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
+    networks:
+      - citra-network
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      # MinIO's own readiness probe. Does not depend on curl being present,
+      # which is not guaranteed across image tags.
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    logging: *default-logging
+
+volumes:
+  minio_data:
+    driver: local
+
+networks:
+  citra-network:
+    external: true

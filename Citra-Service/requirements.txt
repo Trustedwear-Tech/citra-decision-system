@@ -1,0 +1,140 @@
+# ===================================
+# Core Web Framework
+# ===================================
+gunicorn
+uvicorn[standard]
+prometheus-client>=0.20.0
+sentry-sdk[fastapi]>=2.14.0
+watchfiles
+fastapi
+python-multipart
+werkzeug
+
+# ===================================
+# AI & ML Dependencies
+# ===================================
+openai
+xai-sdk>=1.4.0          # Used only by citra_internet_service.py (internet search)
+# google-genai — REMOVED (air-gap migration to gpt-oss-120b)
+# google-generativeai — REMOVED (air-gap migration to gpt-oss-120b)
+runware
+tiktoken
+sentencepiece
+tokenizers>=0.13.0
+
+# ===================================
+# Vector Database & Search
+# ===================================
+pymilvus==2.6.10
+pymilvus-model>=0.3.0
+scikit-learn>=1.3.0
+duckduckgo-search>=4.0.0
+
+# ===================================
+# LlamaIndex Framework
+# ===================================
+llama-index>=0.14.2
+llama-index-vector-stores-milvus>=0.3.0
+llama-index-embeddings-openai>=0.3.0
+llama-index-llms-openai>=0.3.0
+llama-index-llms-gemini>=0.3.0
+
+# ===================================
+# Agentic RAG System
+# ===================================
+langgraph>=0.2.0
+pydantic>=2.5.0
+email-validator>=2.0.0
+
+# ===================================
+# Database & Cache
+# ===================================
+pymongo[snappy,zstd]
+motor
+redis>=4.5.0
+aioredis>=2.0.0
+pyodbc
+
+# ===================================
+# Live Data Module (Database Connectors)
+# ===================================
+asyncpg>=0.29.0
+pymysql>=1.1.0
+sqlparse>=0.5.0
+cryptography>=49.0.0
+
+# ===================================
+# Azure Services
+# ===================================
+azure-storage-blob
+boto3>=1.28.0
+botocore>=1.31.0
+
+# ===================================
+# Document Processing
+# ===================================
+PyPDF2
+PyMuPDF==1.23.8
+pdf2image
+python-docx>=1.1.0
+python-pptx>=0.6.21
+Pillow
+markdown==3.5.1
+beautifulsoup4>=4.12.3
+lxml>=6.1.0
+
+# ===================================
+# Excel File Support & Analytics
+# ===================================
+pandas>=1.5.0
+openpyxl>=3.0.9
+xlrd>=2.0.1
+tabulate>=0.9.0
+duckdb>=1.0.0
+
+# ===================================
+# Video Processing
+# ===================================
+moviepy==1.0.3
+
+# ===================================
+# Utilities
+# ===================================
+requests
+httpx
+aiohttp>=3.9.0
+certifi  # SSL/TLS certificates for MongoDB Atlas (Windows compatibility)
+paramiko  # SFTP/SSH client for SFTPSourceNode
+numpy
+pytz
+dateparser
+python-dateutil
+python-dotenv
+PyJWT
+tenacity
+slowapi>=0.1.9
+
+# ===================================
+# Scheduled Tasks
+# ===================================
+apscheduler>=3.10.0,<4.0.0
+
+# ===================================
+# Docker Support
+# ===================================
+
+docker
+
+# Shared service utils (tracing, circuit breaker, request-id propagation).
+-e ../citra-common/citra-service-utils
+
+# Shared platform libs (replace the old in-tree auth_middleware.py,
+# mongodb_manager.py, services/worker_queue.py). Citra-Service used to
+# also depend on -e ../citra-workflow; that's GONE as part of the
+# Phase J split — citra-workflow now runs as its own service, reached
+# over HTTP via WORKFLOW_SERVICE_URL.
+-e ../citra-common/citra-queue
+-e ../citra-common/citra-auth
+-e ../citra-common/citra-mongo
+-e ../citra-common/citra-cache
+-e ../citra-common/citra-llm

@@ -1,0 +1,96 @@
+{
+  "$schema": "../schema/sources.schema.json",
+  "sources": [
+    {
+      "source_id": "recovery",
+      "type": "structured",
+      "dept_id": "REPLACE_dept_id",
+      "org_id": "REPLACE_org_id",
+      "name": "Revenue Recovery — Disconnection disputes / Billing ledger",
+      "description": "DISCOM arrears recovery: disconnection-avoidance disputes with submitted payment proofs, plus the billing payments ledger that verifies them. TEMPLATE — replace connection details, table/column names and REPLACE_* ids, keep the fraud annotations.",
+      "tags": ["recovery", "arrears", "disconnection", "billing"],
+      "domain": {
+        "vertical": "utility",
+        "sub_vertical": "power_recovery",
+        "country": "IN",
+        "notes": "Starter template — power utility arrears recovery, India"
+      },
+      "organization": {
+        "name": "REPLACE_company_full_name",
+        "short_name": "REPLACE_company_short_name"
+      },
+      "connection": { "type": "postgres", "env_prefix": "RECOVERY_SQL" },
+      "datasets": [
+        {
+          "id": "recovery.disputes",
+          "physical_name": "recovery_disputes",
+          "name": "Disconnection disputes",
+          "description": "Consumers disputing disconnection with an 'already paid' claim. The submitted receipt is verified against recovery.payments; the same identifiers clearing multiple cases is the 'new tenant' entity signal.",
+          "columns": [
+            { "name": "dispute_id", "type": "text", "is_primary_key": true },
+            { "name": "consumer_id", "type": "text", "description": "Consumer number — the cross-case linkable key" },
+            { "name": "premise_id", "type": "text", "description": "Premise — ownership-shuffle-to-evade-dues links on this" },
+            { "name": "contact_phone", "type": "text", "pii": true },
+            { "name": "claimed_amount", "type": "numeric" },
+            { "name": "claimed_payment_date", "type": "date" },
+            { "name": "receipt_url", "type": "text", "column_kind": "document_url", "artifact_role": "payment_proof", "description": "Submitted payment proof — pinned: ONLY this document feeds the ledger check" },
+            { "name": "id_proof_url", "type": "text", "column_kind": "document_url", "artifact_role": "identity", "description": "Consumer's ID proof ('new tenant' claims). ROLE identity = resubmission by the same person is VERIFICATION, never a duplicate flag — but the same ID clearing OTHER premises still links via identity_fields." },
+            { "name": "status", "type": "text" }
+          ],
+          "value_semantics": {
+            "value_kind": "recovered",
+            "exposure_field": "claimed_amount",
+            "realization": {
+              "dataset": "recovery.payments",
+              "match_field": "consumer_id",
+              "amount_field": "amount",
+              "date_field": "payment_date",
+              "window_days": 90
+            },
+            "attribution": "approved_recommendation"
+          },
+          "fraud_screening": {
+            "applies": true,
+            "identity_fields": ["consumer_id", "premise_id", "contact_phone"],
+            "payment_proof": {
+              "ledger_dataset": "recovery.payments",
+              "match_field": "receipt_no",
+              "amount_field": "amount",
+              "date_field": "payment_date",
+              "party_field": "consumer_id",
+              "doc_ref_field": "receipt_no",
+              "doc_amount_field": "amount",
+              "doc_date_field": "payment_date",
+              "doc_party_field": "consumer_id"
+            }
+          }
+        },
+        {
+          "id": "recovery.payments",
+          "physical_name": "payments",
+          "name": "Billing payments ledger",
+          "description": "Posted consumer payments, receipt-keyed — the system of record every disconnection-dispute payment proof verifies against.",
+          "columns": [
+            { "name": "receipt_no", "type": "text", "is_primary_key": true },
+            { "name": "consumer_id", "type": "text" },
+            { "name": "amount", "type": "numeric" },
+            { "name": "payment_date", "type": "date" },
+            { "name": "collection_mode", "type": "text", "description": "counter / online / field-agent cash — field-agent rows with no ledger match are the agent-side fraud tell" }
+          ]
+        },
+        {
+          "id": "recovery.tariff_master",
+          "physical_name": "tariff_master",
+          "name": "Tariff master",
+          "description": "Reference tariff table. EXPLICIT OPT-OUT example — applies:false is a hard off; no screen is ever created here even if artifact columns appear later.",
+          "columns": [
+            { "name": "tariff_code", "type": "text", "is_primary_key": true },
+            { "name": "category", "type": "text" },
+            { "name": "rate_per_kwh", "type": "numeric" }
+          ],
+          "fraud_screening": { "applies": false }
+        }
+      ]
+    }
+  ]
+}

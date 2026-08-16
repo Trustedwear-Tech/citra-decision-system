@@ -1,0 +1,61 @@
+{
+  "spec_version": "v0",
+  "slug": "claims-triage",
+  "title": "Claims Triage",
+  "description": "Intake, classify, and approve motor claims",
+  "tenant_id": "bajaj",
+  "agent_id": "agent_claims_xyz",
+  "theme": { "primary": "#1f6feb", "dark_mode": false },
+  "data_sources": [
+    { "id": "claims_db", "type": "mcp", "ref": "dept-mcp/insurance" },
+    { "id": "policies",  "type": "rag", "ref": "dept-mcp/insurance",
+      "doc_types": ["policy", "sop"] }
+  ],
+  "panels": [
+    {
+      "id": "submit",
+      "type": "form",
+      "title": "New Claim",
+      "schema_ref": "agent.input_schema",
+      "on_submit": { "agent_action": "intake_claim" }
+    },
+    {
+      "id": "queue",
+      "type": "queue",
+      "title": "Open Claims",
+      "data_source": "claims_db",
+      "query": { "status": ["pending", "in_review"] },
+      "columns": ["claim_id", "insured", "amount", "status", "sla_due"]
+    },
+    {
+      "id": "detail",
+      "type": "detail",
+      "linked_to": "queue",
+      "sections": [
+        { "type": "agent_timeline" },
+        { "type": "approval", "roles": ["claims_lead"] },
+        { "type": "documents", "data_source": "policies" }
+      ]
+    },
+    {
+      "id": "kpis",
+      "type": "dashboard",
+      "metrics": [
+        { "name": "throughput_24h", "agg": "count", "window": "24h" },
+        { "name": "avg_handle_time", "agg": "avg", "field": "handle_seconds" },
+        { "name": "approval_rate", "agg": "ratio" }
+      ]
+    },
+    {
+      "id": "ask",
+      "type": "agent_chat",
+      "title": "Ask the Claims Agent",
+      "starter_prompts": ["Summarise yesterday's rejections"]
+    }
+  ],
+  "permissions": {
+    "view":    ["user", "claims_lead"],
+    "submit":  ["user"],
+    "approve": ["claims_lead"]
+  }
+}

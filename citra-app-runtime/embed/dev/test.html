@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Citra embed — standalone harness</title>
+<style>
+  /* Deliberately hostile host styles. If any of these bleed into the card, the
+     shadow root is not doing its job. Real bank applications have opinions
+     about h2, div and button, and the card has to survive them. */
+  body { font-family: Georgia, serif; background: #eef1f5; margin: 0; padding: 32px; }
+  h2 { color: crimson; text-transform: uppercase; }
+  div { border: 0; }
+  button { background: yellow !important; font-size: 30px; }
+  .host-chrome { max-width: 1100px; margin: 0 auto; }
+  .host-note { background: #fff; border: 1px solid #cbd5e1; padding: 12px 16px;
+               border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="host-chrome">
+  <div class="host-note">
+    <strong>Host page</strong> — this markup belongs to the &ldquo;bank&rdquo;.
+    Serif font, crimson headings and yellow buttons are set globally on purpose.
+    The card below must ignore all of it.
+  </div>
+
+  <h2>Their own heading, in their own style</h2>
+
+  <!-- The two lines a bank's developer adds. -->
+  <div id="citra-decision"></div>
+  <div id="citra-decision-2"></div>
+</div>
+
+<script>
+  // Loaded dynamically so the harness can await it before mounting.
+  window.citraReady = new Promise(function (resolve, reject) {
+    var s = document.createElement('script');
+    s.src = '../../public/v1/citra.js';
+    s.onload = resolve;
+    s.onerror = function () { reject(new Error('embed bundle failed to load: ' + s.src)); };
+    document.head.appendChild(s);
+  });
+</script>
+<script>
+  // Events the tests assert on. The point of the harness is that it uses the
+  // REAL public API — Citra.init() + mount() — and the spec arrives over the
+  // network exactly as it will in production; the test intercepts that request.
+  window.citraEvents = { decision: [], item: [], recommendation: [], error: [] };
+
+  window.mountCard = async function (opts) {
+    await window.citraReady;
+    opts = opts || {};
+    const citra = Citra.init({
+      baseUrl: opts.baseUrl || 'https://citra.example.test',
+      getToken: function () { return 'harness-token'; },
+      onError: function (e) { window.citraEvents.error.push(String(e)); },
+    });
+    window.__citra = citra;
+    const mount = citra.mount(opts.target || '#citra-decision', {
+      embed: opts.embed || 'emb_test_harness',
+      recordId: opts.recordId || 'LN-4471',
+      theme: opts.theme,
+      onDecision: function (d) { window.citraEvents.decision.push(d); },
+      onItemDecision: function (d) { window.citraEvents.item.push(d); },
+      onRecommendation: function (d) { window.citraEvents.recommendation.push(d); },
+    });
+    window.__mount = mount;
+    return mount;
+  };
+</script>
+</body>
+</html>

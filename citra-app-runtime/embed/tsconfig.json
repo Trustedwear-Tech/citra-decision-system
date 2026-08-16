@@ -1,0 +1,17 @@
+{
+  // The embed sources are EXCLUDED from the root tsconfig (like e2e) so that
+  // `next build` type-checks exactly what it did before this bundle existed.
+  // They still get checked — via `npm run typecheck:embed` — just not as part
+  // of the app build, whose output must stay byte-identical.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../src/**/*.ts", "../src/**/*.tsx"],
+  "exclude": ["node_modules"]
+}

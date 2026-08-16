@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citation Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-title { font-weight: bold; margin-bottom: 10px; color: #333; }
+        .test-input { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        .test-output { background: #e8f5e8; padding: 10px; margin: 10px 0; }
+        .citation-link { color: #0066cc; text-decoration: underline; cursor: pointer; }
+        .log { background: #1e1e1e; color: #d4d4d4; padding: 10px; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Citation Fix Test</h1>
+    <p>Testing the updated citation parsing system</p>
+
+    <div class="test-section">
+        <div class="test-title">1. Enterprise Citation (Fixed Format)</div>
+        <div class="test-input">
+            📋 Citation Reference: TW-presentation-new--67679d55f1a6c1e4d51d7ad7
+        </div>
+        <div class="test-output" id="enterprise-test"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">2. Personal Citation (Fixed Format)</div>
+        <div class="test-input">
+            📋 Citation Reference: Meeting Notes--12345678-abcd-efgh-ijkl-123456789012
+        </div>
+        <div class="test-output" id="personal-test"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">3. Standalone Filename (New Pattern)</div>
+        <div class="test-input">
+            TW-presentation-new (1)
+        </div>
+        <div class="test-output" id="filename-test"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">4. Mixed Content</div>
+        <div class="test-input">
+            Based on the information from 📋 Citation Reference: Company Policy--67679d55f1a6c1e4d51d7ad7 and the TW-presentation-new (1) document, we can see that...
+        </div>
+        <div class="test-output" id="mixed-test"></div>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <script>
+        // Mock theme
+        const theme = { isDark: false };
+        
+        // Mock isCitationDebugEnabled
+        function isCitationDebugEnabled() {
+            return true;
+        }
+
+        // Mock DocumentService
+        const DocumentService = {
+            downloadDocument: async (documentId) => {
+                console.log('Mock download for:', documentId);
+                return { 
+                    download_url: 'https://example.com/mock-download',
+                    filename: `document_${documentId}.pdf`
+                };
+            }
+        };
+
+        // Simplified citation parser (based on updated RichMessageRenderer logic)
+        function parseTextWithCitations(text) {
+            console.log('[CITATION_DEBUG] Parsing text for citations. Snippet:', text.slice(0, 200));
+            
+            const citationPatterns = [
+                // Standard citation patterns
+                { regex: /(📋)?\s*\[([^\]]+)\]\(([^)]+)\)/g, topicIndex: 2, idIndex: 3 },
+                { regex: /(?:📋\s*)?Citation Reference:\s*([^\n]+?)\s*(?:--|—|–)\s*([A-Za-z0-9-_]{10,})/gi, topicIndex: 1, idIndex: 2 },
+                { regex: /(?:📋\s*)?Citation Reference:\s*([^()\n]+?)\s*\(\s*([A-Za-z0-9-_]{10,})\s*\)/gi, topicIndex: 1, idIndex: 2 },
+                { regex: /(📋)?\s*([^\n\[]+?)\s*(?:--|—|–)\s*([A-Za-z0-9-_]{10,})/g, topicIndex: 2, idIndex: 3 },
+                // Standalone filename pattern (new)
+                { regex: /\b([A-Za-z0-9][A-Za-z0-9\-_]*(?:\s*\([0-9]+\))?(?:\.[a-zA-Z]{2,4})?)\b/g, topicIndex: 1, idIndex: null, isFilenameOnly: true },
+            ];
+            
+            let processedText = text;
+            const citations = [];
+            const foundForLog = [];
+            
+            citationPatterns.forEach(({ regex, topicIndex, idIndex, isFilenameOnly }) => {
+                let match;
+                const re = new RegExp(regex.source, regex.flags);
+                while ((match = re.exec(text)) !== null) {
+                    const fullMatch = match[0];
+                    const topic = (match[topicIndex] || '').trim();
+                    const documentId = idIndex !== null ? (match[idIndex] || '').trim() : '';
+                    
+                    // Skip if this is a filename-only pattern but doesn't look like a document reference
+                    if (isFilenameOnly) {
+                        if (topic.length < 3 || 
+                            /^(the|and|for|with|this|that|from|have|been|will|your|they|what|when|where|why|how)$/i.test(topic)) {
+                            continue;
+                        }
+                        if (!(/[A-Z]/.test(topic) || /\d/.test(topic) || /-|_|\./.test(topic) || /\([0-9]+\)/.test(topic))) {
+                            continue;
+                        }
+                    }
+                    
+                    citations.push({
+                        topic,
+                        documentId,
+                        originalText: fullMatch,
+                        isFilenameOnly: !!isFilenameOnly
+                    });
+                    foundForLog.push({ topic, documentId: documentId || '(filename-only)', original: fullMatch });
+                }
+            });
+            
+            if (citations.length === 0) {
+                console.log('[CITATION_DEBUG] No citations detected in this segment.');
+            } else {
+                console.log('[CITATION_DEBUG] Citations detected:', foundForLog);
+            }
+            
+            return citations;
+        }
+
+        // Test function
+        function testCitations() {
+            const logEl = document.getElementById('log');
+            
+            // Test cases
+            const tests = [
+                { id: 'enterprise-test', text: '📋 Citation Reference: TW-presentation-new--67679d55f1a6c1e4d51d7ad7' },
+                { id: 'personal-test', text: '📋 Citation Reference: Meeting Notes--12345678-abcd-efgh-ijkl-123456789012' },
+                { id: 'filename-test', text: 'TW-presentation-new (1)' },
+                { id: 'mixed-test', text: 'Based on the information from 📋 Citation Reference: Company Policy--67679d55f1a6c1e4d51d7ad7 and the TW-presentation-new (1) document, we can see that...' }
+            ];
+            
+            let allLogs = [];
+            
+            tests.forEach(test => {
+                console.log(`\n=== Testing: ${test.id} ===`);
+                allLogs.push(`=== Testing: ${test.id} ===`);
+                
+                const citations = parseTextWithCitations(test.text);
+                const outputEl = document.getElementById(test.id);
+                
+                if (citations.length > 0) {
+                    let html = '<strong>Citations found:</strong><br>';
+                    citations.forEach((citation, index) => {
+                        const downloadAction = citation.documentId 
+                            ? `onclick="alert('Download: ${citation.topic} (ID: ${citation.documentId})')"` 
+                            : `onclick="alert('Filename-only citation: ${citation.topic}')"`;
+                            
+                        html += `${index + 1}. <a href="#" class="citation-link" ${downloadAction}>${citation.topic}</a>`;
+                        if (citation.documentId) {
+                            html += ` (ID: ${citation.documentId})`;
+                        } else {
+                            html += ` (filename-only)`;
+                        }
+                        html += '<br>';
+                    });
+                    outputEl.innerHTML = html;
+                } else {
+                    outputEl.innerHTML = '<em>No citations detected</em>';
+                }
+            });
+            
+            // Update log
+            logEl.innerHTML = allLogs.join('\n');
+        }
+        
+        // Run tests on page load
+        window.onload = testCitations;
+    </script>
+</body>
+</html>

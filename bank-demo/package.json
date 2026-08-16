@@ -1,0 +1,21 @@
+{
+  "name": "acme-bank-demo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A pretend customer application that embeds the Citra decision card. Next.js, because an API route IS the server-side token exchange a real integrator needs.",
+  "scripts": {
+    "dev": "next dev -p 4300",
+    "build": "next build",
+    "start": "next start -p 4300"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "typescript": "^5.4.5"
+  }
+}

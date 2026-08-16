@@ -1,0 +1,437 @@
+{
+  "_doc": "Acme Bank — Sales & Distribution. Hand-authored PublishRequest. DASHBOARD PAGES inside a normal app (a dashboard is page.kind='dashboard', not a separate app kind). No officer decision and no review gate, so this app correctly carries NO case_signature and the publish gate will not warn. Identifiers must match SPEC.md §7.",
+  "session_id": "demo_seed_acme_bank_sales_performance_v1",
+  "skills": [],
+  "app_spec": {
+    "spec_version": "v0",
+    "slug": "acme-bank-sales",
+    "title": "Sales & Distribution",
+    "description": "What we sold — booked business by product, branch and channel, the open pipeline, and the leads nobody has worked yet. Reporting only: no officer decision is made here.",
+    "headless": false,
+    "previous_owners": [],
+    "tenant_id": "acme-bank",
+    "org_id": "acme-bank",
+    "dept_ids": [
+      "sales_distribution"
+    ],
+    "audience": "dept:sales_distribution",
+    "inheritance_policy": "archive",
+    "inheritance_target": null,
+    "inheritance_grace_days": 30,
+    "kind": "app",
+    "agent_id": "agent_acme_bank_sales_performance_v1",
+    "theme": null,
+    "data_sources": [
+      {
+        "id": "ds_opportunities",
+        "type": "mcp",
+        "ref": "sales_crm.opportunities",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_leads",
+        "type": "mcp",
+        "ref": "sales_crm.leads",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_branches",
+        "type": "mcp",
+        "ref": "sales_crm.branches",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_agents",
+        "type": "mcp",
+        "ref": "sales_crm.agents",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_policy",
+        "type": "rag",
+        "ref": "acme_bank_policy_library",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_new_leads",
+        "type": "mcp",
+        "ref": "sales_crm.leads",
+        "doc_types": [],
+        "filters": {
+          "status": "new"
+        },
+        "mode": "merge"
+      },
+      {
+        "id": "ds_won_opportunities",
+        "type": "mcp",
+        "ref": "sales_crm.opportunities",
+        "doc_types": [],
+        "filters": {
+          "stage": "won"
+        },
+        "mode": "merge"
+      }
+    ],
+    "dataset_directory": [],
+    "pages": [
+      {
+        "id": "what_we_sold",
+        "kind": "dashboard",
+        "title": "What we sold",
+        "panels": [
+          {
+            "id": "booked_by_product",
+            "title": "Booked value by product",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_opportunities",
+            "query": {
+              "stage": "won"
+            },
+            "x": "product",
+            "y": "booked_value",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "sum"
+          },
+          {
+            "id": "booked_over_time",
+            "title": "Booked value by month",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "line",
+            "data_source": "ds_opportunities",
+            "query": {
+              "stage": "won"
+            },
+            "x": "closed_on",
+            "y": "booked_value",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": "month",
+            "aggregation": "sum"
+          },
+          {
+            "id": "booked_by_region",
+            "title": "Booked value by channel",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_opportunities",
+            "query": {
+              "stage": "won"
+            },
+            "x": "product",
+            "y": "booked_value",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "count"
+          }
+        ]
+      },
+      {
+        "id": "pipeline",
+        "kind": "dashboard",
+        "title": "Pipeline",
+        "panels": [
+          {
+            "id": "pipeline_by_stage",
+            "title": "Open pipeline by stage",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_opportunities",
+            "query": {},
+            "x": "stage",
+            "y": "expected_value",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "sum"
+          },
+          {
+            "id": "pipeline_by_product",
+            "title": "Open pipeline by product",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_opportunities",
+            "query": {},
+            "x": "product",
+            "y": "expected_value",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "sum"
+          }
+        ]
+      },
+      {
+        "id": "leadership",
+        "kind": "dashboard",
+        "title": "Leadership view",
+        "panels": [
+          {
+            "id": "leads_by_source",
+            "title": "Lead volume by source",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_leads",
+            "query": {},
+            "x": "source",
+            "y": "count",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "count"
+          },
+          {
+            "id": "leads_by_status",
+            "title": "Leads by status",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_leads",
+            "query": {},
+            "x": "status",
+            "y": "count",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "count"
+          }
+        ]
+      },
+      {
+        "id": "detail_lists",
+        "kind": "standard",
+        "title": "Lists",
+        "panels": [
+          {
+            "id": "won_business",
+            "title": "Closed-won business",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_won_opportunities",
+            "query": {},
+            "columns": [
+              "opportunity_id",
+              "product",
+              "booked_value",
+              "closed_on",
+              "lead_id"
+            ],
+            "actions": [],
+            "view": "table",
+            "page_size": 25,
+            "searchable_columns": [
+              "opportunity_id"
+            ],
+            "filters": [],
+            "badge_column": null,
+            "title_column": "opportunity_id",
+            "default_sort": {
+              "column": "closed_on",
+              "dir": "desc"
+            },
+            "group_by": null
+          },
+          {
+            "id": "unworked_leads",
+            "title": "Unworked leads (no agent assigned)",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_new_leads",
+            "query": {},
+            "columns": [
+              "lead_id",
+              "name_full",
+              "city",
+              "product_interest",
+              "source",
+              "expected_value",
+              "created_at"
+            ],
+            "actions": [],
+            "view": "table",
+            "page_size": 25,
+            "searchable_columns": [
+              "lead_id"
+            ],
+            "filters": [],
+            "badge_column": "product_interest",
+            "title_column": "lead_id",
+            "default_sort": {
+              "column": "expected_value",
+              "dir": "desc"
+            },
+            "group_by": null
+          },
+          {
+            "id": "branch_network",
+            "title": "Branch network",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_branches",
+            "query": {},
+            "columns": [
+              "branch_code",
+              "name",
+              "city",
+              "state",
+              "region",
+              "cluster_head"
+            ],
+            "actions": [],
+            "view": "table",
+            "page_size": 25,
+            "searchable_columns": [
+              "branch_code",
+              "city"
+            ],
+            "filters": [],
+            "badge_column": "region",
+            "title_column": "name",
+            "default_sort": null,
+            "group_by": null
+          }
+        ]
+      },
+      {
+        "id": "assistant",
+        "kind": "standard",
+        "title": "Assistant",
+        "panels": [
+          {
+            "id": "sales_chat",
+            "title": "Ask about sales performance",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "agent_chat",
+            "agent_role": null,
+            "starter_prompts": [
+              "How much did we book last month, by product?",
+              "Which branches have the most unworked leads?",
+              "What is our conversion rate from qualified to won?"
+            ]
+          }
+        ]
+      }
+    ],
+    "navigation": {
+      "style": "sidebar",
+      "default_page": "what_we_sold",
+      "show_chat_globally": false
+    },
+    "permissions": {},
+    "triggers": [],
+    "requirements_unmet": [],
+    "preview_mode": false,
+    "preview_until": null,
+    "status": "published"
+  },
+  "agent_spec": {
+    "spec_version": "v0",
+    "agent_id": "agent_acme_bank_sales_performance_v1",
+    "name": "Sales & Distribution Analyst (Acme Bank)",
+    "description": "Answers questions about booked business, pipeline and lead coverage. Reporting only — it makes no officer decision and takes no write action.",
+    "model_tier": "tier_b",
+    "system_prompt": "You are the Sales & Distribution analyst for Acme Bank. You answer questions about what was sold, what is in the pipeline, and which leads are not being worked. You make no decision about any customer and you take no write action — this app reports, it does not decide.\n\nUse these definitions exactly, so every branch and every tile sees the same number:\n- BOOKED BUSINESS = opportunities where `stage = 'won'`, summed on `booked_value` (not `expected_value`, which is the estimate before the deal closed).\n- OPEN PIPELINE = opportunities where `stage` is prospect, proposal or negotiation, summed on `expected_value`.\n- UNWORKED LEAD = a lead where `status = 'new'` and `assigned_agent_id` is null. Per the Sales Conduct code an unworked lead ageing beyond 3 working days is a service failure — surface it as such.\n- CONVERSION = won opportunities ÷ (won + lost), over the period asked about.\n\nAmounts are INR. State the period you used in every answer, and never present an estimate as a booking.\n\nIf you are asked whether a particular product should be sold to a particular customer, do not answer it here: suitability is governed by the Sales Conduct and Suitability code, and that is an advised sale made by a licensed seller, not a dashboard output.",
+    "actions": [],
+    "hitl_policy": null,
+    "rag": [],
+    "mcps": [],
+    "grounding": null,
+    "outcome_poll": null,
+    "learning_log": [],
+    "input_schema": null,
+    "memory_namespace": null,
+    "sub_agents": [],
+    "tools_v2": [
+      {
+        "name": "lookup_opportunities",
+        "description": "Booked and open opportunities — product, stage, booked value and close date. Use for what was actually sold. Columns: opportunity_id, lead_id, product, expected_value, stage, probability, expected_close, closed_on, booked_value.",
+        "kind": "mcp",
+        "source_id": "sales_crm",
+        "tool_name": "Sales & Distribution",
+        "input_schema_ref": null,
+        "dataset_id": "sales_crm.opportunities",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_leads",
+        "description": "Leads with status, source, product interest and expected value — including the unworked ones. Columns: lead_id, name_full, mobile_masked, city, product_interest, source, created_at, status, assigned_agent_id, branch_code, expected_value.",
+        "kind": "mcp",
+        "source_id": "sales_crm",
+        "tool_name": "Sales & Distribution",
+        "input_schema_ref": null,
+        "dataset_id": "sales_crm.leads",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_branches",
+        "description": "Branch network — code, city, state, region and cluster head. Columns: branch_code, name, city, state, region, ifsc, cluster_head.",
+        "kind": "mcp",
+        "source_id": "sales_crm",
+        "tool_name": "Sales & Distribution",
+        "input_schema_ref": null,
+        "dataset_id": "sales_crm.branches",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_agents",
+        "description": "Sales agents, their branch and channel. Columns: agent_id, name, branch_code, channel, licence_no, active.",
+        "kind": "mcp",
+        "source_id": "sales_crm",
+        "tool_name": "Sales & Distribution",
+        "input_schema_ref": null,
+        "dataset_id": "sales_crm.agents",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "search_policy_library",
+        "description": "Search the sales conduct and suitability policy for what may be sold to whom and how performance is to be reported.",
+        "kind": "rag",
+        "source_id": "acme_bank_policy_library",
+        "top_k": 8,
+        "classification_max": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+node_modules
+dist
+.expo
+web-build
+.git
+.gitignore
+.dockerignore
+Dockerfile*
+*.md
+.vscode
+npm-debug.log
+*.log
+.env.production
+.env.test
+.env.release-tracking-example
+.env.example

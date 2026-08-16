@@ -1,0 +1,50 @@
+{
+  "_comment": "Demo REST/API source for end-to-end validation of the schema-driven rest_api path. Uses jsonplaceholder (public, no auth, stable, returns one object per id) so the whole chain — smart-app /run_query -> MCP catalogue._run_rest -> rest_connector -> live API -> typed rows -> panel — can be proven without a real bureau contract. Register this in the dept-MCP's dept_sources (or sources.json), then follow docs/decision-app-test-plan.md §7b 'Live E2E'.",
+  "source_id": "public_directory",
+  "type": "rest_api",
+  "name": "Public directory (demo API source)",
+  "description": "Look up a directory user by id — a stand-in for a bureau/KYC API-source screen.",
+  "connection": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "method": "GET",
+    "timeout_seconds": 15,
+    "auth": { "type": "none" }
+  },
+  "datasets": [
+    {
+      "id": "public_directory.user",
+      "name": "Directory user",
+      "kind": "rest",
+      "description": "One directory user, looked up by id.",
+      "input_schema": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "title": "User ID" }
+        }
+      },
+      "columns": [
+        { "name": "name",    "type": "string" },
+        { "name": "email",   "type": "string" },
+        { "name": "city",    "type": "string" },
+        { "name": "company", "type": "string" }
+      ],
+      "read_via": {
+        "kind": "rest",
+        "extra": {
+          "request": { "method": "GET", "path": "/users/{{id}}" },
+          "response": {
+            "path": "",
+            "row_mode": "object",
+            "columns": {
+              "name": "name",
+              "email": "email",
+              "city": "address.city",
+              "company": "company.name"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

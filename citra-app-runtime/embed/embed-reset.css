@@ -1,0 +1,86 @@
+/*
+ * Shadow-root base for the embed. Injected AFTER globals.css.
+ *
+ * Two problems this solves, both invisible in the full app:
+ *
+ * 1. THERE IS NO <body> INSIDE A SHADOW ROOT.
+ *    globals.css sets font-family, colour, line-height and font-smoothing on
+ *    `body`. In an embed the nearest body belongs to the HOST page, so the card
+ *    inherits the bank's typography — inherited properties cross a shadow
+ *    boundary even though rules do not. Re-applying that base here is what
+ *    makes the card look like itself rather than like whatever it landed in.
+ *
+ * 2. `--font-inter` DOES NOT EXIST OUTSIDE NEXT.JS.
+ *    globals.css declares `--font-sans: var(--font-inter), -apple-system, …`.
+ *    `--font-inter` is injected by next/font at the app layer. When it is
+ *    undefined the whole var() substitution is invalid at computed-value time,
+ *    so `--font-sans` resolves to nothing, `font-family` falls back to
+ *    `inherit`, and the card silently adopts the host page's font. Declaring a
+ *    plain family name restores a valid chain. NOT a webfont URL — a bank's CSP
+ *    will block a font CDN, and a blocked font fails silently.
+ */
+
+:host {
+  /* Makes --font-sans in globals.css resolve. "Inter" is used when the customer
+     has it installed; otherwise the rest of the stack applies. */
+  --font-inter: "Inter";
+
+  display: block;
+  /* Re-declare the inherited properties a host page can leak in. */
+  font-family: var(--citra-font, var(--font-sans));
+  font-size: 16px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: start;
+  text-indent: 0;
+  text-transform: none;
+  white-space: normal;
+  color: var(--citra-fg);
+  /* `direction` is deliberately NOT reset — an RTL host page should still get
+     an RTL card. */
+}
+
+/* Belt and braces: `:host` can be overridden by a host-page rule targeting the
+   mount element, but nothing outside can reach `.app-shell` inside the shadow
+   root. This is the copy that is guaranteed to win. */
+.app-shell {
+  font-family: var(--citra-font, var(--font-sans));
+  color: var(--citra-fg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/*
+ * The detail panel's "← Back to the list" control has nowhere to go here.
+ *
+ * It is the first child of .dt-head and calls router.back(). In the full app
+ * that returns the officer to the queue they clicked from; in an embed there is
+ * no queue and no history, so the shim's back() is a no-op — a button that
+ * visibly does nothing on a customer's screen, which reads as a broken
+ * integration.
+ *
+ * Hidden here rather than conditioned in PanelRenderer, for the same reason
+ * echarts is aliased rather than lazy-loaded: the app build stays byte-identical
+ * and the change cannot regress the queue→detail flow that depends on it.
+ *
+ * Scoped to :first-child of .dt-head deliberately — the multi-step FORM also
+ * renders a "← Back" (q-btn), and that one is real: it steps back through the
+ * form and must keep working.
+ */
+.dt-head > button.q-btn:first-child {
+  display: none;
+}
+
+/* The app's own page background lives on <body> too; inside an embed the shell
+   IS the outermost surface, so it carries its own canvas. */
+.citra-embed-portal {
+  font-family: var(--citra-font, var(--font-sans));
+  color: var(--citra-fg);
+  line-height: 1.5;
+}

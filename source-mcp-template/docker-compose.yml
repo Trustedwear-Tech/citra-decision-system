@@ -1,0 +1,107 @@
+# =============================================================================
+# Dept MCP Server — docker-compose (template — dept IT copies and fills in values)
+# =============================================================================
+# Query plane only. Ingestion is owned by the Citra Workflow Engine.
+# Source definitions live in a LOCAL registry the MCP reads at boot — either a
+# JSON file (SOURCES_FILE) or the same payload inline as an env var
+# (SOURCES_JSON). No Citra database dependency.
+#
+# Usage:
+#   1. Copy this file to your dept's deployment directory
+#   2. Fill in all environment variables (or supply a .env file). Credentials
+#      inject purely as env vars — no secret-bearing .env need ship to a host;
+#      prod pulls the whole bag from Vault at boot (see vault_bootstrap.py).
+#   3. Provide the source registry: mount a sources.json (SOURCES_FILE +
+#      the volumes: mount below) OR set SOURCES_JSON inline for a file-free host.
+#   4. docker compose up -d
+# =============================================================================
+
+services:
+  dept-mcp:
+    build: .
+    container_name: dept-mcp-${DEPT_NAME:-dept}
+    restart: unless-stopped
+    ports:
+      - "${MCP_PORT:-8090}:8090"
+    environment:
+      # ── Secret provider (env-first precedence — see vault_bootstrap.py) ──────
+      # How this MCP resolves its config bag at boot:
+      #   env    — trust INJECTED environment variables only; never contact
+      #            Vault. Use on any customer cloud (ECS/Fargate task secrets,
+      #            Cloud Run --set-secrets, Container Apps secretRef, k8s env).
+      #   vault  — pull the whole bag from HashiCorp Vault (our demo-prod). Set
+      #            the VAULT_* block below; injected env still wins over the bag.
+      #   auto   — (default) env-first, Vault only if the VAULT_* block is set.
+      - SECRETS_PROVIDER=${SECRETS_PROVIDER:-auto}
+      # VAULT_* — only for SECRETS_PROVIDER=vault (or auto with Vault). Leave
+      # unset on a customer cloud that injects config as env vars.
+      - VAULT_ADDR=${VAULT_ADDR:-}
+      - VAULT_ROLE_ID=${VAULT_ROLE_ID:-}
+      - VAULT_SECRET_ID=${VAULT_SECRET_ID:-}
+      - VAULT_SECRET_PATH=${VAULT_SECRET_PATH:-}
+
+      # ── Identity ───────────────────────────────────────────────────────────
+      - ORG_ID=${ORG_ID}                       # e.g. bihar
+      - DEPT_IDS=${DEPT_IDS}                   # e.g. agri,agri-mandi  (comma-separated)
+      - MCP_API_KEY=${MCP_API_KEY}             # shared secret with discovery-service
+
+      # ── Discovery ─────────────────────────────────────────────────────────
+      - DISCOVERY_URL=${DISCOVERY_URL:-http://discovery-service:9000}
+      - HEARTBEAT_INTERVAL_SECONDS=60
+
+      # ── Milvus (read-only) ────────────────────────────────────────────────
+      - MILVUS_URI=${MILVUS_URI:-http://milvus:19530}
+      - MILVUS_TOKEN=${MILVUS_TOKEN:-}
+      - MILVUS_VECTOR_DIM=${MILVUS_VECTOR_DIM:-768}
+      - MILVUS_COLLECTION_PREFIX=${MILVUS_COLLECTION_PREFIX:-mcp}
+
+      # ── Source registry ───────────────────────────────────────────────────
+      # The MCP holds NO Citra DB creds — it reads its sources from a local
+      # registry. Provide it ONE of two ways (set exactly one):
+      #   • SOURCES_FILE — a path to a mounted/baked-in JSON file (below +
+      #     the `volumes:` mount), OR
+      #   • SOURCES_JSON — the same JSON payload INLINE as an env var, for
+      #     file-free hosts (Cloud Run / Container Apps / Fargate / a k8s
+      #     ConfigMap env) that inject config purely as environment variables.
+      # SOURCES_FILE wins if both are set. The registry is non-secret.
+      - SOURCES_FILE=${SOURCES_FILE:-/app/sources.json}
+      - SOURCES_JSON=${SOURCES_JSON:-}
+
+      # ── Embedding service ─────────────────────────────────────────────────
+      - EMBEDDING_BASE_URL=${EMBEDDING_BASE_URL:-http://inference-service:8000/v1}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-BAAI/bge-m3}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-not-needed}
+
+      # ── LLM (for SQL generation at query time) ────────────────────────────
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://inference-service:8000/v1}
+      - LLM_MODEL=${LLM_MODEL:-zai-org/GLM-5.1}
+      - LLM_API_KEY=${LLM_API_KEY:-not-needed}
+
+      # ── Reranker ──────────────────────────────────────────────────────────
+      - RERANKER_URL=${RERANKER_URL:-http://reranker-service:7302}
+      - RERANKER_TOP_K=${RERANKER_TOP_K:-5}
+
+      # ── SQL source credentials (one block per source — env-prefix scheme) ─
+      # Add as many blocks as you have SQL sources in dept_sources for this dept.
+      # Example for a source whose connection.env_prefix is MANDI:
+      - MANDI_HOST=${MANDI_HOST:-}
+      - MANDI_PORT=${MANDI_PORT:-5432}
+      - MANDI_DB=${MANDI_DB:-}
+      - MANDI_USER=${MANDI_USER:-}
+      - MANDI_PASS=${MANDI_PASS:-}
+
+      # ── Port ──────────────────────────────────────────────────────────────
+      - PORT=8090
+      - ENVIRONMENT=${ENVIRONMENT:-prod}
+
+    # SOURCES_FILE mode: mount the registry read-only at the path set above.
+    # Omit this whole block when using SOURCES_JSON (inline, file-free).
+    volumes:
+      - ${SOURCES_FILE_HOST_PATH:-./sources.json}:/app/sources.json:ro
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

@@ -1,0 +1,200 @@
+/* Text Selection Fixes for Citra AI UI */
+
+/* Enable text selection in chat messages and text areas */
+.chat-message,
+.message-text,
+.chat-input,
+.text-input,
+.message-bubble,
+.bot-message,
+.user-message {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Enable text selection in text inputs specifically */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+.TextInput,
+.modernTextInput,
+[role="textbox"],
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Enable text selection for readable content */
+p,
+span,
+div[class*="text"],
+div[class*="message"],
+div[class*="content"],
+.modernMessageText,
+.messageText {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Override non-selectable class for text content */
+.non-selectable p,
+.non-selectable span,
+.non-selectable div[class*="text"],
+.non-selectable div[class*="message"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Keep non-selectable for UI controls only */
+.non-selectable button,
+.non-selectable .button,
+.non-selectable .icon,
+.non-selectable .control,
+.non-selectable .header,
+.non-selectable .sidebar {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Modern Chat Components - ENHANCED FOR MODERN UI */
+.modernInputWrapper input,
+.modernInputWrapper textarea,
+.modernChatInput input,
+.modernChatInput textarea,
+.modernInputContainer input,
+.modernInputContainer textarea {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Modern Message Bubbles */
+.modernMessageBubble,
+.modernMessageText,
+.modernUserMessageBubble,
+.modernBotMessageBubble {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* React Native Web TextInput components - ENHANCED */
+div[data-focusable="true"],
+div[role="textbox"],
+div[class*="TextInput"],
+div[class*="modernText"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Modern Citra AI App specific elements */
+.modernCitraAIApp input,
+.modernCitraAIApp textarea,
+.modernCitraAIApp [role="textbox"],
+.modernCitraAIApp .message-text,
+.modernCitraAIApp .chat-message {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Comprehensive modernCitraAIApp text selection */
+.modernCitraAIApp *,
+.modernCitraAIApp p,
+.modernCitraAIApp span,
+.modernCitraAIApp div[class*="text"],
+.modernCitraAIApp div[class*="message"],
+.modernCitraAIApp div[class*="content"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Code blocks should be selectable */
+pre,
+code,
+.code-block,
+.codeBlock {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Selection styling - Enhanced visibility with maximum specificity */
+html ::selection,
+body ::selection,
+#root ::selection,
+* ::selection {
+  background: #3B82F6 !important;
+  color: #ffffff !important;
+}
+
+html ::-moz-selection,
+body ::-moz-selection,
+#root ::-moz-selection,
+* ::-moz-selection {
+  background: #3B82F6 !important;
+  color: #ffffff !important;
+}
+
+/* Dark mode selection with better contrast - maximum specificity */
+html[data-theme="dark"] ::selection,
+html[data-theme="dark"] * ::selection,
+[data-theme="dark"] ::selection,
+[data-theme="dark"] * ::selection,
+.dark-mode ::selection,
+.dark-mode * ::selection {
+  background: #60A5FA !important;
+  color: #000000 !important;
+}
+
+html[data-theme="dark"] ::-moz-selection,
+html[data-theme="dark"] * ::-moz-selection,
+[data-theme="dark"] ::-moz-selection,
+[data-theme="dark"] * ::-moz-selection,
+.dark-mode ::-moz-selection,
+.dark-mode * ::-moz-selection {
+  background: #60A5FA !important;
+  color: #000000 !important;
+}
+
+/* Fix for web textarea in React Native Web */
+textarea {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  resize: none;
+}
+
+/* Modern theme specific fixes */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] [role="textbox"],
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] [role="textbox"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}

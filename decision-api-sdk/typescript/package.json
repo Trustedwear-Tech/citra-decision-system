@@ -1,0 +1,27 @@
+{
+  "name": "@citra/decision-api",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the Citra Decision API — drive a headless Decision App (recommend → approve/override → fraud → feedback → learning) from any client: web, React Native (iOS/Android), Node, Electron.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "src", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Notice - Citra AI</title>
+    <meta name="description" content="Cookie Notice for Citra AI - Learn about how we use cookies and similar technologies">
+    <link rel="canonical" href="https://citra-ai.com/cookie-notice">
+    <meta property="og:url" content="https://citra-ai.com/cookie-notice">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #ffffff;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: rgba(26, 31, 46, 0.95);
+            border-bottom: 1px solid rgba(79, 70, 229, 0.2);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4f46e5;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #6366f1;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 60px 0 40px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #9ca3af;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Content Section */
+        .content {
+            background-color: #1a1f2e;
+            border-radius: 16px;
+            padding: 40px;
+            margin: 40px auto;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .content h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+
+        .content h2:first-child {
+            margin-top: 0;
+        }
+
+        .content h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #e5e7eb;
+        }
+
+        .content p {
+            margin-bottom: 16px;
+            color: #d1d5db;
+            font-size: 16px;
+        }
+
+        .content ul, .content ol {
+            margin-bottom: 16px;
+            margin-left: 24px;
+            color: #d1d5db;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        .content strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .content a {
+            color: #4f46e5;
+            text-decoration: underline;
+        }
+
+        .content a:hover {
+            color: #6366f1;
+        }
+
+        .last-updated {
+            background-color: rgba(79, 70, 229, 0.1);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .last-updated p {
+            margin: 0;
+            color: #e5e7eb;
+            font-size: 14px;
+        }
+
+        /* Cookie type table */
+        .cookie-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .cookie-table th {
+            background-color: rgba(79, 70, 229, 0.2);
+            color: #e5e7eb;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(79, 70, 229, 0.3);
+        }
+
+        .cookie-table td {
+            padding: 12px 16px;
+            color: #d1d5db;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            vertical-align: top;
+        }
+
+        .cookie-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1f2e;
+            border-top: 1px solid rgba(79, 70, 229, 0.2);
+            padding: 32px 0;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .footer-text {
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .footer-link:hover {
+            color: #6366f1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .content {
+                padding: 24px;
+            }
+
+            .content h2 {
+                font-size: 24px;
+            }
+
+            .content h3 {
+                font-size: 20px;
+            }
+
+            .cookie-table {
+                font-size: 13px;
+            }
+
+            .cookie-table th,
+            .cookie-table td {
+                padding: 10px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                    </svg>
+                    Citra AI
+                </a>
+                <a href="/" class="back-button">Back to Home</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Cookie Notice 🍪</h1>
+            <p>This notice explains how Citra AI uses cookies and similar technologies when you visit our website and use our services.</p>
+        </div>
+
+        <div class="content">
+            <div class="last-updated">
+                <p><strong>Last Updated:</strong> March 2, 2026</p>
+            </div>
+
+            <h2>1. What Are Cookies?</h2>
+            <p>Cookies are small text files that are placed on your device (computer, smartphone, or tablet) when you visit a website. They allow the website to recognise your device and remember certain information about your visit, such as your preferences and actions.</p>
+            <p>Similar technologies include:</p>
+            <ul>
+                <li><strong>Local Storage &amp; Session Storage:</strong> Browser-based storage used to retain data between page loads or within a single session.</li>
+                <li><strong>Pixels &amp; Web Beacons:</strong> Tiny image files embedded in pages or emails to track user interactions.</li>
+                <li><strong>Device Fingerprinting:</strong> Techniques that identify a device based on its configuration and characteristics.</li>
+            </ul>
+
+            <h2>2. How We Use Cookies</h2>
+            <p>We use cookies and similar technologies for the following purposes:</p>
+
+            <h3>2.1 Strictly Necessary Cookies</h3>
+            <p>These cookies are essential for you to browse our website and use its features, such as accessing secure areas. Without these cookies, our services cannot function properly. These cannot be disabled.</p>
+
+            <h3>2.2 Performance &amp; Analytics Cookies</h3>
+            <p>These cookies collect information about how visitors use our website — for example, which pages they visit most often and whether they receive error messages. All information collected is aggregated and anonymous. We use this data to improve how our website works.</p>
+
+            <h3>2.3 Functionality Cookies</h3>
+            <p>These cookies allow our website to remember choices you make (such as your preferred language, dark/light mode, or region) and provide enhanced, more personal features.</p>
+
+            <h3>2.4 Targeting &amp; Advertising Cookies</h3>
+            <p>We may use these cookies to deliver content that is more relevant to you and your interests. They may also be used to limit the number of times you see an advertisement and help measure the effectiveness of advertising campaigns.</p>
+
+            <h2>3. Types of Cookies We Use</h2>
+            <table class="cookie-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Name / Provider</th>
+                        <th>Purpose</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Strictly Necessary</strong></td>
+                        <td>Firebase Auth Session</td>
+                        <td>Maintains your authenticated session so you stay logged in.</td>
+                        <td>Session / 1 year</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Strictly Necessary</strong></td>
+                        <td>@citra_cookie_consent</td>
+                        <td>Stores your cookie consent preferences.</td>
+                        <td>1 year</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Functionality</strong></td>
+                        <td>AsyncStorage (app preferences)</td>
+                        <td>Remembers your in-app settings such as theme, upload preferences, and panel states.</td>
+                        <td>Persistent</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>4. Third-Party Cookies</h2>
+            <p>Some cookies are placed by third-party services that appear on our pages. We do not control these cookies and they are governed by the third party's own privacy and cookie policies. Third parties whose cookies may be present include:</p>
+            <ul>
+                <li><strong>Google (Firebase &amp; OAuth):</strong> For authentication and cloud services — <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a></li>
+            </ul>
+
+            <h2>5. Your Choices &amp; Managing Cookies</h2>
+            <p>You can manage your cookie preferences at any time:</p>
+            <ul>
+                <li><strong>Cookie Settings Panel:</strong> Use the <a href="/cookie-settings">Cookie Settings</a> page to review and update your consent choices.</li>
+                <li><strong>Browser Settings:</strong> Most browsers allow you to refuse or delete cookies through their settings. Please note that blocking all cookies may affect the functionality of our services.</li>
+            </ul>
+
+            <h2>6. Legal Basis for Using Cookies (GDPR)</h2>
+            <p>For users in the European Economic Area (EEA), we process cookie data under the following legal bases:</p>
+            <ul>
+                <li><strong>Strictly Necessary Cookies:</strong> Legitimate interests (to operate the service).</li>
+                <li><strong>Optional Cookies (Analytics, Functionality, Targeting):</strong> Your consent, which you can withdraw at any time via our <a href="/cookie-settings">Cookie Settings</a> page.</li>
+            </ul>
+
+            <h2>7. Changes to This Cookie Notice</h2>
+            <p>We may update this Cookie Notice from time to time to reflect changes in technology, legislation, or our data practices. When we make material changes, we will update the "Last Updated" date at the top of this page. We encourage you to periodically review this page.</p>
+
+            <h2>8. Contact Us</h2>
+            <p>If you have any questions about our use of cookies or this Cookie Notice, please contact us:</p>
+            <ul>
+                <li><strong>Email:</strong> contact@citra-ai.com</li>
+                <li><strong>Phone:</strong> +91-8496977722</li>
+                <li><strong>Address:</strong> Citra AI (A product of Trustedwear Tech Private Limited), #42, Maitri, Balaji Lake View Garden, Sampigehalli, Jakkur (Behind Cars24), Bengaluru 560064, Karnataka, India</li>
+                <li><strong>Website:</strong> <a href="https://citra-ai.com" rel="noopener">https://citra-ai.com</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p class="footer-text">© 2026 Citra AI. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="/privacy-policy" class="footer-link">Privacy Policy</a>
+                <a href="/terms-of-service" class="footer-link">Terms of Service</a>
+                <a href="/cookie-notice" class="footer-link">Cookie Notice</a>
+                <a href="/cookie-settings" class="footer-link">Cookie Settings</a>
+                <a href="/contactus" class="footer-link">Contact Us</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

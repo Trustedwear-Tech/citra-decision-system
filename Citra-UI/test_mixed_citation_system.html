@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mixed Citation System Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .citation-link {
+            color: #007bff;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: linear-gradient(90deg, transparent 0%, rgba(0, 123, 255, 0.1) 50%, transparent 100%);
+            background-size: 200% 100%;
+            background-position: 100% 0;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .citation-link:hover {
+            color: #0056b3;
+            background-position: 0 0;
+            text-decoration: none;
+            box-shadow: 0 1px 3px rgba(0, 123, 255, 0.3);
+        }
+        .citation-link:active {
+            transform: translateY(1px);
+        }
+        .test-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .test-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .test-raw {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+        .test-result {
+            padding: 8px;
+            border-left: 3px solid #007bff;
+            background: #f8f9fa;
+        }
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📋 Mixed Citation System Test</h1>
+    <p><strong>Testing both enterprise and personal citation formats with downloadable links</strong></p>
+
+    <div class="test-container">
+        <div class="test-section">
+            <div class="test-title">Enterprise Citation (from LlamaIndex)</div>
+            <div class="test-raw">📋 Citation Reference: Enterprise Policy Document--67679d55f1a6c1e4d51d7ad7</div>
+            <div class="test-result" id="enterprise-test">
+                📋 Citation Reference: <a href="#" class="citation-link" data-document-id="67679d55f1a6c1e4d51d7ad7" onclick="downloadDocument('67679d55f1a6c1e4d51d7ad7', 'Enterprise Policy Document'); return false;">Enterprise Policy Document</a>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Personal Citation (from Balanced Context Aggregator)</div>
+            <div class="test-raw">📋 Citation Reference: My Personal Notes--12345678-abcd-efgh-ijkl-123456789012</div>
+            <div class="test-result" id="personal-test">
+                📋 Citation Reference: <a href="#" class="citation-link" data-document-id="12345678-abcd-efgh-ijkl-123456789012" onclick="downloadDocument('12345678-abcd-efgh-ijkl-123456789012', 'My Personal Notes'); return false;">My Personal Notes</a>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Plain Citation (without emoji)</div>
+            <div class="test-raw">Citation Reference: Meeting Transcript--98765432-zyxw-vutt-srqp-098765432109</div>
+            <div class="test-result" id="plain-test">
+                Citation Reference: <a href="#" class="citation-link" data-document-id="98765432-zyxw-vutt-srqp-098765432109" onclick="downloadDocument('98765432-zyxw-vutt-srqp-098765432109', 'Meeting Transcript'); return false;">Meeting Transcript</a>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-title">Mixed Response (both citation types)</div>
+            <div class="test-raw">Based on your enterprise policy and personal notes:
+
+📋 Citation Reference: Security Guidelines--aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+📋 Citation Reference: Team Meeting Notes--ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj
+
+Both sources indicate...</div>
+            <div class="test-result" id="mixed-test">
+                <p>Based on your enterprise policy and personal notes:</p>
+                <p>📋 Citation Reference: <a href="#" class="citation-link" data-document-id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" onclick="downloadDocument('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'Security Guidelines'); return false;">Security Guidelines</a></p>
+                <p>📋 Citation Reference: <a href="#" class="citation-link" data-document-id="ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj" onclick="downloadDocument('ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj', 'Team Meeting Notes'); return false;">Team Meeting Notes</a></p>
+                <p>Both sources indicate...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>Test Results</h3>
+        <ul>
+            <li>✅ Enterprise citations with document IDs should be clickable</li>
+            <li>✅ Personal citations with document IDs should be clickable</li>
+            <li>✅ Both citation types should extract document IDs correctly</li>
+            <li>✅ Loading state should show during download</li>
+            <li>✅ Mock download should complete successfully</li>
+        </ul>
+        
+        <div class="log" id="console-log">
+            <div>🔍 Console output will appear here...</div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced logging function
+        function logToPage(message) {
+            const logDiv = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Mock DocumentService for testing
+        window.downloadDocument = async (documentId, documentName) => {
+            logToPage(`🔗 Citation clicked: ${documentName} (ID: ${documentId})`);
+            
+            const target = window.event?.target;
+            const originalText = target?.textContent || documentName;
+            
+            if (target) {
+                target.textContent = 'Downloading...';
+                target.style.pointerEvents = 'none';
+                target.style.opacity = '0.7';
+                logToPage(`📱 Loading state activated for: ${documentName}`);
+            }
+            
+            // Simulate download delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            logToPage(`✅ Mock download completed for: ${documentName}`);
+            logToPage(`📁 Document ID extracted: ${documentId}`);
+            
+            // Determine citation source
+            const citationType = documentId.includes('-') && documentId.length > 20 ? 'Personal' : 'Enterprise';
+            logToPage(`🏢 Citation type detected: ${citationType}`);
+            
+            if (target) {
+                target.textContent = originalText;
+                target.style.pointerEvents = 'auto';
+                target.style.opacity = '1';
+                logToPage(`🔄 UI state restored for: ${documentName}`);
+            }
+            
+            alert(`✅ Test Success!\n\nDocument: ${documentName}\nID: ${documentId}\nType: ${citationType}\n\nCitation download system working correctly!`);
+        };
+
+        // Initialize test
+        logToPage('🚀 Mixed citation system test initialized');
+        logToPage('📋 Ready to test both enterprise and personal citations');
+        logToPage('💡 Click any citation link to test download functionality');
+    </script>
+</body>
+</html>

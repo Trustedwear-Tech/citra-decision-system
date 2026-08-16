@@ -1,0 +1,10 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+sentry-sdk[fastapi]>=2.14.0
+playwright==1.41.0
+python-dotenv==1.2.2
+pydantic==2.5.3
+httpx==0.26.0
+
+# Shared service utils (distributed tracing — OTel spans → Tempo).
+-e ../citra-common/citra-service-utils

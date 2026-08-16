@@ -1,0 +1,42 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+name: lint — no bare except
+
+# RULE #1 guard: fail any PR that introduces a bare `except:` (ruff E722).
+# Bare excepts also swallow KeyboardInterrupt/SystemExit and hide real failures.
+# The repo is clean of bare excepts today; this keeps it that way.
+#
+# Scoped to E722 ONLY for now (it's at zero, so it's enforceable immediately).
+# Broader silent-swallow rules — S110 (try-except-pass), S112 (try-except-
+# continue), BLE001 (blind except) — can be turned on per-package once the
+# existing broad-swallow audit lands and the legit best-effort sites are
+# annotated with `# noqa`.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-bare-except:
+    name: no bare except (E722)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ruff
+        run: pip install ruff
+      - name: Fail on bare except (E722)
+        run: |
+          ruff check . --select E722 \
+            --exclude '**/venv/**' \
+            --exclude '**/site-packages/**' \
+            --exclude '**/node_modules/**' \
+            --exclude '**/_e2e_build/**'

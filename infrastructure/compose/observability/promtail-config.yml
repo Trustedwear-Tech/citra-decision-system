@@ -1,0 +1,73 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Promtail — Docker log shipper → Loki
+# =============================================================================
+# Discovers all Docker containers on the host via the Docker socket and
+# forwards their stdout/stderr to Loki with container-level labels so you
+# can filter in Grafana by service, container name, or log stream.
+#
+# Grafana query examples:
+#   {service="citra-service"}           -- all logs from citra-service
+#   {service="citra-service"} |= "ERROR"
+#   {service="citra-service"} |= "abc123"   -- search by X-Trace-Id value
+# =============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /tmp/promtail-positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    batchsize: 1048576   # 1 MiB
+    batchwait: 1s
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          # Only ship containers that belong to a Docker Compose project
+          - name: label
+            values: ["com.docker.compose.project"]
+
+    relabel_configs:
+      # container name (strip leading slash Docker prepends)
+      - source_labels: [__meta_docker_container_name]
+        regex: /(.*)
+        target_label: container
+
+      # compose service name — used as the primary label in Grafana queries
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: service
+
+      # stdout vs stderr
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: stream
+
+      # compose project (env) — lets you scope to prod vs staging
+      - source_labels: [__meta_docker_container_label_com_docker_compose_project]
+        target_label: project
+
+    pipeline_stages:
+      # Docker json-file driver wraps each line as {"log":"...\n","stream":"...","time":"..."}
+      # Extract the actual log text so Loki stores the raw line, not the JSON envelope.
+      - json:
+          expressions:
+            output: log
+            stream: stream
+      - labels:
+          stream:
+      - output:
+          source: output

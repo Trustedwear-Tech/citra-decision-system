@@ -1,0 +1,165 @@
+{
+  "$schema": "https://openclaw.ai/schemas/config.json",
+
+  "gateway": {
+    "mode": "local",
+    "bind": "loopback",
+    "port": 18789,
+    "auth": {
+      "mode": "none"
+    },
+    "controlUi": {
+      "enabled": false
+    },
+    "reload": {
+      "mode": "off"
+    },
+    "webchat": {
+      "chatHistoryMaxChars": 500000
+    },
+    "http": {
+      "endpoints": {
+        "responses": {
+          "enabled": true
+        },
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+
+  "diagnostics": { "otel": { "enabled": false } },
+
+  "models": {
+    "pricing": { "enabled": false },
+    "mode": "merge",
+    "providers": {
+      "citra": {
+        "baseUrl": "${CITRA_AGENT_LLM_BASE_URL}",
+        "apiKey": "${CITRA_AGENT_LLM_API_KEY}",
+        "api": "openai-completions",
+        "authHeader": true,
+        "models": [
+          {
+            "id": "${CITRA_AGENT_MODEL}",
+            "name": "Citra Action Model",
+            "reasoning": true,
+            "input": ["text"],
+            "contextWindow": ${CITRA_AGENT_CONTEXT_WINDOW},
+            "maxTokens": ${CITRA_AGENT_MAX_OUTPUT_TOKENS},
+            "cost": {
+              "input": 0.27,
+              "output": 1.10,
+              "cacheRead": 0.07,
+              "cacheWrite": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "model": "citra/${CITRA_AGENT_MODEL}",
+      "workspace": "/workspace/.openclaw/workspace",
+      "skipBootstrap": false,
+      "bootstrapMaxChars": 50000,
+      "bootstrapTotalMaxChars": 300000,
+      "timeoutSeconds": 1800,
+      "heartbeat": { "every": "0m" },
+      "thinkingDefault": "medium",
+      "sandbox": { "mode": "off" },
+      "subagents": {
+        "runTimeoutSeconds": 900
+      },
+      "contextLimits": {
+        "toolResultMaxChars": 16000,
+        "memoryGetMaxChars": 24000,
+        "memoryGetDefaultLines": 400,
+        "postCompactionMaxChars": 50000
+      },
+      "memorySearch": {
+        "enabled": true,
+        "provider": "openai",
+        "model": "text-embedding-3-small",
+        "fallback": "none",
+        "sources": ["memory"],
+        "remote": {
+          "baseUrl": "${CITRA_AGENT_PROXY_BASE_URL}/v1",
+          "apiKey": "${CITRA_AGENT_SCOPED_TOKEN}"
+        },
+        "query": {
+          "hybrid": {
+            "enabled": true,
+            "vectorWeight": 0.7,
+            "textWeight": 0.3
+          }
+        }
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Citra Action Agent",
+        "agentDir": "/workspace/.openclaw/agent",
+        "subagents": {
+          "allowAgents": []
+        }
+      }
+    ]
+  },
+
+  "tools": {
+    "profile": "coding",
+    "deny": [
+      "browser", "canvas", "nodes", "message",
+      "web_search", "web_fetch", "fetch", "http",
+      "cron", "process"
+    ]
+  },
+
+  "channels": {},
+
+  "messages": {
+    "queue": {
+      "mode": "steer",
+      "debounceMs": 500,
+      "cap": 20,
+      "drop": "summarize"
+    }
+  },
+
+  "plugins": {
+    "enabled": true
+  },
+
+  "mcp": {
+    "servers": {
+      "citra": {
+        "type": "http",
+        "transport": "streamable-http",
+        "url": "${CITRA_MCP_URL}",
+        "headers": {
+          "Authorization": "Bearer ${CITRA_AGENT_SCOPED_TOKEN}"
+        }
+      }
+    }
+  },
+
+  "logging": {
+    "level": "info",
+    "consoleStyle": "compact",
+    "file": "${OPENCLAW_HOME}/.openclaw/logs/openclaw.log",
+    "maxFileBytes": 52428800
+  },
+
+  "update": {
+    "checkOnStart": false,
+    "auto": {
+      "enabled": false
+    }
+  }
+}

@@ -1,0 +1,35 @@
+# Core framework
+fastapi>=0.100.0
+uvicorn[standard]
+gunicorn
+python-dotenv
+sentry-sdk[fastapi]>=2.14.0
+
+# DuckDB + data
+duckdb>=1.0.0
+pandas>=1.5.0
+
+# MongoDB
+motor>=3.3.0
+pymongo[snappy,zstd]
+
+# Redis
+redis>=4.5.0
+
+# OpenAI-compatible SDK (LLM provider)
+openai>=1.0.0
+
+# HTTP client
+httpx>=0.24.0
+
+# Vault secrets
+requests
+
+# Pydantic
+pydantic>=2.5.0
+
+# Shared service utils (distributed tracing — OTel spans → Tempo).
+-e ../citra-common/citra-service-utils
+
+# Prometheus /metrics (added 2026-05-16)
+prometheus-fastapi-instrumentator==7.0.0

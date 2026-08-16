@@ -1,0 +1,2115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://citra-ai.com/schema/sources.schema.json",
+  "title": "Citra dept-MCP sources.json",
+  "description": "The source registry a dept-MCP loads (SOURCES_FILE / SOURCES_JSON). GENERATED from source-mcp-template/registry_models.py by gen_sources_schema.py — do not edit by hand; your change will be overwritten and CI will fail. Authoring guide: docs/sources-file.md. This schema covers structure/types/enums/unknown-keys; cross-field rules (mongodb->collection, semantic->rag, fraud->primary key) are enforced by validate_sources.py and at MCP boot.",
+  "$defs": {
+    "ArtifactRole": {
+      "description": "What an artifact column IS, for fraud screening.",
+      "enum": [
+        "identity",
+        "evidence",
+        "supporting",
+        "payment_proof"
+      ],
+      "title": "ArtifactRole",
+      "type": "string"
+    },
+    "ColumnKind": {
+      "description": "Whether a column's value is a media reference or plain data.",
+      "enum": [
+        "plain",
+        "url",
+        "image_url",
+        "document_url",
+        "file"
+      ],
+      "title": "ColumnKind",
+      "type": "string"
+    },
+    "Connection": {
+      "additionalProperties": true,
+      "description": "How to reach the backend. Credentials NEVER inline — always `env_prefix`.\n\nextra=\"allow\" is deliberate (see module docstring): connection keys are\nbackend-specific and a wrong one fails loudly at connect time. The keys below\nare the ones the code reads or the real files author; others pass through.",
+      "properties": {
+        "env_prefix": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Env Prefix"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        },
+        "mongo_db": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mongo Db"
+        },
+        "collection": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collection"
+        },
+        "primary_key": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Primary Key"
+        },
+        "tenant_filter": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tenant Filter"
+        },
+        "uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uri"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        }
+      },
+      "title": "Connection",
+      "type": "object"
+    },
+    "DatasetKind": {
+      "enum": [
+        "sql",
+        "mongodb",
+        "rest",
+        "odata",
+        "soql",
+        "duckdb",
+        "bigquery",
+        "sap_rfc",
+        "semantic"
+      ],
+      "title": "DatasetKind",
+      "type": "string"
+    },
+    "DateOrder": {
+      "enum": [
+        "DMY",
+        "MDY",
+        "YMD"
+      ],
+      "title": "DateOrder",
+      "type": "string"
+    },
+    "DateRule": {
+      "additionalProperties": false,
+      "description": "E6 — one declarative date rule over the record's OWN columns. Fires\nwhen (later - earlier) < min_days_between (default 0 = plain ordering:\nan inspection dated before its work order) or > max_days_between when\nset (stale documents). Classic use: claim within days of policy start\n(min_days_between), statement older than N days (max_days_between).",
+      "properties": {
+        "name": {
+          "maxLength": 60,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "earlier_field": {
+          "title": "Earlier Field",
+          "type": "string"
+        },
+        "later_field": {
+          "title": "Later Field",
+          "type": "string"
+        },
+        "min_days_between": {
+          "default": 0,
+          "title": "Min Days Between",
+          "type": "integer"
+        },
+        "max_days_between": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Days Between"
+        }
+      },
+      "required": [
+        "name",
+        "earlier_field",
+        "later_field"
+      ],
+      "title": "DateRule",
+      "type": "object"
+    },
+    "DecisionHistory": {
+      "additionalProperties": false,
+      "description": "Marks a dataset as the decision record that feeds the learning loop.",
+      "properties": {
+        "outcome_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome Field"
+        },
+        "good_values": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Good Values"
+        },
+        "bad_values": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bad Values"
+        },
+        "neutral_values": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Neutral Values"
+        },
+        "outcome_hold_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome Hold Field"
+        },
+        "key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key Field"
+        },
+        "settling_window_days": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Settling Window Days"
+        },
+        "decision_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Field"
+        },
+        "decided_at_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decided At Field"
+        },
+        "decided_by_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decided By Field"
+        },
+        "rationale_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rationale Field"
+        },
+        "declared": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Declared"
+        }
+      },
+      "title": "DecisionHistory",
+      "type": "object"
+    },
+    "Domain": {
+      "additionalProperties": false,
+      "description": "The (vertical, sub_vertical, country) targeting triple — declared per\nSOURCE; a dataset may declare its own block to override.\n\nOnly ``vertical`` is required: if you declare a domain at all, say what\nindustry it is. ``country`` defaults to MULTINATIONAL and ``sub_vertical``\nmay be omitted when the industry has no meaningful sub-line.",
+      "properties": {
+        "vertical": {
+          "title": "Vertical",
+          "type": "string"
+        },
+        "sub_vertical": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sub Vertical"
+        },
+        "country": {
+          "default": "MULTINATIONAL",
+          "title": "Country",
+          "type": "string"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
+        "date_order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DateOrder"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "language": {
+          "default": "en",
+          "title": "Language",
+          "type": "string"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "pack_advisory": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pack Advisory"
+        }
+      },
+      "required": [
+        "vertical"
+      ],
+      "title": "Domain",
+      "type": "object"
+    },
+    "FraudScreening": {
+      "additionalProperties": false,
+      "description": "Per-dataset fraud opt-in.",
+      "properties": {
+        "applies": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Applies"
+        },
+        "value_fields": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Fields"
+        },
+        "identity_fields": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identity Fields"
+        },
+        "incident_date_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Incident Date Field"
+        },
+        "location_lat_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location Lat Field"
+        },
+        "location_lon_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location Lon Field"
+        },
+        "gps_radius_km": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gps Radius Km"
+        },
+        "payment_proof": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PaymentProof"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "verify_against": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/VerifyAgainst"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verify Against"
+        },
+        "date_rules": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/DateRule"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Rules"
+        }
+      },
+      "title": "FraudScreening",
+      "type": "object"
+    },
+    "Options": {
+      "additionalProperties": false,
+      "properties": {
+        "tables": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tables"
+        },
+        "invocation_template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invocation Template"
+        },
+        "query_timeout_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Timeout Seconds"
+        }
+      },
+      "title": "Options",
+      "type": "object"
+    },
+    "Organization": {
+      "additionalProperties": false,
+      "description": "The customer's DISPLAY identity (docs/runtime-ui-modernization-plan.md\nTrack E) — declared once, per source, by IT at connection time; every app\nbuilt on the source inherits it (app headers, browser titles, agent\nprompts, the Money-impact card). This is presentation identity ONLY —\nauth/tenancy (`org_id`) is untouched. When a tenant's sources declare\nconflicting blocks, consumption is first-wins (deterministic + visible).",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "short_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Short Name"
+        },
+        "logo_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Url"
+        },
+        "brand_color": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brand Color"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Organization",
+      "type": "object"
+    },
+    "PaymentProof": {
+      "additionalProperties": false,
+      "description": "E4 payment-proof verification config (see FraudScreening.payment_proof).",
+      "properties": {
+        "ledger_dataset": {
+          "title": "Ledger Dataset",
+          "type": "string"
+        },
+        "match_field": {
+          "title": "Match Field",
+          "type": "string"
+        },
+        "amount_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount Field"
+        },
+        "date_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Field"
+        },
+        "party_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Party Field"
+        },
+        "doc_ref_field": {
+          "default": "transaction_ref",
+          "title": "Doc Ref Field",
+          "type": "string"
+        },
+        "doc_amount_field": {
+          "default": "amount",
+          "title": "Doc Amount Field",
+          "type": "string"
+        },
+        "doc_date_field": {
+          "default": "payment_date",
+          "title": "Doc Date Field",
+          "type": "string"
+        },
+        "doc_party_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Doc Party Field"
+        },
+        "amount_tolerance_pct": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount Tolerance Pct"
+        },
+        "date_window_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Window Days"
+        }
+      },
+      "required": [
+        "ledger_dataset",
+        "match_field"
+      ],
+      "title": "PaymentProof",
+      "type": "object"
+    },
+    "Rag": {
+      "additionalProperties": false,
+      "description": "Semantic (RAG) wiring. The MCP never queries these — the platform reader\ndoes; the MCP only advertises the collection to discovery.",
+      "properties": {
+        "milvus_collection": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Milvus Collection"
+        },
+        "s3_prefix": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "S3 Prefix"
+        }
+      },
+      "title": "Rag",
+      "type": "object"
+    },
+    "ReadVia": {
+      "additionalProperties": true,
+      "description": "How to read this dataset. `extra` carries kind-specific wiring — notably\nthe REST request/response mapping (catalogue.py) and duckdb file lists.",
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "files": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Files"
+        },
+        "extra": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extra"
+        }
+      },
+      "title": "ReadVia",
+      "type": "object"
+    },
+    "RegistryColumn": {
+      "additionalProperties": false,
+      "description": "One authored column. The ontology lives here.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "physical_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Physical Name"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "nullable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nullable"
+        },
+        "is_primary_key": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Primary Key"
+        },
+        "is_foreign_key": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Foreign Key"
+        },
+        "foreign_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Foreign Ref"
+        },
+        "pii": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pii"
+        },
+        "sensitivity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sensitivity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "semantic_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Semantic Type"
+        },
+        "distinct_values": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Distinct Values"
+        },
+        "range": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Range"
+        },
+        "column_kind": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ColumnKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mime_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mime Hint"
+        },
+        "artifact_role": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ArtifactRole"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reuse_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReusePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "RegistryColumn",
+      "type": "object"
+    },
+    "RegistryDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "physical_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Physical Name"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DatasetKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/RegistryColumn"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "read_via": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReadVia"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "write_actions": {
+          "items": {
+            "$ref": "#/$defs/RegistryWriteAction"
+          },
+          "title": "Write Actions",
+          "type": "array"
+        },
+        "relationships": {
+          "anyOf": [
+            {
+              "items": {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relationships"
+        },
+        "input_schema": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Schema"
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Domain"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "fraud_screening": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FraudScreening"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decision_history": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionHistory"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value_semantics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueSemantics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mandatory_when_used": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mandatory When Used"
+        },
+        "last_refreshed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Refreshed At"
+        },
+        "samples_redacted": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Samples Redacted"
+        },
+        "row_count_approx": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row Count Approx"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "RegistryDataset",
+      "type": "object"
+    },
+    "RegistrySource": {
+      "additionalProperties": false,
+      "description": "One source: one backend system, for one department.",
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "$Schema"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/SourceType"
+        },
+        "dept_id": {
+          "title": "Dept Id",
+          "type": "string"
+        },
+        "org_id": {
+          "title": "Org Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "is_active": {
+          "default": true,
+          "title": "Is Active",
+          "type": "boolean"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "visibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Visibility"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "connection": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Connection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "options": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Options"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Domain"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "organization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Organization"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "datasets": {
+          "items": {
+            "$ref": "#/$defs/RegistryDataset"
+          },
+          "title": "Datasets",
+          "type": "array"
+        },
+        "write_actions": {
+          "items": {
+            "$ref": "#/$defs/RegistryWriteAction"
+          },
+          "title": "Write Actions",
+          "type": "array"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/RegistryColumn"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "rag": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Rag"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "taxonomy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceTaxonomy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "query_timeout_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Timeout Seconds"
+        },
+        "supports_history": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Supports History"
+        },
+        "workflow_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflow Id"
+        },
+        "structured_detection": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Structured Detection"
+        },
+        "connection_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Connection Ref"
+        },
+        "catalogue": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Catalogue"
+        },
+        "is_demo": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Is Demo"
+        },
+        "created_at": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "updated_at": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        }
+      },
+      "required": [
+        "source_id",
+        "type",
+        "dept_id",
+        "org_id",
+        "name",
+        "description"
+      ],
+      "title": "RegistrySource",
+      "type": "object"
+    },
+    "RegistryWriteAction": {
+      "additionalProperties": false,
+      "description": "A governed write. Reaches the app builder ONLY via the catalogue, i.e.\nonly if declared here.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "verb": {
+          "title": "Verb",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "input_schema": {
+          "additionalProperties": true,
+          "title": "Input Schema",
+          "type": "object"
+        },
+        "roles_allowed_write": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Roles Allowed Write",
+          "type": "array"
+        },
+        "key_fields": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key Fields"
+        },
+        "idempotency_key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key Field"
+        },
+        "sql_template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sql Template"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endpoint"
+        },
+        "requires_csrf": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requires Csrf"
+        }
+      },
+      "required": [
+        "id",
+        "verb"
+      ],
+      "title": "RegistryWriteAction",
+      "type": "object"
+    },
+    "ReusePolicy": {
+      "description": "What re-use of the same artifact MEANS (overrides the role default).",
+      "enum": [
+        "expected",
+        "suspicious",
+        "ignore"
+      ],
+      "title": "ReusePolicy",
+      "type": "string"
+    },
+    "Sensitivity": {
+      "description": "Advisory only — the platform enforces `pii`, not this. See\ndocs/write-actions.md: no classification taxonomy beyond PII.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "SourceTaxonomy": {
+      "description": "Optional ``taxonomy`` block on a dept_sources document.",
+      "properties": {
+        "doc_types": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/TaxonomyEntry"
+          },
+          "title": "Doc Types",
+          "type": "array"
+        },
+        "classification_levels": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Classification Levels",
+          "type": "array"
+        }
+      },
+      "title": "SourceTaxonomy",
+      "type": "object"
+    },
+    "SourceType": {
+      "description": "How the MCP reaches this backend.\n\n`bigquery`, `sap_rfc` and `duckdb` are NOT speculative: catalogue._source_kind\nbranches on them and 3 of the 19 live sources use them. models.SourceType\nlists only the first four, and docs/sources-file.md said the same — so\nvalidating against that enum would have rejected working sources. The doc is\nfixed; this is the real set.",
+      "enum": [
+        "semantic",
+        "structured",
+        "mongodb",
+        "rest_api",
+        "bigquery",
+        "sap_rfc",
+        "duckdb"
+      ],
+      "title": "SourceType",
+      "type": "string"
+    },
+    "SourcesEnvelope": {
+      "additionalProperties": false,
+      "description": "The ``{\"sources\": [ ... ]}`` form. Both this and a bare array are accepted\nby the loader (router.py), and every real tenant file uses this one.",
+      "properties": {
+        "$schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "$Schema"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/RegistrySource"
+          },
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sources"
+      ],
+      "title": "SourcesEnvelope",
+      "type": "object"
+    },
+    "TaxonomyEntry": {
+      "description": "One doc_type advertised by a source (see ``dept_sources.taxonomy``).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "synonyms": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Synonyms",
+          "type": "array"
+        },
+        "examples": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Examples",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "TaxonomyEntry",
+      "type": "object"
+    },
+    "ValueAttribution": {
+      "description": "THE attribution rule — pre-agreed at day zero, versioned in git. Which\ndecisions' value counts as Citra's. Changing it mid-pilot is a VISIBLE\nontology change (new definition_version), never a silent re-cut.",
+      "enum": [
+        "approved_recommendation",
+        "any_citra_touched",
+        "approved_within_window"
+      ],
+      "title": "ValueAttribution",
+      "type": "string"
+    },
+    "ValueKind": {
+      "description": "What one unit of realized value IS (docs/money-saved-roi-plan.md §2).",
+      "enum": [
+        "recovered",
+        "prevented_loss",
+        "sanctioned",
+        "settled"
+      ],
+      "title": "ValueKind",
+      "type": "string"
+    },
+    "ValueRealization": {
+      "additionalProperties": false,
+      "description": "WHERE value is realized — usually a different dataset (the payments\nledger). Cross-dataset by design, same as payment_proof: the dataset and\ncolumns are validated against the catalogue when consumed.",
+      "properties": {
+        "dataset": {
+          "title": "Dataset",
+          "type": "string"
+        },
+        "match_field": {
+          "title": "Match Field",
+          "type": "string"
+        },
+        "amount_field": {
+          "title": "Amount Field",
+          "type": "string"
+        },
+        "date_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Field"
+        },
+        "window_days": {
+          "default": 90,
+          "minimum": 1,
+          "title": "Window Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dataset",
+        "match_field",
+        "amount_field"
+      ],
+      "title": "ValueRealization",
+      "type": "object"
+    },
+    "ValueSemantics": {
+      "additionalProperties": false,
+      "description": "The MONEY definition for a decision dataset — the canonical spine every\nROI number is computed from (docs/money-saved-roi-plan.md). Lives beside\n``decision_history`` (which defines OUTCOMES); this defines their VALUE.\n\nBecause it lives in sources.json, a pilot's metric definitions are frozen\nby a git commit at day zero, and every stamped value carries the hash of\nthe block that computed it (definition_version).",
+      "properties": {
+        "value_kind": {
+          "$ref": "#/$defs/ValueKind"
+        },
+        "exposure_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exposure Field"
+        },
+        "realization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueRealization"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "attribution": {
+          "$ref": "#/$defs/ValueAttribution",
+          "default": "approved_recommendation"
+        },
+        "prevented_when": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prevented When"
+        }
+      },
+      "required": [
+        "value_kind"
+      ],
+      "title": "ValueSemantics",
+      "type": "object"
+    },
+    "VerifyAgainst": {
+      "additionalProperties": false,
+      "description": "Generic cross-dataset document verification (plan F4 — the E4 shape\nreused): a value extracted from a role-tagged document is looked up BY KEY\nin a declared target dataset, server-side. 'Reference not found' is a\nfact-grade signal; a full match is VERIFICATION. Examples: purchase bill →\nland registry, agent's \"cash collected\" → ledger, serial-in-photo → asset\nmaster, repair bill → surveyor estimate.",
+      "properties": {
+        "name": {
+          "maxLength": 60,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "target_dataset": {
+          "title": "Target Dataset",
+          "type": "string"
+        },
+        "match_field": {
+          "title": "Match Field",
+          "type": "string"
+        },
+        "doc_column": {
+          "title": "Doc Column",
+          "type": "string"
+        },
+        "doc_ref_field": {
+          "default": "reference",
+          "title": "Doc Ref Field",
+          "type": "string"
+        },
+        "compare": {
+          "items": {
+            "$ref": "#/$defs/VerifyCompare"
+          },
+          "title": "Compare",
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        }
+      },
+      "required": [
+        "name",
+        "target_dataset",
+        "match_field",
+        "doc_column"
+      ],
+      "title": "VerifyAgainst",
+      "type": "object"
+    },
+    "VerifyCompare": {
+      "additionalProperties": false,
+      "description": "One field-pair comparison within a verify_against block.",
+      "properties": {
+        "doc_field": {
+          "title": "Doc Field",
+          "type": "string"
+        },
+        "target_field": {
+          "title": "Target Field",
+          "type": "string"
+        },
+        "type": {
+          "default": "text",
+          "pattern": "^(amount|date|id|text)$",
+          "title": "Type",
+          "type": "string"
+        },
+        "tolerance_pct": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tolerance Pct"
+        },
+        "window_days": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window Days"
+        }
+      },
+      "required": [
+        "doc_field",
+        "target_field"
+      ],
+      "title": "VerifyCompare",
+      "type": "object"
+    },
+    "Visibility": {
+      "additionalProperties": false,
+      "description": "Who may READ this source. Enforced for structured reads (auth.py) and —\nas of the semantic-authz fix — for /semantic/search too.",
+      "properties": {
+        "roles_allowed": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Roles Allowed",
+          "type": "array"
+        },
+        "cross_org_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cross Org Ids",
+          "type": "array"
+        },
+        "public_within_org": {
+          "default": false,
+          "title": "Public Within Org",
+          "type": "boolean"
+        }
+      },
+      "title": "Visibility",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/SourcesEnvelope"
+    },
+    {
+      "items": {
+        "$ref": "#/$defs/RegistrySource"
+      },
+      "type": "array"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml for duckdb-query-service (Combined Prod + Test, port 7301)
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/duckdb-query-service:${IMAGE_TAG}
+# Config from Vault (VAULT_TOKEN must be empty - obtained at runtime).
+#
+# SECURITY NOTE 2026-05-17: the previous version of this file hard-coded a
+# real VAULT_TOKEN ('hvs.CAESID6...'). That token is in git history and MUST
+# be revoked at Vault. Do NOT paste real tokens here in future.
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/duckdb-query-service:${IMAGE_TAG:-prod-latest}
+  ports:
+    - "7301"
+  restart: unless-stopped
+  volumes:
+    - ~/citra-ai/logs/duckdb-query-service:/app/logs
+  networks:
+    - citra-network
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  duckdb-query-service-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: duckdb-query-service-prod
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "524adbc0-ea9f-82e4-f26c-6eb7e20a392f"
+      VAULT_SECRET_PATH: "prod/duckdb-query-service"
+      PORT: "7301"
+      HOST: "0.0.0.0"
+      DUCKDB_TABLE_TTL: "600"
+      DUCKDB_MAX_TABLES: "500"
+      DUCKDB_CLEANUP_INTERVAL: "60"
+    # No command override: use the image's exec-form CMD so gunicorn is PID 1
+    # and handles SIGTERM (graceful shutdown). The old shell-pipeline wrapper
+    # (sh -lc 'gunicorn ... | ts | tee') made the SHELL PID 1, which did not
+    # forward SIGTERM -> docker stop hit the grace timeout and SIGKILLed the
+    # container (exit 137). Logs still go to json-file + host log collector.
+
+  duckdb-query-service-test:
+    <<: *common
+    profiles: [test]
+    container_name: duckdb-query-service-test
+    environment:
+      TZ: "America/New_York"
+      ENVIRONMENT: "test"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: "test/duckdb-query-service"
+      PORT: "7301"
+      HOST: "0.0.0.0"
+    # No command override: use the image's exec-form CMD so gunicorn is PID 1
+    # and handles SIGTERM (graceful shutdown). The old shell-pipeline wrapper
+    # (sh -lc 'gunicorn ... | ts | tee') made the SHELL PID 1, which did not
+    # forward SIGTERM -> docker stop hit the grace timeout and SIGKILLed the
+    # container (exit 137). Logs still go to json-file + host log collector.
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network

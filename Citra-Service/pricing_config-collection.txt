@@ -1,0 +1,67 @@
+{
+  "_id": {
+    "$oid": "693302d21e8906e5c52c8cd8"
+  },
+  "version": 5,
+  "is_active": true,
+  "active": true,
+  "token_pricing": {
+    "default": {
+      "input_per_1k": 0.06,
+      "output_per_1k": 0.12,
+      "cached_per_1k": 0.01,
+      "internet_grounding_price": 4,
+      "collections_search_price": 0.4
+    }
+  },
+  "embedding_pricing": {
+    "per_1k": 0.05
+  },
+  "storage_pricing": {
+    "aws_per_gb_per_day": 0.2,
+    "database_per_gb_per_day": 10
+  },
+  "upload_pricing": {
+    "document": 0.02,
+    "audio": 0.1,
+    "video": 0.02,
+    "ocr": 0.5
+  },
+  "credit_purchase": {
+    "minimum_amount": 100,
+    "bonus_tiers": [
+      {
+        "threshold": 500,
+        "bonus_percentage": 10,
+        "_id": {
+          "$oid": "693302d21e8906e5c52c8cd9"
+        }
+      },
+      {
+        "threshold": 1000,
+        "bonus_percentage": 20,
+        "_id": {
+          "$oid": "693302d21e8906e5c52c8cda"
+        }
+      },
+      {
+        "threshold": 5000,
+        "bonus_percentage": 30,
+        "_id": {
+          "$oid": "693302d21e8906e5c52c8cdb"
+        }
+      }
+    ]
+  },
+  "description": "Pay-as-you-go pricing v5 - Updated upload pricing: OCR ₹0.5/page, Audio ₹0.1/MB, Video ₹0.02/MB",
+  "effective_date": {
+    "$date": "2025-12-05T16:05:38.665Z"
+  },
+  "created_at": {
+    "$date": "2025-12-05T16:05:38.674Z"
+  },
+  "updated_at": {
+    "$date": "2025-12-05T16:05:38.674Z"
+  },
+  "__v": 0
+}

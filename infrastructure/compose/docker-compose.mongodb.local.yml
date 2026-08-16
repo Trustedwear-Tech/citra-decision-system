@@ -1,0 +1,75 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — MongoDB, LOCAL DEV ONLY
+# =============================================================================
+#   docker compose -f docker-compose.mongodb.local.yml up -d
+#
+# docker-compose.mongodb.yml (the deployable one) is correct and works — it runs
+# an authenticated single-node replica set with a generated keyfile. This file
+# exists only because local dev wants two things prod does not:
+#
+# 1. NO AUTH. Otherwise every service .env on a developer machine has to carry
+#    Mongo credentials. Safe here only because the port is bound to 127.0.0.1.
+#    Dropping auth also removes the keyfile requirement — MongoDB refuses
+#    auth + --replSet without one ("security.keyFile is required when
+#    authorization is enabled with replica sets").
+#
+# 2. MEMBER HOST = localhost:27017, not `mongodb:27017`. Dev services run
+#    directly on the Windows host, where the container name does not resolve.
+#    (With directConnection=true either host works, but this keeps a plain
+#    mongosh from the host working too.)
+#
+# The replica set itself is kept, matching prod, so change streams and
+# retryable writes behave the same in both.
+#
+# Initiation is done after startup, NOT via /docker-entrypoint-initdb.d —
+# scripts there run against the image's temporary mongod, which has replication
+# disabled, so rs.initiate() fails with "This node was not started with
+# replication enabled."
+#
+# CONNECTION STRINGS — always pass directConnection=true:
+#   host      : mongodb://localhost:27017/dev?directConnection=true
+#   container : mongodb://mongodb:27017/dev?directConnection=true
+# Without it the driver does replica-set discovery, learns the member is
+# `localhost:27017`, and a container would then dial its OWN localhost.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: citra-mongodb
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "127.0.0.1:27017:27017"
+    networks:
+      - citra-network
+    volumes:
+      - mongodb_local_data:/data/db
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+    logging: *default-logging
+
+volumes:
+  mongodb_local_data:
+    driver: local
+
+networks:
+  citra-network:
+    external: true

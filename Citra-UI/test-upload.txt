@@ -1,0 +1,12 @@
+Test document content for MongoDB storage verification.
+
+This is a test document to verify that the MongoDB chunked storage is working correctly after fixing the async event loop conflicts.
+
+Key points to test:
+1. Document upload
+2. Pinecone vector storage
+3. Azure blob storage
+4. MongoDB chunked storage (main fix)
+5. UI document display
+
+If you can see this document in the UI after upload, then the MongoDB storage fix was successful!

@@ -1,0 +1,115 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — Traefik Dynamic Configuration (Routers & Services)
+# =============================================================================
+
+http:
+
+  # -------------------------------------------------------------------------
+  # Routers
+  # -------------------------------------------------------------------------
+  routers:
+
+    # Health check
+    healthz:
+      rule: "Path(`/healthz`)"
+      entryPoints: [web, websecure]
+      service: healthz@internal
+      priority: 100
+
+    # Core AI API — Citra-Service
+    citra-api:
+      rule: "PathPrefix(`/citra-ai/`)"
+      entryPoints: [web, websecure]
+      service: citra-api
+      middlewares: [security-headers, rate-limit-api, strip-prefix-citra]
+      priority: 90
+
+    # User / Auth API — User-Service
+    user-api:
+      rule: "PathPrefix(`/api/auth/`)"
+      entryPoints: [web, websecure]
+      service: user-api
+      middlewares: [security-headers, rate-limit-auth]
+      priority: 90
+
+    # Frontend (catch-all — lowest priority)
+    frontend:
+      rule: "PathPrefix(`/`)"
+      entryPoints: [web, websecure]
+      service: frontend
+      middlewares: [security-headers]
+      priority: 1
+
+  # -------------------------------------------------------------------------
+  # Services (backends)
+  # -------------------------------------------------------------------------
+  services:
+
+    citra-api:
+      loadBalancer:
+        servers:
+          - url: "http://citra-service:7001"
+        passHostHeader: true
+        responseForwarding:
+          flushInterval: "100ms"
+
+    user-api:
+      loadBalancer:
+        servers:
+          - url: "http://citra-user-service:7004"
+        passHostHeader: true
+
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://citra-ui:80"
+        passHostHeader: true
+
+  # -------------------------------------------------------------------------
+  # Middlewares
+  # -------------------------------------------------------------------------
+  middlewares:
+
+    # Security headers
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-XSS-Protection: "1; mode=block"
+
+    # Rate limiting — API (30 req/s average, burst 50)
+    rate-limit-api:
+      rateLimit:
+        average: 30
+        burst: 50
+        period: "1s"
+
+    # Rate limiting — Auth (10 req/s average, burst 20)
+    rate-limit-auth:
+      rateLimit:
+        average: 10
+        burst: 20
+        period: "1s"
+
+    # Strip /citra-ai prefix before forwarding
+    strip-prefix-citra:
+      stripPrefix:
+        prefixes:
+          - "/citra-ai"
+
+    # Gzip compression
+    gzip:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"

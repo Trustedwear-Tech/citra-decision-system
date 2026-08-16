@@ -1,0 +1,126 @@
+/*
+ * Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+ * Author: Rohit Kumar Chandan
+ * SPDX-License-Identifier: BUSL-1.1
+ *
+ * Licensed under the Business Source License 1.1. Non-production use is granted;
+ * production use requires a commercial licence until the Change Date, after
+ * which this file converts to Apache-2.0. See LICENSE at the repository root.
+ */
+
+/* Acme Bank's own stylesheet.
+ *
+ * Deliberately unlike Citra's: a serif face, a navy/teal palette, square-ish
+ * corners. That contrast is the point — when the decision card renders inside
+ * its shadow root, you can see at a glance that none of this leaks in and none
+ * of the card's styling leaks out. */
+
+:root {
+  --ab-navy: #0b2942;
+  --ab-teal: #0f766e;
+  --ab-ink: #17222e;
+  --ab-muted: #5b6b7c;
+  --ab-line: #dfe5ea;
+  --ab-bg: #f4f6f8;
+  --ab-warn: #b45309;
+  --ab-bad: #b91c1c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ab-bg);
+  color: var(--ab-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ── chrome ─────────────────────────────────────────────────────────────── */
+.ab-top { background: var(--ab-navy); color: #fff; padding: 0 24px; }
+.ab-top-inner { display: flex; align-items: center; gap: 28px; max-width: 1280px; margin: 0 auto; height: 58px; }
+.ab-brand { font-size: 19px; font-weight: 700; letter-spacing: .01em; }
+.ab-brand span { color: #7dd3d8; font-weight: 400; }
+.ab-who { margin-left: auto; font-size: 13px; color: #b7c6d4; font-family: system-ui, sans-serif; }
+
+.ab-nav { background: #fff; border-bottom: 1px solid var(--ab-line); padding: 0 24px; }
+.ab-nav-inner { display: flex; gap: 26px; max-width: 1280px; margin: 0 auto; }
+.ab-nav a {
+  padding: 13px 2px; text-decoration: none; color: var(--ab-muted);
+  font-family: system-ui, sans-serif; font-size: 14px; border-bottom: 2px solid transparent;
+}
+.ab-nav a.on { color: var(--ab-teal); border-bottom-color: var(--ab-teal); font-weight: 600; }
+
+.ab-main { max-width: 1280px; margin: 22px auto; padding: 0 24px 60px; }
+.ab-crumb { font-family: system-ui, sans-serif; font-size: 13px; color: var(--ab-muted); margin-bottom: 14px; }
+.ab-crumb b { color: var(--ab-ink); }
+
+/* ── layout ─────────────────────────────────────────────────────────────── */
+.ab-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1080px) { .ab-split { grid-template-columns: 1fr; } }
+
+.ab-card { background: #fff; border: 1px solid var(--ab-line); border-radius: 4px; padding: 20px 22px; }
+.ab-card h2 { margin: 0 0 4px; font-size: 18px; }
+.ab-card h2 .ab-id { font-family: ui-monospace, monospace; font-size: 15px; color: var(--ab-muted); margin-left: 8px; }
+.ab-sub { font-family: system-ui, sans-serif; font-size: 13px; color: var(--ab-muted); margin: 0 0 16px; }
+
+.ab-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.ab-f-label { font-family: system-ui, sans-serif; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ab-muted); }
+.ab-f-value { font-size: 15px; }
+
+/* ── worklist ───────────────────────────────────────────────────────────── */
+.ab-list { list-style: none; margin: 0; padding: 0; }
+.ab-row {
+  width: 100%; text-align: left; background: #fff; border: 1px solid var(--ab-line);
+  border-radius: 4px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
+  font-family: inherit; font-size: 14px; color: inherit; display: block;
+}
+.ab-row:hover { border-color: var(--ab-teal); }
+.ab-row.on { border-color: var(--ab-teal); box-shadow: inset 3px 0 0 var(--ab-teal); }
+.ab-row-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.ab-row-id { font-family: ui-monospace, monospace; font-size: 13px; }
+.ab-row-meta { font-family: system-ui, sans-serif; font-size: 12px; color: var(--ab-muted); margin-top: 3px; }
+
+.ab-pill {
+  font-family: system-ui, sans-serif; font-size: 11px; padding: 2px 8px;
+  border-radius: 3px; background: #eef2f5; color: var(--ab-muted); white-space: nowrap;
+}
+.ab-pill.warn { background: #fef3c7; color: var(--ab-warn); }
+.ab-pill.bad { background: #fee2e2; color: var(--ab-bad); }
+
+/* ── the Citra slot ─────────────────────────────────────────────────────── */
+.ab-citra-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.ab-citra-head h2 { margin: 0; font-size: 18px; }
+.ab-tag {
+  font-family: system-ui, sans-serif; font-size: 10px; letter-spacing: .09em;
+  text-transform: uppercase; background: #e6fffa; color: var(--ab-teal);
+  padding: 3px 7px; border-radius: 3px; font-weight: 600;
+}
+.ab-note { font-family: system-ui, sans-serif; font-size: 12.5px; color: var(--ab-muted); margin: 14px 0 0; }
+
+.err {
+  font-family: system-ui, sans-serif; font-size: 13px; color: var(--ab-bad);
+  background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; padding: 10px 12px;
+}
+
+/* ── sign in ────────────────────────────────────────────────────────────── */
+.ab-signin { max-width: 380px; margin: 12vh auto; }
+.ab-signin label { display: block; font-family: system-ui, sans-serif; font-size: 12px; color: var(--ab-muted); margin: 12px 0 4px; }
+.ab-signin input {
+  width: 100%; padding: 9px 11px; border: 1px solid var(--ab-line);
+  border-radius: 3px; font-size: 14px; font-family: system-ui, sans-serif;
+}
+.ab-btn {
+  margin-top: 18px; width: 100%; padding: 10px; background: var(--ab-teal);
+  color: #fff; border: 0; border-radius: 3px; font-size: 14px; cursor: pointer;
+  font-family: system-ui, sans-serif; font-weight: 600;
+}
+.ab-btn:disabled { opacity: .6; cursor: default; }
+
+/* ── event log ──────────────────────────────────────────────────────────── */
+.ab-log {
+  background: #0b1a26; color: #d7e6ef; border-radius: 4px; padding: 12px 14px;
+  font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap;
+  max-height: 220px; overflow: auto; margin-top: 10px;
+}

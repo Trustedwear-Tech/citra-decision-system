@@ -1,0 +1,24 @@
+# Core framework
+fastapi>=0.100.0
+uvicorn[standard]
+gunicorn
+pydantic>=2.5.0
+sentry-sdk[fastapi]>=2.14.0
+
+# Cross-encoder reranker.
+# NOTE: torch is intentionally NOT listed here. It is installed in the
+# Dockerfile with a build-arg-selected variant (CPU-only wheel by default,
+# CUDA wheel for GPU images) so CPU deployments don't ship the CUDA runtime.
+# sentence-transformers depends on torch but will accept the pre-installed one.
+sentence-transformers>=3.0.0
+
+# Utilities
+numpy
+requests
+python-dotenv
+
+# Shared service utils (distributed tracing — OTel spans → Tempo).
+-e ../citra-common/citra-service-utils
+
+# Prometheus /metrics (added 2026-05-16)
+prometheus-fastapi-instrumentator==7.0.0

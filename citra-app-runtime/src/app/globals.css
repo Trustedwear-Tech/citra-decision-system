@@ -1,0 +1,2264 @@
+:root {
+  /* Brand — --citra-primary is overridden per-app via theme.primary (set on
+     .app-shell). --citra-accent is the secondary highlight (theme.accent). */
+  --citra-primary: #2563eb;
+  --citra-accent: #d97706;
+  --citra-accent-soft: #fff7ed;
+
+  /* Surfaces & ink */
+  --citra-bg: #ffffff;            /* legacy alias — page background */
+  --citra-canvas: #f6f8fc;        /* app canvas behind the content */
+  --citra-surface: #ffffff;       /* raised card surface */
+  --citra-surface-2: #f8fafc;     /* subtle inset surface */
+  --citra-card: #f8fafc;          /* legacy alias */
+  --citra-fg: #0f172a;
+  --citra-muted: #64748b;
+  --citra-faint: #94a3b8;
+  --citra-border: #e8ecf2;        /* softer hairline */
+  --citra-border-strong: #d6dbe4;
+
+  /* Elevation language (4 levels) */
+  --elev-1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --elev-2: 0 4px 14px -6px rgba(15, 23, 42, 0.16), 0 2px 6px -2px rgba(15, 23, 42, 0.08);
+  --elev-3: 0 16px 40px -16px rgba(15, 23, 42, 0.24);
+  --elev-modal: 0 28px 64px -16px rgba(15, 23, 42, 0.5);
+
+  /* Radii, ring, motion */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--citra-primary) 22%, transparent);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  /* --citra-font is set per-app from theme.font (Theme v2); unset → platform stack. */
+  font-family: var(--citra-font, var(--font-sans));
+  background: var(--citra-canvas);
+  color: var(--citra-fg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01";
+}
+a { color: var(--citra-primary); }
+
+.app-shell {
+  max-width: 1240px;
+  margin: 24px auto;
+  padding: 0 26px 30px;
+  background: var(--citra-surface);
+  border: 1px solid var(--citra-border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--elev-2);
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--citra-border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--citra-surface) 86%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+}
+/* Brand lockup — logo + title sit together at the top-left. */
+.app-brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.app-logo {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  object-fit: cover;
+  background: var(--citra-surface-2);
+  border: 1px solid var(--citra-border);
+}
+/* Fallback monogram tile when no logo_url is set. */
+.app-logo-mono {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg,
+    var(--citra-primary),
+    color-mix(in srgb, var(--citra-primary) 55%, #0e7490));
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--citra-primary) 70%, transparent);
+}
+.app-title {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--citra-fg);
+}
+.app-desc { color: var(--citra-muted); margin-top: 3px; font-size: 13.5px; }
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+.panel {
+  grid-column: span 12;
+  background: var(--citra-surface-2);
+  border: 1px solid var(--citra-border);
+  border-radius: var(--r-md);
+  padding: var(--panel-pad, 18px 20px);
+  box-shadow: var(--panel-elev, none);
+}
+.panel.span-6 { grid-column: span 6; }
+.panel.span-4 { grid-column: span 4; }
+.panel-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--citra-faint);
+  margin-bottom: 14px;
+}
+.panel-empty { color: var(--citra-muted); font-size: 14px; }
+.panel-error {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 13px;
+}
+.panel-error strong { font-size: 14px; }
+
+/* Notice / callout band (NoticePanel) */
+.notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.notice-icon { font-size: 16px; line-height: 1.4; flex: none; }
+.notice-body { display: flex; flex-direction: column; gap: 2px; }
+.notice-title { font-weight: 600; }
+.notice-body :last-child { margin-bottom: 0; }
+.notice-info    { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+.notice-success { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+.notice-warn    { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.notice-error   { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+
+/* Read-only form display field */
+.cf-readonly {
+  padding: 8px 10px;
+  background: #f8fafc;
+  border: 1px dashed var(--citra-border);
+  border-radius: 6px;
+  color: var(--citra-muted);
+  font-size: 14px;
+}
+
+/* Typeahead combobox */
+.cf-typeahead { position: relative; }
+.cf-typeahead-input { width: 100%; }
+.cf-typeahead-list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--citra-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+}
+.cf-typeahead-opt { padding: 7px 9px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.cf-typeahead-opt:hover { background: #eff6ff; }
+.cf-typeahead-empty { padding: 7px 9px; color: var(--citra-muted); font-size: 13px; }
+
+/* Wizard / stepper */
+.cf-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.cf-step { display: flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: #f1f5f9; color: var(--citra-muted); font-size: 13px; }
+.cf-step.is-active { background: #dbeafe; color: #1e40af; font-weight: 600; }
+.cf-step.is-done { background: #dcfce7; color: #15803d; }
+.cf-step-num { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: rgba(255,255,255,0.7); font-size: 11px; font-weight: 700; }
+
+/* KPI progress-to-target gauge */
+.kpi-progress { margin-top: 8px; }
+.kpi-progress-track { height: 7px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.kpi-progress-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
+.kpi-progress-green { background: #16a34a; }
+.kpi-progress-amber { background: #d97706; }
+.kpi-progress-red   { background: #dc2626; }
+.kpi-progress-label { display: block; margin-top: 4px; font-size: 11px; color: var(--citra-muted); }
+
+/* Kanban board */
+.q-kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: flex-start; }
+.q-kanban-col { flex: 0 0 280px; background: var(--citra-surface-2); border: 1px solid var(--citra-border); border-radius: 10px; padding: 10px; }
+.q-kanban-col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.q-kanban-count { font-size: 12px; color: var(--citra-muted); font-weight: 600; }
+.q-kanban-col-body { display: flex; flex-direction: column; gap: 8px; }
+.q-kanban-col-body .q-card { margin: 0; }
+
+/* Calendar */
+.cal-head { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 10px; }
+.cal-title { font-weight: 600; font-size: 15px; min-width: 160px; text-align: center; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-weekday { text-align: center; font-size: 11px; text-transform: uppercase; color: var(--citra-muted); padding: 4px 0; }
+.cal-cell { min-height: 78px; border: 1px solid var(--citra-border); border-radius: 6px; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+.cal-cell-empty { background: #f8fafc; border-style: dashed; }
+/* Today — the primary orientation cue, was entirely absent. */
+.cal-today { border-color: var(--citra-primary); box-shadow: inset 0 0 0 1px var(--citra-primary); }
+.cal-today .cal-daynum { color: var(--citra-primary); }
+.cal-daynum { font-size: 12px; font-weight: 600; color: var(--citra-muted); }
+.cal-event { font-size: 11px; padding: 2px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-more { font-size: 10px; color: var(--citra-muted); }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--citra-border); }
+th { color: var(--citra-muted); font-weight: 500; }
+
+.metric-row { display: flex; gap: 24px; flex-wrap: wrap; }
+.metric { min-width: 140px; }
+.metric-name { color: var(--citra-muted); font-size: 12px; text-transform: uppercase; }
+.metric-value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+.metric-sub { font-size: 12px; color: var(--citra-muted); }
+
+.form-row { display: flex; flex-direction: column; gap: 12px; max-width: 480px; }
+.form-row label { font-size: 13px; color: var(--citra-muted); }
+.form-row input, .form-row textarea {
+  border: 1px solid var(--citra-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+.btn {
+  background: var(--citra-primary);
+  color: white;
+  border: 0;
+  border-radius: var(--r-sm);
+  padding: 9px 17px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12),
+    0 6px 16px -10px color-mix(in srgb, var(--citra-primary) 80%, transparent);
+  transition: filter .15s var(--ease), transform .12s var(--ease),
+    box-shadow .15s var(--ease);
+}
+.btn:hover { filter: brightness(1.06); box-shadow: 0 2px 4px rgba(15, 23, 42, 0.14),
+    0 10px 22px -10px color-mix(in srgb, var(--citra-primary) 85%, transparent); }
+.btn:active { transform: translateY(1px) scale(0.99); }
+.btn:focus-visible { outline: none; box-shadow: var(--ring); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; box-shadow: none; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: var(--citra-surface-2);
+  border: 1px solid var(--citra-border);
+  color: var(--citra-muted);
+  text-transform: capitalize;
+}
+/* Status-tone chip — published reads live (green), draft muted (amber). */
+.chip-published { background: #ecfdf3; border-color: #bbf7d0; color: #15803d; }
+.chip-published::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #16a34a; }
+.chip-draft { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+
+.error {
+  padding: 12px 16px;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #b91c1c;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* --- Multi-page nav --------------------------------------------------- */
+.app-layout { display: block; }
+.app-layout-with-nav {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+}
+.app-sidebar {
+  border-right: 1px solid var(--citra-border);
+  padding-right: 16px;
+}
+.app-sidebar ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; }
+.app-sidebar li { padding: 0; }
+.app-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--citra-muted);
+  text-decoration: none;
+  position: relative;
+  transition: background .14s var(--ease), color .14s var(--ease);
+}
+.app-nav-item:hover { background: var(--citra-surface-2); color: var(--citra-fg); }
+.app-nav-item.active {
+  background: color-mix(in srgb, var(--citra-primary) 11%, transparent);
+  color: var(--citra-primary);
+  font-weight: 650;
+}
+/* Accent rail on the active sidebar item. */
+.app-sidebar .app-nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--citra-primary);
+}
+.app-topbar {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 18px;
+  padding: 5px;
+  background: var(--citra-surface-2);
+  border: 1px solid var(--citra-border);
+  border-radius: 999px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.app-topbar .app-nav-item { border-radius: 999px; padding: 7px 15px; }
+.app-topbar .app-nav-item.active {
+  background: var(--citra-surface);
+  color: var(--citra-primary);
+  box-shadow: var(--elev-1);
+}
+.app-page-host { min-width: 0; }
+.app-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+/* --- Dashboard page (page.kind = 'dashboard') ------------------------- */
+/* Executive treatment: the page sits on a calm canvas so KPI tiles and
+   ECharts read as a curated brief rather than a form. The hero-brief band
+   is rendered above this section by AppShell. */
+.app-page-dashboard {
+  /* A curated, slightly tinted canvas with a hairline frame so KPI tiles and
+     charts read as a boardroom brief rather than a form. */
+  background:
+    radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--citra-primary) 5%, transparent), transparent 55%),
+    linear-gradient(180deg, #fbfcfe 0%, #f5f7fb 100%);
+  border: 1px solid var(--citra-border);
+  padding: 22px 18px 26px;
+  border-radius: var(--r-lg);
+}
+.app-page-dashboard .app-page-title {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+.app-page-dashboard .panel-host { gap: 20px; }
+/* KPI strip spans full width and lays its tiles out horizontally. */
+.app-page-dashboard .panel > .panel-title {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+/* --- Page layouts ----------------------------------------------------- */
+.panel-host { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.panel-host-stack { grid-template-columns: 1fr; }
+.panel-host-split { grid-template-columns: 1fr 1fr; }
+.panel-host-split .panel { grid-column: span 1; }
+.panel-stack { grid-column: span 12; }
+
+/* --- Tabs layout ------------------------------------------------------ */
+.panel-tabs { display: flex; flex-direction: column; gap: 12px; }
+.panel-tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--citra-border);
+}
+.panel-tab {
+  background: none;
+  border: 0;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--citra-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.panel-tab.active {
+  color: var(--citra-fg);
+  border-bottom-color: var(--citra-primary);
+}
+
+.row-clickable:hover { background: var(--citra-card); }
+
+/* --- Workflow shell page --------------------------------------------- */
+/* ======================================================================
+   Hero-brief copilot — the default narrator band on dashboards.
+   ====================================================================== */
+.hero-brief {
+  border: 1px solid var(--citra-border);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--citra-primary) 7%, transparent), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  box-shadow: var(--elev-1), var(--elev-3);
+  margin-bottom: 22px;
+  overflow: hidden;
+  transition: box-shadow 0.2s var(--ease);
+}
+.hero-brief-expanded {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06),
+    0 28px 60px -30px rgba(15, 23, 42, 0.45);
+}
+.hero-brief-band {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-height: 160px;
+  padding: 18px 20px;
+}
+.hero-brief-expanded .hero-brief-band {
+  min-height: 0;
+  border-bottom: 1px solid var(--citra-border);
+}
+.hero-brief-avatar {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #fff;
+  background: linear-gradient(135deg,
+    var(--citra-primary),
+    color-mix(in srgb, var(--citra-primary) 50%, #0e7490));
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--citra-primary) 70%, transparent);
+}
+.hero-brief-label { color: color-mix(in srgb, var(--citra-primary) 70%, var(--citra-faint)); }
+.hero-brief-body { flex: 1 1 auto; min-width: 0; }
+.hero-brief-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+.hero-brief-text { font-size: 15px; line-height: 1.5; color: #1e293b; }
+.hero-brief-text .md-p { margin: 0 0 6px; }
+.hero-brief-loading,
+.hero-brief-err {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--citra-muted);
+  font-size: 14px;
+  padding: 12px 0;
+}
+.hero-brief-err { color: #b91c1c; }
+.hero-brief-mini { margin-top: 8px; max-width: 420px; }
+.hero-brief-toggle {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding: 6px 14px;
+  border: 1px solid var(--citra-border);
+  background: #fff;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+.hero-brief-toggle:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+.hero-chat {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+}
+.hero-chat-log {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+}
+.hero-chat-msg { display: flex; }
+.hero-chat-msg-user { justify-content: flex-end; }
+.hero-chat-bubble {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.hero-chat-msg-user .hero-chat-bubble {
+  background: #2f4b7c;
+  color: #fff;
+}
+.hero-chat-msg-assistant .hero-chat-bubble {
+  background: #f1f5f9;
+  color: #1e293b;
+  width: 100%;
+  max-width: 100%;
+}
+.hero-chat-chart {
+  margin-top: 10px;
+  max-height: 280px;
+  background: #fff;
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  padding: 8px;
+}
+.hero-chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--citra-border);
+  background: #fbfcfe;
+}
+.hero-chat-input input {
+  flex: 1 1 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--citra-border);
+  border-radius: 9px;
+  font-size: 14px;
+  outline: none;
+}
+.hero-chat-input input:focus { border-color: #2f4b7c; }
+
+/* ======================================================================
+   Citra UI Kit — Queue panel (P1/WS-A spike)
+   Modern card + table queue with toolbar, search, filters, pagination.
+   ====================================================================== */
+
+.q-wrap { display: flex; flex-direction: column; gap: 14px; }
+
+/* --- Toolbar ---------------------------------------------------------- */
+.q-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.q-search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+.q-search input {
+  width: 100%;
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  padding: 9px 12px 9px 32px;
+  font-size: 13.5px;
+  background: #fff;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.q-search input:focus {
+  border-color: var(--citra-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--citra-primary) 16%, transparent);
+}
+.q-search::before {
+  content: "";
+  position: absolute;
+  left: 11px; top: 50%;
+  width: 13px; height: 13px;
+  transform: translateY(-50%);
+  background: var(--citra-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.q-select {
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--citra-fg);
+  cursor: pointer;
+  max-width: 170px;
+}
+.q-select:focus { outline: none; border-color: var(--citra-primary); }
+.q-select.active {
+  border-color: var(--citra-primary);
+  background: color-mix(in srgb, var(--citra-primary) 8%, #fff);
+  color: var(--citra-primary);
+  font-weight: 600;
+}
+.q-spacer { flex: 1 1 auto; }
+.q-count {
+  font-size: 12.5px;
+  color: var(--citra-muted);
+  white-space: nowrap;
+}
+.q-count b { color: var(--citra-fg); }
+
+/* --- View toggle ------------------------------------------------------ */
+.q-viewtoggle {
+  display: inline-flex;
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.q-viewtoggle button {
+  border: 0;
+  background: #fff;
+  padding: 7px 11px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--citra-muted);
+}
+.q-viewtoggle button.active {
+  background: var(--citra-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* --- Cards ------------------------------------------------------------ */
+.q-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 12px;
+}
+.q-card {
+  background: #fff;
+  border: 1px solid var(--citra-border);
+  border-radius: 14px;
+  padding: 14px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  transition: transform .12s, box-shadow .12s, border-color .12s;
+  position: relative;
+}
+.q-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 14px; bottom: 14px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--citra-primary);
+  opacity: .85;
+}
+.q-card.clickable { cursor: pointer; }
+.q-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px -10px rgba(15, 23, 42, .25);
+  border-color: color-mix(in srgb, var(--citra-primary) 45%, var(--citra-border));
+}
+.q-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.q-card-title {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--citra-fg);
+  line-height: 1.3;
+  word-break: break-word;
+}
+.q-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.q-field {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.q-field-k { color: var(--citra-muted); white-space: nowrap; }
+.q-field-v { color: var(--citra-fg); text-align: right; word-break: break-word; }
+.q-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+  padding-top: 9px;
+  border-top: 1px solid var(--citra-border);
+}
+
+/* --- Badges ----------------------------------------------------------- */
+.q-badge {
+  display: inline-block;
+  padding: 2.5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.q-badge-green { background: #dcfce7; color: #15803d; }
+.q-badge-amber { background: #fef3c7; color: #b45309; }
+.q-badge-red   { background: #fee2e2; color: #b91c1c; }
+.q-badge-blue  { background: #dbeafe; color: #1d4ed8; }
+.q-badge-purple{ background: #f3e8ff; color: #7c3aed; }
+.q-badge-gray  { background: #f1f5f9; color: #475569; }
+
+/* --- Action buttons (small) ------------------------------------------ */
+.q-btn {
+  border: 1px solid var(--citra-border);
+  background: #fff;
+  color: var(--citra-fg);
+  border-radius: 8px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.q-btn:hover { border-color: var(--citra-primary); color: var(--citra-primary); }
+.q-btn-primary {
+  background: var(--citra-primary);
+  border-color: var(--citra-primary);
+  color: #fff;
+}
+.q-btn-primary:hover { color: #fff; filter: brightness(1.07); }
+/* Destructive action (Reject / Cancel / Delete …) — visually distinct from the
+   safe primary so an officer can't mistake it for the common action. */
+.q-btn-danger {
+  border-color: #dc2626;
+  color: #b91c1c;
+}
+.q-btn-danger:hover { background: #fef2f2; color: #991b1b; }
+.q-btn:disabled { opacity: .55; cursor: progress; }
+/* A card whose row action is mid-flight — dim + block pointer so the body
+   click can't re-fire while a button action runs. */
+.q-card-busy { opacity: .6; pointer-events: none; }
+
+/* --- Table view ------------------------------------------------------- */
+.q-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
+.q-table thead th {
+  position: sticky; top: 0;
+  background: var(--citra-card);
+  color: var(--citra-muted);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--citra-border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.q-table thead th:hover { color: var(--citra-fg); }
+.q-table thead th .q-sort { opacity: .5; font-size: 10px; margin-left: 3px; }
+.q-table thead th.sorted .q-sort { opacity: 1; color: var(--citra-primary); }
+.q-table tbody td { padding: 9px 10px; border-bottom: 1px solid var(--citra-border); }
+.q-table tbody tr { background: #fff; }
+.q-table tbody tr:nth-child(even) { background: #fafbfc; }
+.q-table tbody tr.clickable { cursor: pointer; }
+.q-table tbody tr.clickable:hover { background: color-mix(in srgb, var(--citra-primary) 7%, #fff); }
+.q-table-wrap {
+  border: 1px solid var(--citra-border);
+  border-radius: 12px;
+  overflow: auto;
+  max-height: 560px;
+}
+
+/* --- Pagination ------------------------------------------------------- */
+.q-pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.q-pagebtn {
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid var(--citra-border);
+  background: #fff;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--citra-fg);
+  cursor: pointer;
+  padding: 0 8px;
+}
+.q-pagebtn:hover:not(:disabled) { border-color: var(--citra-primary); color: var(--citra-primary); }
+.q-pagebtn.active {
+  background: var(--citra-primary);
+  border-color: var(--citra-primary);
+  color: #fff;
+  font-weight: 600;
+}
+.q-pagebtn:disabled { opacity: .4; cursor: not-allowed; }
+.q-page-ellipsis { color: var(--citra-muted); padding: 0 2px; font-size: 12px; }
+
+/* --- Empty / loading skeleton ---------------------------------------- */
+.q-skel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 12px;
+}
+.q-skel-card {
+  height: 132px;
+  border-radius: 14px;
+  background: linear-gradient(100deg, #f1f5f9 30%, #e2e8f0 50%, #f1f5f9 70%);
+  background-size: 200% 100%;
+  animation: q-shimmer 1.3s infinite linear;
+}
+@keyframes q-shimmer { to { background-position: -200% 0; } }
+.q-empty {
+  text-align: center;
+  padding: 36px 16px;
+  color: var(--citra-muted);
+  font-size: 14px;
+  border: 1px dashed var(--citra-border);
+  border-radius: 12px;
+}
+.q-empty-icon { font-size: 26px; display: block; margin-bottom: 6px; opacity: .6; }
+
+/* --- Toast ------------------------------------------------------------ */
+.q-toast {
+  position: fixed;
+  right: 20px; bottom: 20px;
+  z-index: 60;
+  max-width: 380px;
+  padding: 12px 15px;
+  border-radius: 11px;
+  font-size: 13px;
+  color: #fff;
+  box-shadow: 0 12px 30px -8px rgba(15, 23, 42, .4);
+  display: flex; gap: 9px; align-items: flex-start;
+  animation: q-toast-in .18s ease-out;
+}
+@keyframes q-toast-in { from { opacity: 0; transform: translateY(8px); } }
+.q-toast-ok   { background: #15803d; }
+.q-toast-err  { background: #b91c1c; }
+.q-toast-info { background: #1d4ed8; }
+.q-toast button {
+  background: rgba(255,255,255,.2);
+  border: 0; color: #fff;
+  border-radius: 6px; cursor: pointer;
+  width: 20px; height: 20px; flex: none;
+  font-size: 13px; line-height: 1;
+}
+
+/* ======================================================================
+   Citra UI Kit — Agent chat panel
+   ====================================================================== */
+.chat { display: flex; flex-direction: column; gap: 12px; }
+.chat-head {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--citra-border);
+}
+.chat-avatar {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--citra-primary), #7c3aed);
+  color: #fff; font-size: 16px;
+}
+.chat-role { font-size: 14px; font-weight: 650; color: var(--citra-fg); }
+.chat-sub { font-size: 11.5px; color: var(--citra-muted); }
+
+.chat-log {
+  display: flex; flex-direction: column; gap: 10px;
+  min-height: 180px;
+  max-height: 440px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+.chat-welcome {
+  text-align: center;
+  color: var(--citra-muted);
+  font-size: 13px;
+  padding: 18px 8px 4px;
+}
+.chat-welcome p { margin: 0 0 12px; }
+.chat-starters { display: flex; flex-direction: column; gap: 7px; }
+.chat-starter {
+  text-align: left;
+  border: 1px solid var(--citra-border);
+  background: #fff;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  color: var(--citra-fg);
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.chat-starter:hover {
+  border-color: var(--citra-primary);
+  background: color-mix(in srgb, var(--citra-primary) 6%, #fff);
+}
+.chat-starter::before { content: "→ "; color: var(--citra-primary); font-weight: 700; }
+
+.chat-msg { display: flex; }
+.chat-msg-user { justify-content: flex-end; }
+.chat-msg-assistant { justify-content: flex-start; }
+.chat-bubble {
+  max-width: 82%;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.chat-msg-user .chat-bubble {
+  background: var(--citra-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-msg-assistant .chat-bubble {
+  background: #fff;
+  color: var(--citra-fg);
+  border: 1px solid var(--citra-border);
+  border-bottom-left-radius: 4px;
+}
+.chat-typing { display: flex; gap: 4px; padding: 12px 14px; }
+.chat-typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--citra-muted);
+  animation: chat-bounce 1s infinite ease-in-out;
+}
+.chat-typing span:nth-child(2) { animation-delay: .15s; }
+.chat-typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes chat-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: .4; }
+  40% { transform: translateY(-5px); opacity: 1; }
+}
+
+.chat-input { display: flex; gap: 8px; }
+.chat-input input {
+  flex: 1;
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-size: 13px;
+  background: #fff;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.chat-input input:focus {
+  border-color: var(--citra-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--citra-primary) 16%, transparent);
+}
+.chat-input .q-btn-primary { padding: 9px 18px; }
+
+/* Copy button on assistant messages */
+.chat-msg-assistant { align-items: flex-end; gap: 4px; }
+.chat-copy {
+  border: 0;
+  background: transparent;
+  color: var(--citra-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity .12s, color .12s;
+}
+.chat-msg-assistant:hover .chat-copy { opacity: 1; }
+.chat-copy:hover { color: var(--citra-primary); }
+
+/* ======================================================================
+   Citra UI Kit — Form panel
+   Rich JSON-schema form: selects for enums, checkboxes, textareas, dates.
+   ====================================================================== */
+.cf { display: flex; flex-direction: column; gap: 16px; }
+.cf-hint { color: var(--citra-muted); font-size: 13px; }
+.cf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px 16px;
+}
+.cf-field { display: flex; flex-direction: column; gap: 5px; }
+.cf-label { font-size: 12.5px; font-weight: 600; color: var(--citra-fg); }
+.cf-req { color: #dc2626; margin-left: 3px; }
+.cf-desc { font-size: 11.5px; color: var(--citra-muted); line-height: 1.4; }
+.cf-field input,
+.cf-field select,
+.cf-field textarea {
+  border: 1px solid var(--citra-border);
+  border-radius: 9px;
+  padding: 8px 11px;
+  font-size: 13.5px;
+  background: #fff;
+  color: var(--citra-fg);
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+  transition: border-color .15s, box-shadow .15s;
+}
+.cf-field textarea { resize: vertical; min-height: 76px; }
+.cf-field input:focus,
+.cf-field select:focus,
+.cf-field textarea:focus {
+  border-color: var(--citra-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--citra-primary) 16%, transparent);
+}
+.cf-field-check {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 9px;
+  grid-column: 1 / -1;
+}
+.cf-field-check input { width: 16px; height: 16px; margin-top: 2px; flex: none; }
+.cf-field-check span { display: flex; flex-direction: column; gap: 2px; }
+.cf-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cf-submit { padding: 9px 22px; font-size: 13px; }
+.cf-msg { font-size: 12.5px; font-weight: 550; }
+.cf-msg-ok  { color: #15803d; }
+.cf-msg-err { color: #b91c1c; }
+.cf-msg-info { color: #1d4ed8; }
+.cf-result {
+  border: 1px solid var(--citra-border);
+  border-radius: 11px;
+  background: #fff;
+  padding: 12px 15px;
+}
+.cf-result-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--citra-muted);
+  margin-bottom: 6px;
+}
+
+/* ======================================================================
+   Citra UI Kit — KPI / dashboard tiles
+   ====================================================================== */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(184px, 1fr));
+  gap: 14px;
+}
+.kpi {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+  border: 1px solid var(--citra-border);
+  border-radius: var(--r-lg);
+  padding: 18px 18px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+  transition: transform .14s var(--ease), box-shadow .14s var(--ease);
+}
+/* Brand accent bar across the top of every KPI tile. */
+.kpi::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--citra-primary),
+    color-mix(in srgb, var(--citra-primary) 45%, var(--citra-accent)));
+}
+.kpi:hover { transform: translateY(-2px); box-shadow: var(--elev-2); }
+.kpi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kpi-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.kpi-delta-arrow { font-size: 9px; }
+.kpi-delta-up { color: #15803d; background: #ecfdf3; }
+.kpi-delta-down { color: #b91c1c; background: #fef2f2; }
+.kpi-delta-flat { color: #64748b; background: #f1f5f9; }
+.kpi-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--citra-muted);
+}
+.kpi-value {
+  font-size: 27px;
+  font-weight: 700;
+  color: var(--citra-fg);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-sub { font-size: 11.5px; color: var(--citra-muted); }
+.kpi-tag {
+  display: inline-block;
+  background: var(--citra-card);
+  border: 1px solid var(--citra-border);
+  border-radius: 5px;
+  padding: 0 5px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  margin-right: 3px;
+}
+.kpi-skel {
+  display: inline-block;
+  width: 54px; height: 26px;
+  border-radius: 6px;
+  background: linear-gradient(100deg, #f1f5f9 30%, #e2e8f0 50%, #f1f5f9 70%);
+  background-size: 200% 100%;
+  animation: q-shimmer 1.3s infinite linear;
+}
+
+/* ======================================================================
+   Citra UI Kit — Chart tooltip (themed recharts tooltip)
+   ====================================================================== */
+.chart-tip {
+  background: #fff;
+  border: 1px solid var(--citra-border);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px -10px rgba(15, 23, 42, .35);
+  padding: 8px 11px;
+  font-size: 12px;
+}
+.chart-tip-label {
+  font-weight: 650;
+  color: var(--citra-fg);
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--citra-border);
+}
+.chart-tip-row { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
+.chart-tip-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.chart-tip-name { color: var(--citra-muted); }
+.chart-tip-val {
+  margin-left: auto;
+  font-weight: 650;
+  color: var(--citra-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ======================================================================
+   Citra UI Kit — Markdown (chat replies, markdown panels, reports)
+   ====================================================================== */
+.md { font-size: 14px; line-height: 1.6; color: var(--citra-fg); }
+.md > *:first-child { margin-top: 0; }
+.md > *:last-child { margin-bottom: 0; }
+.md-p { margin: 8px 0; }
+.md-h { margin: 16px 0 8px; font-weight: 650; line-height: 1.3; }
+.md-h1 { font-size: 19px; }
+.md-h2 { font-size: 16.5px; }
+.md-h3 { font-size: 14.5px; }
+.md-h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: var(--citra-muted); }
+.md-list { margin: 8px 0; padding-left: 22px; }
+.md-list li { margin: 3px 0; }
+.md-code {
+  background: var(--citra-card);
+  border: 1px solid var(--citra-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: .88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.md-pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 9px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 10px 0;
+}
+.md-pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.md-quote {
+  margin: 10px 0;
+  padding: 6px 14px;
+  border-left: 3px solid var(--citra-primary);
+  background: var(--citra-card);
+  border-radius: 0 8px 8px 0;
+  color: var(--citra-muted);
+}
+.md-hr { border: 0; border-top: 1px solid var(--citra-border); margin: 14px 0; }
+.md-table-wrap { overflow-x: auto; margin: 10px 0; }
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  border: 1px solid var(--citra-border);
+  border-radius: 8px;
+}
+.md-table th, .md-table td {
+  border: 1px solid var(--citra-border);
+  padding: 6px 10px;
+  text-align: left;
+}
+.md-table th { background: var(--citra-card); font-weight: 650; }
+.md-table tbody tr:nth-child(even) { background: #fafbfc; }
+/* Markdown inside a chat bubble — tighten spacing, inherit colour */
+.md-chat { font-size: 13px; }
+.md-chat .md-p { margin: 4px 0; }
+.md-chat .md-h { margin: 8px 0 4px; }
+.md-chat > *:first-child { margin-top: 0; }
+.md-chat > *:last-child { margin-bottom: 0; }
+
+/* ======================================================================
+   Citra UI Kit — Detail panel (record drill-down)
+   ====================================================================== */
+.dt { display: flex; flex-direction: column; gap: 14px; }
+.dt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--citra-border);
+}
+.dt-title { font-size: 17px; font-weight: 700; color: var(--citra-fg); }
+.dt-section { display: flex; flex-direction: column; gap: 8px; }
+.dt-section-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--citra-muted);
+}
+
+/* fields */
+.dt-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 18px;
+  margin: 0;
+}
+.dt-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dt-field dt {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--citra-muted);
+}
+.dt-field dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--citra-fg);
+  word-break: break-word;
+  min-width: 0;
+}
+/* Long markdown narrative / JSON blocks span all grid tracks instead of being
+   dropped into a single ~220px auto-fill column (which squeezed the content to
+   the left with empty space beside it). */
+.dt-field-wide { grid-column: 1 / -1; }
+/* Code blocks inside a result narrative scroll within the field rather than
+   forcing the modal wider or overflowing past it. */
+.dt-field dd pre,
+.dt-field dd code { max-width: 100%; }
+.dt-field dd pre { overflow-x: auto; }
+
+/* comments (detail section: human notes) */
+.dt-comments { display: flex; flex-direction: column; gap: 10px; }
+.dt-comment-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.dt-comment { border-left: 2px solid var(--citra-border); padding-left: 10px; }
+.dt-comment-text { font-size: 14px; color: var(--citra-fg); white-space: pre-wrap; word-break: break-word; }
+.dt-comment-meta { font-size: 12px; color: var(--citra-muted); margin-top: 2px; }
+.dt-comment-add { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.dt-comment-add textarea {
+  width: 100%; resize: vertical; min-height: 64px;
+  padding: 8px 10px; font: inherit; color: var(--citra-fg);
+  background: #fff; border: 1px solid var(--citra-border); border-radius: 8px;
+}
+.dt-comment-add textarea:focus { outline: none; border-color: var(--citra-primary); }
+.dt-comment-actions { display: flex; align-items: center; gap: 8px; }
+
+/* notifications panel — the attention inbox */
+.nc { display: flex; flex-direction: column; gap: 8px; }
+.nc-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.nc-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+  border: 1px solid var(--citra-border); border-radius: 10px; background: #fff;
+}
+.nc-item.is-clickable { cursor: pointer; }
+.nc-item.is-clickable:hover { border-color: var(--citra-border-strong); }
+.nc-item-body { flex: 1; min-width: 0; }
+.nc-item-title { font-weight: 600; color: var(--citra-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nc-item-sub { font-size: 12px; color: var(--citra-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nc-item-time { font-size: 11px; color: var(--citra-muted); white-space: nowrap; }
+.nc-item-arrow { color: var(--citra-muted); }
+
+/* timeline */
+.dt-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.dt-run { display: flex; gap: 11px; padding: 4px 0; position: relative; }
+.dt-run:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 5px; top: 18px; bottom: -4px;
+  width: 2px;
+  background: var(--citra-border);
+}
+.dt-run-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex: none;
+  margin-top: 3px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--citra-border);
+  z-index: 1;
+}
+.dt-dot-green  { background: #15803d; }
+.dt-dot-red    { background: #b91c1c; }
+.dt-dot-amber  { background: #b45309; }
+.dt-dot-blue   { background: #1d4ed8; }
+.dt-dot-purple { background: #7c3aed; }
+.dt-dot-gray   { background: #94a3b8; }
+.dt-run-body {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  margin-bottom: 8px;
+}
+.dt-run-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dt-run-action { font-size: 13px; font-weight: 650; color: var(--citra-fg); }
+.dt-run-time { font-size: 11.5px; color: var(--citra-muted); margin-left: auto; }
+/* An agent DECISION is a sentence, not a status word.
+   `.q-badge` is built for a queue's short status pills, so it sets
+   `white-space: nowrap` (correct for "Disbursed") and `text-transform:
+   capitalize` (harmless on one word). Reused for a decision line — "DECLINE —
+   FOIR 67.21% exceeds 55% policy cap for ₹50K–₹1.5L…" — nowrap ran it off the
+   right edge of the card in a single line, and capitalize retitled every word
+   mid-sentence. Both are wrong here and only here, so this is scoped to the
+   timeline rather than changing .q-badge and reflowing every queue. */
+.dt-run-top .q-badge {
+  white-space: normal;
+  overflow-wrap: anywhere;   /* a long unbroken token still cannot escape */
+  text-transform: none;
+  text-align: left;
+  border-radius: 8px;        /* a pill radius reads wrong once it wraps */
+  min-width: 0;              /* flex items default to min-width:auto = no shrink */
+  flex: 1 1 auto;
+}
+.dt-run-reason {
+  font-size: 13px;
+  color: var(--citra-fg);
+  line-height: 1.5;
+  margin-top: 5px;
+}
+.dt-run-meta {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--citra-muted);
+}
+.dt-run-cid { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* documents */
+.dt-docs { display: flex; flex-direction: column; gap: 8px; }
+.dt-doc {
+  background: #fff;
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  padding: 10px 13px;
+}
+/* Doc card as a button — open the viewer modal on click. */
+.dt-doc-clickable {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  display: block;
+  transition: border-color .12s, box-shadow .12s, transform .12s;
+}
+.dt-doc-clickable:hover {
+  border-color: color-mix(in srgb, var(--citra-primary) 45%, var(--citra-border));
+  box-shadow: 0 6px 18px -10px rgba(15, 23, 42, .25);
+}
+.dt-doc-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dt-doc-icon { color: var(--citra-primary); font-size: 14px; }
+.dt-doc-title { font-size: 13.5px; font-weight: 650; color: var(--citra-fg); }
+a.dt-doc-title:hover { color: var(--citra-primary); }
+.dt-doc-open {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--citra-primary);
+  white-space: nowrap;
+}
+.dt-doc-snippet {
+  font-size: 12.5px;
+  color: var(--citra-muted);
+  line-height: 1.5;
+  margin-top: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* approvals */
+.dt-approvals { display: flex; flex-direction: column; gap: 9px; }
+.dt-approval-roles { font-size: 12px; color: var(--citra-muted); display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.dt-approval {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid var(--citra-border);
+  border-radius: 10px;
+  padding: 10px 13px;
+}
+.dt-approval-info { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.dt-approval-actions { display: flex; gap: 6px; }
+
+/* ======================================================================
+   Citra UI Kit — Action result (inline chip on a card + result modal)
+   ====================================================================== */
+.q-result {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 2px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--citra-border);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.q-result-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.q-result-more { margin-left: auto; font-weight: 600; opacity: .8; }
+.q-result-green  { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; }
+.q-result-green  .q-result-dot { background: #15803d; }
+.q-result-red    { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+.q-result-red    .q-result-dot { background: #b91c1c; }
+.q-result-amber  { border-color: #fde68a; background: #fffbeb; color: #b45309; }
+.q-result-amber  .q-result-dot { background: #b45309; }
+.q-result-blue   { border-color: #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.q-result-blue   .q-result-dot { background: #1d4ed8; }
+.q-result-purple { border-color: #e9d5ff; background: #faf5ff; color: #7c3aed; }
+.q-result-purple .q-result-dot { background: #7c3aed; }
+.q-result-gray   { color: #475569; }
+.q-result-gray   .q-result-dot { background: #94a3b8; }
+
+.rr-overlay {
+  position: fixed;
+  inset: 0;
+  /* Portaled to <body> and lifted above the sticky .app-header (z-index 20)
+     and any embedding shell chrome, so the modal — and its close button —
+     are never trapped behind the header. */
+  z-index: 1000;
+  background: rgba(15, 23, 42, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: q-toast-in .15s ease-out;
+}
+.rr-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 840px;
+  max-height: 86vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px -12px rgba(15, 23, 42, .5);
+}
+.rr-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--citra-border);
+}
+.rr-title { font-size: 15px; font-weight: 700; color: var(--citra-fg); }
+.rr-sub { font-size: 12.5px; color: var(--citra-muted); margin-top: 2px; }
+.rr-close {
+  border: 0;
+  background: var(--citra-card);
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--citra-muted);
+  flex: none;
+}
+.rr-close:hover { color: var(--citra-fg); }
+.rr-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rr-verdict-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.rr-verdict-note { font-size: 12px; color: var(--citra-muted); }
+.rr-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.rr-verdict-dot { width: 9px; height: 9px; border-radius: 50%; }
+.rr-verdict-green  { background: #dcfce7; color: #15803d; }
+.rr-verdict-green  .rr-verdict-dot { background: #15803d; }
+.rr-verdict-red    { background: #fee2e2; color: #b91c1c; }
+.rr-verdict-red    .rr-verdict-dot { background: #b91c1c; }
+.rr-verdict-amber  { background: #fef3c7; color: #b45309; }
+.rr-verdict-amber  .rr-verdict-dot { background: #b45309; }
+.rr-verdict-blue   { background: #dbeafe; color: #1d4ed8; }
+.rr-verdict-blue   .rr-verdict-dot { background: #1d4ed8; }
+.rr-verdict-purple { background: #f3e8ff; color: #7c3aed; }
+.rr-verdict-purple .rr-verdict-dot { background: #7c3aed; }
+.rr-verdict-gray   { background: #f1f5f9; color: #475569; }
+.rr-verdict-gray   .rr-verdict-dot { background: #94a3b8; }
+.rr-section { display: flex; flex-direction: column; gap: 6px; }
+.rr-section-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--citra-muted);
+}
+.rr-json {
+  background: var(--citra-card);
+  border: 1px solid var(--citra-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+.rr-cid {
+  font-size: 11px;
+  color: var(--citra-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ======================================================================
+   Citra UI Kit — inline spinner for in-progress actions
+   Replaces the bare "…" on buttons running an agent action / form submit.
+   Uses currentColor so it shows on both light (q-btn) and primary buttons.
+   ====================================================================== */
+.q-spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: q-spin 0.6s linear infinite;
+  vertical-align: -2px;
+}
+@keyframes q-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ======================================================================
+   Premium polish — page title weight + a calm mount animation so panels
+   and KPI tiles settle in instead of snapping. Honours reduced-motion.
+   ====================================================================== */
+.app-page-title {
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+@keyframes citra-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.panel,
+.kpi,
+.hero-brief {
+  animation: citra-rise 0.42s var(--ease) both;
+}
+.panel-host > .panel:nth-child(2) { animation-delay: 0.04s; }
+.panel-host > .panel:nth-child(3) { animation-delay: 0.08s; }
+.panel-host > .panel:nth-child(4) { animation-delay: 0.12s; }
+.panel-host > .panel:nth-child(n + 5) { animation-delay: 0.16s; }
+.kpi-row .kpi:nth-child(2) { animation-delay: 0.05s; }
+.kpi-row .kpi:nth-child(3) { animation-delay: 0.10s; }
+.kpi-row .kpi:nth-child(4) { animation-delay: 0.15s; }
+.kpi-row .kpi:nth-child(n + 5) { animation-delay: 0.20s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ======================================================================
+   Responsive — phone & tablet adaptation.
+   The whole runtime is class-driven off this single stylesheet, so every
+   mobile reflow lives here. The desktop rules above are the baseline; these
+   breakpoints collapse the fixed multi-column layouts (the 12-col panel grid
+   with span-6/span-4, the 220px sidebar nav, split pages, the calendar) down
+   to phone width. Layouts that already adapt — auto-fit grids (.cf-grid,
+   .kpi-row, .q-cards, .dt-fields) and overflow-scrolling tables/kanban — are
+   deliberately left untouched.
+   ====================================================================== */
+
+/* --- Tablet & below: drop 2-up layouts and the fixed sidebar ---------- */
+@media (max-width: 900px) {
+  /* Sidebar nav moves above the page body and lays out as a wrapping row. */
+  .app-layout-with-nav {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .app-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--citra-border);
+    padding-right: 0;
+    padding-bottom: 12px;
+  }
+  .app-sidebar ul { flex-direction: row; flex-wrap: wrap; }
+  /* The accent rail only reads correctly down a column. */
+  .app-sidebar .app-nav-item.active::before { display: none; }
+
+  /* Third-width panels go half; split pages collapse to one column. */
+  .panel.span-4 { grid-column: span 6; }
+  .panel-host-split { grid-template-columns: 1fr; }
+  .panel-host-split .panel { grid-column: span 12; }
+}
+
+/* --- Phone: single column everywhere, flush frame --------------------- */
+@media (max-width: 640px) {
+  /* The floating card goes edge-to-edge so content isn't crushed by the
+     desktop margin + 26px side padding (~52px, ~15% of a 360px screen). */
+  .app-shell {
+    margin: 0;
+    padding: 0 14px 22px;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+
+  /* Header wraps: brand + version/status chips stack instead of colliding. */
+  .app-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 0 12px;
+    margin-bottom: 18px;
+  }
+  .app-title { font-size: 18px; }
+  .app-desc { font-size: 13px; }
+
+  /* Every multi-column panel grid collapses to a single column. */
+  .panel-grid,
+  .panel-host,
+  .panel-host-split { grid-template-columns: 1fr; gap: 14px; }
+  .panel,
+  .panel.span-6,
+  .panel.span-4,
+  .panel-stack,
+  .panel-host-split .panel { grid-column: 1 / -1; }
+  .panel { padding: 15px 15px; }
+
+  /* Dashboard page: tighter canvas padding (charts are full width now). */
+  .app-page-dashboard { padding: 16px 12px 20px; }
+  .app-page-title { font-size: 17px; }
+
+  /* Topbar / tab bars scroll horizontally rather than wrapping tall. */
+  .app-topbar { width: 100%; }
+  .panel-tab-bar { overflow-x: auto; }
+
+  /* Calendar keeps 7 legible columns by scrolling within its panel. */
+  .cal { overflow-x: auto; }
+  .cal-grid { min-width: 480px; }
+
+  /* Hero-brief: shorter idle band on phones. */
+  .hero-brief-band { min-height: 0; padding: 14px 15px; gap: 10px; }
+  .hero-chat-bubble { max-width: 92%; }
+
+  /* Result / document modal uses the full small screen (sheet-style). */
+  .rr-overlay { padding: 0; align-items: flex-end; }
+  .rr-modal { max-width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; }
+
+  /* Metric strip + form rows go full width. */
+  .metric { min-width: 100%; }
+  .form-row { max-width: 100%; }
+
+  /* Toast spans the bottom instead of floating in a narrow corner. */
+  .q-toast { left: 12px; right: 12px; bottom: 12px; max-width: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Theme v2 tokens (docs/runtime-ui-modernization-plan.md Track A).
+   The spec's theme maps to data-attributes on .app-shell in page.tsx — this
+   block is the ONLY place those attributes gain meaning. Every variant is an
+   override of the existing token system; no variant touches component CSS.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Company identity in the header (AppShell). */
+.app-company { color: var(--citra-muted); font-weight: 600; }
+.app-title-sep { color: var(--citra-faint); margin: 0 7px; font-weight: 400; }
+
+/* ── radius: sharp | soft (default) | round ─────────────────────────────── */
+[data-radius="sharp"] {
+  --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px;
+}
+[data-radius="round"] {
+  --r-sm: 10px; --r-md: 16px; --r-lg: 20px; --r-xl: 28px;
+}
+
+/* ── density: comfortable (default) | compact ───────────────────────────── */
+[data-density="compact"] {
+  --panel-pad: 12px 14px;
+  font-size: 13.5px;
+}
+[data-density="compact"] .panel-grid { gap: 12px; }
+[data-density="compact"] .panel-title { margin-bottom: 9px; }
+[data-density="compact"] td, [data-density="compact"] th { padding-top: 6px; padding-bottom: 6px; }
+
+/* ── surface: flat | elevated | glass (default = the classic bordered card) ─ */
+[data-surface="flat"] {
+  --panel-elev: none;
+  --elev-1: none; --elev-2: none;
+}
+[data-surface="flat"] .panel { background: var(--citra-surface); }
+[data-surface="elevated"] {
+  --panel-elev: var(--elev-1);
+}
+[data-surface="elevated"] .panel {
+  background: var(--citra-surface);
+  border-color: transparent;
+  box-shadow: var(--elev-2);
+}
+[data-surface="glass"] .panel {
+  background: color-mix(in srgb, var(--citra-surface) 72%, transparent);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+}
+
+/* ── mode: light (default) | dark | auto ────────────────────────────────────
+   Token-level dark scheme. BETA: components with hardcoded light colors keep
+   them (tracked for U5's sweep) — builders should preview before publishing
+   a dark app. `auto` applies the same tokens under the OS preference. */
+[data-mode="dark"] {
+  --citra-bg: #0b1220;
+  --citra-canvas: #0b1220;
+  --citra-surface: #121b2c;
+  --citra-surface-2: #172136;
+  --citra-card: #172136;
+  --citra-fg: #e6ecf6;
+  --citra-muted: #97a5bb;
+  --citra-faint: #66748c;
+  --citra-border: #22304a;
+  --citra-border-strong: #2d3d5c;
+  --citra-accent-soft: #2a2113;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  [data-mode="auto"] {
+    --citra-bg: #0b1220;
+    --citra-canvas: #0b1220;
+    --citra-surface: #121b2c;
+    --citra-surface-2: #172136;
+    --citra-card: #172136;
+    --citra-fg: #e6ecf6;
+    --citra-muted: #97a5bb;
+    --citra-faint: #66748c;
+    --citra-border: #22304a;
+    --citra-border-strong: #2d3d5c;
+    --citra-accent-soft: #2a2113;
+    color-scheme: dark;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Designed components (U2/U3): icons, hero band, stat strip, timeline,
+   split view, secondary columns, progress cells, profile detail header,
+   designed states + restrained micro-interactions.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Icon alignment in text rows. */
+.panel-title, .app-page-title, .dt-title, .dt-section-head, .stat-head, .app-nav-item {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.panel-title-icon, .app-page-title-icon, .dt-title-icon, .dt-section-icon,
+.kpi-icon, .stat-icon, .app-nav-icon { color: var(--citra-muted); flex: none; }
+.kpi-name { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ── Hero band (C1) ─────────────────────────────────────────────────────── */
+.panel-hero-host { grid-column: span 12; }
+.hero-band {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 22px 24px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--citra-border);
+  background:
+    radial-gradient(1200px 220px at 0% 0%,
+      color-mix(in srgb, var(--citra-primary) 9%, transparent), transparent 70%),
+    var(--citra-surface);
+}
+.hero-icon {
+  width: 52px; height: 52px; border-radius: var(--r-md); flex: none;
+  display: grid; place-items: center;
+  color: var(--citra-primary);
+  background: color-mix(in srgb, var(--citra-primary) 12%, transparent);
+}
+.hero-text { min-width: 220px; flex: 1 1 260px; }
+.hero-headline { font-size: 21px; font-weight: 800; letter-spacing: -0.015em; color: var(--citra-fg); }
+.hero-subtitle { margin-top: 3px; font-size: 13.5px; color: var(--citra-muted); }
+.hero-metric { text-align: right; margin-left: auto; }
+.hero-metric-value { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--citra-fg); }
+.hero-metric-label { font-size: 12px; color: var(--citra-muted); }
+.hero-actions { display: flex; gap: 8px; }
+.hero-action {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--r-sm); cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--citra-primary) 45%, transparent);
+  background: var(--citra-primary); color: #fff; font-size: 13px; font-weight: 600;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.hero-action:hover { transform: translateY(-1px); box-shadow: var(--elev-2); }
+.hero-action + .hero-action {
+  background: var(--citra-surface); color: var(--citra-primary);
+}
+
+/* ── Stat strip (C2) ────────────────────────────────────────────────────── */
+.panel.panel-statstrip { grid-column: span 12; padding: 10px 12px; }
+.stat-strip { display: flex; gap: 0; flex-wrap: wrap; }
+.stat {
+  flex: 1 1 150px; min-width: 140px; padding: 8px 16px;
+  border-left: 1px solid var(--citra-border);
+}
+.stat:first-child { border-left: none; }
+.stat-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--citra-faint);
+}
+.stat-value { font-size: 21px; font-weight: 800; color: var(--citra-fg); margin-top: 2px; }
+.stat-foot { display: flex; align-items: center; gap: 8px; min-height: 22px; }
+.stat-spark { flex: 1; min-width: 60px; max-width: 120px; }
+
+/* ── Timeline (C3) ──────────────────────────────────────────────────────── */
+.timeline { list-style: none; margin: 0; padding: 0 0 0 6px; position: relative; }
+.timeline::before {
+  content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px;
+  width: 2px; background: var(--citra-border);
+}
+.timeline-item { position: relative; display: flex; gap: 14px; padding: 8px 0 12px 0; }
+.timeline-dot {
+  position: relative; z-index: 1; flex: none;
+  width: 20px; height: 20px; margin-left: 6px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--citra-surface); border: 2px solid var(--citra-border-strong);
+  color: var(--citra-muted);
+}
+.timeline-body { min-width: 0; flex: 1; }
+.timeline-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.timeline-title { font-size: 13.5px; font-weight: 600; color: var(--citra-fg); }
+.timeline-date { margin-left: auto; font-size: 12px; color: var(--citra-faint); }
+.timeline-sub { font-size: 12.5px; color: var(--citra-muted); margin-top: 2px; }
+.timeline-truncated { font-size: 12px; color: var(--citra-faint); padding-left: 40px; }
+
+/* Semantic badges (shared by timeline + future components). */
+.badge {
+  display: inline-flex; align-items: center; padding: 1px 8px;
+  border-radius: 999px; font-size: 11px; font-weight: 700;
+}
+.badge-green { background: #dcfce7; color: #15803d; }
+.badge-amber { background: #fef3c7; color: #b45309; }
+.badge-red { background: #fee2e2; color: #b91c1c; }
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+.badge-slate, .badge-neutral { background: var(--citra-surface-2); color: var(--citra-muted); }
+
+/* ── Split view (C4) ────────────────────────────────────────────────────── */
+.q-split { display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 14px; }
+.q-split-list { display: flex; flex-direction: column; gap: 6px; max-height: 560px; overflow-y: auto; }
+.q-split-item {
+  display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer;
+  padding: 10px 12px; border-radius: var(--r-sm);
+  border: 1px solid var(--citra-border); background: var(--citra-surface);
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.q-split-item:hover { border-color: var(--citra-border-strong); }
+.q-split-item.active {
+  border-color: color-mix(in srgb, var(--citra-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--citra-primary) 7%, var(--citra-surface));
+}
+.q-split-item-title {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; font-weight: 600; color: var(--citra-fg);
+}
+.q-split-detail { min-width: 0; }
+@media (max-width: 860px) { .q-split { grid-template-columns: 1fr; } }
+
+/* ── Secondary columns + progress cells (C5/C7) ─────────────────────────── */
+.q-card-secondary {
+  display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px;
+  padding-top: 8px; border-top: 1px dashed var(--citra-border);
+}
+.q-sec { font-size: 11.5px; color: var(--citra-faint); }
+.q-progress { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--citra-muted); }
+.q-progress-track {
+  display: inline-block; width: 74px; height: 6px; border-radius: 3px;
+  background: var(--citra-surface-2); overflow: hidden; vertical-align: middle;
+  border: 1px solid var(--citra-border);
+}
+.q-progress-fill { display: block; height: 100%; background: var(--citra-primary); border-radius: 3px; }
+
+/* ── Profile detail header (C6) ─────────────────────────────────────────── */
+.dt-profile {
+  display: flex; flex-wrap: wrap; gap: 12px 34px;
+  padding: 16px 20px; margin-bottom: 14px;
+  border-radius: var(--r-md); border: 1px solid var(--citra-border);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--citra-primary) 4%, transparent), transparent),
+    var(--citra-surface);
+}
+.dt-profile-value { font-size: 19px; font-weight: 750; color: var(--citra-fg); }
+.dt-profile-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--citra-faint); margin-top: 1px;
+}
+
+/* ── Designed empty state (C8) ──────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 34px 16px; text-align: center; color: var(--citra-muted);
+}
+.empty-state-icon { color: var(--citra-faint); }
+.empty-state-title { font-size: 14px; font-weight: 700; color: var(--citra-fg); }
+.empty-state-sub { font-size: 12.5px; }
+
+/* ── Micro-interactions (C9) — restrained, CSS-only ─────────────────────── */
+.q-card { transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease); }
+.q-card.clickable:hover { transform: translateY(-1px); box-shadow: var(--elev-2); }
+.kpi { transition: box-shadow 0.15s var(--ease); }
+.kpi:hover { box-shadow: var(--elev-1); }
+@media (prefers-reduced-motion: reduce) {
+  .q-card, .kpi, .hero-action, .q-split-item { transition: none; }
+  .q-card.clickable:hover, .hero-action:hover { transform: none; }
+}
+
+/* ── U5: dark-scheme overrides for pastel accents (badges/chips/steps) ────
+   The token flip (U1) recolors surfaces/ink; these pastel accent classes are
+   hardcoded light, so restate them for both dark entry points. Kept together
+   so the palette stays consistent. */
+[data-mode="dark"] .q-badge-green, [data-mode="dark"] .badge-green { background: #14331f; color: #4ade80; }
+[data-mode="dark"] .q-badge-amber, [data-mode="dark"] .badge-amber { background: #38290e; color: #fbbf24; }
+[data-mode="dark"] .q-badge-red, [data-mode="dark"] .badge-red { background: #3b1518; color: #f87171; }
+[data-mode="dark"] .q-badge-blue, [data-mode="dark"] .badge-blue { background: #14263f; color: #60a5fa; }
+[data-mode="dark"] .q-badge-purple { background: #2a1d3f; color: #c084fc; }
+[data-mode="dark"] .q-badge-gray, [data-mode="dark"] .badge-slate, [data-mode="dark"] .badge-neutral { background: #1d2839; color: #94a3b8; }
+[data-mode="dark"] .q-kanban-col { background: var(--citra-surface-2); }
+[data-mode="dark"] .cf-step { background: var(--citra-surface-2); color: var(--citra-muted); }
+@media (prefers-color-scheme: dark) {
+  [data-mode="auto"] .q-badge-green, [data-mode="auto"] .badge-green { background: #14331f; color: #4ade80; }
+  [data-mode="auto"] .q-badge-amber, [data-mode="auto"] .badge-amber { background: #38290e; color: #fbbf24; }
+  [data-mode="auto"] .q-badge-red, [data-mode="auto"] .badge-red { background: #3b1518; color: #f87171; }
+  [data-mode="auto"] .q-badge-blue, [data-mode="auto"] .badge-blue { background: #14263f; color: #60a5fa; }
+  [data-mode="auto"] .q-badge-purple { background: #2a1d3f; color: #c084fc; }
+  [data-mode="auto"] .q-badge-gray, [data-mode="auto"] .badge-slate, [data-mode="auto"] .badge-neutral { background: #1d2839; color: #94a3b8; }
+  [data-mode="auto"] .q-kanban-col { background: var(--citra-surface-2); }
+  [data-mode="auto"] .cf-step { background: var(--citra-surface-2); color: var(--citra-muted); }
+}
+
+/* Visible agent-run progress band on a queue card / split detail pane. */
+.q-running {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--citra-primary) 35%, transparent);
+  background: color-mix(in srgb, var(--citra-primary) 7%, var(--citra-surface));
+  font-size: 12.5px; color: var(--citra-fg);
+  animation: q-running-pulse 2.2s ease-in-out infinite;
+}
+@keyframes q-running-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+@media (prefers-reduced-motion: reduce) { .q-running { animation: none; } }
+
+/* ── Scorecard — the declared factor set with its evidence ─────────────────
+   docs/factor-scorecard-plan.md. The visual hierarchy carries the reading
+   order: gate first (it can make everything below irrelevant), then the
+   composite, then the rows as supporting detail. Rows are rendered as a grid
+   of equal-weight lines rather than a leaderboard — a factor is not more
+   important because it scored lower. */
+.sc { display: flex; flex-direction: column; gap: 8px; }
+.sc-head {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--citra-muted);
+}
+
+/* Gates. Loud on purpose: a breached policy limit is the answer, not a note. */
+.sc-gates { display: flex; flex-direction: column; gap: 4px; }
+.sc-gate {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 7px 10px; border-radius: 6px; font-size: 13px;
+  border: 1px solid transparent;
+}
+.sc-gate-status { font-size: 11px; font-weight: 800; letter-spacing: .05em; }
+.sc-gate-label { font-weight: 600; }
+.sc-gate-why { color: var(--citra-muted); font-size: 12px; }
+.sc-gate-green { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+.sc-gate-red   { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.sc-gate-amber { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+
+/* The composite. One line — a grade, a total, a percentage. */
+.sc-composite {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 8px 10px; border-radius: 6px;
+  background: var(--citra-surface-2); border: 1px solid var(--citra-border);
+}
+.sc-grade { display: inline-flex; align-items: baseline; gap: 6px; }
+.sc-grade-noun {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--citra-muted);
+}
+.sc-grade b { font-size: 20px; line-height: 1; }
+.sc-total { font-size: 15px; font-weight: 600; }
+.sc-of { color: var(--citra-muted); font-weight: 400; }
+.sc-percent { font-size: 12px; color: var(--citra-muted); }
+.sc-suppressed {
+  margin: 0; padding: 8px 10px; border-radius: 6px; font-size: 12.5px;
+  background: var(--citra-surface-2); color: var(--citra-muted);
+  border: 1px dashed var(--citra-border);
+}
+
+/* Rows. */
+.sc-rows { display: flex; flex-direction: column; }
+.sc-row { border-top: 1px solid var(--citra-border); }
+.sc-row:last-child { border-bottom: 1px solid var(--citra-border); }
+.sc-row-head {
+  width: 100%; display: grid; align-items: center; gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto 72px auto auto;
+  padding: 8px 2px; background: none; border: 0; text-align: left;
+  font: inherit; color: inherit; cursor: pointer;
+}
+.sc-row-head:disabled { cursor: default; }
+.sc-row-head:not(:disabled):hover { background: var(--citra-surface-2); }
+.sc-row-label {
+  font-size: 13.5px; font-weight: 500; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sc-scope {
+  margin-left: 6px; padding: 1px 5px; border-radius: 3px; font-size: 10px;
+  background: var(--citra-surface-2); color: var(--citra-muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.sc-row-score { font-size: 13px; font-variant-numeric: tabular-nums; }
+.sc-unscored { font-size: 12px; color: var(--citra-muted); font-style: italic; }
+.sc-row-unscored .sc-row-label { color: var(--citra-muted); }
+.sc-meter {
+  display: block; height: 5px; border-radius: 3px;
+  background: var(--citra-border); overflow: hidden;
+}
+.sc-meter-fill { display: block; height: 100%; background: var(--citra-primary); }
+.sc-band {
+  padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 600;
+  background: var(--citra-surface-2); color: var(--citra-muted);
+  white-space: nowrap;
+}
+.sc-caret { color: var(--citra-muted); font-size: 11px; }
+
+/* Narrow surfaces — an embed card inside a customer's app is often 360-480px.
+   At full width the label is the widest column; squeezed, it ellipsised to
+   about 100px ("Dealership vint…"), which loses the one thing the row is
+   FOR. Below 520px the meter (the most decorative element) is dropped and the
+   label is allowed to wrap onto two lines instead of being truncated. */
+@media (max-width: 520px) {
+  .sc-row-head {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: start;
+    row-gap: 2px;
+  }
+  .sc-row-label { white-space: normal; overflow: visible; line-height: 1.35; }
+  .sc-meter { display: none; }
+  .sc-band { justify-self: end; }
+}
+
+/* The expansion — the part no incumbent has. */
+.sc-row-body {
+  padding: 2px 2px 12px 2px; display: flex; flex-direction: column; gap: 8px;
+}
+.sc-rationale { margin: 0; font-size: 13px; line-height: 1.5; }
+.sc-cites, .sc-clauses { margin: 0; padding-left: 16px; font-size: 12.5px; }
+.sc-cites li, .sc-clauses li { margin: 2px 0; }
+.sc-clause-rel {
+  padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.sc-clause-applied { background: #dbeafe; color: #1d4ed8; }
+.sc-clause-overruled { background: #fef3c7; color: #b45309; }
+.sc-clause-id { font-family: var(--citra-mono, ui-monospace, monospace); font-size: 11.5px; }
+.sc-confidence { margin: 0; font-size: 11.5px; color: var(--citra-muted); }
+.sc-partial {
+  margin: 0; font-size: 12px; color: var(--citra-muted);
+}
+
+/* Queue grade chip — lets a portfolio be ranked without opening every case. */
+.q-grade {
+  display: inline-block; min-width: 20px; padding: 1px 6px; border-radius: 4px;
+  font-size: 12px; font-weight: 700; text-align: center;
+  background: var(--citra-surface-2); color: var(--citra-text);
+  border: 1px solid var(--citra-border);
+}
+.q-grade-gated { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+
+/* Dark-scheme restatements — the pastel accents above are hardcoded light,
+   matching the U5 convention for badges/chips. */
+[data-mode="dark"] .sc-gate-green { background: #14331f; color: #4ade80; border-color: #1c4a2c; }
+[data-mode="dark"] .sc-gate-red   { background: #3b1518; color: #f87171; border-color: #55201f; }
+[data-mode="dark"] .sc-gate-amber { background: #38290e; color: #fbbf24; border-color: #4d3813; }
+[data-mode="dark"] .sc-clause-applied { background: #14263f; color: #60a5fa; }
+[data-mode="dark"] .sc-clause-overruled { background: #38290e; color: #fbbf24; }
+[data-mode="dark"] .q-grade-gated { background: #3b1518; color: #f87171; border-color: #55201f; }
+@media (prefers-color-scheme: dark) {
+  [data-mode="auto"] .sc-gate-green { background: #14331f; color: #4ade80; border-color: #1c4a2c; }
+  [data-mode="auto"] .sc-gate-red   { background: #3b1518; color: #f87171; border-color: #55201f; }
+  [data-mode="auto"] .sc-gate-amber { background: #38290e; color: #fbbf24; border-color: #4d3813; }
+  [data-mode="auto"] .sc-clause-applied { background: #14263f; color: #60a5fa; }
+  [data-mode="auto"] .sc-clause-overruled { background: #38290e; color: #fbbf24; }
+  [data-mode="auto"] .q-grade-gated { background: #3b1518; color: #f87171; border-color: #55201f; }
+}
+
+/* ── Scorecard: officer override + SOP drift (plan phases 4-5) ─────────────
+   Both states must be visible WITHOUT opening a row. A corrected score that
+   looks identical to a model score, or a rubric quietly scoring against last
+   year's policy, are the two silent failures this feature exists to prevent. */
+.sc-edited, .sc-drift {
+  padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+}
+.sc-edited { background: #ede9fe; color: #6d28d9; }
+.sc-drift  { background: #fef3c7; color: #b45309; }
+.sc-was {
+  font-size: 11.5px; color: var(--citra-muted); font-style: italic;
+}
+.sc-drift-banner {
+  padding: 8px 10px; border-radius: 6px; font-size: 12.5px; line-height: 1.5;
+  background: #fef3c7; color: #78350f; border: 1px solid #fde68a;
+}
+.sc-drift-note, .sc-override-note {
+  margin: 0; font-size: 12.5px; line-height: 1.5;
+  padding: 6px 8px; border-radius: 5px; background: var(--citra-surface-2);
+}
+.sc-drift-note { border-left: 3px solid #d97706; }
+.sc-override-note { border-left: 3px solid #7c3aed; }
+
+/* The edit form. Deliberately plain — it sits inside a decision card and must
+   not compete with Approve/Reject for attention. */
+.sc-override {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px; border-radius: 6px;
+  background: var(--citra-surface-2); border: 1px solid var(--citra-border);
+}
+.sc-override label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.sc-override-line label { flex-direction: row; align-items: center; gap: 6px; }
+.sc-override input[type="number"] {
+  width: 84px; padding: 4px 6px; font-size: 13px;
+  border: 1px solid var(--citra-border); border-radius: 4px;
+  background: var(--citra-card); color: var(--citra-text);
+}
+.sc-override textarea {
+  width: 100%; padding: 6px 8px; font: inherit; font-size: 12.5px;
+  border: 1px solid var(--citra-border); border-radius: 4px;
+  background: var(--citra-card); color: var(--citra-text); resize: vertical;
+}
+.sc-input-bad { border-color: #dc2626 !important; }
+.sc-req {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: #b45309;
+}
+.sc-override-err { margin: 0; font-size: 12px; color: #b91c1c; }
+.sc-override-actions { display: flex; gap: 8px; }
+.sc-btn, .sc-btn-primary {
+  padding: 5px 10px; border-radius: 5px; font-size: 12.5px; cursor: pointer;
+  border: 1px solid var(--citra-border); background: var(--citra-card);
+  color: var(--citra-text);
+}
+.sc-btn-primary {
+  background: var(--citra-primary); border-color: var(--citra-primary); color: #fff;
+}
+.sc-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.sc-btn-edit { align-self: flex-start; }
+
+[data-mode="dark"] .sc-edited { background: #2a1d3f; color: #c084fc; }
+[data-mode="dark"] .sc-drift  { background: #38290e; color: #fbbf24; }
+[data-mode="dark"] .sc-drift-banner { background: #38290e; color: #fbbf24; border-color: #4d3813; }
+@media (prefers-color-scheme: dark) {
+  [data-mode="auto"] .sc-edited { background: #2a1d3f; color: #c084fc; }
+  [data-mode="auto"] .sc-drift  { background: #38290e; color: #fbbf24; }
+  [data-mode="auto"] .sc-drift-banner { background: #38290e; color: #fbbf24; border-color: #4d3813; }
+}

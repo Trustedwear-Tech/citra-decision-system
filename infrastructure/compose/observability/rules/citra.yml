@@ -1,0 +1,144 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+groups:
+  - name: citra-dept-health
+    interval: 1m
+    rules:
+      - alert: DeptBackupStale
+        expr: time() - dept_backup_last_success_timestamp_seconds > 86400
+        for: 10m
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "Dept {{ $labels.dept }} backup stale (>24h)"
+          description: "No successful snapshot from dept-backup in the last 24h. Check dept-backup logs."
+
+      - alert: DeptBackupRestoreDrillStale
+        # Fires if the monthly restore drill hasn't succeeded in 45d.
+        # NOTE: we intentionally do NOT alert on absent() here. The
+        # restore-drill textfile collector is not wired in every deployment
+        # (e.g. the demo boxes), and an absent() clause makes this page
+        # perpetually with an empty dept label. Only alert on a metric that
+        # actually exists and has gone stale.
+        expr: |
+          time() - dept_backup_restore_test_success_timestamp > 45 * 86400
+        for: 1h
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "Dept {{ $labels.dept }} restore-drill overdue (>45d)"
+          description: "The monthly restore-drill has not reported success in over 45 days. A stale drill means we have no recent evidence that backups are actually restorable."
+
+      - alert: MCPCircuitOpen
+        expr: mcp_circuit_state == 2
+        for: 5m
+        labels:
+          severity: warning
+          component: citra-service
+        annotations:
+          summary: "Circuit open for {{ $labels.tool_id }} (org={{ $labels.org }})"
+          description: "Citra-Service has stopped calling this dept-mcp endpoint after repeated failures."
+
+      - alert: EmbedQueueBackpressure
+        expr: mcp_embed_queue_depth > 150
+        for: 10m
+        labels:
+          severity: warning
+          component: dept-mcp
+        annotations:
+          summary: "Dept {{ $labels.dept }} embed queue near saturation"
+          description: "Queue depth={{ $value }} (max 200). The upstream LLM API is the likely bottleneck."
+
+      - alert: DeptDuckDBSlow
+        # p95 DuckDB query on file-backed structured sources over 5s for 10m
+        # indicates a table that's too large for in-process scans. Consider
+        # moving it to a real SQL source.
+        expr: histogram_quantile(0.95, sum by (le, source_id, dept) (rate(mcp_duckdb_query_duration_seconds_bucket[10m]))) > 5
+        for: 10m
+        labels:
+          severity: warning
+          component: dept-mcp
+        annotations:
+          summary: "Dept {{ $labels.dept }} DuckDB file-SQL p95 > 5s ({{ $labels.source_id }})"
+          description: "File-backed structured queries are slow. The underlying CSV/XLSX/JSON may be too large for in-process DuckDB â€” consider ingesting into a real SQL source."
+
+      - alert: DiscoveryStale
+        expr: discovery_stale_seconds > 900
+        for: 10m
+        labels:
+          severity: warning
+          component: citra-service
+        annotations:
+          summary: "Discovery cache stale (>15m) for org {{ $labels.org }}"
+          description: "Citra-Service could not refresh tool registry from discovery-service."
+
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: prometheus
+        annotations:
+          summary: "Prometheus target down: {{ $labels.job }} {{ $labels.instance }}"
+          description: "Prometheus cannot scrape {{ $labels.job }} at {{ $labels.instance }} for more than 5 minutes."
+
+      - alert: MCPQuerySlow
+        expr: histogram_quantile(0.95, sum by (le, source_id, dept) (rate(mcp_query_duration_seconds_bucket[10m]))) > 10
+        for: 15m
+        labels:
+          severity: warning
+          component: dept-mcp
+        annotations:
+          summary: "Source {{ $labels.source_id }} p95 query > 10s (dept {{ $labels.dept }})"
+
+  - name: citra-worker-queue
+    interval: 1m
+    rules:
+      - alert: WorkerQueueBacklog
+        # Jobs are piling up faster than the worker can drain them. Deployed +
+        # scheduled workflows run through this queue, so a sustained backlog
+        # means automation is running late or not at all.
+        expr: citra_worker_queue_depth > 50
+        for: 5m
+        labels:
+          severity: warning
+          component: citra-worker
+        annotations:
+          summary: "Worker queue '{{ $labels.queue }}' backlog ({{ $value }} jobs)"
+          description: "citra_worker_queue_depth has exceeded 50 for over 5m. The worker is alive-but-backlogged or hot-re-enqueuing; scheduled/triggered workflows are running late. Check Citra-Worker logs and Redis."
+
+      - alert: WorkerQueueStalled
+        # The queue has work but NOTHING has completed in 10m — a wedged worker
+        # (deadlock, lost Redis connection, crash-loop) that PrometheusTargetDown
+        # won't catch while the /metrics endpoint is still up.
+        expr: citra_worker_queue_depth > 0 and rate(citra_worker_jobs_processed_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          component: citra-worker
+        annotations:
+          summary: "Worker stalled — queue '{{ $labels.queue }}' has work but no jobs completing"
+          description: "citra_worker_queue_depth > 0 yet no jobs have completed in 10m. The worker is wedged; unattended workflows are not running. Restart Citra-Worker and investigate."
+
+      - alert: WorkerDeadLetterQueueNonEmpty
+        # Jobs exhausted their retries (or hit a permanent failure) and landed in
+        # the dead-letter stream — they will NOT run without manual replay. Even
+        # one is worth a look; a rising count signals a systematic failure
+        # (bad-input flood, broken downstream, poison handler), not a one-off.
+        expr: citra_worker_dlq_depth > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: citra-worker
+        annotations:
+          summary: "Dead-letter queue '{{ $labels.queue }}' has {{ $value }} job(s)"
+          description: "citra_worker_dlq_depth > 0 for over 5m — jobs gave up after retries / permanent failure and need inspection or replay (XRANGE the :dlq stream). A rising count signals a systematic upstream failure, not a one-off."
+

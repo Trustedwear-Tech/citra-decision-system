@@ -1,0 +1,3028 @@
+{
+  "$defs": {
+    "Action": {
+      "additionalProperties": false,
+      "properties": {
+        "anchor_read": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AnchorRead"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The base record this action's decision is ABOUT, keyed by a caller-supplied input id. When set, the runtime deterministically reads that one record (exact-filter, server-side) BEFORE the LLM loop and injects it as context — so the base record is always grounded without relying on the agent to fetch it. The read-before-write guard also enforces it was seen. Leave unset for create-from-scratch actions that reference no existing record."
+        },
+        "approval_required": {
+          "default": false,
+          "title": "Approval Required",
+          "type": "boolean"
+        },
+        "data_bindings": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DataBindings"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datasets and write_actions this action is permitted to touch. Validated against data-discovery-service catalogue at publish time. At runtime the executor exposes synthetic `query_dataset` and `perform_action` tools scoped to these bindings."
+        },
+        "delegates_to": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Delegates To",
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "editable_fields": {
+          "items": {
+            "$ref": "#/$defs/FieldSpec"
+          },
+          "title": "Editable Fields",
+          "type": "array"
+        },
+        "failure_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FailurePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "input_schema": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Schema"
+        },
+        "model_tier": {
+          "anyOf": [
+            {
+              "enum": [
+                "large",
+                "medium",
+                "small",
+                "tier_a",
+                "tier_b",
+                "tier_c"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Tier"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "on_approve": {
+          "items": {
+            "$ref": "#/$defs/PostAction"
+          },
+          "title": "On Approve",
+          "type": "array"
+        },
+        "on_reject": {
+          "items": {
+            "$ref": "#/$defs/PostAction"
+          },
+          "title": "On Reject",
+          "type": "array"
+        },
+        "output_schema": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Schema"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "AnchorRead": {
+      "additionalProperties": false,
+      "description": "Maps a run-input id to the one base record the runtime pre-reads.\n\n``key_field`` is BOTH the property name in the action's ``input_schema``\nthat carries the id AND the key column of ``dataset_id`` used for the\nexact-filter, single-row read.",
+      "properties": {
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "key_field": {
+          "title": "Key Field",
+          "type": "string"
+        },
+        "kind": {
+          "default": "sql",
+          "description": "Structured read plane of the source, for the deterministic read-by-key. Must be a structured kind — the anchor read is never the NL planner (a decision's base record cannot depend on it).",
+          "enum": [
+            "sql",
+            "odata",
+            "soql"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "dataset_id",
+        "key_field"
+      ],
+      "title": "AnchorRead",
+      "type": "object"
+    },
+    "CheckEvaluateTool": {
+      "additionalProperties": false,
+      "description": "Judge ONE API / System-of-Record check result against a policy, returning\na per-check ``ItemFinding`` (modality=\"api\") for individual officer review —\nthe structured-data twin of ``image_analyze``. The lead agent fetches the\ndata (an ``mcp`` read — a credit-bureau / identity / sanctions lookup) and passes it\nin as ``data``; this tool produces a verdict {recommendation, confidence,\nrationale} that renders as its own accept/reject card and trains the\nper-``(app, task_type)`` rubric. Use ONE per check (one per ``task_type``).\n\nTwo modes:\n  * ``llm`` (default) — the model judges ``data`` against the fetched SOP +\n    the learned rubric. For grey-area checks: identity/name match, a bureau\n    flag officers routinely override, a borderline score with mitigants.\n  * ``rule`` — a deterministic boolean over ``data`` (``rule_expr``), NO LLM\n    call, for fixed-threshold checks (score ≥ 700). Cheaper; the rubric stays\n    thin (little to learn). A rule error fails LOUD to 'flag' (needs review),\n    never a silent pass.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "field_schema": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional fields to surface on the finding {name: 'type/desc'} (e.g. {'credit_score':'number'}).",
+          "title": "Field Schema",
+          "type": "object"
+        },
+        "kind": {
+          "const": "check_evaluate",
+          "default": "check_evaluate",
+          "enum": [
+            "check_evaluate"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "mode": {
+          "default": "llm",
+          "description": "'llm' judges data vs SOP+rubric; 'rule' evaluates rule_expr deterministically (no LLM).",
+          "enum": [
+            "llm",
+            "rule"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "model_tier": {
+          "default": "large",
+          "description": "Model tier for mode='llm'.",
+          "enum": [
+            "large",
+            "medium",
+            "small",
+            "tier_a",
+            "tier_b",
+            "tier_c"
+          ],
+          "title": "Model Tier",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "rule_expr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "For mode='rule': a boolean expression over the check data's fields (e.g. 'credit_score >= 700 and open_defaults == 0'). True ⇒ 'pass', False ⇒ 'flag'. Evaluated safely (no builtins/imports); on error the check is flagged for manual review.",
+          "title": "Rule Expr"
+        },
+        "sop_doc_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional: load the ENTIRE SOP doc at this path instead of top-k passages.",
+          "title": "Sop Doc Path"
+        },
+        "sop_query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional retrieval query for the SOP.",
+          "title": "Sop Query"
+        },
+        "sop_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "RAG source id for the acceptance policy/SOP — fetched SERVER-SIDE and cached per (app, task_type). Unset ⇒ judge on the learned rubric only (+ the case context the agent passes).",
+          "title": "Sop Source"
+        },
+        "task_type": {
+          "description": "Check type; the per-check learning bucket + review-card label (e.g. 'credit-check', 'identity-match').",
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Task Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "task_type"
+      ],
+      "title": "CheckEvaluateTool",
+      "type": "object"
+    },
+    "ClaimContext": {
+      "additionalProperties": false,
+      "description": "EXIF↔claim comparator config (E1), autowired from sources.json\nfraud_screening. Typed (extra='forbid') so a mistyped key or a bad radius\nis rejected AT PUBLISH — an untyped dict would pass validation and surface\nonly as a silently skipped runtime check.",
+      "properties": {
+        "dataset_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Kind"
+        },
+        "gps_radius_km": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gps Radius Km"
+        },
+        "incident_date_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Incident Date Field"
+        },
+        "location_lat_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location Lat Field"
+        },
+        "location_lon_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location Lon Field"
+        }
+      },
+      "title": "ClaimContext",
+      "type": "object"
+    },
+    "CodeExecTool": {
+      "additionalProperties": false,
+      "description": "Run Python in a sandboxed Docker container to compute or generate\na file (PDF, XLSX, DOCX, PPTX, CSV, JSON, PNG).\n\nThe BA does NOT write Python. They write a *prescription* in the\nagent's ``system_prompt`` describing what kind of script the runtime\nLLM should author when this tool is called. Examples:\n  • \"When the user clicks Draft Report, call code_exec with a script\n    that uses reportlab to build a 4-page PDF: page 1 claim summary,\n    page 2 policy excerpt, page 3 photo grid, page 4 signatures.\"\n  • \"For PnL requests, call code_exec with a pandas script that\n    reads /workspace/input/*.xlsx, computes FIFO realised PnL, and\n    writes pnl.xlsx with one sheet per symbol.\"\n\nThe proxy (Citra-Service ``/internal/code-exec/run``) returns\n``{success, stdout, stderr, output_files: [{filename, download_url,\nsize, content_type}]}``. The runtime LLM should then mention the\ndownload_url(s) in its reply so the smart-app UI renders them as\ndownload buttons.\n\nAllowed libraries (enforced by the sandbox image): pandas, openpyxl,\nxlrd, python-docx, python-pptx, Pillow, xlsxwriter, reportlab,\npdfplumber, jsonschema. NO subprocess, os.system, or network.",
+      "properties": {
+        "allowed_outputs": {
+          "description": "Output file extensions the BA permits. UI gate only — the sandbox itself enforces filesystem isolation.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Outputs",
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "kind": {
+          "const": "code_exec",
+          "default": "code_exec",
+          "enum": [
+            "code_exec"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "default": 60,
+          "description": "Per-call execution budget. The sandbox kills the script at this limit; treat as an upper bound — short scripts return in seconds.",
+          "maximum": 300,
+          "minimum": 5,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CodeExecTool",
+      "type": "object"
+    },
+    "ConsistencyCheckTool": {
+      "additionalProperties": false,
+      "description": "Deterministic record↔artifact consistency screen (fraud primitive T0).\n\nRuns LOCALLY — no LLM, no network, zero token cost. The agent passes the\nrecord's CLAIMED values and the values EXTRACTED from artifacts\n(``doc_extract`` / ``image_analyze`` findings); the tool normalizes per\nfield type (phone/amount/date/id/name), compares, runs format+checksum\nvalidators (PAN, IFSC, GSTIN, VIN check-digit, Aadhaar Verhoeff, email,\nphone) and optional invoice arithmetic, and returns explainable\n``mismatches[]``. Output is EVIDENCE attached to the recommendation the\nofficer reviews — it never auto-rejects (universal-approval invariant).\nSee docs/fraud-detection-primitives-plan.md §4.3/§7.",
+      "properties": {
+        "claim_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClaimContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "EXIF↔claim comparator config (E1), auto-wired from sources.json fraud_screening. When set, the runtime reads the record's CLAIMED incident date / site coordinates server-side (structured read-by-key, never the NL planner) and compares each evidence photo's EXIF capture time / GPS against them. None ⇒ the comparator never runs (ontology-driven). Do NOT author this; autowire overwrites it."
+        },
+        "data_source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "App data_source id holding the record (same binding contract as image_analyze). Enables artifact fingerprinting.",
+          "title": "Data Source Id"
+        },
+        "dataset_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Kind"
+        },
+        "date_rules": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/DateRuleCheck"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Rules"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 1600,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "domain": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Domain"
+        },
+        "field_types": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional builder-pinned type per field name (phone|amount|date|ssn|ein|routing|zip|pan|ifsc|gstin|vin|aadhaar|account|email|name|id|text). Unpinned fields are inferred from the field name.",
+          "title": "Field Types",
+          "type": "object"
+        },
+        "identity_fields": {
+          "description": "Ontology-autowired from the dataset's sources.json fraud_screening.identity_fields — the columns the SOURCE declares as cross-record linkable keys (policy_no / vin / consumer_id …). These link across cases even when the name heuristic or a field_types pin doesn't recognise them, so WHICH identifiers join cases comes from the source, not the LLM. Additive only — it never stops an undeclared field from linking. Do NOT author this; autowire overwrites it.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Identity Fields",
+          "type": "array"
+        },
+        "key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Record key column matching the run's record_id (e.g. 'inspection_id').",
+          "title": "Key Field"
+        },
+        "kind": {
+          "const": "consistency_check",
+          "default": "consistency_check",
+          "enum": [
+            "consistency_check"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "link_entities": {
+          "default": true,
+          "description": "Write-through this case's high-precision identifiers (phone/PAN/GSTIN/VIN/Aadhaar/email/account/id) into the entity-link overlay and report cross-case signals (rings, double-dip, synthetic identity). Disable only for apps where cross-case linking is not wanted.",
+          "title": "Link Entities",
+          "type": "boolean"
+        },
+        "locale": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z]{2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Locale"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "payment_proof": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PaymentProofCheck"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Payment-proof verification config (E4), auto-wired from sources.json fraud_screening.payment_proof. When set and the agent passes an extracted payment reference, the runtime looks the reference up in the declared ledger dataset SERVER-SIDE (structured read-by-key) and compares amount/date/party — 'reference not found' is a fact-grade fraud signal; a match is VERIFICATION. None ⇒ the check never runs (ontology-driven). Do NOT author this; autowire overwrites it."
+        },
+        "url_column_roles": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "description": "Per-url-column fraud semantics from the source ontology (sources.json), auto-wired by the builder from the catalogue: {col: {artifact_role: identity|evidence|supporting, reuse_policy: expected|suspicious|ignore}}. Reuse of an 'identity' artifact (a headshot reused by the same applicant) is EXPECTED and never flags; reuse of 'evidence' (an accident/damage/defect photo) across cases is a double-dip signal. Absent for a column ⇒ treated as evidence/suspicious (unchanged behavior).",
+          "title": "Url Column Roles",
+          "type": "object"
+        },
+        "url_columns": {
+          "description": "Record columns holding artifact URLs to fingerprint (e.g. ['defect_photo_url', 'inspection_report_url']). Each is resolved via the dept-MCP and hashed (SHA-256 + dHash) against prior records for duplicate/reuse detection.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Url Columns",
+          "type": "array"
+        },
+        "verify_against": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/VerifyAgainstCheck"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verify Against"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ConsistencyCheckTool",
+      "type": "object"
+    },
+    "DataBindingRead": {
+      "additionalProperties": false,
+      "description": "Declares a dataset this action may read from.",
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional natural-language hint or SQL WHERE fragment the LLM may use as a default. The runtime treats this as advisory — the LLM still emits the final query.",
+          "title": "Filter"
+        },
+        "redact_pii": {
+          "default": true,
+          "description": "When True, columns flagged `pii=True` in the catalogue are redacted before rows are returned to the LLM. Set False only with an explicit policy override.",
+          "title": "Redact Pii",
+          "type": "boolean"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "dataset_id"
+      ],
+      "title": "DataBindingRead",
+      "type": "object"
+    },
+    "DataBindingWrite": {
+      "additionalProperties": false,
+      "description": "Declares a write_action this action may invoke.",
+      "properties": {
+        "action_id": {
+          "title": "Action Id",
+          "type": "string"
+        },
+        "dataset_id": {
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "dataset_id",
+        "action_id"
+      ],
+      "title": "DataBindingWrite",
+      "type": "object"
+    },
+    "DataBindings": {
+      "additionalProperties": false,
+      "description": "What datasets / write_actions an Action is permitted to touch.",
+      "properties": {
+        "reads": {
+          "items": {
+            "$ref": "#/$defs/DataBindingRead"
+          },
+          "title": "Reads",
+          "type": "array"
+        },
+        "writes": {
+          "items": {
+            "$ref": "#/$defs/DataBindingWrite"
+          },
+          "title": "Writes",
+          "type": "array"
+        }
+      },
+      "title": "DataBindings",
+      "type": "object"
+    },
+    "DateRuleCheck": {
+      "additionalProperties": false,
+      "description": "E6 declarative date rule, autowired from sources.json\nfraud_screening.date_rules. Evaluated server-side against the record read\nby key — never against agent-supplied values.",
+      "properties": {
+        "earlier_field": {
+          "title": "Earlier Field",
+          "type": "string"
+        },
+        "later_field": {
+          "title": "Later Field",
+          "type": "string"
+        },
+        "max_days_between": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Days Between"
+        },
+        "min_days_between": {
+          "default": 0,
+          "title": "Min Days Between",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "earlier_field",
+        "later_field"
+      ],
+      "title": "DateRuleCheck",
+      "type": "object"
+    },
+    "DocExtractTool": {
+      "additionalProperties": false,
+      "description": "Extract STRUCTURED fields from ONE document (scanned image or text PDF)\nagainst a learned rubric, returning a ``ItemFinding`` (modality=\"document\").\n\nSibling of ``image_analyze`` for documents: ``task_type`` (e.g.\n``police-report``, ``repair-estimate``, ``resume``) keys the per-type rubric\n+ ``field_schema``. Scanned doc images and text-layer PDFs are supported\ntoday (first 20 pages); scanned-PDF OCR (rasterise) is a follow-up. Cost-gated\non ``ocr_enabled``.",
+      "properties": {
+        "artifact_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ontology artifact role for url_column (identity|evidence|supporting); autowired from sources.json.",
+          "title": "Artifact Role"
+        },
+        "data_source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "App data_source id whose record holds the document URL (enables server-side resolution from record_id).",
+          "title": "Data Source Id"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "field_schema": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Fields to extract: {field_name: 'type/desc'} (e.g. {'fir_no':'string','accident_date':'date'}).",
+          "title": "Field Schema",
+          "type": "object"
+        },
+        "key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Key column of the dataset (for the 1-row keyed read by record_id).",
+          "title": "Key Field"
+        },
+        "kind": {
+          "const": "doc_extract",
+          "default": "doc_extract",
+          "enum": [
+            "doc_extract"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "model_tier": {
+          "default": "large",
+          "description": "Model that REVIEWS / extracts from a TEXT-layer document (the reasoning over the extracted text). Defaults to 'large' — the document reviewer should be the strong reasoning model unless the builder downgrades it for cost. NB: scanned / image documents (no text layer) MUST go through the multimodal vision model regardless of this tier, since they require seeing the page pixels.",
+          "enum": [
+            "large",
+            "medium",
+            "small",
+            "tier_a",
+            "tier_b",
+            "tier_c"
+          ],
+          "title": "Model Tier",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "description": "When True (default) AND this tool is record-bound (data_source_id set), the read-before-write guard REQUIRES the agent to extract from this document for the record under review before any write is staged — a write without it fails loud. Set False to make the extraction discretionary.",
+          "title": "Required",
+          "type": "boolean"
+        },
+        "reuse_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ontology reuse policy for url_column (expected|suspicious|ignore); autowired, overrides the role default.",
+          "title": "Reuse Policy"
+        },
+        "sop_doc_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional. When set, load the ENTIRE SOP document at this doc_path (all sections, in order) as the standard — instead of top-k passages from a `sop_query`.",
+          "title": "Sop Doc Path"
+        },
+        "sop_query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional retrieval query for the SOP; defaults to a task_type-derived query.",
+          "title": "Sop Query"
+        },
+        "sop_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "RAG source id (policy/SOP corpus) the tool fetches the standing SOP from at call time and applies as the standard. Fetched SERVER-SIDE and CACHED per (app, task_type) so N documents share ONE fetch — the agent never carries the SOP. Fresh (TTL), so NO seed criteria in Mongo; the learned rubric refines it on top. Unset = run on query + learned rubric.",
+          "title": "Sop Source"
+        },
+        "task_type": {
+          "description": "Document type / role; per-type learning bucket + schema key (e.g. 'police-report').",
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Task Type",
+          "type": "string"
+        },
+        "url_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Column on the record that contains the document URL.",
+          "title": "Url Column"
+        }
+      },
+      "required": [
+        "name",
+        "task_type"
+      ],
+      "title": "DocExtractTool",
+      "type": "object"
+    },
+    "FailurePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "max_retries": {
+          "default": 2,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Max Retries",
+          "type": "integer"
+        },
+        "on_tool_error": {
+          "default": "retry",
+          "enum": [
+            "retry",
+            "park",
+            "escalate",
+            "fail"
+          ],
+          "title": "On Tool Error",
+          "type": "string"
+        },
+        "park_collection": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reserved: name of the Mongo collection runs are parked in.",
+          "title": "Park Collection"
+        }
+      },
+      "title": "FailurePolicy",
+      "type": "object"
+    },
+    "FieldSpec": {
+      "additionalProperties": false,
+      "description": "A composable, schema-driven input control.\n\n``control`` may be omitted — the runtime infers it from the action's\n``input_schema`` (enum→select, date→date, boolean→toggle, …). The action's\n``input_schema`` stays the HARD validation contract; FieldSpec is the\nPRESENTATION + options contract (spec/render separation).",
+      "properties": {
+        "control": {
+          "anyOf": [
+            {
+              "enum": [
+                "text",
+                "textarea",
+                "number",
+                "currency",
+                "date",
+                "datetime",
+                "time",
+                "select",
+                "multiselect",
+                "radio",
+                "lookup",
+                "checkbox",
+                "toggle",
+                "hidden"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Control"
+        },
+        "default": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        },
+        "editable": {
+          "default": true,
+          "title": "Editable",
+          "type": "boolean"
+        },
+        "editable_by_roles": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Editable By Roles",
+          "type": "array"
+        },
+        "help": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Help"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "maximum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum"
+        },
+        "minimum": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minimum"
+        },
+        "name": {
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OptionsSource"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "placeholder": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Placeholder"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "FieldSpec",
+      "type": "object"
+    },
+    "FraudSynthesisTool": {
+      "additionalProperties": false,
+      "description": "T3 gated fraud cross-examination (fraud plan §4.5/§6). The agent calls\nit LAST with ALL collected screening signals; the TOOL gates server-side —\nbelow the severity gate it returns instantly at zero cost, at/above it (or\non a small random audit sample) it runs ONE reasoning pass that weighs the\nsignals together against the learned fraud CASE rubric (modality='case')\nand returns structured evidence (fraud_risk / key_indicators /\nbenign_explanations / recommended_checks). Output is officer EVIDENCE —\nnever a verdict; nothing auto-rejects.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "gate_min_points": {
+          "default": 2,
+          "description": "Severity points at/above which the reasoning pass runs (mismatch=2, warn=1, exact/CLIP duplicate=3, pHash dup / cardinality=2, metadata anomaly / similar=1). Provisional until L3 calibration.",
+          "minimum": 1,
+          "title": "Gate Min Points",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "fraud_synthesis",
+          "default": "fraud_synthesis",
+          "enum": [
+            "fraud_synthesis"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "model_tier": {
+          "default": "large",
+          "description": "Reasoning model for the cross-examination (default large).",
+          "enum": [
+            "large",
+            "medium",
+            "small",
+            "tier_a",
+            "tier_b",
+            "tier_c"
+          ],
+          "title": "Model Tier",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "sample_rate": {
+          "default": 0.05,
+          "description": "Random audit fraction of BELOW-gate cases that still get the reasoning pass.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Sample Rate",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "FraudSynthesisTool",
+      "type": "object"
+    },
+    "GroundingContract": {
+      "description": "Few-shot-from-history grounding contract for a Smart App agent.\n\nCarries everything the server-side grounding refresh needs to (re)build\nthe agent's ``Historical_Refresh` (rows isolated per agent_id)`` Milvus collection that the\n``neighbor_samples`` tool reads — WITHOUT a workflow. The refresh runs as\na deterministic smart-app-service operation (see ``grounding_refresh.py``):\npull history → package (PII scrub + dedupe) → select (canonical few-shots)\n→ **Gate B guard** → atomic swap into the collection.\n\nThe guard thresholds + Gate A evidence make grounding non-bypassable at\n/publish: a build cannot ship a grounded agent without the evidence that\nGate A (``/builder/history-quality``) actually vetted the data, and a\nlater degraded pull is rejected before it can replace good samples.",
+      "properties": {
+        "dataset_id": {
+          "description": "Catalogue dataset id, '<source>.<table>' (e.g. 'claims_db.closed_motor_claims').",
+          "minLength": 1,
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "decision_field": {
+          "description": "The decision/outcome column.",
+          "minLength": 1,
+          "title": "Decision Field",
+          "type": "string"
+        },
+        "evaluation_verdict": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The builder's one-paragraph ground/don't-ground rationale (Gate A judgment).",
+          "title": "Evaluation Verdict"
+        },
+        "filters": {
+          "description": "Predicate for the pull (e.g. {'status': 'closed'}). Applied to the SELECT WHERE.",
+          "title": "Filters",
+          "type": "object"
+        },
+        "input_fields": {
+          "description": "Columns the agent sees as the case INPUT (the drivers of the decision).",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Input Fields",
+          "type": "array"
+        },
+        "max_results": {
+          "default": 5000,
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Max Results",
+          "type": "integer"
+        },
+        "min_canonical": {
+          "default": 5,
+          "description": "Floor on the always-loaded canonical set (0 = canonical few-shots disabled; neighbor retrieval unaffected).",
+          "minimum": 0,
+          "title": "Min Canonical",
+          "type": "integer"
+        },
+        "min_decision_fill_rate": {
+          "default": 0.9,
+          "description": "Min fraction of pulled rows that carry a non-empty decision.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Min Decision Fill Rate",
+          "type": "number"
+        },
+        "min_samples": {
+          "default": 8,
+          "description": "Floor on the total packaged pool.",
+          "minimum": 1,
+          "title": "Min Samples",
+          "type": "integer"
+        },
+        "output_fields": {
+          "description": "Columns forming the recorded OUTCOME (must include the decision field).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Output Fields",
+          "type": "array"
+        },
+        "per_decision_min": {
+          "default": 1,
+          "description": "Min canonical examples per decision class.",
+          "minimum": 0,
+          "title": "Per Decision Min",
+          "type": "integer"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional explicit pull query/predicate; when unset a SELECT over the dataset table is built.",
+          "title": "Query"
+        },
+        "reasoning_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional recorded-rationale column.",
+          "title": "Reasoning Field"
+        },
+        "required_decision_classes": {
+          "description": "Decision classes that MUST be present in a valid refresh.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Decision Classes",
+          "type": "array"
+        },
+        "severity_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional severity column.",
+          "title": "Severity Field"
+        },
+        "shrink_floor": {
+          "default": 0.5,
+          "description": "A refresh that shrinks the live set below this fraction is rejected.",
+          "exclusiveMinimum": 0.0,
+          "maximum": 1.0,
+          "title": "Shrink Floor",
+          "type": "number"
+        },
+        "source_id": {
+          "description": "Dept source id (e.g. 'field_operations').",
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_id_field": {
+          "description": "Row identity column (e.g. 'claim_id').",
+          "minLength": 1,
+          "title": "Source Id Field",
+          "type": "string"
+        },
+        "source_kind": {
+          "default": "sql",
+          "description": "Source kind for the historical pull (sql/duckdb/bigquery/mongodb).",
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_profile_baseline": {
+          "description": "The /builder/history-quality 'signals' captured at build time.",
+          "title": "Source Profile Baseline",
+          "type": "object"
+        },
+        "target_count": {
+          "default": 8,
+          "description": "How many canonical few-shots to curate.",
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Target Count",
+          "type": "integer"
+        },
+        "terminal_states": {
+          "description": "The DECIDED states of decision_field — only rows whose decision is one of these become few-shots. Excludes in-progress states (e.g. 'pending') so the agent grounds on completed decisions, not the current status. Sourced from the catalogue's decision_history.terminal_states. Empty = no terminal filter (treat every non-empty decision as decided).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Terminal States",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_id",
+        "dataset_id",
+        "source_id_field",
+        "input_fields",
+        "decision_field"
+      ],
+      "title": "GroundingContract",
+      "type": "object"
+    },
+    "ImageAnalyzeTool": {
+      "additionalProperties": false,
+      "description": "Analyze ONE image with the vision model against a learned rubric and\nreturn a STRUCTURED ``ItemFinding`` (fields + recommendation + confidence +\nrationale) — not free text like ``vision_ocr``.\n\n``task_type`` is the semantic role of the image (e.g.\n``motor-accident-damage`` vs ``machine-inspection-defect``). It keys the\nper-type **rubric** (criteria distilled from officer reject-reasons, loaded\nserver-side from ``smartapp_analysis_rubrics``) and the ``field_schema``.\nThe same tool + model serve every domain; only the rubric + schema differ.\nCost-gated on ``ocr_enabled`` (reuses the vision proxy).",
+      "properties": {
+        "artifact_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ontology artifact role for url_column (identity|evidence|supporting); autowired from sources.json.",
+          "title": "Artifact Role"
+        },
+        "data_source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "App data_source id whose record holds the image URL (enables server-side resolution from record_id).",
+          "title": "Data Source Id"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "field_schema": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Structured fields the model must return: {field_name: 'type/desc'}. e.g. {'severity':'one of none|minor|moderate|major|total', 'parts_affected':'list of strings', 'airbag_deployed':'true/false'}.",
+          "title": "Field Schema",
+          "type": "object"
+        },
+        "key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Key column of the dataset (for the 1-row keyed read by record_id).",
+          "title": "Key Field"
+        },
+        "kind": {
+          "const": "image_analyze",
+          "default": "image_analyze",
+          "enum": [
+            "image_analyze"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "description": "When True (default) AND this tool is record-bound (data_source_id set), the read-before-write guard REQUIRES the agent to analyse this image for the record under review before any write is staged — a write without it fails loud. Set False to make the analysis discretionary (e.g. 'only inspect the photo if the record already looks suspicious').",
+          "title": "Required",
+          "type": "boolean"
+        },
+        "reuse_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ontology reuse policy for url_column (expected|suspicious|ignore); autowired, overrides the role default.",
+          "title": "Reuse Policy"
+        },
+        "sop_doc_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional. When set, load the ENTIRE SOP document at this doc_path (all sections, in order) as the standard — instead of top-k passages from a `sop_query`. Use when one specific SOP governs this item type and you want its full text, not the best-matching snippets.",
+          "title": "Sop Doc Path"
+        },
+        "sop_query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional retrieval query for the SOP from `sop_source`; defaults to a task_type-derived query for the evidence / pass-fail criteria.",
+          "title": "Sop Query"
+        },
+        "sop_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "RAG source id (a policy/SOP corpus) the tool fetches the standing SOP from at call time and applies as the judgment standard. Fetched SERVER-SIDE and CACHED per (app, task_type), so N items (e.g. 10 photos of one claim) share ONE fetch — the agent never carries the SOP. Keeps the standard fresh (TTL), so NO seed criteria are stored in Mongo; the learned rubric refines it on top. Leave unset if no SOP governs this item type (then it runs on the agent's query + learned rubric).",
+          "title": "Sop Source"
+        },
+        "task_type": {
+          "description": "Semantic role of the image; the per-type learning bucket + schema key (e.g. 'motor-accident-damage').",
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Task Type",
+          "type": "string"
+        },
+        "url_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Column on the record that contains the image URL.",
+          "title": "Url Column"
+        }
+      },
+      "required": [
+        "name",
+        "task_type"
+      ],
+      "title": "ImageAnalyzeTool",
+      "type": "object"
+    },
+    "LearningLogEntry": {
+      "properties": {
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "intern",
+            "expert",
+            "compose",
+            "deploy"
+          ],
+          "title": "Phase",
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "timestamp",
+        "phase",
+        "note"
+      ],
+      "title": "LearningLogEntry",
+      "type": "object"
+    },
+    "LlmSubcallTool": {
+      "additionalProperties": false,
+      "description": "Sub-LLM call with a different prompt / model tier.\n\nLighter than a full sub_agent. Use for response formatting, intent\nclassification, etc. — anywhere a single non-tool-using completion\nis enough.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "kind": {
+          "const": "llm",
+          "default": "llm",
+          "enum": [
+            "llm"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "model_tier": {
+          "default": "large",
+          "enum": [
+            "large",
+            "medium",
+            "small",
+            "tier_a",
+            "tier_b",
+            "tier_c"
+          ],
+          "title": "Model Tier",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "system_prompt": {
+          "maxLength": 8000,
+          "minLength": 1,
+          "title": "System Prompt",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "system_prompt"
+      ],
+      "title": "LlmSubcallTool",
+      "type": "object"
+    },
+    "LookupJudgementTool": {
+      "additionalProperties": false,
+      "description": "Fetch the EVIDENCE behind a learned judgement, on demand.\n\nThe injection block gives the agent one self-sufficient line per judgement:\nthe rule, the concrete move officers made, and how many stand behind it.\nThat is deliberately enough to ACT on. This tool is for the other question —\n*why does this judgement exist* — answered from the actual cases and the\nofficers' own words.\n\nSplit this way on purpose. Pre-injecting the evidence would bloat every run\nfor the two or three judgements the agent actually weighs, and the richest\nmaterial (the source corrections) could not fit at any budget. Making the\njudgements themselves fetch-only would be worse: a matching judgement would\nbecome optional, the model might not look, and a team's rule would silently\nfail to influence a decision — invisibly, since \"injected, not cited\" reads\nexactly like \"considered and set aside\".\n\nSo: presence is infrastructure, depth is agentic. Reads Citra's own clause\nstore — no dept-MCP, no new auth surface, no external call.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "kind": {
+          "const": "lookup_judgement",
+          "default": "lookup_judgement",
+          "enum": [
+            "lookup_judgement"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "LookupJudgementTool",
+      "type": "object"
+    },
+    "McpActionTool": {
+      "additionalProperties": false,
+      "description": "Execute a registered dept-MCP **write action** (UPDATE / INSERT).\n\nWhere ``McpTool`` only reads, this changes record state in the\nsource system — route a grievance, flag a muster, record a\ncompliance verdict. ``dataset_id`` / ``action_id`` identify one\n``write_actions`` entry from the source catalogue; ``input_schema``\nis that action's payload schema, copied from ``citra-mcp-discover``\noutput, and becomes the tool's argument contract for the LLM.",
+      "properties": {
+        "action_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Action Id",
+          "type": "string"
+        },
+        "dataset_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "editable_fields": {
+          "items": {
+            "$ref": "#/$defs/FieldSpec"
+          },
+          "title": "Editable Fields",
+          "type": "array"
+        },
+        "input_schema": {
+          "description": "JSON Schema of the write action's payload, copied verbatim from the catalogue write_actions[].input_schema.",
+          "title": "Input Schema",
+          "type": "object"
+        },
+        "kind": {
+          "const": "mcp_action",
+          "default": "mcp_action",
+          "enum": [
+            "mcp_action"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "source_id",
+        "dataset_id",
+        "action_id"
+      ],
+      "title": "McpActionTool",
+      "type": "object"
+    },
+    "McpTool": {
+      "additionalProperties": false,
+      "description": "Live enterprise action via a registered dept-MCP.",
+      "properties": {
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Catalogue dataset_id (<source_id>.<table>) this tool reads. Enables the keyed-read fast-path; required together with dataset_kind.",
+          "title": "Dataset Id"
+        },
+        "dataset_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Catalogue dataset kind (sql | mongodb | odata | bigquery | rest | …). NEVER 'semantic'. Enables the keyed-read fast-path with dataset_id.",
+          "title": "Dataset Kind"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "input_schema_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional reference into the MCP discovery dump for the input_schema. When unset the runtime resolves the schema by re-querying discovery on cold start.",
+          "title": "Input Schema Ref"
+        },
+        "kind": {
+          "const": "mcp",
+          "default": "mcp",
+          "enum": [
+            "mcp"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "source_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "tool_name": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Tool Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "source_id",
+        "tool_name"
+      ],
+      "title": "McpTool",
+      "type": "object"
+    },
+    "NeighborSamplesTool": {
+      "additionalProperties": false,
+      "description": "Filtered + similarity retrieval over the agent's per-app sample corpus.\n\nBacks the Smart App \"few-shot from history\" pattern. The same Milvus\ncollection ``Historical_Refresh` (rows isolated per agent_id)`` (built by the Refresh-from-History\nworkflow) serves two query modes:\n\n  • ``mode=\"canonical\"`` — filter ``is_canonical == True`` only.\n    Returns the curated 5–15 always-loaded examples. Same set every\n    request. Ignores the input embedding entirely.\n\n  • ``mode=\"neighbors\"`` (default) — vector similarity over the\n    per-case input. Optional metadata filters (``decision``,\n    ``severity``, ``exclude_canonical``) narrow the search space.\n\nThe runtime typically calls this tool TWICE per agent turn — once\nwith ``mode=\"canonical\"`` to seed the prompt with schema, then again\nwith ``mode=\"neighbors\"`` per incoming case. The agent stitches both\nblocks into its working context.",
+      "properties": {
+        "collection": {
+          "default": "Historical_Refresh",
+          "description": "Milvus collection — always 'Historical_Refresh' (one shared collection for all agents; rows isolated by an agent_id field the runtime filters on). Enforced by publish rule G-01.",
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Collection",
+          "type": "string"
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional decision-class filter (e.g. 'approve' / 'escalate').",
+          "title": "Decision"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "exclude_canonical": {
+          "default": true,
+          "description": "In neighbors mode, exclude canonical samples (already loaded separately).",
+          "title": "Exclude Canonical",
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "neighbor_samples",
+          "default": "neighbor_samples",
+          "enum": [
+            "neighbor_samples"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "mode": {
+          "default": "neighbors",
+          "description": "canonical = always-loaded few-shot; neighbors = per-case retrieval",
+          "enum": [
+            "canonical",
+            "neighbors"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "maxLength": 32,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional severity filter.",
+          "title": "Severity"
+        },
+        "top_k": {
+          "default": 3,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "NeighborSamplesTool",
+      "type": "object"
+    },
+    "OptionItem": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "value": {
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "OptionItem",
+      "type": "object"
+    },
+    "OptionsSource": {
+      "additionalProperties": false,
+      "description": "Where a select / multiselect / lookup field gets its choices.\n\n- ``static``      : the literal ``values`` list (resolved client-side).\n- ``data_source`` : live DISTINCT ``value_column`` (+ optional\n  ``label_column``) from a declared ``data_source``, optionally scoped by\n  ``filter`` (supports ``${record.<col>}`` / ``${param.<name>}``\n  interpolation). Resolved server-side via the options endpoint — this is\n  what \"prepopulates the combo so the officer can pick any option\".\n- ``agent``       : candidate options the LLM returns in the plan output\n  under ``_options.<field>`` (e.g. \"top 3 JEs for this case\").",
+      "properties": {
+        "data_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Source"
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filter"
+        },
+        "kind": {
+          "default": "static",
+          "enum": [
+            "static",
+            "data_source",
+            "agent"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label Column"
+        },
+        "limit": {
+          "default": 200,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "search": {
+          "default": false,
+          "title": "Search",
+          "type": "boolean"
+        },
+        "value_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Column"
+        },
+        "values": {
+          "items": {
+            "$ref": "#/$defs/OptionItem"
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "title": "OptionsSource",
+      "type": "object"
+    },
+    "OutcomePollConfig": {
+      "additionalProperties": false,
+      "description": "Declarative Stage-4 outcome read-back rule (docs/citra-self-improving-loop-plan.md).\n\nAfter a decision settles, the outcome poller reads the source record back BY\nKEY via the structured ``/run_query`` plane (never the NL planner) and labels\nthe decision good / bad / unknown. The builder emits this from\n``/builder/history-quality``'s ``suggested_outcome_poll`` whenever the source\nhas a classifiable status field; it can also be hand-authored.",
+      "properties": {
+        "auto_refresh": {
+          "default": true,
+          "title": "Auto Refresh",
+          "type": "boolean"
+        },
+        "bad_values": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Bad Values",
+          "type": "array"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "good_values": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Good Values",
+          "type": "array"
+        },
+        "hold_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hold Field"
+        },
+        "key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key Field"
+        },
+        "kind": {
+          "default": "sql",
+          "title": "Kind",
+          "type": "string"
+        },
+        "neutral_values": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Neutral Values",
+          "type": "array"
+        },
+        "payload_key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payload Key Field"
+        },
+        "status_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status Field"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "window_days": {
+          "default": 7.0,
+          "minimum": 0.0,
+          "title": "Window Days",
+          "type": "number"
+        }
+      },
+      "title": "OutcomePollConfig",
+      "type": "object"
+    },
+    "PaymentProofCheck": {
+      "additionalProperties": false,
+      "description": "E4 payment-proof verification config, autowired from sources.json\nfraud_screening.payment_proof. Typed (extra='forbid') so a mistyped key is\nrejected AT PUBLISH. The ledger routing triple (source/dataset/kind) is\nstamped by autowire from the catalogue so the runtime's structured\nread-by-key needs no discovery lookup.",
+      "properties": {
+        "amount_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount Field"
+        },
+        "amount_tolerance_pct": {
+          "default": 1.0,
+          "minimum": 0.0,
+          "title": "Amount Tolerance Pct",
+          "type": "number"
+        },
+        "date_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Date Field"
+        },
+        "date_window_days": {
+          "default": 3,
+          "minimum": 0,
+          "title": "Date Window Days",
+          "type": "integer"
+        },
+        "doc_amount_field": {
+          "default": "amount",
+          "title": "Doc Amount Field",
+          "type": "string"
+        },
+        "doc_columns": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Doc Columns"
+        },
+        "doc_date_field": {
+          "default": "payment_date",
+          "title": "Doc Date Field",
+          "type": "string"
+        },
+        "doc_party_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Doc Party Field"
+        },
+        "doc_ref_field": {
+          "default": "transaction_ref",
+          "title": "Doc Ref Field",
+          "type": "string"
+        },
+        "ledger_dataset": {
+          "title": "Ledger Dataset",
+          "type": "string"
+        },
+        "ledger_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ledger Description"
+        },
+        "ledger_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ledger Kind"
+        },
+        "ledger_source_id": {
+          "title": "Ledger Source Id",
+          "type": "string"
+        },
+        "match_field": {
+          "title": "Match Field",
+          "type": "string"
+        },
+        "party_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Party Field"
+        }
+      },
+      "required": [
+        "ledger_source_id",
+        "ledger_dataset",
+        "match_field"
+      ],
+      "title": "PaymentProofCheck",
+      "type": "object"
+    },
+    "PostAction": {
+      "additionalProperties": false,
+      "description": "A side-effect to perform after a run resolves (approve / reject /\nauto-decision). Each entry is a tool call into a registered MCP — never\narbitrary code. The runtime resolves ``tool`` against the executing\nagent's tool list; unknown tools are surfaced as a gap.",
+      "properties": {
+        "args": {
+          "title": "Args",
+          "type": "object"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "tool": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool"
+      ],
+      "title": "PostAction",
+      "type": "object"
+    },
+    "RagBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "classification_max": {
+          "anyOf": [
+            {
+              "enum": [
+                "public",
+                "internal",
+                "confidential",
+                "restricted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classification Max"
+        },
+        "doc_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Doc Types",
+          "type": "array"
+        },
+        "ref": {
+          "title": "Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref"
+      ],
+      "title": "RagBinding",
+      "type": "object"
+    },
+    "RagTool": {
+      "additionalProperties": false,
+      "description": "RAG search over a registered dept-MCP's document corpus.",
+      "properties": {
+        "classification_max": {
+          "anyOf": [
+            {
+              "enum": [
+                "public",
+                "internal",
+                "confidential",
+                "restricted"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Classification Max"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "kind": {
+          "const": "rag",
+          "default": "rag",
+          "enum": [
+            "rag"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "top_k": {
+          "default": 8,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Top K",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "source_id"
+      ],
+      "title": "RagTool",
+      "type": "object"
+    },
+    "SubAgent": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "max_tool_calls": {
+          "anyOf": [
+            {
+              "maximum": 20,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hard cap on tool-call iterations inside this sub-agent.",
+          "title": "Max Tool Calls"
+        },
+        "mcps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Mcps",
+          "type": "array"
+        },
+        "model_tier": {
+          "anyOf": [
+            {
+              "enum": [
+                "large",
+                "medium",
+                "small",
+                "tier_a",
+                "tier_b",
+                "tier_c"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Tier"
+        },
+        "output_schema": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional JSON schema for the sub-agent's structured return value.",
+          "title": "Output Schema"
+        },
+        "rag": {
+          "items": {
+            "$ref": "#/$defs/RagBinding"
+          },
+          "title": "Rag",
+          "type": "array"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "system_prompt": {
+          "minLength": 1,
+          "title": "System Prompt",
+          "type": "string"
+        },
+        "tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "system_prompt"
+      ],
+      "title": "SubAgent",
+      "type": "object"
+    },
+    "ValidateFormTool": {
+      "additionalProperties": false,
+      "description": "Deterministic form-completeness check.\n\nRuns locally in the runtime engine — no LLM, no network. The runtime\nwalks the AppSpec FormPanel referenced by ``schema_ref`` and reports\nmissing/invalid fields. The agent's system prompt should mandate this\ntool runs first to short-circuit incomplete submissions before any\npaid OCR / LLM call.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "kind": {
+          "const": "validate_form",
+          "default": "validate_form",
+          "enum": [
+            "validate_form"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "schema_ref": {
+          "description": "Reference to a FormPanel in the same AppSpec. Either the panel's `id` or its `schema_ref` value. The runtime resolves the panel and uses its schema_inline / schema_ref to validate.",
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Schema Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "schema_ref"
+      ],
+      "title": "ValidateFormTool",
+      "type": "object"
+    },
+    "VerifyAgainstCheck": {
+      "additionalProperties": false,
+      "description": "Generic cross-dataset verification config (plan F4), autowired from\nsources.json fraud_screening.verify_against with the target routing\nresolved from the catalogue — the E4 shape generalized (purchase bill →\nregistry, serial-in-photo → asset master). Typed extra='forbid'.",
+      "properties": {
+        "compare": {
+          "items": {
+            "$ref": "#/$defs/VerifyCompareCheck"
+          },
+          "title": "Compare",
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "doc_column": {
+          "title": "Doc Column",
+          "type": "string"
+        },
+        "doc_ref_field": {
+          "default": "reference",
+          "title": "Doc Ref Field",
+          "type": "string"
+        },
+        "match_field": {
+          "title": "Match Field",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "target_dataset": {
+          "title": "Target Dataset",
+          "type": "string"
+        },
+        "target_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Description"
+        },
+        "target_kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Kind"
+        },
+        "target_source_id": {
+          "title": "Target Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "target_source_id",
+        "target_dataset",
+        "match_field",
+        "doc_column"
+      ],
+      "title": "VerifyAgainstCheck",
+      "type": "object"
+    },
+    "VerifyCompareCheck": {
+      "additionalProperties": false,
+      "description": "One field-pair comparison inside a VerifyAgainstCheck.",
+      "properties": {
+        "doc_field": {
+          "title": "Doc Field",
+          "type": "string"
+        },
+        "target_field": {
+          "title": "Target Field",
+          "type": "string"
+        },
+        "tolerance_pct": {
+          "default": 1.0,
+          "minimum": 0.0,
+          "title": "Tolerance Pct",
+          "type": "number"
+        },
+        "type": {
+          "default": "text",
+          "pattern": "^(amount|date|id|text)$",
+          "title": "Type",
+          "type": "string"
+        },
+        "window_days": {
+          "default": 3,
+          "minimum": 0,
+          "title": "Window Days",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "doc_field",
+        "target_field"
+      ],
+      "title": "VerifyCompareCheck",
+      "type": "object"
+    },
+    "VisionOcrTool": {
+      "additionalProperties": false,
+      "description": "Vision / OCR via the smart-app-service proxy.\n\nArgs at call time: ``{image_url? | image_b64?, prompt?}``. Returns\n``{text, tokens_in, tokens_out, model}``. The agent calls this only\nwhen the goal involves understanding an uploaded image / scanned\ndocument AND the form-validation tool has already passed (cost gate).",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "kind": {
+          "const": "vision_ocr",
+          "default": "vision_ocr",
+          "enum": [
+            "vision_ocr"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "description": "Stable identifier referenced by the agent's system prompt.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "VisionOcrTool",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "items": {
+        "$ref": "#/$defs/Action"
+      },
+      "title": "Actions",
+      "type": "array"
+    },
+    "agent_id": {
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "grounding": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GroundingContract"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Few-shot-from-history grounding contract. Set when the agent carries a ``neighbor_samples`` tool grounded in the tenant's historical decisions. Drives the server-side grounding refresh that (re)builds ``Historical_Refresh` (rows isolated per agent_id)``."
+    },
+    "hitl_policy": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Hitl Policy"
+    },
+    "input_schema": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Input Schema"
+    },
+    "learning_log": {
+      "items": {
+        "$ref": "#/$defs/LearningLogEntry"
+      },
+      "title": "Learning Log",
+      "type": "array"
+    },
+    "mcps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mcps",
+      "type": "array"
+    },
+    "memory_namespace": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Memory Namespace"
+    },
+    "model_tier": {
+      "default": "large",
+      "enum": [
+        "large",
+        "medium",
+        "small",
+        "tier_a",
+        "tier_b",
+        "tier_c"
+      ],
+      "title": "Model Tier",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "outcome_poll": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OutcomePollConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Self-improving loop Stage-4 config: how to read the source record back and judge the outcome of this agent's decisions. None = the loop records decisions but does not auto-observe outcomes."
+    },
+    "rag": {
+      "items": {
+        "$ref": "#/$defs/RagBinding"
+      },
+      "title": "Rag",
+      "type": "array"
+    },
+    "spec_version": {
+      "const": "v0",
+      "default": "v0",
+      "enum": [
+        "v0"
+      ],
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "sub_agents": {
+      "items": {
+        "$ref": "#/$defs/SubAgent"
+      },
+      "title": "Sub Agents",
+      "type": "array"
+    },
+    "system_prompt": {
+      "minLength": 1,
+      "title": "System Prompt",
+      "type": "string"
+    },
+    "tools": {
+      "description": "Legacy: flat list of tool names. New builds should populate ``tools_v2`` instead so the runtime can introspect schemas and the publisher can enforce cost-gating rules.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Tools",
+      "type": "array"
+    },
+    "tools_v2": {
+      "description": "Discriminated tool definitions exposed to the runtime LLM. Each entry declares its ``kind`` (vision_ocr, mcp, mcp_action, rag, validate_form, llm, code_exec, neighbor_samples) and any kind-specific config.",
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "check_evaluate": "#/$defs/CheckEvaluateTool",
+            "code_exec": "#/$defs/CodeExecTool",
+            "consistency_check": "#/$defs/ConsistencyCheckTool",
+            "doc_extract": "#/$defs/DocExtractTool",
+            "fraud_synthesis": "#/$defs/FraudSynthesisTool",
+            "image_analyze": "#/$defs/ImageAnalyzeTool",
+            "llm": "#/$defs/LlmSubcallTool",
+            "lookup_judgement": "#/$defs/LookupJudgementTool",
+            "mcp": "#/$defs/McpTool",
+            "mcp_action": "#/$defs/McpActionTool",
+            "neighbor_samples": "#/$defs/NeighborSamplesTool",
+            "rag": "#/$defs/RagTool",
+            "validate_form": "#/$defs/ValidateFormTool",
+            "vision_ocr": "#/$defs/VisionOcrTool"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/ValidateFormTool"
+          },
+          {
+            "$ref": "#/$defs/VisionOcrTool"
+          },
+          {
+            "$ref": "#/$defs/ImageAnalyzeTool"
+          },
+          {
+            "$ref": "#/$defs/DocExtractTool"
+          },
+          {
+            "$ref": "#/$defs/CheckEvaluateTool"
+          },
+          {
+            "$ref": "#/$defs/ConsistencyCheckTool"
+          },
+          {
+            "$ref": "#/$defs/FraudSynthesisTool"
+          },
+          {
+            "$ref": "#/$defs/McpTool"
+          },
+          {
+            "$ref": "#/$defs/McpActionTool"
+          },
+          {
+            "$ref": "#/$defs/RagTool"
+          },
+          {
+            "$ref": "#/$defs/LlmSubcallTool"
+          },
+          {
+            "$ref": "#/$defs/CodeExecTool"
+          },
+          {
+            "$ref": "#/$defs/NeighborSamplesTool"
+          },
+          {
+            "$ref": "#/$defs/LookupJudgementTool"
+          }
+        ]
+      },
+      "title": "Tools V2",
+      "type": "array"
+    },
+    "version": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Version"
+    }
+  },
+  "required": [
+    "agent_id",
+    "name",
+    "spec_version",
+    "system_prompt"
+  ],
+  "title": "AgentSpec",
+  "type": "object"
+}

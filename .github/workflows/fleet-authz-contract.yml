@@ -1,0 +1,113 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Fleet Authz Contract — protects the agreement between citra-workflow and
+# discovery-service about WHO may see the MCP fleet, and what the admin UI is
+# allowed to say when that answer is "not you".
+#
+# The bug this exists to prevent (2026-07-17): discovery's GET /admin/tools
+# admitted super_admin ONLY, while its sole caller — the citra-workflow
+# /api/dept-sources/_discovery/tools proxy — admits org_admin/dept_admin. Those
+# callers always drew a 403, the proxy swallowed it into 200 {"tools": []}, and
+# the panel rendered "0 MCP instances registered" against a full registry: an
+# authz failure wearing the costume of an empty fleet.
+#
+# Neither service is wrong on its own, which is exactly why this needs a gate —
+# the contract only breaks in the SEAM, and each side's tests pass in isolation.
+# The jobs below pin, in order:
+#   * the gate      — every admin role is admitted; rows stay scoped per caller
+#   * the seam      — the proxy propagates 403 and never swallows a failure
+#   * the vocabulary— gate roles must exist in citra_auth.Roles.ALL (a literal
+#                     that isn't in the enum can never match a real token)
+#   * the panel     — a failed load must not read as an empty fleet, and must
+#                     still offer a way back
+#
+# Runs on PRs that touch either side of the contract, the shared role
+# vocabulary, or this file.
+# =============================================================================
+name: Fleet Authz Contract
+
+on:
+  pull_request:
+    paths:
+      - 'discovery-service/main.py'
+      - 'discovery-service/tests/test_admin_tools_authz.py'
+      - 'citra-workflow/dept_sources/**'
+      - 'citra-workflow/tests/test_dept_sources_discovery_proxy.py'
+      # The gate is composed from these role names — a rename here silently
+      # turns a live branch into a dead one.
+      - 'citra-common/citra-auth/citra_auth/constants.py'
+      - 'Citra-UI/screens/DeptSourcesScreen.js'
+      - 'Citra-UI/services/DiscoveryService.js'
+      - 'Citra-UI/services/apiError.js'
+      - 'Citra-UI/services/WorkflowService.js'
+      - 'Citra-UI/tests/workflow/DeptSourcesScreen.test.js'
+      - 'Citra-UI/tests/workflow/apiError.test.js'
+      - '.github/workflows/fleet-authz-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Who gets in, and which rows they see. Pins that org_admin/dept_admin are
+  # admitted (the regression), that neither can read another tenant's fleet,
+  # and that a trusted service scope cannot widen a human's view.
+  discovery-gate:
+    name: discovery /admin/tools authz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install discovery-service deps
+        working-directory: discovery-service        # so `-e ../citra-*` resolve
+        run: pip install -r requirements.txt pytest pytest-asyncio
+      - name: Run /admin/tools authz tests
+        working-directory: discovery-service
+        run: pytest tests/test_admin_tools_authz.py -q --asyncio-mode=auto
+
+  # The seam. A 403 must reach the caller as a 403; every other upstream status
+  # is discovery's fault, not the caller's, and must NOT arrive as a 401 (which
+  # would trip the UI's re-auth interceptor into an unwinnable sign-in loop).
+  proxy-seam:
+    name: citra-workflow discovery proxy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install citra-workflow deps
+        working-directory: citra-workflow           # so `-e ../citra-*` resolve
+        run: pip install -r requirements.txt pytest pytest-asyncio
+      - name: Run discovery proxy tests
+        working-directory: citra-workflow
+        run: pytest tests/test_dept_sources_discovery_proxy.py -q --asyncio-mode=auto
+
+  # The panel. A failed load must show the reason, must not claim the fleet is
+  # empty, and must keep a retry within reach.
+  fleet-panel:
+    name: MCP Fleet panel + API error rendering
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Citra-UI deps
+        working-directory: Citra-UI
+        run: npm ci --ignore-scripts
+      - name: Run fleet panel tests
+        working-directory: Citra-UI
+        run: >-
+          npx jest --config jest.config.js
+          tests/workflow/DeptSourcesScreen.test.js
+          tests/workflow/apiError.test.js

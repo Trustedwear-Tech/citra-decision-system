@@ -1,0 +1,56 @@
+{
+  "spec_version": "v0",
+  "slug": "motor-claim-intake",
+  "title": "Motor Claim Intake",
+  "description": "Submit a motor-insurance claim with form details and accident photos. Agent validates, OCRs the photos, cross-checks the policy, and recommends a decision.",
+  "kind": "app",
+  "agent_id": "motor_claim_agent",
+  "data_sources": [
+    {
+      "id": "policy_lookup",
+      "type": "mcp",
+      "ref": "insurance.lookup_policy"
+    },
+    {
+      "id": "claim_history",
+      "type": "mcp",
+      "ref": "insurance.fetch_claim_history"
+    },
+    {
+      "id": "policy_sop_rag",
+      "type": "rag",
+      "ref": "insurance.policy_search"
+    }
+  ],
+  "panels": [
+    {
+      "id": "submit_claim",
+      "type": "form",
+      "title": "Submit a motor claim",
+      "schema_ref": "motor_claim_form",
+      "accepts_files": true,
+      "accepted_file_types": ["image/jpeg", "image/png"],
+      "on_submit": {
+        "agent_action": "process_claim"
+      }
+    },
+    {
+      "id": "my_claims",
+      "type": "queue",
+      "title": "My claims",
+      "data_source": "claim_history",
+      "columns": ["claim_id", "incident_date", "status", "amount"],
+      "actions": [
+        {
+          "label": "View detail",
+          "agent_action": "show_claim_detail"
+        }
+      ]
+    }
+  ],
+  "permissions": {
+    "view": ["customer", "claims_agent"],
+    "submit": ["customer"],
+    "approve": ["claims_agent", "claims_manager"]
+  }
+}

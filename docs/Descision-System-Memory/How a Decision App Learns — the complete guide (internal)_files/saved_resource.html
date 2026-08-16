@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<!-- saved from url=(0253)https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1786125835-b655/?__frame_t=4epmKzJ12q_12xeUU9nwTRne.60887a8c-ece3-4960-8e87-cf5550061313.efc24184-bee9-4856-8d2f-79c1143ed1a4.1786129453&__frame_v=manifest.af44b97a3d9a95da.json -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!-- frame-runtime --><!--<base href="/_f/1786125835-b655/">--><base href="."><script>window.__FRAME_PREAMBLE={"capabilities":{"comments":"comments.BaoaqR_K.js","db":"db.CeV_J5G-.js","downloads":"downloads.BXsoAvg9.js","mcp":"mcp.CYSdpjo0.js","permissions":"permissions.DdITF2Mk.js","sample":"sample.DpdXn9di.js","self":"self.DtZoNC4q.js","user":"user.Cr_h1ETf.js"},"transforms":"_transforms.VaITkagF.js","comments":"_comments.7Aq01jJf.js","translate":"_translate.BOzFH2D9.js"}</script><script>(function(){"use strict";var ne=["light","dark","system"];function oe(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_init;return t!==null&&typeof t=="object"}function Y(e){return e!==null&&typeof e=="object"&&e.__frame_size_poke===!0}function se(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_theme;if(t===null||typeof t!="object")return!1;const n=t.theme;return typeof n=="string"&&ne.includes(n)}function ie(e){try{typeof reportError=="function"?reportError(e):setTimeout(()=>{throw e},0)}catch{}}var K=Object.freeze(Object.assign(Object.create(null),{user:Object.freeze(Object.assign(Object.create(null),{id:null,isOwner:!1,canEdit:!1,name:null,avatarUrl:null,email:null}))})),ae={sample:"sample"};function x(){const e=new Uint8Array(20);try{crypto.getRandomValues(e)}catch{for(let n=0;n<e.length;n++)e[n]=Math.floor(Math.random()*256)}let t="";for(const n of e)t+=(n%36).toString(36);return t}function ce(e,t){const n=r=>{const o={path:r},i=r.split("/");return{id:i[i.length-1],path:r,get:()=>t("get",[o]),set:g=>t("set",[o,g]),update:g=>t("update",[o,g]),delete:()=>t("delete",[o]),acquire:g=>t("acquire",[o,g]),onSnapshot:(g,y)=>t("subscribe",[o,g,y]),collection:g=>a(r+"/"+String(g))}},u=r=>({where:(o,i,g)=>u({...r,where:[...r.where??[],{f:String(o),op:String(i),v:g}]}),orderBy:(o,i)=>u({...r,orderBy:{f:String(o),dir:i===void 0?"asc":String(i)}}),limit:o=>u({...r,limit:Number(o)}),get:()=>t("query",[r]),onSnapshot:(o,i)=>t("subscribe",[r,o,i])}),a=r=>({...u({collection:r}),path:r,doc:o=>n(r+"/"+(o===void 0?x():String(o))),add:o=>{const i=n(r+"/"+x());return Promise.resolve(i.set(o)).then(()=>i)}});e.doc=r=>n(String(r)),e.collection=r=>a(String(r))}function J(e){if(window===top||e.type==="auxclick"&&e.button!==1)return;const t=e.composedPath?e.composedPath():[e.target];let n=null;for(let o=0;o<t.length;o++){const i=t[o];if(i&&i.matches&&i.matches("a[href],area[href]")){n=i;break}}if(!n&&e.target&&e.target.closest&&(n=e.target.closest("a[href],area[href]")),!n)return;const u=n.getAttribute("href");if(!u)return;let a,r;try{a=new URL(u,document.baseURI),r=new URL(document.baseURI).origin}catch{return}(a.protocol==="http:"||a.protocol==="https:")&&a.origin!==r&&(e.preventDefault(),parent.postMessage({__frame_nav:!0,url:a.href},"*"))}var G={};function I(e){if(window===top)return;const t=Date.now();t-(G[e]||0)<500||(G[e]=t,parent.postMessage({__frame_engaged:!0,kind:e},"*"))}var le=2e3,V=["wheel","touchstart","touchmove","keydown","pointerdown"],X=0;function ue(e){e.isTrusted&&(X=Date.now())}function fe(){addEventListener("click",J,!0),addEventListener("auxclick",J,!0)}function de(){for(let e=0;e<V.length;e++)addEventListener(V[e],ue,{capture:!0,passive:!0});addEventListener("scroll",e=>{e.isTrusted&&Date.now()-X<le&&I("scroll")},{capture:!0,passive:!0}),addEventListener("pointermove",e=>{e.isTrusted&&I("pointer")},{capture:!0,passive:!0}),addEventListener("click",e=>{e.isTrusted&&I("click")},{capture:!0,passive:!0})}var q="__frame_scroll",me=150,pe=310,ge=160,he=3e4;function ve(){let e=0,t=!1,n=!1,u=!1,a=0,r=null;const o=d=>{try{sessionStorage.setItem(q,JSON.stringify({y:d}))}catch{}},i=()=>{if(clearTimeout(e),r===null)return;const d=r;r=null,o(d)},g=()=>{if(t){t=!1;return}n=!0,r=scrollY,clearTimeout(e),e=setTimeout(i,me)};try{addEventListener("scroll",g,{passive:!0}),addEventListener("pagehide",i)}catch{}const y=()=>{let d;try{d=sessionStorage.getItem(q)}catch{return null}if(d===null)return null;let l;try{l=JSON.parse(d)}catch{l=null}const p=l?.y;if(!(typeof p=="number"&&Number.isFinite(p)&&p>=0)){try{sessionStorage.removeItem(q)}catch{}return null}return p};let c=!1;const f=d=>{try{const l=scrollY;scrollTo({top:d,left:0,behavior:"instant"}),a=d,u=!0,clearTimeout(e),r=null,o(d);const p=scrollY;p!==l&&(t=!0),p!==d&&!c&&(c=!0,addEventListener("load",()=>{try{if(scrollY===p){const v=y();f(v!==null?v:a)}}catch{}},{once:!0}))}catch{}},m=()=>{try{return!!location.hash}catch{return!0}};let h=!1;const _=()=>{try{if(h||innerWidth>pe||innerHeight>ge)return;h=!0;const d=Date.now(),l=()=>{try{removeEventListener("resize",l)}catch{}if(Date.now()-d>he||n||m())return;const p=y();f(p!==null?p:a)};addEventListener("resize",l)}catch{}};let w=!1,S=!1;return{restore(){if(w||(w=!0,m()))return;const d=y();d!==null&&(f(d),_())},promoted(){if(S||(S=!0,m()))return;const d=y();d!==null?(f(d),_()):u&&f(a)}}}function _e(e,t,n){const u=[...t.values()].filter(a=>a.targets.some(r=>r.startsWith(e+".")));return{wrap(a,r){const o=`${e}.${a}`,i=u.filter(g=>g.targets.includes(o));return i.length===0?(...g)=>{try{return r(...g)}catch(y){return Promise.reject(y)}}:(...g)=>{let y=g;for(const f of i){const m=f.module.parameters;if(m)try{y=m(y)}catch{return Promise.reject({code:"transform_error",id:f.id,scope:e,message:"parameters transform failed"})}}let c;try{c=r(...y)}catch(f){c=Promise.reject(f)}return c.then(f=>{for(let m=i.length-1;m>=0;m--){const h=i[m],_=h.module.returns;if(_)try{f=_(f)}catch{return n({id:h.id,scope:e,leg:"returns"}),f}}return f},f=>{for(let m=i.length-1;m>=0;m--){const h=i[m],_=h.module.throws;if(_)try{f=_(f)}catch{return n({id:h.id,scope:e,leg:"throws"}),Promise.reject(f)}}return Promise.reject(f)})}}}}function ye(e,t,n,u=()=>{}){const a=new Set(e.changes??[]),r=new Map;for(const o of a){const i=t[o];i&&r.set(o,i)}return{contract:e.contract,changes:a,flags:new Set(e.flags??[]),capabilities:e.capabilities??{},capBudgets:e.capBudgets??{},transforms:r,shellOrigin:n.shellOrigin,mount:n.mount,pipe:o=>_e(o,r,u)}}var Ae="modulepreload",Re=function(e){return"/"+e},je={},be=function(t,n,u){let a=Promise.resolve();function r(o){const i=new Event("vite:preloadError",{cancelable:!0});if(i.payload=o,window.dispatchEvent(i),!i.defaultPrevented)throw o}return a.then(o=>{for(const i of o||[])i.status==="rejected"&&r(i.reason);return t().catch(r)})};(function(){const e=Object.defineProperty,t=globalThis,n=["RTCPeerConnection","webkitRTCPeerConnection","RTCDataChannel","RTCIceCandidate","RTCSessionDescription","RTCRtpSender","RTCRtpReceiver"];let u=0;for(let a=0;a<n.length;a++){const r=n[a];try{e(t,r,{value:void 0,writable:!1,configurable:!1})}catch{try{delete t[r]}catch{}try{e(t,r,{value:void 0,writable:!1,configurable:!0})}catch{}}typeof t[r]=="function"&&u++}if(u&&window!==top)try{parent.postMessage({__frame_rtc_lockdown_failed:u},"*")}catch{}})();var Ee=1e4,we=Object.freeze([...window.__FRAME_PREAMBLE?.origins??["https://claude.ai","https://preview.claude.ai"]]);function Q(e){for(const t of we)if(t.endsWith(":*"))try{const n=new URL(e);if(`${n.protocol}//${n.hostname}:*`===t)return!0}catch{}else if(e===t)return!0;return!1}var k=Object.freeze({...window.__FRAME_PREAMBLE?.capabilities}),D=window.__FRAME_PREAMBLE?.transforms,z=window.__FRAME_PREAMBLE?.comments,B=window.__FRAME_PREAMBLE?.translate,N=/^[\w.-]+\.js$/,Se=/^[a-z][a-z0-9_-]{0,63}$/,Z=null,M=null;function $(e,t,n){try{Object.defineProperty(e,t,{value:n,writable:!1,configurable:!1,enumerable:!0})}catch{try{Object.defineProperty(e,t,{value:n,writable:!1,configurable:!0,enumerable:!0})}catch{}}}var F=!1;function ee(e){const t=document.documentElement;e==="light"||e==="dark"?(t.dataset.theme=e,t.style.colorScheme=e,F=!0):F&&(delete t.dataset.theme,t.style.colorScheme="",F=!1)}var te=256,P=Object.assign(Object.create(null),{mcp:Object.assign(Object.create(null),{watchTool:{handlerArg:3}}),db:Object.assign(Object.create(null),{subscribe:{handlerArg:1,errArg:2}})}),L=new Map;function re(e,t){const n=L.get(e);if(!n)return;const u=Object.assign(Object.create(null),t);Object.assign(n.impl,u),n.impl.__settled=()=>Promise.reject({code:"capability_removed",message:`${e}: method not in this runtime`});const a=n.queue;n.queue=[];for(const r of a){const o=u[r.method];if(o)if(P[e]?.[r.method])try{r.resolve(o(...r.args))}catch{T(r,P[e][r.method],{code:"transform_error",message:`${e}.${r.method} rejected its arguments`})}else o(...r.args).then(r.resolve,r.reject);else{const i={code:"capability_removed",message:`${e}.${r.method} is not in this runtime`},g=P[e]?.[r.method];if(g){T(r,g,i);continue}r.reject(i)}}}function Oe(e,t){const n=L.get(e);if(!n)return;n.impl.__settled=()=>Promise.reject(t);const u=n.queue;n.queue=[];for(const a of u){const r=P[e]?.[a.method];if(r){T(a,r,t);continue}a.reject(t)}}function C(e,t){const n=K[e];if(!n){Oe(e,t);return}re(e,Object.fromEntries(Object.entries(n).map(([u,a])=>[u,()=>Promise.resolve(a)])))}function T(e,t,n){if(e.syncState?.dead)return;const u=t.errArg===void 0?void 0:e.args[t.errArg],a=t.errArg===void 0?e.args[t.handlerArg]:u;typeof a=="function"&&queueMicrotask(()=>{if(!e.syncState?.dead)try{a(t.errArg===void 0?{type:"error",error:n}:n)}catch(r){ie(r)}})}var H=Object.getOwnPropertyDescriptor(window,"claude");if(window!==top&&!(H&&H.writable===!1)){fe(),de();let e=null;try{e=ve()}catch{}const t=H?.value??{};$(window,"claude",t);const n=c=>{const f={impl:Object.create(null),queue:[]};L.set(c,f);const m=f.impl,h=d=>({code:"queue_overflow",message:`${c}.${d}: pre-init call queue is full`}),_=(d,l)=>{if(f.queue.length>=te){const p=K[c];return p&&d in p?Promise.resolve(p[d]):Promise.reject(h(d))}return new Promise((p,v)=>{f.queue.push({method:d,args:l,resolve:p,reject:v})})},w=ae[c],S=new Proxy(w===void 0?m:(()=>{}),{apply:(d,l,p)=>{const v=w,E=m[v]??m.__settled;return E?E(...p):_(v,p)},get:(d,l)=>{if(typeof l!="string"||l==="then"||l==="toJSON"||l==="valueOf")return;if(l==="toString")return Object.prototype.toString;if(w!==void 0&&(l==="call"||l==="apply"||l==="bind"))return Function.prototype[l];const p=P[c]?.[l];return p?(...v)=>{if(typeof v[p.handlerArg]!="function")throw new TypeError(`${c}.${l} requires a handler function`);const E=m[l];if(E)return E(...v);if(m.__settled){const b={dead:!1},U={args:[...v],syncState:b};return m.__settled().catch(s=>T(U,p,s)),()=>{b.dead=!0}}if(f.queue.length>=te){const b={dead:!1};return T({args:[...v],syncState:b},p,h(l)),()=>{b.dead=!0}}let A=null;const R={dead:!1};return f.queue.push({method:l,args:v,resolve:b=>{A=typeof b=="function"?b:null,R.dead&&A?.()},reject:()=>{},syncState:R}),()=>{R.dead=!0,A?.()}}:(...v)=>{const E=m[l]??m.__settled;return E?E(...v):_(l,v)}},set:()=>!1});c==="db"&&ce(m,(d,l)=>S[d](...l)),$(t,c,S)};for(const c of Object.keys(k)){if(t[c]!==void 0){$(t,c,t[c]);continue}n(c)}let u=null,a=null,r=0;const o=c=>{c.source!==parent||!Q(c.origin)||oe(c.data)&&(u=c.data.__frame_init,M=c.origin,removeEventListener("message",o),clearTimeout(r),a?.())};addEventListener("message",o),parent.postMessage({__frame_connect:!0},"*");const i=new Promise(c=>{a=c,r=setTimeout(()=>{removeEventListener("message",o),c()},Ee)}),g=document.readyState==="loading"?new Promise(c=>document.addEventListener("DOMContentLoaded",()=>c(),{once:!0})):Promise.resolve();g.then(()=>{try{e?.restore()}catch{}});const y=c=>{if(!(c.source!==parent||!Q(c.origin))&&Y(c.data)){removeEventListener("message",y);try{e?.promoted()}catch{}}};addEventListener("message",y),i.then(async()=>{if(!u||!M){for(const s of L.keys())C(s,{code:"not_granted",message:"frame initialization did not arrive - capability unavailable"});return}ee(u.theme);const c=M;let f=!1,m=!1;addEventListener("message",s=>{if(s.source!==parent||s.origin!==c)return;se(s.data)&&ee(s.data.__frame_theme.theme);const O=s.data?.__fc_mode;O&&typeof O=="object"&&!f&&z&&N.test(z)&&(f=!0,h(z).then(W=>W.install?.(c,O.on===!0)).catch(()=>{}));const j=s.data?.__ft_cmd;j&&typeof j=="object"&&!m&&B&&N.test(B)&&(m=!0,h(B).then(W=>W.install?.(c,j)).catch(()=>{}))});const h=s=>be(()=>import("/_runtime/"+s),void 0),_=Object.keys(u.capabilities??{});for(const s of _)Object.hasOwn(k,s)||Se.test(s)&&t[s]===void 0&&(n(s),C(s,{code:"capability_disabled",message:"capability not in this runtime generation"}));const w=_.filter(s=>Object.hasOwn(k,s)).map(s=>[s,k[s]]).filter(s=>typeof s[1]=="string"&&N.test(s[1])),[S,...d]=await Promise.allSettled([D&&N.test(D)?h(D):Promise.resolve({}),...w.map(([,s])=>h(s))]),l=M;Z=ye(u,S.status==="fulfilled"&&S.value?.TRANSFORMS||{},{shellOrigin:l,mount:re},s=>parent.postMessage({__frame_cap_telemetry:s},l));const p=s=>parent.postMessage({__frame_cap_telemetry:{kind:"cap-load-error",cap:s}},l),v=Z;d.forEach((s,O)=>{const j=w[O][0];if(s.status!=="fulfilled"){p(j);return}try{s.value?.install?.(v)}catch{p(j)}});for(const[s,O]of L)if(!(O.queue.length===0&&Object.keys(O.impl).length>0)){if(_.includes(s)){C(s,{code:"capability_disabled",message:"capability not available in this session"});continue}C(s,{code:"not_granted",message:"capability not available in this session"})}await g,parent.postMessage({__frame_ready:!0},M);let E=-1,A=0;const R=()=>{A=0;const s=Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);s!==E&&(E=s,parent.postMessage({__frame_size:!0,h:s},l))},b=()=>{A||(A=setTimeout(R,200))},U=new ResizeObserver(b);U.observe(document.documentElement),document.body&&U.observe(document.body),document.addEventListener("load",b,!0),document.fonts?.ready.then(b,()=>{}),addEventListener("beforeprint",()=>{E=-1,R()}),b(),addEventListener("message",s=>{if(!(s.source!==parent||s.origin!==l)&&Y(s.data)){try{e?.promoted()}catch{}E=-1,b()}})})}})();</script><!-- /frame-runtime --><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>How a Decision App Learns — the complete guide (internal)</title>
+<style>
+  :root {
+    --paper: #FBFAF7; --card: #FFFFFF; --ink: #232B33; --muted: #6B7480;
+    --line: #E3DFD5; --rule: #D8D2C4;
+    --sop: #2B5D8A; --sop-soft: #ECF2F8;
+    --team: #1F7A5C; --team-soft: #EAF4EF;
+    --solo: #B0791F; --solo-soft: #FAF2E1;
+    --stop: #BC4238; --stop-soft: #FBEEEC;
+    --shadow: 0 1px 2px rgba(35,43,51,.05), 0 10px 28px rgba(35,43,51,.055);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #12161B; --card: #1A2027; --ink: #E9E7E0; --muted: #99A1AA;
+      --line: #29313A; --rule: #333C46;
+      --sop: #74A8D8; --sop-soft: #16232F;
+      --team: #52B292; --team-soft: #14271F;
+      --solo: #D9AE55; --solo-soft: #2A2415;
+      --stop: #E28276; --stop-soft: #2E1D1B;
+      --shadow: 0 1px 2px rgba(0,0,0,.45), 0 10px 28px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #12161B; --card: #1A2027; --ink: #E9E7E0; --muted: #99A1AA;
+    --line: #29313A; --rule: #333C46;
+    --sop: #74A8D8; --sop-soft: #16232F;
+    --team: #52B292; --team-soft: #14271F;
+    --solo: #D9AE55; --solo-soft: #2A2415;
+    --stop: #E28276; --stop-soft: #2E1D1B;
+    --shadow: 0 1px 2px rgba(0,0,0,.45), 0 10px 28px rgba(0,0,0,.3);
+  }
+  :root[data-theme="light"] {
+    --paper: #FBFAF7; --card: #FFFFFF; --ink: #232B33; --muted: #6B7480;
+    --line: #E3DFD5; --rule: #D8D2C4;
+    --sop: #2B5D8A; --sop-soft: #ECF2F8;
+    --team: #1F7A5C; --team-soft: #EAF4EF;
+    --solo: #B0791F; --solo-soft: #FAF2E1;
+    --stop: #BC4238; --stop-soft: #FBEEEC;
+    --shadow: 0 1px 2px rgba(35,43,51,.05), 0 10px 28px rgba(35,43,51,.055);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 16.5px/1.72 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 52px 26px 100px; }
+
+  h1, h2, h3, h4 { line-height: 1.22; text-wrap: balance; margin: 0; font-weight: 700; }
+  h1 { font-size: clamp(30px, 5.6vw, 44px); letter-spacing: -.01em; }
+  .part {
+    margin: 74px 0 0; padding-top: 26px; border-top: 3px double var(--rule);
+    font-size: 12.5px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted); font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-weight: 700;
+  }
+  h2 { font-size: 27px; margin: 14px 0 2px; }
+  h2 .num {
+    display: block; font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 7px; font-weight: 700;
+  }
+  h3 { font-size: 19px; margin: 32px 0 0; }
+  h4 { font-size: 16px; margin: 22px 0 0; }
+  p { margin: 13px 0; }
+  ul, ol { margin: 13px 0; padding-left: 22px; }
+  li { margin: 7px 0; }
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+  a { color: var(--sop); }
+
+  .sans { font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14.5px; }
+  .lede { font-size: 19.5px; color: var(--muted); margin-top: 18px; }
+  .byline {
+    font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--sop); font-weight: 700; margin-bottom: 16px;
+  }
+  code {
+    font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    font-size: .82em; background: var(--solo-soft); border-radius: 4px;
+    padding: 1px 5px; word-break: break-word;
+  }
+
+  /* callouts */
+  .box {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 17px 20px; margin: 22px 0; box-shadow: var(--shadow);
+  }
+  .box > :first-child { margin-top: 0; }
+  .box > :last-child { margin-bottom: 0; }
+  .box .kicker {
+    font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-size: 11.5px; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; margin-bottom: 8px; display: block;
+  }
+  .def     { border-left: 5px solid var(--sop); }
+  .def .kicker { color: var(--sop); }
+  .eg      { border-left: 5px solid var(--team); background: var(--team-soft); }
+  .eg .kicker { color: var(--team); }
+  .why     { border-left: 5px solid var(--solo); background: var(--solo-soft); }
+  .why .kicker { color: var(--solo); }
+  .stopbox { border-left: 5px solid var(--stop); background: var(--stop-soft); }
+  .stopbox .kicker { color: var(--stop); }
+
+  .quote {
+    margin: 22px 0; padding: 16px 20px; border-left: 3px solid var(--rule);
+    color: var(--ink); font-size: 16px; background: var(--card);
+    border-radius: 0 10px 10px 0;
+  }
+
+  /* contents */
+  .toc { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 22px 24px; margin: 34px 0 10px; box-shadow: var(--shadow); }
+  .toc h3 { margin: 0 0 10px; font-size: 17px; }
+  .toc ol { list-style: none; padding: 0; margin: 0; counter-reset: ch; }
+  .toc li { margin: 0; padding: 5px 0; border-bottom: 1px solid var(--line);
+    font-size: 15px; display: flex; gap: 10px; align-items: baseline; }
+  .toc li:last-child { border-bottom: none; }
+  .toc li.grp { font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; padding-top: 15px; border-bottom: none; }
+  .toc .n { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 22px; }
+
+  /* tables */
+  .tw { overflow-x: auto; margin: 22px 0; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+  th { text-align: left; font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); padding: 12px 15px; border-bottom: 2px solid var(--line); }
+  td { padding: 12px 15px; border-bottom: 1px solid var(--line);
+    vertical-align: top; font-size: 15px; }
+  tr:last-child td { border-bottom: none; }
+  td.k { font-weight: 700; }
+
+  /* the label / chip look used for case labels */
+  .chip { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px; background: var(--card); border: 1px solid var(--rule);
+    border-radius: 999px; padding: 3px 11px; margin: 3px 4px 3px 0; white-space: nowrap; }
+  .chips { margin: 12px 0; }
+
+  /* tier stack */
+  .tier { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 15px 18px; margin: 10px 0; box-shadow: var(--shadow); }
+  .tier .rank { font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif;
+    font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .tier.a { border-left: 6px solid var(--sop); } .tier.a .rank { color: var(--sop); }
+  .tier.b { border-left: 6px solid var(--team); } .tier.b .rank { color: var(--team); }
+  .tier.c { border-left: 6px solid var(--solo); } .tier.c .rank { color: var(--solo); }
+  .between { text-align: center; color: var(--muted); font-size: 13px;
+    font-family: ui-sans-serif, system-ui, sans-serif; }
+
+  /* step flow */
+  .step { display: grid; grid-template-columns: 34px 1fr; gap: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 15px 18px; margin: 10px 0; box-shadow: var(--shadow); }
+  .step .no { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 700;
+    font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .step h4 { margin: 0 0 3px; }
+  .down { text-align: center; color: var(--muted); font-size: 15px; margin: 2px 0; }
+
+  hr.sep { border: none; border-top: 1px solid var(--line); margin: 40px 0; }
+  .footer { margin-top: 70px; padding-top: 18px; border-top: 3px double var(--rule);
+    color: var(--muted); font-size: 13.5px;
+    font-family: ui-sans-serif, "Segoe UI", system-ui, sans-serif; }
+
+  @media (max-width: 560px) {
+    body { font-size: 16px; }
+    .wrap { padding: 34px 18px 70px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="byline">Internal guide · Decision Apps · v2 · 7 August 2026</div>
+  <h1>How a Decision App learns from your officers</h1>
+  <p class="lede">
+    A complete, plain-language guide to the memory system: what it stores, how a
+    lesson is formed, what can stop a lesson from forming, how the app decides
+    which lessons apply to which cases, and who controls all of it.
+  </p>
+
+  <div class="box">
+    <span class="kicker">Read this if</span>
+    <p style="margin-top:0">You work on, sell, demo, support or build Decision Apps
+    and you want to actually understand the memory — not just repeat phrases about
+    it. No prior knowledge is assumed. Every term is defined the first time it
+    appears, and nothing is left as "the system handles it".</p>
+    <p class="small muted">This describes what is <strong>built and running</strong>
+    as of 7 August 2026, not a roadmap. Where a number is configurable, the default
+    is given. If this guide and the software ever disagree, the software is right
+    and this guide needs fixing.</p>
+  </div>
+
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li class="grp">Part one · Why this exists</li>
+      <li><span class="n">1</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c1">The job the app is doing all day</a></li>
+      <li><span class="n">2</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c2">The memory we had before, and why it failed</a></li>
+      <li><span class="n">3</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c3">The idea that replaced it</a></li>
+      <li><span class="n">4</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c4">Rules and judgements — the most important distinction in this guide</a></li>
+
+      <li class="grp">Part two · The five things everything is built from</li>
+      <li><span class="n">5</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c5">The case</a></li>
+      <li><span class="n">6</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c6">Case labels: how the app describes what kind of case this is</a></li>
+      <li><span class="n">7</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c7">The correction: what an officer actually does</a></li>
+      <li><span class="n">8</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c8">The judgement: one sentence the app has learned</a></li>
+
+      <li class="grp">Part three · How a judgement is made</li>
+      <li><span class="n">9</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c9">The learning batch: the background job that does the thinking</a></li>
+      <li><span class="n">10</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c10">Grouping: what a "cluster" is, in plain words</a></li>
+      <li><span class="n">11</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c11">The quality gates: what stops a bad lesson, and what a refusal costs</a></li>
+      <li><span class="n">12</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c12">Writing the sentence — once, and never again</a></li>
+      <li><span class="n">13</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c13">Deciding how far a judgement reaches</a></li>
+      <li><span class="n">14</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c14">One officer, then the team</a></li>
+      <li><span class="n">15</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c15">Checking every judgement against the SOP</a></li>
+
+      <li class="grp">Part four · How it gets used</li>
+      <li><span class="n">16</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c16">Choosing what the app sees on the next case</a></li>
+      <li><span class="n">17</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c17">Finding out whether it actually helped</a></li>
+
+      <li class="grp">Part five · Living with it</li>
+      <li><span class="n">18</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c18">The screens and the controls</a></li>
+      <li><span class="n">19</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c19">The complete life of a judgement</a></li>
+      <li><span class="n">20</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c20">Eight weeks in a claims team — the whole thing as a story</a></li>
+      <li><span class="n">21</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c21">Questions people ask</a></li>
+      <li><span class="n">22</span><a href="https://05b7ddf3-3dab-4221-947d-38e8a4b19cdf.frame.claudeusercontent.com/_f/1785150496-8a5e/#c22">The words we use, the promises we keep, the numbers we ship</a></li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════ PART ONE ══════════════════ -->
+  <div class="part">Part one · Why this exists</div>
+
+  <h2 id="c1"><span class="num">Chapter 1</span>The job the app is doing all day</h2>
+
+  <p>Picture a motor insurance claims team. Every day a few hundred claims arrive.
+  Each one has to be looked at by a claims officer, who decides: approve it, reject
+  it, ask for more documents, or send it for investigation.</p>
+
+  <p>A Decision App sits in front of that work. For each claim it reads the record
+  and any attached photos and documents, and it writes a recommendation — "approve
+  this", "ask for the police report first", "send this one to investigation" — with
+  its reasoning. An officer then looks at the recommendation and either agrees with
+  it or changes it.</p>
+
+  <p>The officer is always the one who decides. The app proposes; a person disposes.
+  That does not change as the app gets better, and nothing in this guide ever gives
+  the app more authority.</p>
+
+  <p>Now, the interesting part. Over a year, that claims team accumulates an enormous
+  amount of practical knowledge that is written down nowhere. Not in the policy
+  document, not in the standard operating procedure — in people's heads. Things like:
+  <em>a theft claim on a policy bought three weeks ago, with no police report
+  attached, is worth a second look no matter how clean the paperwork is.</em></p>
+
+  <p>That knowledge is the thing we are trying to capture. Not to replace the
+  official rules — to capture the part the official rules never managed to write
+  down.</p>
+
+  <div class="box why">
+    <span class="kicker">Why bother at all</span>
+    <p>If the app never learns, every officer correction is spent once and thrown
+    away. The same mistake gets corrected by the same person next week, and the
+    week after. Worse, when an experienced officer retires, everything they knew
+    leaves with them. The memory system's whole purpose is to make an officer's
+    correction count more than once.</p>
+  </div>
+
+  <h2 id="c2"><span class="num">Chapter 2</span>The memory we had before, and why it failed</h2>
+
+  <p>The first version of this worked in a way that sounds sensible until you watch
+  it run. The app kept <strong>one paragraph</strong> of learned guidance per app —
+  a page of text describing what officers had taught it. Every time an officer
+  rejected a recommendation, that officer's reason was added to the paragraph, and
+  an AI model was asked to rewrite the whole paragraph to fit everything in under a
+  thousand words.</p>
+
+  <p>Three things went wrong, and all three are fatal.</p>
+
+  <h3>It diluted</h3>
+  <p>Rewriting the same paragraph over and over is a game of telephone. A sharp,
+  specific lesson — "on theft claims over ₹25 lakh with no police report, require
+  the report before approval" — gets rewritten into "verify supporting documentation
+  on high-value claims", which gets rewritten into "ensure documentation is
+  appropriate". After twenty rewrites, nothing in the paragraph means anything. The
+  most valuable lessons were the most specific ones, and specificity was exactly
+  what the rewriting destroyed.</p>
+
+  <h3>It applied everything to everything</h3>
+  <p>There was one paragraph for the whole app. A lesson learned from theft claims
+  was read by the app when it looked at a windshield claim, because there was no way
+  to say "this applies to theft claims only". So the paragraph was simultaneously
+  too vague to be useful and too broad to be safe.</p>
+
+  <h3>You could not ask it why</h3>
+  <p>If a supervisor read a line in the paragraph and asked "who taught it that, and
+  from which case?", there was no answer. The original corrections had been melted
+  into prose. You could not check a lesson, you could not remove one lesson without
+  rewriting the paragraph, and you could not tell a good lesson from a bad one
+  because nothing was tracked separately.</p>
+
+  <div class="box stopbox">
+    <span class="kicker">And one operational problem</span>
+    <p>The rewrite happened <em>inside the officer's request</em>. Every rejection
+    paid for a full AI rewrite before the screen came back. Learning was making the
+    officer's day slower.</p>
+  </div>
+
+  <h2 id="c3"><span class="num">Chapter 3</span>The idea that replaced it</h2>
+
+  <p>The replacement is one idea, applied consistently: <strong>stop keeping one big
+  blob, and start keeping many small, separate, labelled lessons.</strong></p>
+
+  <p>Each lesson is a single sentence. Each sentence carries three things with it:</p>
+
+  <ul>
+    <li><strong>Who taught it and from which cases</strong> — the actual officer
+    corrections it was built from, kept forever, viewable on screen.</li>
+    <li><strong>Which kinds of case it applies to</strong> — so a theft lesson is
+    never read on a windshield claim.</li>
+    <li><strong>How it has performed</strong> — how often it was used, and how often
+    the officer overruled the app on a case where it was used.</li>
+  </ul>
+
+  <p>Because lessons are separate, none of them dilute each other. Because each is
+  labelled, the app can pick out only the ones that fit the case in front of it.
+  Because each keeps its evidence, a supervisor can always ask "why does it think
+  that?" and get a real answer. And because each is tracked separately, a bad lesson
+  can be retired without touching the good ones.</p>
+
+  <p>That is the entire design. Everything in the rest of this guide is detail about
+  how a lesson gets made, checked, chosen and controlled.</p>
+
+  <h2 id="c4"><span class="num">Chapter 4</span>Rules and judgements — the most important distinction in this guide</h2>
+
+  <p>If you remember one thing from this document, remember this: <strong>the rules
+  are the SOP, and the SOP always wins. What officers teach is judgement, and
+  judgement never overrides a rule.</strong></p>
+
+  <div class="box def">
+    <span class="kicker">Definition — the SOP</span>
+    <p style="margin-top:0">The organisation's standard operating procedure: its
+    written policy documents, circulars and manuals. The app reads these live from
+    the department's document library at the moment it works on a case. Nobody
+    learns them, nobody rewrites them, and nothing the app picks up from officers is
+    allowed to contradict them.</p>
+  </div>
+
+  <div class="box def">
+    <span class="kicker">Definition — a judgement</span>
+    <p style="margin-top:0">A single sentence the app has learned from officers
+    correcting it. It covers the ground the SOP does not spell out — the practical
+    experience an officer applies without being told to.</p>
+  </div>
+
+  <p>The clearest example is from lending, not insurance. A loan application arrives.
+  The declared earnings look healthy, and every box the SOP asks about is ticked.
+  But an experienced officer notices that the tax filings do not corroborate those
+  earnings at some of the stated identifiers, and rejects it.</p>
+
+  <p>There is no SOP clause that says "check whether tax filings corroborate declared
+  earnings at the stated identifiers". No policy document enumerates that tell. It is
+  the officer's eye — accumulated experience about how a certain kind of misstatement
+  looks. That is judgement, and it is exactly the thing the memory captures.</p>
+
+  <p>So there are three levels of authority, in a strict order:</p>
+
+  <div class="tier a">
+    <div class="rank">Level 1 · Rules</div>
+    <p style="margin:6px 0 0"><strong>The SOP.</strong> Supreme. If a learned
+    judgement ever conflicts with the SOP, the app follows the SOP and reports the
+    conflict. Nothing learned can soften, reinterpret or outrank it.</p>
+  </div>
+  <div class="between">▲ never overridden by ▼</div>
+  <div class="tier b">
+    <div class="rank">Level 2 · Team judgement</div>
+    <p style="margin:6px 0 0">A lesson three or more <em>different</em> officers have
+    independently taught. Shown to the app as an established practice of this team —
+    still underneath the SOP.</p>
+  </div>
+  <div class="between">▲ outranks ▼</div>
+  <div class="tier c">
+    <div class="rank">Level 3 · Individual judgement</div>
+    <p style="margin:6px 0 0">A lesson one officer has taught. Used from the very
+    first day, but honestly labelled as one person's view so the app — and the next
+    officer — knows to weigh it rather than obey it.</p>
+  </div>
+
+  <div class="box why">
+    <span class="kicker">Why one officer's view is used at all</span>
+    <p>An earlier design held back any lesson until three officers had agreed. That
+    sounded prudent and was actually a bug: a branch office with one officer, or a
+    new app with two users, would never learn anything at all, and nobody would be
+    told why. Meanwhile the real risk — "one person's opinion quietly becomes
+    company policy" — is not solved by hiding the lesson. It is solved by
+    <strong>saying whose opinion it is</strong>. So a single officer's judgement is
+    used immediately and labelled clearly, and it starts being measured from its
+    first outing, which means a bad one is caught quickly rather than never.</p>
+  </div>
+
+  <p>You will see this distinction enforced in the product's language everywhere: the
+  memory screen is titled "Judgements it has learned", never "rules"; the batch job
+  says it folds corrections "into the judgements your apps apply — your SOP stays the
+  rules, and always wins". This is not branding. Calling learned material "rules"
+  invites people to trust it the way they trust policy, and it is not policy.</p>
+
+  <!-- ══════════════════ PART TWO ══════════════════ -->
+  <div class="part">Part two · The five things everything is built from</div>
+
+  <h2 id="c5"><span class="num">Chapter 5</span>The case</h2>
+
+  <p>A <strong>case</strong> is one unit of work: one claim, one loan application,
+  one inspection report, one complaint. It is a record in the customer's own system —
+  their claims database, their billing system — that the app reads through a governed
+  connection. The app never owns that record and, in the memory context, never
+  changes it.</p>
+
+  <p>Everything else in this guide hangs off the case: the app makes a recommendation
+  <em>about</em> a case, an officer corrects that recommendation <em>on</em> a case,
+  and a judgement applies <em>to certain kinds of</em> case.</p>
+
+  <h2 id="c6"><span class="num">Chapter 6</span>Case labels: how the app describes what kind of case this is</h2>
+
+  <p>This is the concept most people find unfamiliar, so we will take it slowly. It
+  is also the concept that makes everything else work.</p>
+
+  <p>Suppose an officer teaches the app something about a theft claim. Should the app
+  remember that lesson for <em>every</em> claim it ever sees afterwards? Obviously
+  not — a lesson about theft claims should not change how a cracked windscreen is
+  handled. But how does software know that one claim is "a theft claim over ₹25 lakh
+  with no police report" and another is "a small windscreen claim"?</p>
+
+  <p>It knows because every case gets stamped with a short list of labels, worked out
+  automatically from the case's own data.</p>
+
+  <div class="box def">
+    <span class="kicker">Definition — case labels</span>
+    <p style="margin-top:0">A short list of plain tags describing the kind of case
+    this is, calculated from the record's own fields at the moment the app looks at
+    it. Nobody types them; they are derived. In the software these are called
+    <em>facets</em>, and on screen they appear as small grey chips underneath each
+    judgement.</p>
+  </div>
+
+  <div class="box eg">
+    <span class="kicker">Example — one claim, its labels</span>
+    <p style="margin-top:0">A ₹38 lakh theft claim, filed on a policy that started
+    three weeks ago, with no police report number filled in, on a personal (not
+    fleet) policy, where the fraud photo-check did not flag anything:</p>
+    <div class="chips">
+      <span class="chip">loss_type: theft</span>
+      <span class="chip">amount_band: 25000_100000</span>
+      <span class="chip">police_report: absent</span>
+      <span class="chip">policy_class: personal</span>
+      <span class="chip">policy_age: lt_30</span>
+      <span class="chip">photo_check: clear</span>
+    </div>
+    <p class="small muted" style="margin-bottom:0">Six labels. That is the app's
+    description of "what kind of case is this". A judgement that was learned about
+    theft claims in that amount range will apply here. A judgement learned about
+    windscreen claims will not.</p>
+  </div>
+
+  <h3>Where the labels come from</h3>
+
+  <p>They are read off the columns the app is already bound to, in five simple
+  shapes:</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>Shape</th><th>What it does</th><th>Example label</th></tr>
+      <tr><td class="k">A fixed list</td><td>A column that can only hold a few known values — claim type, category, class.</td><td><code>loss_type: theft</code></td></tr>
+      <tr><td class="k">A range</td><td>A number turned into a band rather than kept exact.</td><td><code>amount_band: 25000_100000</code></td></tr>
+      <tr><td class="k">Filled or empty</td><td>Whether a piece of evidence is present at all.</td><td><code>police_report: absent</code></td></tr>
+      <tr><td class="k">An age</td><td>The gap between two dates, banded.</td><td><code>policy_age: lt_30</code></td></tr>
+      <tr><td class="k">A check result</td><td>Whether one of the platform's fraud screens fired on this case.</td><td><code>photo_check: fired</code></td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="box why">
+    <span class="kicker">Why ranges instead of exact amounts</span>
+    <p>If the label were <code>amount: 3,842,150</code>, no two cases would ever
+    share it, and no lesson could ever be said to apply to "claims like this one".
+    Bands are what make cases comparable. The same logic applies to dates: "policy
+    less than 30 days old" is a meaningful category; "policy started on 4 July" is
+    not.</p>
+  </div>
+
+  <h3>Who decides which labels exist</h3>
+
+  <p>The person building the app decides, once, at build time. When a business
+  analyst describes the app in plain English, the builder proposes a small
+  vocabulary: which of the dataset's columns become labels. That vocabulary is
+  saved with the app. (Until August 2026 the builder also authored a list of
+  reject-reason categories; that list is gone — see chapter 7.)</p>
+
+  <p>Two deliberate constraints:</p>
+  <ul>
+    <li><strong>Four to eight label families, not thirty.</strong> The question for
+    each candidate is not "do we know this?" but "would an officer's correction ever
+    depend on it?" The channel a complaint arrived through almost never changes
+    <em>why</em> a decision was wrong, so it should not be a label. Extra labels cost
+    real money: they make cases look less alike, which makes lessons slower to
+    form.</li>
+    <li><strong>The possible values must be declared.</strong> If a case arrives with
+    a value nobody declared, it is labelled <code>__unknown</code> and counted as
+    drift. That is how the team finds out the source system started using a new
+    category. An undeclared label can never be used to scope a judgement — an alarm
+    must stay an alarm.</li>
+  </ul>
+
+  <h2 id="c7"><span class="num">Chapter 7</span>The correction: what an officer actually does</h2>
+
+  <p>The app shows a recommendation. The officer disagrees. What happens next is the
+  raw material for everything.</p>
+
+  <p>The officer is asked for one thing:</p>
+
+  <ol>
+    <li><strong>One sentence</strong> in their own words saying what was actually
+    wrong — <strong>at least ten words</strong>, checked on the server and not only
+    in the browser, because the embedded card runs on the customer's own page and a
+    rule that lives only in a browser is a suggestion.</li>
+  </ol>
+
+  <div class="box why">
+    <span class="kicker">Why there is no category to pick</span>
+    <p>Until August 2026 the officer also chose a category from a short list, and
+    this guide argued it was essential: free text cannot be grouped reliably, so a
+    fixed handle was needed before anyone read a word of the officer's sentence.
+    That reasoning was wrong in practice, and the taxonomy has been removed.</p>
+    <p>The failure was that a <em>why</em> ended up choosing a <em>where</em>.
+    Grouping partitioned on the category first, so two officers correcting
+    <em>identical</em> cases were never compared at all if they happened to pick
+    different labels. Each pile then fell below the size floor and both lessons were
+    silently dropped. The list caused a second, more visible problem: it was the
+    app's <em>reject</em>-reason list, so an officer overriding a rejection
+    <em>towards</em> approval was offered a menu of reasons to decline — labels that
+    made no sense for the decision being made.</p>
+    <p>Grouping now uses evidence the system observed rather than a label a human
+    chose: corrections are partitioned by <strong>which fields the officer actually
+    changed</strong>, and then compared on their case labels and their wording.
+    Nobody picks anything. The ten-word floor exists because that sentence now
+    carries all of the substance.</p>
+  </div>
+
+  <div class="box def">
+    <span class="kicker">Definition — a correction</span>
+    <p style="margin-top:0">One officer's disagreement with one recommendation,
+    stored as: who, when, which case, the case's labels frozen as they were at that
+    moment, the category they picked, their sentence, and any fields they changed.
+    Corrections are <strong>append-only</strong> — they are never edited and never
+    deleted, by anyone, including us.</p>
+  </div>
+
+  <p>Two details matter more than they look:</p>
+
+  <p><strong>The labels are frozen onto the correction.</strong> If the claim is
+  edited next month, or the app's label vocabulary changes next year, the correction
+  still remembers the kind of case it was about. Evidence that changes under you is
+  not evidence.</p>
+
+  <p><strong>Agreement is never recorded as support.</strong> When an officer simply
+  approves a recommendation, that teaches the app nothing. This is deliberate: if
+  approvals counted, an app that produced plausible-looking output would accumulate
+  "support" from officers clicking through under time pressure, and rubber-stamping
+  would write policy. Only a correction — an actual disagreement — teaches.</p>
+
+  <h2 id="c8"><span class="num">Chapter 8</span>The judgement: one sentence the app has learned</h2>
+
+  <p>A judgement is the finished product: one sentence, at most about forty words,
+  phrased in the officers' own vocabulary.</p>
+
+  <div class="box eg">
+    <span class="kicker">Example — a real one, from the dev system</span>
+    <p style="margin-top:0"><strong>"Classify a cracked bushing with visible oil
+    seepage as high severity, never medium."</strong></p>
+    <div class="chips">
+      <span class="chip">defect_type: bushing_crack</span>
+      <span class="chip">oil_leak: present</span>
+    </div>
+    <p class="small muted" style="margin-bottom:0">Team judgement · 3 officers ·
+    built from three separate corrections, each viewable underneath it on the memory
+    screen.</p>
+  </div>
+
+  <p>Everything a judgement carries:</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>It carries</th><th>Meaning</th></tr>
+      <tr><td class="k">The sentence</td><td>Written once when the lesson first formed, and never rewritten afterwards.</td></tr>
+      <tr><td class="k">Its labels</td><td>The kinds of case it applies to. Empty means "every case this app sees".</td></tr>
+      <tr><td class="k">Its evidence</td><td>Links to the exact corrections that taught it, and the names of the officers who made them.</td></tr>
+      <tr><td class="k">Its standing</td><td>Individual (one officer) or team (three or more), plus any special state such as suspended or held.</td></tr>
+      <tr><td class="k">Its track record</td><td>How many times it was put in front of the app, and how often the officer overruled the app on those cases.</td></tr>
+    </tbody></table>
+  </div>
+
+  <!-- ══════════════════ PART THREE ══════════════════ -->
+  <div class="part">Part three · How a judgement is made</div>
+
+  <h2 id="c9"><span class="num">Chapter 9</span>The learning batch: the background job that does the thinking</h2>
+
+  <p>Corrections pile up as officers work. Turning them into judgements is done by a
+  scheduled background job we call the <strong>learning batch</strong>.</p>
+
+  <div class="box def">
+    <span class="kicker">Definition — the learning batch</span>
+    <p style="margin-top:0">A job that runs quietly inside the Decision App service
+    on a timer, looks for corrections that have not been folded into judgements yet,
+    and folds the ones that are ready. It is not a person, not a nightly export, and
+    not something an officer waits for.</p>
+  </div>
+
+  <h3>When it runs</h3>
+
+  <p>The job wakes on a timer — every 15 minutes by default — and asks a simple
+  question about each group of pending corrections: is this group <em>ready</em>?
+  A group is ready when either of two things is true:</p>
+
+  <ul>
+    <li>It has <strong>five or more</strong> corrections waiting, or</li>
+    <li>Its oldest waiting correction is more than <strong>six hours</strong>
+    old.</li>
+  </ul>
+
+  <p>The first condition handles a busy app: enough evidence has arrived, fold it
+  now. The second handles a quiet one: a small team that produces two corrections a
+  week should not wait months for a fifth. Either way, learning happens the same day.</p>
+
+  <div class="box why">
+    <span class="kicker">Why a batch and not "learn immediately"</span>
+    <p>Three reasons, in order of importance. <strong>Speed for the officer:</strong>
+    the old design ran an AI rewrite inside the rejection request, so the person doing
+    the work paid for the learning. Now the officer's screen returns instantly and
+    the thinking happens later. <strong>Evidence needs company:</strong> a single
+    correction on its own often cannot tell you whether a lesson is real or a
+    one-off; waiting a few minutes lets related corrections arrive and be considered
+    together. <strong>Correct counting:</strong> the job elects a single leader, so
+    when the service is running several copies of itself, only one of them folds
+    corrections. Otherwise two copies could each count the same officer's correction
+    and a lesson would falsely look corroborated.</p>
+  </div>
+
+  <h3>What a run does, and what it reports</h3>
+
+  <p>Each run reports what it did: how many groups it looked at, how many judgements
+  it created, how many existing judgements it strengthened, and how many groups it
+  skipped. Administrators see this live on the Learning Batch screen, along with how
+  many corrections are waiting and which app they belong to.</p>
+
+  <p>Two controls sit there:</p>
+  <ul>
+    <li><strong>Pause</strong> — stops learning, nothing else. Officers keep working,
+    the app keeps recommending, corrections keep being recorded. When you resume,
+    everything that accumulated is folded in. Pausing loses nothing.</li>
+    <li><strong>Fold feedback now</strong> — runs a pass immediately and ignores both
+    readiness thresholds. This is what you use in a demo, or when you want a lesson
+    visible before a meeting.</li>
+  </ul>
+
+  <p>One quiet detail worth knowing: a deployment can have a test environment
+  alongside the live one, and the batch deliberately sweeps <strong>both</strong>. An
+  earlier version swept only live, which meant apps under test accumulated
+  corrections that were never folded and their memory sat empty while looking merely
+  "not learned yet".</p>
+
+  <h2 id="c10"><span class="num">Chapter 10</span>Grouping: what a "cluster" is, in plain words</h2>
+
+  <p>The batch cannot look at a hundred corrections and write one sentence. It has to
+  first work out <strong>which corrections are about the same thing</strong>. That
+  sorting step is called clustering, and a <strong>cluster</strong> is simply one
+  pile of corrections that appear to be making the same point.</p>
+
+  <div class="box def">
+    <span class="kicker">Definition — a cluster</span>
+    <p style="margin-top:0">A group of officer corrections that the batch has decided
+    are about the same lesson. One cluster produces at most one judgement. If the
+    corrections cannot be grouped into a pile, no judgement is written from them
+    — they simply stay waiting.</p>
+  </div>
+
+  <p>Two corrections land in the same pile only if all three of these are true.</p>
+
+  <h3>Test one — the same reason category</h3>
+
+  <p>This is an absolute wall, not a preference. A correction categorised "evidence
+  insufficient" can never be grouped with one categorised "amount incorrect", however
+  similar their wording. Two officers can be looking at the same claim and be
+  unhappy about entirely different things; merging those would produce a sentence
+  that misrepresents both of them.</p>
+
+  <p>There is one accommodation: if the app's builder renames a category later, the
+  old name is kept as an alias, so corrections made before and after the rename are
+  still recognised as the same category. A rename must not split one lesson into
+  two.</p>
+
+  <h3>Test two — similar wording</h3>
+
+  <p>The corrections must actually use overlapping language. We compare the
+  meaningful words in each sentence — ignoring filler — and require a real degree of
+  overlap.</p>
+
+  <div class="box why">
+    <span class="kicker">Why word overlap and not an AI deciding "these mean the same thing"</span>
+    <p>Because we would then be trusting a language model to decide what officers
+    meant, and a model that is feeling generous will merge two lessons that are not
+    the same lesson — producing a judgement neither officer would sign. Word overlap
+    is dumb, predictable, and reviewable: you can look at two corrections and see for
+    yourself why they were or were not grouped. We accept that this is conservative.
+    A lesson that fails to group is delayed; a lesson that groups wrongly is
+    wrong.</p>
+  </div>
+
+  <h3>Test three — comparable kinds of case</h3>
+
+  <p>The corrections must have come from similar cases, judged by the case labels
+  frozen onto each of them. This is where the third test can get subtly wrong, so it
+  is worth explaining exactly how it is measured.</p>
+
+  <p>The natural approach — count the labels two cases share, divide by the total
+  number of distinct labels between them — has a nasty side effect. The more detail
+  an app records about its cases, the more chances two cases have to differ on
+  something irrelevant, and the lower that score gets. An app that describes its
+  cases richly would learn <em>more slowly</em> than a careless one. That is
+  backwards.</p>
+
+  <p>So instead we ask a different question: <strong>of the labels these two cases
+  could possibly have shared, how many did they actually share?</strong> We compare
+  against the smaller of the two label sets, and require at least half.</p>
+
+  <div class="box eg">
+    <span class="kicker">Example — why this matters</span>
+    <p style="margin-top:0">Two corrections about the same underlying lesson. Case A
+    carries six labels, case B carries six. They agree on the three that matter
+    (<code>loss_type: theft</code>, <code>amount_band</code>,
+    <code>police_report: absent</code>) and differ on three incidental ones
+    (channel, region, status).</p>
+    <p class="small">The naive method: three shared out of nine distinct = 0.33. Below
+    the bar — <strong>not grouped, lesson never learned.</strong></p>
+    <p class="small" style="margin-bottom:0">The method we use: three shared out of a
+    possible six = 0.5. At the bar — <strong>grouped, lesson learned.</strong></p>
+  </div>
+
+  <p>One more accommodation: if either side has <em>no</em> labels at all — which
+  happens with history imported from before the app had a label vocabulary — the test
+  passes. Absence of information is not disagreement. Without this, every piece of
+  migrated history would have been permanently unable to corroborate anything an
+  officer said afterwards.</p>
+
+  <h3>What happens to a cluster that matches something we already know</h3>
+
+  <p>Before writing anything new, the batch checks whether an existing judgement
+  already says this. It compares against the fingerprint of meaningful words stored
+  on each judgement when it was written. If it matches, the batch does not write a
+  new sentence and does not rewrite the old one. It records that these officers said
+  it too — adding their names, raising the support count, and possibly promoting the
+  judgement from individual to team. <strong>Strengthening a judgement uses no AI at
+  all</strong>; it is pure bookkeeping.</p>
+
+  <h2 id="c11"><span class="num">Chapter 11</span>The quality gates: what stops a bad lesson, and what a refusal costs</h2>
+
+  <p>Before a cluster is allowed to become a judgement, it passes a series of checks.
+  These are the quality gates. This chapter answers the three questions people always
+  ask about them: who runs them, when they run, and whether refusing something means
+  we lost it.</p>
+
+  <div class="box stopbox">
+    <span class="kicker">A gate added in August 2026, and the failure that bought it</span>
+    <p>A judgement can be perfectly formed and still never fire, if the label it is
+    scoped to can never be computed. On the lending app, the review screen's column
+    list did not include <code>sourcing_channel</code>. Labels are derived from the
+    columns the screen actually loads — so every case came out labelled
+    <code>sourcing_channel: __unknown</code>, and the judgement scoped to
+    <code>sourcing_channel: dsa</code> was unreachable by anything, for any case.</p>
+    <p>It fired on 19 of 19 cases when the experiment called the service directly
+    with the whole record, and on 0 of 1 through the screen officers actually use.
+    The only symptom was a drift warning that looked entirely routine. Publishing
+    now <strong>refuses</strong> an app whose label reads a column no screen loads,
+    and the runtime separates "this column is absent altogether" — a wiring fault
+    that disables every judgement in that family at once — from "this value was not
+    declared", which is ordinary drift. They need different fixes and used to share
+    one message.</p>
+  </div>
+
+  <div class="box def">
+    <span class="kicker">Who runs the gates, and when</span>
+    <p style="margin-top:0"><strong>The learning batch runs them, automatically, on
+    every cluster, before a judgement is written.</strong> No human is involved and
+    no human is asked to approve anything. Officers never see a gate; they are not
+    interrupted, warned, or blocked at the moment they write their correction. The
+    gates run minutes later, in the background, out of everyone's way.</p>
+  </div>
+
+  <h3>Gate 1 — is there actually a lesson in here?</h3>
+
+  <p>Some corrections carry no content. "As discussed." "See file." "Not ok." Three
+  officers writing "as discussed" on similar cases will happily cluster together —
+  they share a category and their words overlap perfectly — and would produce a
+  content-free judgement with three officers' names on it, injected into every
+  comparable case forever.</p>
+
+  <p>So a cluster must contain a minimum amount of substance — at least six
+  meaningful words across the whole pile, ignoring filler. Below that, no judgement
+  is written.</p>
+
+  <h3>Gate 2 — is this about a pattern, or about a person?</h3>
+
+  <p>Officers sometimes write "Mr Sharma is a fraudster" or quote an account number.
+  If that becomes a judgement, the app carries a permanent, unreviewed allegation
+  about a named individual into every future case — which is both wrong and a
+  liability.</p>
+
+  <p>So the written sentence is checked for personal names, honorific-plus-name
+  patterns, and long identifier numbers. If any appear, the sentence is rejected and
+  rewritten <strong>once</strong>, with the offending fragment quoted back and an
+  explicit instruction to describe the recurring pattern instead. Often that
+  succeeds: "Mr Sharma is a fraudster" becomes something like "treat repeat claimants
+  with prior fraud findings as requiring verification". If the second attempt still
+  names someone, nothing is written.</p>
+
+  <p class="small muted">Concerns about specific people are not lost — they belong to
+  entity screening, which is a different mechanism designed for exactly that and
+  subject to its own controls. They just do not belong in a lesson that fires on
+  everybody.</p>
+
+  <h3>Gate 3 — are these officers actually agreeing?</h3>
+
+  <p>Two corrections can share a category and share vocabulary while pulling in
+  opposite directions: one officer moves a severity from medium <em>up</em> to high,
+  another moves it from high <em>down</em> to medium. Averaging those would produce a
+  confident sentence that neither officer believes.</p>
+
+  <p>So a cluster whose corrections push the same field in opposite directions is
+  <strong>split</strong>, not averaged. Each side goes back to waiting for
+  corroboration on its own terms. If one side later accumulates agreement and the
+  other does not, the supported side becomes a judgement and the other simply
+  doesn't.</p>
+
+  <h3>Gate 4 — did the sentence get written at all?</h3>
+
+  <p>Writing the sentence is the one place an AI model is used. If that call fails —
+  the model is down, the response is unusable — nothing is written and nothing is
+  marked as done. The next run tries again.</p>
+
+  <div class="box stopbox">
+    <span class="kicker">The honest failure rule</span>
+    <p>There is no fallback sentence. A placeholder like "officers have raised
+    concerns about this case type" would become a permanent judgement with real
+    officers' names attached to words they never said. Failing loudly and retrying is
+    always better than inventing something plausible.</p>
+  </div>
+
+  <h3>So does refusing cost us the correction?</h3>
+
+  <p>This is the important question, and the answer is <strong>no — a refused
+  correction is never deleted, never edited, and never marked as finished.</strong>
+  It stays exactly where it was, waiting, and every future run of the batch
+  reconsiders it.</p>
+
+  <p>Concretely, here is what happens to a correction the gates refused:</p>
+
+  <ul>
+    <li><strong>It stays in the evidence ledger permanently.</strong> That ledger is
+    append-only. Nothing in the system deletes from it.</li>
+    <li><strong>It is reconsidered on every run.</strong> Corrections are marked as
+    consumed only after a judgement has been successfully written from them. A
+    refusal marks nothing.</li>
+    <li><strong>It can still corroborate.</strong> A correction that was too brief on
+    its own still counts as a real officer disagreeing about a real case. When a
+    colleague later writes a fuller sentence about the same thing, the brief one
+    joins that cluster and helps it reach team standing.</li>
+    <li><strong>Somebody is told.</strong> Corrections refused for being too brief
+    are flagged, counted, and shown on the memory screen: "N correction(s) were too
+    brief to learn from — ask officers for one concrete sentence." That is a
+    coaching signal, and it is the only way anyone would ever know.</li>
+  </ul>
+
+  <div class="box why">
+    <span class="kicker">Why we would rather refuse than accept</span>
+    <p>The two mistakes are not equally expensive. A lesson that forms <em>late</em>
+    costs us some delay, and we can see it coming: the evidence is sitting there,
+    counted, on a screen. A lesson that forms <em>wrongly</em> is put in front of the
+    app on every comparable case from that moment on, quietly nudging decisions, and
+    the only way we find out is by watching officers overrule it for weeks. One is a
+    visible delay; the other is invisible damage. When in doubt, we take the
+    delay.</p>
+  </div>
+
+  <h2 id="c12"><span class="num">Chapter 12</span>Writing the sentence — once, and never again</h2>
+
+  <p>When a cluster passes the gates, an AI model is asked to do one narrow job:
+  phrase, in a single sentence of about forty words, the lesson these officers have
+  already stated. It is given their actual words and told to stay inside them. It is
+  not asked to reason about the domain, invent policy, or improve on what they said.</p>
+
+  <p>And then that sentence is <strong>fixed for life</strong>. It is never rewritten.
+  When more officers make the same correction, the batch adds their names, raises the
+  support count, extends the evidence list, and possibly promotes the judgement to
+  team standing — but does not touch a single word.</p>
+
+  <div class="box why">
+    <span class="kicker">Why never rewrite</span>
+    <p>Two reasons. The first is the dilution problem from chapter 2 — repeated
+    rewriting is what destroyed the old memory, and the only reliable cure is to
+    write once. The second is honesty: a judgement is displayed alongside the exact
+    corrections that produced it. If we rewrote the sentence as new evidence arrived,
+    it would gradually drift away from the words underneath it, and a supervisor
+    reading the evidence would find that it does not support the claim. A judgement
+    must always be something the people underneath it would recognise as their
+    own.</p>
+  </div>
+
+  <p>If a judgement genuinely needs different words, it is retired and a new one forms
+  from the evidence. That is a visible, attributable event — not an invisible edit.</p>
+
+  <h2 id="c13"><span class="num">Chapter 13</span>Deciding how far a judgement reaches</h2>
+
+  <p>A new judgement needs to know which cases it applies to. This is worked out from
+  the cases it was learned from, in two steps.</p>
+
+  <h3>Step one — what did these cases have in common?</h3>
+
+  <p>Take the labels of every case in the cluster and keep only the ones
+  <em>all</em> of them share. Not the combined list — the shared list. If three
+  corrections came from theft claims, two of which were on personal policies and one
+  on a fleet policy, then "theft" survives and "personal policy" does not.</p>
+
+  <div class="box why">
+    <span class="kicker">Why the shared list, not the combined one</span>
+    <p>The combined list would produce a judgement scoped to a set of labels no
+    single case actually has, so it would apply to almost nothing. The shared list is
+    the honest answer to "what did the cases we learned from have in common?"</p>
+  </div>
+
+  <h3>Step two — drop the labels that tell us nothing</h3>
+
+  <p>Some labels are shared by nearly every case the app ever sees. In a
+  single-country deployment, every case is <code>country: us</code>. Scoping a
+  judgement to "US cases" is not narrowing anything — it is noise that makes the
+  scope look meaningful when it isn't.</p>
+
+  <p>So each surviving label is checked against how common it is across the app's
+  cases generally. A label carried by 95% of cases anyway is dropped. A label carried
+  by 12% of cases is genuinely telling us something, and stays. When there are too few
+  cases for that comparison to mean anything, the check is skipped and the shared list
+  is used as-is — a judgement that comes out too narrow can be widened later, whereas
+  one that comes out too broad starts misfiring immediately.</p>
+
+  <p>The result is the small chip row you see under each judgement on the memory
+  screen. A judgement with no chips is not a bug; it means the lesson genuinely
+  applies to every case this app handles.</p>
+
+  <h2 id="c14"><span class="num">Chapter 14</span>One officer, then the team</h2>
+
+  <p>A judgement's standing depends on how many <strong>different</strong> officers
+  have taught it. Not how many corrections — how many distinct people. Five
+  corrections from one officer is still one officer's view.</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>Standing</th><th>Reached when</th><th>How the app is told</th></tr>
+      <tr><td class="k">Individual judgement</td><td>One or two distinct officers</td><td>"one officer's judgement — not yet corroborated by the team; weigh it and verify against the record before relying on it"</td></tr>
+      <tr><td class="k">Team judgement</td><td>Three or more distinct officers (configurable per app)</td><td>"team judgement — 3 officers"</td></tr>
+    </tbody></table>
+  </div>
+
+  <p>Two safeguards keep individual judgements in their place:</p>
+
+  <ul>
+    <li><strong>At most three</strong> individual judgements are shown on any one
+    case. Uncorroborated opinions do not get to crowd out the corroborated ones.</li>
+    <li><strong>A team judgement shadows an individual one</strong> that covers the
+    same ground. The established practice is what the app sees; the individual echo
+    is dropped rather than shown twice.</li>
+  </ul>
+
+  <h3>When officers disagree with each other</h3>
+
+  <p>Sometimes a judgement attracts genuine dissent — later officers correcting in
+  the opposite direction. Once dissent reaches about a third of the total feedback on
+  that judgement, it stops being asserted at all. It is not deleted and not hidden;
+  it is presented to the app as an open question: <em>"officers disagree on this —
+  surface both readings."</em> A supervisor decides.</p>
+
+  <p>This applies to a lone judgement facing a single objection too: one officer
+  taught it, one officer disagrees, and until somebody breaks the tie the app is told
+  there is a disagreement rather than being handed one side of it.</p>
+
+  <h2 id="c15"><span class="num">Chapter 15</span>Checking every judgement against the SOP</h2>
+
+  <p>Chapter 4 said the SOP always wins. Here is the machinery that makes that true.</p>
+
+  <p>Whenever a judgement is created — and again whenever it is strengthened — it is
+  checked against the app's live SOP. The relevant policy text is fetched from the
+  department's document library and compared with the judgement, asking one narrow
+  question: does the SOP contradict this?</p>
+
+  <p>If it does, the judgement is <strong>suspended</strong>. It stops being asserted
+  immediately. The app is told only that <em>a learned judgement conflicts with the
+  SOP here — follow the SOP</em>, so it knows there is an unresolved tension without
+  being handed the disputed advice.</p>
+
+  <h3>The two-tap resolution</h3>
+
+  <p>A supervisor opens the judgement on the memory screen and sees the conflict
+  explained, with two buttons:</p>
+
+  <div class="step"><div class="no">A</div><div>
+    <h4>"SOP is right — retire it"</h4>
+    <p class="small muted" style="margin:3px 0 0">The officers' habit is out of date.
+    The judgement is retired. Its evidence stays on file, so if officers keep making
+    the same correction the disagreement resurfaces rather than disappearing.</p>
+  </div></div>
+
+  <div class="step"><div class="no">B</div><div>
+    <h4>"Officers are right — SOP needs updating"</h4>
+    <p class="small muted" style="margin:3px 0 0">The practice is correct and the
+    written procedure has fallen behind. The judgement returns to service, and the
+    disagreement is recorded as the organisation's own signal that a policy document
+    needs revising.</p>
+  </div></div>
+
+  <div class="box why">
+    <span class="kicker">Why both directions are one tap</span>
+    <p>Because both happen. The SOP is authoritative, but it is also a document
+    written by people at a point in time, and reality moves. If the only available
+    answer were "retire the judgement", the system would quietly destroy the evidence
+    that its own procedures had gone stale — and destroying that evidence is worse
+    than the conflict. Officer judgement is often how an organisation discovers its
+    SOP has a gap. Both outcomes are recorded either way.</p>
+  </div>
+
+  <p>The same suspension can be triggered from the other end: if the app repeatedly
+  reports that it followed the SOP <em>instead of</em> a particular judgement, that
+  judgement is flagged for the same review. Repeated collisions are data.</p>
+
+  <!-- ══════════════════ PART FOUR ══════════════════ -->
+  <div class="part">Part four · How it gets used</div>
+
+  <h2 id="c16"><span class="num">Chapter 16</span>Choosing what the app sees on the next case</h2>
+
+  <p>A new claim arrives. The app works out the case's labels, then goes looking for
+  judgements that apply.</p>
+
+  <h3>Which judgements apply</h3>
+
+  <p>The test is strict and mechanical: <strong>a judgement applies only if every
+  label in its scope is present on this case.</strong> A judgement scoped to
+  <code>theft</code> + <code>no police report</code> applies to a case carrying both
+  of those labels among its six. A judgement scoped to <code>windscreen</code> does
+  not apply to a theft claim, ever. A judgement with no scope applies to every case.</p>
+
+  <h3>In which order</h3>
+
+  <p>More than a handful may qualify, so they are ranked, and there is a word budget
+  (about a thousand words at most, usually far less) to keep the app's attention on
+  what matters. The ranking rules, in order:</p>
+
+  <ol>
+    <li><strong>Team judgements before individual ones.</strong> Corroborated
+    experience outranks one person's view even when the individual one is more
+    specific.</li>
+    <li><strong>More specific before more general.</strong> A judgement scoped to
+    three labels beats one scoped to none, because it was learned from cases much
+    more like this one.</li>
+    <li><strong>Better track record before worse.</strong> Judgements that have been
+    overruled a lot rank lower.</li>
+    <li><strong>Individual judgements are capped</strong> at three, and any that
+    duplicate a team judgement are dropped.</li>
+  </ol>
+
+  <h3>What the app is actually told</h3>
+
+  <p>The selected judgements are handed over with an explicit statement of authority
+  at the top. Not implied — written out:</p>
+
+  <div class="quote">
+    Your RULES (the SOP) are SUPREME: a judgement can never override a rule. If a
+    judgement conflicts with a rule, FOLLOW THE RULE and cite the judgement with
+    relation "overrode_by_rule".
+  </div>
+
+  <p>Each judgement then appears with its standing attached — "(team judgement — 3
+  officers)" or "(one officer's judgement — not yet corroborated by the team; weigh
+  it and verify against the record before relying on it)" — so the app knows how much
+  weight each one deserves. If any judgement for this case is suspended over an SOP
+  conflict, a line says so.</p>
+
+  <p>Alongside the judgements, a small number of recent individual corrections on
+  comparable cases ride along as raw context. These are ranked by
+  <strong>comparability</strong> — how much they look like this case — rather than by
+  recency. That detail matters: during a monsoon, a flood of complaint corrections
+  would otherwise push the one relevant theft lesson out of view purely by arriving
+  more recently.</p>
+
+  <h3>When the app wants more than the sentence</h3>
+
+  <p>A judgement arrives as one sentence plus its standing. That is deliberately all
+  of it — enough to decide with, and cheap enough to put on every case. But sometimes
+  the sentence is not enough: the app is looking at an unusual file and would do
+  better if it knew what the officers were actually looking at when they taught
+  this.</p>
+
+  <p>So the evidence is available as a <strong>tool the app can call</strong>, named
+  <code>lookup_judgement</code>, rather than being loaded onto every case in advance.
+  Given a judgement's id, it returns:</p>
+
+  <ul>
+    <li>what the judgement applies to, and who stands behind it — including any
+    officers who have gone <em>against</em> it;</li>
+    <li>how often it has been put to work, and how often it survived the officer's
+    review;</li>
+    <li>and the cases themselves: what each officer wrote, what the app had
+    recommended at the time, which fields they changed, and the record as it stood
+    at that moment.</li>
+  </ul>
+
+  <p>It is the same evidence a supervisor sees when they tap a judgement on the
+  memory screen. The app simply gets to ask for it.</p>
+
+  <div class="box why">
+    <span class="kicker">Why a tool instead of just including it</span>
+    <p>Because including it would drown the thing it is meant to support. Full
+    evidence for a handful of judgements is far bigger than the recommendation
+    itself, and most cases never need it — the sentence settles them. Loading it
+    every time would spend the app's attention on history at the exact moment it
+    should be reading this file.</p>
+    <p>The rule we designed to: <strong>enough in front of it to make the right call,
+    with more available if it decides it needs to learn.</strong> On an ordinary case
+    the app never asks, and that case costs nothing extra.</p>
+  </div>
+
+  <h2 id="c17"><span class="num">Chapter 17</span>Finding out whether it actually helped</h2>
+
+  <p>Every judgement put in front of the app is recorded on that decision. The app is
+  also required to say which ones it actually used, and how:</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>The app says</th><th>Meaning</th></tr>
+      <tr><td class="k">applied</td><td>I used this judgement and it shaped my recommendation.</td></tr>
+      <tr><td class="k">overruled</td><td>I saw this judgement and deliberately went against it, for a reason I state.</td></tr>
+      <tr><td class="k">overrode_by_rule</td><td>This judgement conflicted with the SOP, so I followed the SOP.</td></tr>
+    </tbody></table>
+  </div>
+
+  <p>Now, when an officer rejects that recommendation, we can be precise about
+  blame. Only the judgements the app <em>said it used</em> take the blame. A
+  judgement that was merely available, or that the app explicitly overruled, is
+  untouched. Blaming everything on screen would slowly poison every judgement in the
+  app regardless of whether it had anything to do with the mistake.</p>
+
+  <p>From that, each judgement carries a simple track record: how often it was used,
+  how often it was blamed, and the resulting accuracy. That number is deliberately
+  withheld until a judgement has been used <strong>at least ten times</strong> —
+  before that, it is shown as no figure at all rather than a meaningless "100% after
+  one use".</p>
+
+  <p>Two more honesty rules in this area:</p>
+
+  <ul>
+    <li>If the app stops naming the judgements it used, blame lands on nothing, and a
+    silent drift would follow. So the rate of rejections that cite nothing is
+    monitored as an alarm in its own right.</li>
+    <li>The home screen shows the memory's overall benefit — how much more often
+    recommendations are accepted when judgements applied than when none did. If
+    there are fewer than ten decided cases on either side of that comparison, the
+    figure is <strong>suppressed rather than estimated</strong>. A confident number
+    computed from four cases is worse than no number.</li>
+  </ul>
+
+  <!-- ══════════════════ PART FIVE ══════════════════ -->
+  <div class="part">Part five · Living with it</div>
+
+  <h3>The one controlled measurement</h3>
+
+  <p>In July 2026 we ran the loop as an experiment rather than a demo, on a lending
+  app built against a synthetic Indian retail credit policy. Nineteen DSA-sourced
+  applications were each run twice, everything identical except whether a single
+  judgement was switched on:</p>
+
+  <div class="quote">
+    "For DSA-sourced files, verify employment directly with the employer rather than
+    relying solely on the submitted documents."
+  </div>
+
+  <p>It was formed from corrections by three named credit officers, and it appears
+  in no policy document — so any change in behaviour cannot have come from the app
+  reading the policy corpus. It is scoped to exactly one case label,
+  <code>sourcing_channel: dsa</code>, because that is the only label all three
+  contributing corrections had in common.</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>What we looked at</th><th>Result</th></tr>
+      <tr><td class="k">Judgement used — memory on vs off</td><td>14 cases vs 1</td></tr>
+      <tr><td class="k">Chance of a swing that size by luck</td><td>p = 0.0005 (sign test)</td></tr>
+      <tr><td class="k">Fired on the cases it was built for</td><td>19 of 19 DSA files</td></tr>
+      <tr><td class="k">Stayed silent on cases it was not</td><td>0 of 2 non-DSA files</td></tr>
+      <tr><td class="k">Approve-or-decline verdicts changed</td><td>none</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>That last row is the honest one. Fourteen of the nineteen files were already
+  failing a hard policy rule, so no verdict <em>could</em> have changed. What changed
+  was the reasoning — an extra step nobody had written down.</p>
+
+  <div class="box why">
+    <span class="kicker">The result worth trusting is the null one</span>
+    <p>Four judgements were seeded, not one. Three of them merely restated the SOP,
+    and the app can read the SOP for itself. Retired, they changed nothing: the
+    system reached the same conclusions without them. They fired, they were cited,
+    and they added no value.</p>
+    <p>Memory pays off where the written procedure is silent, and close to nowhere
+    else. Any vendor can tell you their system learns. Fewer will tell you which of
+    their own features measurably does nothing.</p>
+  </div>
+
+  <p class="small muted">Scope of the claim: one judgement, one app, nineteen cases,
+  one environment. It shows that a learned judgement changes how the system reasons
+  where the written policy is silent, and stays quiet where it is not. It is not
+  evidence that decision memory helps in general, and should not be presented as
+  such.</p>
+
+  <h2 id="c18"><span class="num">Chapter 18</span>The screens and the controls</h2>
+
+  <h3>The decision card</h3>
+
+  <p>App Memory is the curator's screen. The card is the officer's — the
+  recommendation, its reasoning, the proposed change and the buttons. Two parts of it
+  exist because of the memory, and one part exists to keep it honest.</p>
+
+  <p><strong>What your team has taught.</strong> Sitting above the proposed change:
+  the judgements that were put in front of the app for this case. Each shows its
+  sentence, how many officers stand behind it, and what the app did with it — "the
+  agent used this", "the agent went against this", or "available, not cited". The
+  middle one matters most. A judgement the app overrode is the single most useful
+  thing on the screen when it happens, so it is called out in its own colour rather
+  than listed quietly with the others.</p>
+
+  <p><strong>This case.</strong> A read-only strip of the case's labels, so an
+  officer about to correct the app can see which kinds of case their correction will
+  end up teaching.</p>
+
+  <h4>Who decided, and when</h4>
+
+  <p>When the officer applies a change, the record gains a decided-by and a
+  decided-at. Neither comes from the app's proposal. Both are stamped by the platform
+  at the moment of the write: the officer's identity from their verified session, and
+  the server's own clock. Whatever the proposal said for those two fields is
+  overwritten, and the override is logged. On the applied card they are marked
+  <em>recorded by Citra</em>, so an officer can tell a server fact from a model
+  suggestion.</p>
+
+  <div class="box stopbox">
+    <span class="kicker">Why the app is not allowed to fill these in</span>
+    <p>Because it filled them in badly. Left as ordinary fields for the app to
+    propose, the model offered <em>"Credit Officer Assistant"</em> as the deciding
+    officer — the name of nobody — and a decision date three weeks before the officer
+    clicked. Both were written to a credit file, where those two columns <em>are</em>
+    the audit trail.</p>
+    <p>The date is wrong even when the model is being honest: the app proposes long
+    before a person approves, so any time it could name is a time at which nothing
+    happened. A client that sends its own decided-by now has it replaced rather than
+    accepted, which is what makes the <em>who</em> on a decision unforgeable rather
+    than merely stated.</p>
+  </div>
+
+  <h3>App Memory</h3>
+  <p>The main screen, under Admin. The card that opens it shows a live summary — for
+  example, "2 judgements from 6 corrections". Inside there are three tabs.</p>
+
+  <p><strong>Judgements it has learned.</strong> Every judgement, its sentence, its
+  case-label chips, its standing ("team · 3 officers"), and its track record. Tapping
+  one opens the evidence: the actual corrections that taught it, with each officer's
+  name, timestamp and words. This is the answer to "why does it think that?" — and it
+  is one tap away.</p>
+
+  <p>From that panel a curator can:</p>
+  <ul>
+    <li><strong>Retire</strong> a judgement — it stops being used immediately. The
+    evidence stays, so if the team keeps teaching the same lesson, it can form
+    again. Retiring takes two deliberate taps.</li>
+    <li><strong>Quarantine</strong> it — a reversible hold. This exists for a
+    specific scenario: an officer leaves under a cloud and you want everything they
+    taught held pending review, without destroying anything.</li>
+    <li><strong>Resolve an SOP conflict</strong> — the two buttons from chapter
+    15.</li>
+  </ul>
+
+  <p>Notice what is <em>not</em> there: there is no edit button. Judgements are never
+  rewritten by hand, for the reasons in chapter 12.</p>
+
+  <p><strong>Past decisions.</strong> Every photo and document the app has reviewed,
+  what it suggested, and what the team decided. Read-only. A curator can exclude a
+  particular past item from being used as an example, but the record itself is never
+  altered or deleted.</p>
+
+  <p><strong>How it's doing.</strong> The loop's health: how often officers change
+  the app's recommendation, how often decisions turn out right, how much is handled
+  automatically, and a plain summary of everything learned so far.</p>
+
+  <h3>Learning Batch</h3>
+  <p>The job's control panel, described in chapter 9: running or paused, how often it
+  checks, when it last ran, how many corrections are waiting and for which app, plus
+  Pause and "Fold feedback now".</p>
+
+  <h3>Export</h3>
+  <p>The whole memory — judgements, corrections, decision records — can be downloaded
+  as a file, or pushed to the customer's own storage bucket. If any part of it cannot
+  be read, the export is labelled <strong>partial</strong> and says which part
+  failed, rather than quietly handing over an incomplete file that looks complete.</p>
+
+  <h2 id="c19"><span class="num">Chapter 19</span>The complete life of a judgement</h2>
+
+  <p>Every state a judgement can be in, what puts it there, and what gets it out.</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>State</th><th>What it means</th><th>How it got here / what's next</th></tr>
+      <tr><td class="k">Waiting evidence</td><td>Corrections recorded but not yet folded into any judgement.</td><td>Either not enough yet, or refused by a gate. Never deleted; reconsidered every run.</td></tr>
+      <tr><td class="k">Individual judgement</td><td>In use, labelled as one officer's view.</td><td>From one officer's evidence. Up: corroboration makes it a team judgement. Down: a single objection makes it an open question.</td></tr>
+      <tr><td class="k">Team judgement</td><td>In use as this team's established practice — still under the SOP.</td><td>Three or more distinct officers. Track record measured from here on.</td></tr>
+      <tr><td class="k">Disagreed</td><td>Not asserted. Presented to the app as an open question showing both readings.</td><td>Dissent reached about a third of feedback. A supervisor adjudicates.</td></tr>
+      <tr><td class="k">SOP conflict</td><td>Suspended. The app is told only to follow the SOP here.</td><td>The SOP check, or repeated collision reports. Exits by the two-tap resolution.</td></tr>
+      <tr><td class="k">Held (quarantined)</td><td>Excluded from use, everything intact, fully reversible.</td><td>An administrator's decision — typically the departed-officer review.</td></tr>
+      <tr><td class="k">Merged</td><td>Folded into a more general judgement that says the same thing.</td><td>Consolidation found near-duplicates. Records what it was merged from.</td></tr>
+      <tr><td class="k">Retired</td><td>No longer used.</td><td>A supervisor's decision or an SOP resolution. Evidence remains, so the lesson can re-form if the team keeps teaching it.</td></tr>
+      <tr><td class="k">Narrowed</td><td>Scope tightened after a poor track record; a sibling judgement covers the excluded cases.</td><td>Never silently deleted — the change is visible and attributable.</td></tr>
+    </tbody></table>
+  </div>
+
+  <h2 id="c20"><span class="num">Chapter 20</span>Eight weeks in a claims team — the whole thing as a story</h2>
+
+  <p>Everything above, in sequence, on one team.</p>
+
+  <p><strong>Week 1.</strong> The app goes live for motor claims. It has an SOP to
+  follow and no judgements at all. Its recommendations are decent and occasionally
+  miss things an experienced officer would catch.</p>
+
+  <p><strong>Week 1, Tuesday.</strong> Priya rejects a recommendation to approve a
+  ₹38 lakh theft claim on a three-week-old policy with no police report. She picks
+  the category "evidence insufficient" and writes: <em>"theft claims this size need
+  the police report number on file before approval, especially on a policy this
+  new."</em> Her screen returns instantly; nothing else visible happens.</p>
+
+  <p><strong>Week 1, Tuesday, six hours later.</strong> The batch wakes. Priya's is
+  the only correction in its group, but the oldest-waiting clock has passed six hours,
+  so the group is ready. It passes the substance gate comfortably, names nobody, and
+  the sentence is written. Its scope comes out as theft, that amount band, and police
+  report absent — the labels her case carried. The SOP check finds no contradiction.
+  It goes live as an <em>individual judgement</em>.</p>
+
+  <p><strong>Week 1, Wednesday.</strong> A similar claim arrives. The app now sees
+  Priya's judgement, labelled as one officer's uncorroborated view, and recommends
+  requesting the police report first. Suresh, reviewing it, agrees and approves the
+  recommendation. Nothing is recorded as support — agreement never counts.</p>
+
+  <p><strong>Week 3.</strong> Suresh and then Asha each hit cases where the app went
+  the other way, and each corrects it in the same direction with their own wording.
+  The batch recognises both as the same lesson and adds their names. Three distinct
+  officers now: it becomes a <strong>team judgement</strong>, and the label the app
+  sees changes from "one officer's judgement" to "team judgement — 3 officers".
+  Priya's original sentence is untouched.</p>
+
+  <p><strong>Week 4.</strong> A new joiner rejects three recommendations writing only
+  "as discussed" each time. Those cluster together and are refused for lack of
+  substance. Nothing is deleted; the memory screen now shows "3 corrections were too
+  brief to learn from — ask officers for one concrete sentence", and their supervisor
+  has a two-minute conversation about it.</p>
+
+  <p><strong>Week 5.</strong> Someone writes "Mr Sharma's claims are always inflated."
+  The sentence is refused, rewritten once as a pattern about repeat claimants with
+  prior findings, and that version passes. Nobody's name enters the memory.</p>
+
+  <p><strong>Week 6.</strong> The regulator relaxes the police-report requirement
+  below a certain value and the SOP is updated. On its next reinforcement, the
+  judgement is checked against the new SOP, found to contradict it, and immediately
+  suspended — on that day, without anyone noticing the collision first. The app
+  follows the new SOP. The supervisor opens it, sees the conflict explained, and taps
+  <em>"SOP is right — retire it."</em></p>
+
+  <p><strong>Week 7.</strong> A different judgement, about fleet policies, has been
+  used fourteen times and overruled six. Its accuracy is now visible — it was
+  measured only once it passed ten uses — and it ranks below better performers when
+  both apply.</p>
+
+  <p><strong>Week 8.</strong> A supervisor is asked in an audit why a particular
+  claim was flagged. She opens App Memory, taps the judgement, and shows the three
+  officer corrections with names, dates and words that produced it. That question,
+  under the old memory, had no answer at all.</p>
+
+  <h2 id="c21"><span class="num">Chapter 21</span>Questions people ask</h2>
+
+  <h4>Does the app change its own behaviour without anyone approving?</h4>
+  <p>It changes what it <em>recommends</em>. It never changes what it is allowed to
+  <em>do</em>. Learning never widens the app's autonomy; a human still approves the
+  same things they approved on day one.</p>
+
+  <h4>Can one difficult officer teach the app something wrong?</h4>
+  <p>They can create an individual judgement, which will be labelled as one person's
+  view, capped so it cannot crowd out corroborated ones, measured from its first use,
+  visible on screen with their name on it, and retirable in two taps. What they
+  cannot do is create a rule, or override the SOP.</p>
+
+  <h4>Are some officers trusted more than others?</h4>
+  <p>No. There are no per-officer trust weights, deliberately. Scoring people would
+  need a fairness story we cannot honestly tell, and it would make the memory a
+  performance-management tool, which it must never be. What counts is how many
+  distinct officers taught a lesson, not who they were.</p>
+
+  <h4>What if the source system starts using a category nobody declared?</h4>
+  <p>Those cases get an "unknown" label, which is counted and surfaced as drift, and
+  which can never be used to scope a judgement. That is how you find out the upstream
+  system changed.</p>
+
+  <h4>What happens if a builder renames a reason category?</h4>
+  <p>The old name is kept as an alias, so corrections from before and after the
+  rename still count as the same lesson. A rename is not allowed to split one lesson
+  in two.</p>
+
+  <h4>An officer was dismissed. Can we remove everything they taught?</h4>
+  <p>Yes — filter judgements by who taught them and quarantine each one. Quarantine
+  is a reversible hold, not a deletion, so if the review clears them nothing has been
+  destroyed.</p>
+
+  <h4>What if officers just approve everything under time pressure?</h4>
+  <p>Then the app learns nothing, because only corrections teach. This is a real
+  limitation and we state it plainly: software cannot tell agreement from fatigue.
+  What we do is surface review velocity so a supervisor can see it, and never treat
+  approvals as evidence.</p>
+
+  <h4>Does memory get shared between customers?</h4>
+  <p>No. Every deployment is single-tenant, and judgements are scoped to one app in
+  one organisation. Nothing learned in one customer's system is visible to another.</p>
+
+  <h4>Does pausing learning break anything?</h4>
+  <p>No. Corrections keep being recorded, the app keeps working, and when you resume,
+  everything accumulated is folded in. Pausing is lossless by design.</p>
+
+  <h4>Why did my correction not become a judgement?</h4>
+  <p>One of four reasons, all visible: not enough evidence yet, too brief to carry a
+  lesson, it named a person, or the officers in that group were pulling in opposite
+  directions. In every case the correction is still on file and still counts toward a
+  future lesson.</p>
+
+  <h2 id="c22"><span class="num">Chapter 22</span>The words we use, the promises we keep, the numbers we ship</h2>
+
+  <h3>The words</h3>
+  <p>Same thing, three names, depending on where you are standing. Use the left-hand
+  column when you speak.</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>Say this</th><th>In the software</th><th>Where you see it</th></tr>
+      <tr><td class="k">Rules</td><td>the SOP corpus, fetched live</td><td>The "RULES" block the app is given; supreme by explicit instruction</td></tr>
+      <tr><td class="k">Judgement</td><td>a clause</td><td>Memory screen → "Judgements it has learned"</td></tr>
+      <tr><td class="k">Team judgement</td><td>status: active</td><td>"(team judgement — 3 officers)"</td></tr>
+      <tr><td class="k">Individual judgement</td><td>status: candidate</td><td>"(one officer's judgement — not yet corroborated…)"</td></tr>
+      <tr><td class="k">Correction / evidence</td><td>the corrections ledger, append-only</td><td>The receipts under every judgement</td></tr>
+      <tr><td class="k">Case labels</td><td>facets, from the app's case signature</td><td>The chips under each judgement</td></tr>
+      <tr><td class="k">Reason category</td><td>reason code (plus aliases)</td><td>The chip row on the reject screen</td></tr>
+      <tr><td class="k">Learning batch</td><td>the consolidation loop</td><td>Admin → Learning Batch</td></tr>
+    </tbody></table>
+  </div>
+
+  <p class="small muted">Never call the learned layer "rules" — in a demo, in a
+  document, or in the product. Rules are the SOP. Everything the app learns from
+  officers is judgement, and it sits underneath.</p>
+
+  <h3>The promises</h3>
+  <p>Five properties that hold today. If a proposed change would break one, that is a
+  reason to stop and rethink the change.</p>
+
+  <ol>
+    <li>A judgement's words are written once and never rewritten. Later feedback adds
+    names, standing and statistics — never words.</li>
+    <li>Evidence is append-only. Refusal, retirement and quarantine hide things;
+    nothing deletes them.</li>
+    <li>The SOP outranks everything learned, both when the app decides and when a
+    judgement is created. Conflicts are surfaced for a human, never resolved
+    silently, in either direction.</li>
+    <li>Only disagreement teaches. Approvals never count as support.</li>
+    <li>No per-officer trust weights, and learning never widens autonomy. A human
+    still approves.</li>
+  </ol>
+
+  <h3>The numbers</h3>
+  <p>Defaults as shipped. All are configurable; most should not be touched without a
+  reason.</p>
+
+  <div class="tw">
+    <table>
+      <tbody><tr><th>Setting</th><th>Default</th><th>What it controls</th></tr>
+      <tr><td class="k">Batch interval</td><td>15 minutes</td><td>How often the learning job wakes up</td></tr>
+      <tr><td class="k">Ready — by count</td><td>5 corrections</td><td>Enough waiting evidence to fold a group now</td></tr>
+      <tr><td class="k">Ready — by age</td><td>6 hours</td><td>So a quiet app still learns the same day</td></tr>
+      <tr><td class="k">Team judgement at</td><td>3 distinct officers</td><td>Promotion from individual to team standing</td></tr>
+      <tr><td class="k">Individual cap per case</td><td>3</td><td>How many uncorroborated judgements can be shown at once</td></tr>
+      <tr><td class="k">Substance floor</td><td>6 meaningful words</td><td>Below this, no judgement is written</td></tr>
+      <tr><td class="k">Disagreement threshold</td><td>~⅓ of feedback</td><td>Above this, the judgement becomes an open question</td></tr>
+      <tr><td class="k">Track record shown after</td><td>10 uses</td><td>Before this, no accuracy figure is displayed at all</td></tr>
+      <tr><td class="k">Poor performance below</td><td>70% accuracy</td><td>Flagged for review</td></tr>
+      <tr><td class="k">Word budget per case</td><td>~1000 words</td><td>Maximum judgement text put in front of the app; usually far less</td></tr>
+      <tr><td class="k">Benefit figure needs</td><td>10 decided cases each side</td><td>Below this the number is suppressed, not estimated</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="footer">
+    Citra AI · internal guide · describes the system as built on 27 July 2026 ·
+    source plans: docs/clause-memory-graph-plan.md and
+    docs/sop-rules-officer-judgement-plan.md · if this guide and the code disagree,
+    the code is right — then fix the guide.
+  </div>
+
+</div>
+
+
+</body></html>

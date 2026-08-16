@@ -1,0 +1,18 @@
+{
+  "_doc": "Self-contained tenant fixture for the Acme Bank & Insurance demo. Consumed by demo-data/scripts/seed_tenant.py via --tenant acme-bank. The script POSTs into Citra-User-Service admin APIs — no Mongo writes, no user-service config edits. Identifiers are frozen in SPEC.md §1; do not deviate.",
+  "org": {
+    "id": "acme-bank",
+    "name": "Acme Bank & Insurance Ltd",
+    "domain": "acme-bank-demo.citra.ai",
+    "entity_type": "corporate",
+    "industry": "bfsi",
+    "is_demo": true
+  },
+  "depts": [
+    { "id": "lending",            "name": "Loan Origination & Underwriting",                    "parent_id": null },
+    { "id": "collections",        "name": "Collections & Recovery",                             "parent_id": null },
+    { "id": "claims",             "name": "Insurance Claims (Motor / Health / Property)",       "parent_id": null },
+    { "id": "sales_distribution", "name": "Sales & Distribution (Branch, Agency, Bancassurance)", "parent_id": null },
+    { "id": "central_ops",        "name": "Central Operations, Risk & Compliance",              "parent_id": null }
+  ]
+}

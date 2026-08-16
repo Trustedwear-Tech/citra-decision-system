@@ -1,0 +1,42 @@
+﻿# =============================================================================
+# Citra AI â€” Web Frontend Module (Citra-UI)
+# =============================================================================
+# Builds the Expo web app and serves via a static file server.
+# Requires: Citra-UI/Dockerfile.web
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  citra-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        EXPO_PUBLIC_ENVIRONMENT: ${ENVIRONMENT:-dev}
+        EXPO_PUBLIC_CLOUD_BASE_URL: ${CITRA_API_URL:-http://localhost:7001}
+    container_name: citra-ui
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - citra-ai-net
+    environment:
+      - CITRA_API_URL=${CITRA_API_URL:-http://citra-service:7001}
+      - CITRA_USER_SERVICE_URL=${CITRA_USER_SERVICE_URL:-http://citra-user-service:7004}
+      - CITRA_AUTH_BASE_URL=${CITRA_AUTH_BASE_URL:-http://citra-user-service:7004/api/auth}
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/"]
+    logging: *default-logging
+
+networks:
+  citra-ai-net:
+    external: true

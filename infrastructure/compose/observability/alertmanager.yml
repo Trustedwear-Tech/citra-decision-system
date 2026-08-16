@@ -1,0 +1,61 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+route:
+  receiver: citra-webhook
+  group_by: [alertname, component, dept]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  # Critical alerts fan out to BOTH the primary webhook (Monitoring-Service)
+  # AND the direct SMTP fallback. `continue: true` on the sub-route lets
+  # the parent's default webhook fire in addition to SMTP, so critical
+  # alerts survive even if Monitoring-Service itself is down.
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: citra-smtp-fallback
+      continue: true
+
+receivers:
+  # Monitoring-Service owns the transport layer (SES/SMTP/webhook). We POST
+  # the raw Alertmanager JSON to its /webhook/alert endpoint and let it
+  # fan-out according to ALERT_TRANSPORT.
+  - name: citra-webhook
+    webhook_configs:
+      - url: http://monitoring-service:8400/webhook/alert
+        send_resolved: true
+
+  # Direct SMTP — bypasses Monitoring-Service. Gives on-call a last-resort
+  # paging channel when Monitoring-Service is the thing that's down (which
+  # is exactly when the webhook would otherwise fail silently).
+  #
+  # Env (resolved by Alertmanager via ${...} when `enable-feature=receiver-name`
+  # OR injected at compose-up via envsubst; pick whichever your deploy uses):
+  #   ALERTMANAGER_SMTP_SMARTHOST         e.g. smtp.sendgrid.net:587
+  #   ALERTMANAGER_SMTP_FROM              alerts@<your-domain>
+  #   ALERTMANAGER_SMTP_TO                oncall@<your-domain>
+  #   ALERTMANAGER_SMTP_USERNAME
+  #   ALERTMANAGER_SMTP_PASSWORD
+  - name: citra-smtp-fallback
+    email_configs:
+      - to:        ${ALERTMANAGER_SMTP_TO}
+        from:      ${ALERTMANAGER_SMTP_FROM}
+        smarthost: ${ALERTMANAGER_SMTP_SMARTHOST}
+        auth_username: ${ALERTMANAGER_SMTP_USERNAME}
+        auth_password: ${ALERTMANAGER_SMTP_PASSWORD}
+        require_tls: true
+        send_resolved: true
+        headers:
+          Subject: '[Citra-CRIT] {{ .GroupLabels.alertname }} ({{ .GroupLabels.dept }}/{{ .GroupLabels.component }})'
+
+inhibit_rules:
+  # If the whole dept is down, suppress noisy per-source alerts.
+  - source_matchers: [alertname="DeptBackupStale"]
+    target_matchers: [component="dept-mcp"]
+    equal: [dept]

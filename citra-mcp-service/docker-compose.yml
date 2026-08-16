@@ -1,0 +1,72 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml for citra-mcp-service (internal MCP gateway, port 9090)
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/citra-mcp-service:${IMAGE_TAG}
+# Config from Vault (no .env in prod). App listens on 9090 (see main.py:6).
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/citra-mcp-service:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  ports:
+    - 9090
+  volumes:
+    - ~/citra-ai/logs/citra-mcp-service:/app/logs
+  networks:
+    - citra-network
+    # Sandboxes (action-chat / smart-app) reach this MCP service from the
+    # approved-egress network — they are NOT on citra-network. Without this
+    # the sandbox can't resolve citra-mcp-service-prod and every native MCP
+    # tool (web/vault/files/ocr/discovery/…) silently fails. Mirrors
+    # discovery-service, which is dual-homed the same way.
+    - citra-action-approved-egress
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+  healthcheck:
+    # python:slim has no curl — use urllib one-liner (always shipped with python)
+    test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:9090/health',timeout=3).status==200 else 1)\""]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 20s
+
+services:
+  citra-mcp-service-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: citra-mcp-service-prod
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "e7e94388-a068-c959-76b8-2bc2f72f4700"
+      VAULT_SECRET_PATH: "prod/citra-mcp-service"
+
+  citra-mcp-service-test:
+    <<: *common
+    profiles: [test]
+    container_name: citra-mcp-service-test
+    environment:
+      TZ: "America/New_York"
+      ENVIRONMENT: "test"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: "test/citra-mcp-service"
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network
+  citra-action-approved-egress:
+    external: true
+    name: citra-action-approved-egress

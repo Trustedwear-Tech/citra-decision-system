@@ -1,0 +1,64 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml for data-discovery-service (MCP/source catalogue crawler, port 8095)
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/data-discovery-service:${IMAGE_TAG}
+# Config from Vault (no .env in prod).
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/data-discovery-service:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  ports:
+    - 8095
+  volumes:
+    - ~/citra-ai/logs/data-discovery-service:/app/logs
+  networks:
+    - citra-network
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+  healthcheck:
+    # python:slim has no curl, and the app binds to :8095 (7160 is host-side
+    # port mapping only). Use urllib for an in-container probe.
+    test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8095/health',timeout=4).status==200 else 1)\""]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+
+services:
+  data-discovery-service-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: data-discovery-service-prod
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "0ef1aad6-ca3b-fddd-0cce-b97afae956bc"
+      VAULT_SECRET_PATH: "prod/data-discovery-service"
+
+  data-discovery-service-test:
+    <<: *common
+    profiles: [test]
+    container_name: data-discovery-service-test
+    environment:
+      TZ: "America/New_York"
+      ENVIRONMENT: "test"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: "test/data-discovery-service"
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network

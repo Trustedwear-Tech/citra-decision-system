@@ -1,0 +1,155 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — MongoDB Module (self-hosted, authenticated, single-node replica set)
+# =============================================================================
+#   MONGODB_PASSWORD=... docker compose -f docker-compose.mongodb.yml up -d
+#
+# Connect with (note directConnection — see REPLICA SET below):
+#   mongodb://root:<pw>@mongodb:27017/<db>?authSource=admin&directConnection=true
+#
+# -----------------------------------------------------------------------------
+# WHY THIS FILE LOOKS THE WAY IT DOES — three things bite here, in order:
+#
+# 1. KEYFILE. Enabling auth (MONGO_INITDB_ROOT_USERNAME) *and* --replSet without
+#    a keyfile makes mongod refuse to boot, and the container crash-loops:
+#      "BadValue: security.keyFile is required when authorization is enabled
+#       with replica sets"
+#    A replica set with auth needs a shared secret for member-to-member auth,
+#    even with one member. The entrypoint below generates one on first boot into
+#    a named volume and locks it to 0400 mongodb:mongodb (mongod rejects looser
+#    permissions). It is generated, never committed.
+#
+# 2. THE REPLICA SET CANNOT BE INITIATED FROM /docker-entrypoint-initdb.d.
+#    Scripts there run against the image's *temporary* mongod, which is started
+#    with replication DISABLED, so rs.initiate() fails with "This node was not
+#    started with replication enabled." That is why initiation lives in the
+#    separate one-shot `mongodb-init-rs` service below, which runs after the
+#    real mongod is healthy and authenticates as root.
+#
+# 3. REPLICA SET MEMBER HOST is `mongodb:27017` — a name that only resolves on
+#    citra-network. Clients OUTSIDE that network (a service run directly on the
+#    host in dev) must pass `directConnection=true`, which skips topology
+#    discovery and talks to the node given in the URI. Without it the driver
+#    discovers `mongodb:27017`, cannot resolve it, and hangs until timeout.
+#
+# The replica set is kept rather than running standalone so behaviour matches
+# the Atlas deployment this replaces: retryable writes and change streams both
+# require one.
+#
+# For LOCAL DEV use docker-compose.mongodb.local.yml instead — same shape but no
+# auth (bound to loopback), which avoids putting credentials in every service
+# .env on a developer machine.
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: citra-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-root}
+      # No default. A self-hosted Mongo reachable on a public-IP box must not
+      # fall back to a shared well-known password.
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?MONGODB_PASSWORD must be set}
+    # Generate/repair the keyfile, then hand off to the image's real entrypoint.
+    # $$ escapes compose interpolation so the shell sees a single $.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -eo pipefail
+        KEYFILE=/etc/mongo-keyfile/keyfile
+        if [ ! -s "$$KEYFILE" ]; then
+          echo "[init] generating replica-set keyfile"
+          openssl rand -base64 756 > "$$KEYFILE"
+        fi
+        chown 999:999 "$$KEYFILE"
+        chmod 400 "$$KEYFILE"
+        exec /usr/local/bin/docker-entrypoint.sh "$$@"
+      - --
+    command:
+      - mongod
+      - --replSet
+      - rs0
+      - --bind_ip_all
+      - --keyFile
+      - /etc/mongo-keyfile/keyfile
+    ports:
+      # Loopback by default: on a public-IP host, "27017:27017" would publish
+      # the database to the internet. Override MONGODB_BIND only deliberately.
+      - "${MONGODB_BIND:-127.0.0.1}:${MONGODB_PORT:-27017}:27017"
+    networks:
+      - citra-network
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_keyfile:/etc/mongo-keyfile
+    healthcheck:
+      # Plain ping only. It must pass BEFORE the replica set exists, because
+      # mongodb-init-rs waits on this condition in order to create it.
+      # ping needs no authentication.
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging: *default-logging
+
+  # One-shot: initiate the replica set, then exit 0. Idempotent — re-running it
+  # against an initiated set is a no-op, so it is safe on every `up`.
+  mongodb-init-rs:
+    image: mongo:7.0
+    container_name: citra-mongodb-init-rs
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - citra-network
+    environment:
+      MONGODB_USER: ${MONGODB_USER:-root}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD:?MONGODB_PASSWORD must be set}
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -eo pipefail
+        # -u/-p rather than a URI: a password with URI-reserved characters
+        # would otherwise need percent-encoding and fail in confusing ways.
+        mongosh --host mongodb --port 27017 \
+          -u "$$MONGODB_USER" -p "$$MONGODB_PASSWORD" \
+          --authenticationDatabase admin --quiet --eval '
+            try {
+              print("replica set already initialised, myState=" + rs.status().myState);
+            } catch (e) {
+              if (e.codeName !== "NotYetInitialized") { throw e; }
+              print("initiating rs0 …");
+              print("rs.initiate ok=" + rs.initiate({
+                _id: "rs0",
+                members: [{ _id: 0, host: "mongodb:27017" }]
+              }).ok);
+            }
+          '
+    logging: *default-logging
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_keyfile:
+    driver: local
+
+networks:
+  citra-network:
+    external: true

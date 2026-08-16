@@ -1,0 +1,16 @@
+{
+  "name": "citra-runtime-e2e",
+  "private": true,
+  "description": "Playwright click-through suite for the Smart App runtime — the interaction layer the in-builder vision gate (citra_visual_review) does not cover: clicking rows, drilling into detail, submitting forms + file uploads.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:read-only": "playwright test -g \"@read\"",
+    "report": "playwright show-report",
+    "install-browser": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

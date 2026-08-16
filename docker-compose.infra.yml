@@ -1,0 +1,331 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.infra.yml
+# Local development infrastructure for Citra-AI (databases only).
+# Service containers build/run from their own project folders; the modular
+# platform compose files live in infrastructure/compose/.
+#
+# =============================================================================
+# READ THIS BEFORE RUNNING IT — it is an ALTERNATIVE to the modular files,
+# not a companion.
+#
+# As of 2026-08-08 this file is running NOTHING. Every live container came from
+# the modular files instead:
+#   citra-mongodb      infrastructure/compose/docker-compose.mongodb.local.yml
+#   citra-minio        infrastructure/compose/docker-compose.minio.yml
+#   redis, queue-redis infrastructure/compose/docker-compose.redis.yml
+#   milvus-*           infra/milvus-standalone/docker-compose.yml
+#
+# It reuses the same container names (citra-mongodb, citra-minio, queue-redis)
+# but its own volumes, and compose prefixes volumes with the PROJECT name —
+# "citra-ai" here versus "compose" for the modular files. So `up` from this file
+# replaces the running containers and attaches EMPTY volumes: the data is not
+# lost, but it is invisible until you switch back. Pick one set and stay there.
+#
+# citra-network is declared external and is NOT created here. It currently
+# belongs to the `citra-ai-oss` project (another repo) — if that stack is torn
+# down the network disappears and everything here fails to start. Recreate with:
+#   docker network create citra-network
+# =============================================================================
+
+services:
+  # MongoDB — single-node replica set (matches the Atlas topology it replaces:
+  # retryable writes and change streams both need one).
+  mongodb:
+    # Pinned. `mongo:latest` silently moves major versions between machines.
+    image: mongo:7.0
+    container_name: citra-mongodb
+    restart: unless-stopped
+    # Auth + --replSet requires a keyfile for member-to-member auth, even with
+    # one member; without it mongod refuses to boot with
+    #   "security.keyFile is required when authorization is enabled with
+    #    replica sets"
+    # Generated on first boot into its own volume, never committed. It also
+    # lives outside /data/db so a keyfile change does not disturb the data set.
+    # $$ escapes compose interpolation so the shell sees a single $.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -eo pipefail
+        KEYFILE=/etc/mongo-keyfile/keyfile
+        if [ ! -s "$$KEYFILE" ]; then
+          echo "[init] generating replica-set keyfile"
+          openssl rand -base64 756 > "$$KEYFILE"
+        fi
+        chown 999:999 "$$KEYFILE"
+        chmod 400 "$$KEYFILE"
+        exec /usr/local/bin/docker-entrypoint.sh "$$@"
+      - --
+    command:
+      - mongod
+      - --replSet
+      - rs0
+      - --bind_ip_all
+      - --keyFile
+      - /etc/mongo-keyfile/keyfile
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-root}
+      # No default. The previous `citradev` fallback shipped a known password.
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:?MONGODB_PASSWORD must be set}
+    ports:
+      # Loopback by default — "27017:27017" would expose the database on every
+      # interface, which on a non-laptop host means the internet.
+      - "${MONGODB_BIND:-127.0.0.1}:${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_keyfile:/etc/mongo-keyfile
+      # No /docker-entrypoint-initdb.d mount for replica-set initiation:
+      # scripts there run against the image's temporary mongod, started with
+      # replication DISABLED, so rs.initiate() can only ever fail with "This
+      # node was not started with replication enabled." See mongodb-init-rs.
+    healthcheck:
+      # Plain ping. Must pass BEFORE the replica set exists, because
+      # mongodb-init-rs waits on this condition in order to create it.
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # One-shot: initiate the replica set, then exit 0. Idempotent, so it is safe
+  # on every `up`. This used to live in the healthcheck, which conflated "is it
+  # alive" with "set it up".
+  mongodb-init-rs:
+    image: mongo:7.0
+    container_name: citra-mongodb-init-rs
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      MONGODB_USER: ${MONGODB_USER:-root}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD:?MONGODB_PASSWORD must be set}
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -eo pipefail
+        # -u/-p rather than a URI: a password containing URI-reserved
+        # characters would otherwise need percent-encoding.
+        mongosh --host mongodb --port 27017 \
+          -u "$$MONGODB_USER" -p "$$MONGODB_PASSWORD" \
+          --authenticationDatabase admin --quiet --eval '
+            try {
+              print("replica set already initialised, myState=" + rs.status().myState);
+            } catch (e) {
+              if (e.codeName !== "NotYetInitialized") { throw e; }
+              print("initiating rs0 …");
+              print("rs.initiate ok=" + rs.initiate({
+                _id: "rs0",
+                members: [{ _id: 0, host: "mongodb:27017" }]
+              }).ok);
+            }
+          '
+    networks:
+      - citra-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: citra-redis
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "${REDIS_BIND:-127.0.0.1}:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Dedicated durable job-queue Redis (Redis Streams).
+  # Keep separate from cache Redis so queued/in-flight jobs are not exposed to
+  # cache eviction policy. Services reach it as `queue-redis:6379`; host tools
+  # can inspect it on localhost:6380.
+  queue-redis:
+    image: redis:7-alpine
+    container_name: queue-redis
+    restart: unless-stopped
+    command: [
+      "redis-server",
+      "--appendonly", "yes",
+      "--appendfsync", "everysec",
+      "--maxmemory-policy", "noeviction"
+    ]
+    ports:
+      - "${REDIS_BIND:-127.0.0.1}:6380:6379"
+    volumes:
+      - queue_redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # etcd (Milvus metadata storage)
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.16
+    container_name: citra-milvus-etcd
+    restart: unless-stopped
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296" # 4GB
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: >
+      etcd --advertise-client-urls=http://milvus-etcd:2379 --listen-client-urls=http://0.0.0.0:2379 --data-dir=/etcd
+    volumes:
+      - milvus_etcd_data:/etcd
+    healthcheck:
+      test: [ "CMD", "etcdctl", "endpoint", "health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # MinIO — Milvus internal object storage.
+  # Separate from the application MinIO below; Milvus owns this one and its
+  # credentials must match MILVUS_MINIO_* on both sides.
+  milvus-minio:
+    image: minio/minio:RELEASE.2024-09-22T00-33-43Z
+    container_name: citra-milvus-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MILVUS_MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MILVUS_MINIO_SECRET_KEY:-minioadmin}
+    command: minio server /data --console-address ":9001"
+    volumes:
+      - milvus_minio_data:/data
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Milvus — Vector Database (standalone mode)
+  milvus:
+    # Pinned to match the version actually in use (infra/milvus-standalone/ and
+    # the deployed box both run 2.5.4). This file previously said 2.4.17.
+    image: milvusdb/milvus:v2.5.4
+    container_name: citra-milvus
+    restart: unless-stopped
+    command: [ "milvus", "run", "standalone" ]
+    environment:
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+      MINIO_ACCESS_KEY_ID: ${MILVUS_MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MILVUS_MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      # NOT loopback, unlike Mongo/Redis above. Containers on other networks
+      # reach Milvus at host.docker.internal:19530 (the acme-bank MCP does), and
+      # host.docker.internal resolves to the host gateway address — a port bound
+      # to 127.0.0.1 is unreachable from it. Binding this to loopback silently
+      # breaks the MCP's RAG path.
+      # The clean fix is to put those containers on citra-network and drop the
+      # host.docker.internal hop; until then this stays published.
+      - "${MILVUS_BIND:-0.0.0.0}:19530:19530"
+      - "${MILVUS_BIND:-0.0.0.0}:9091:9091" # Milvus metrics
+    volumes:
+      - milvus_data:/var/lib/milvus
+    depends_on:
+      milvus-etcd:
+        condition: service_healthy
+      milvus-minio:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:9091/healthz" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # MinIO — Application file storage (S3-compatible, replaces AWS S3 / Azure)
+  minio:
+    image: minio/minio:RELEASE.2024-09-22T00-33-43Z
+    container_name: citra-minio
+    restart: unless-stopped
+    environment:
+      # No defaults, matching infrastructure/compose/docker-compose.minio.yml.
+      MINIO_ROOT_USER: ${BUCKET_ACCESS_KEY:?BUCKET_ACCESS_KEY must be set}
+      MINIO_ROOT_PASSWORD: ${BUCKET_SECRET_KEY:?BUCKET_SECRET_KEY must be set}
+    # Listens on the conventional 9000 so in-network clients use
+    # http://minio:9000, same as the modular file. This previously listened on
+    # 9002 internally, so the two files disagreed about the in-network port.
+    command: minio server /data --console-address ":9001"
+    ports:
+      # Published on 9002/9003, NOT 9000: discovery-service owns host 9000
+      # (discovery-service/.env PORT=9000). With MinIO there, dept MCPs POST
+      # their tool registrations into MinIO and get back a 400 that reads like
+      # an auth failure. Previously this service published nothing at all, so
+      # host-run dev services could not reach it.
+      #
+      # Left on all interfaces (not loopback) for the same reason as Milvus:
+      # the acme-bank MCP reads objects via host.docker.internal:9002. Access is
+      # credential-gated by the required BUCKET_* vars above.
+      - "${MINIO_API_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      # MinIO's own readiness probe; does not assume curl is in the image.
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  mongodb_data:
+  mongodb_keyfile:
+  redis_data:
+  queue_redis_data:
+  milvus_etcd_data:
+  milvus_minio_data:
+  milvus_data:
+  minio_data:
+
+networks:
+  # External, not created here. See the header: it currently belongs to the
+  # citra-ai-oss project. `docker network create citra-network` if missing.
+  citra-network:
+    external: true

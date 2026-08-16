@@ -1,0 +1,322 @@
+{
+  "hosting": [
+    {
+      "target": "prod",
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*"
+      ],
+      "redirects": [
+        {
+          "source": "/privacy-policy.html",
+          "destination": "/privacy-policy",
+          "type": 301
+        },
+        {
+          "source": "/terms-of-service.html",
+          "destination": "/terms-of-service",
+          "type": 301
+        },
+        {
+          "source": "/contactus.html",
+          "destination": "/contactus",
+          "type": 301
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/privacy-policy",
+          "destination": "/privacy-policy.html"
+        },
+        {
+          "source": "/contactus",
+          "destination": "/contactus.html"
+        },
+        {
+          "source": "/contact-us",
+          "destination": "/contactus.html"
+        },
+        {
+          "source": "/terms-of-service",
+          "destination": "/terms-of-service.html"
+        },
+        {
+          "source": "/cookie-notice",
+          "destination": "/cookie-notice.html"
+        },
+        {
+          "source": "/cookie-settings",
+          "destination": "/cookie-settings.html"
+        },
+        {
+          "source": "/oauth/redirect",
+          "destination": "/oauth/redirect/index.html"
+        },
+        {
+          "source": "/blog",
+          "destination": "/blog/index.html"
+        },
+        {
+          "source": "/blog/",
+          "destination": "/blog/index.html"
+        },
+        {
+          "source": "!{/static-seo/**,/blog/**,/sitemap.xml,/robots.txt,/**/*.@(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|html)}",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "/mindmap-viewer.html",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(js|css)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "key": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "key": "Expires",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "source": "index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "key": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "key": "Expires",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(html|json)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "1; mode=block"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "unsafe-none"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "camera=(self), microphone=(self), geolocation=(), payment=()"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://static.cloudflareinsights.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' blob: https: wss://*.citra-ai.com; frame-src 'self' blob: https://accounts.google.com https://api.citra-ai.com https://dashboard.citra-ai.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://open.spotify.com https://www.figma.com https://miro.com; media-src 'self' blob: data: https://firebasestorage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "test",
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*"
+      ],
+      "redirects": [
+        {
+          "source": "/privacy-policy.html",
+          "destination": "/privacy-policy",
+          "type": 301
+        },
+        {
+          "source": "/terms-of-service.html",
+          "destination": "/terms-of-service",
+          "type": 301
+        },
+        {
+          "source": "/contactus.html",
+          "destination": "/contactus",
+          "type": 301
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/privacy-policy",
+          "destination": "/privacy-policy.html"
+        },
+        {
+          "source": "/contactus",
+          "destination": "/contactus.html"
+        },
+        {
+          "source": "/contact-us",
+          "destination": "/contactus.html"
+        },
+        {
+          "source": "/terms-of-service",
+          "destination": "/terms-of-service.html"
+        },
+        {
+          "source": "/cookie-notice",
+          "destination": "/cookie-notice.html"
+        },
+        {
+          "source": "/cookie-settings",
+          "destination": "/cookie-settings.html"
+        },
+        {
+          "source": "/oauth/redirect",
+          "destination": "/oauth/redirect/index.html"
+        },
+        {
+          "source": "/blog",
+          "destination": "/blog/index.html"
+        },
+        {
+          "source": "/blog/",
+          "destination": "/blog/index.html"
+        },
+        {
+          "source": "!{/static-seo/**,/blog/**,/sitemap.xml,/robots.txt,/**/*.@(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|html)}",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "/mindmap-viewer.html",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(js|css)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "key": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "key": "Expires",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "source": "index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            },
+            {
+              "key": "Pragma",
+              "value": "no-cache"
+            },
+            {
+              "key": "Expires",
+              "value": "0"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(html|json)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "1; mode=block"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "unsafe-none"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "camera=(self), microphone=(self), geolocation=(), payment=()"
+            },
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://static.cloudflareinsights.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; connect-src 'self' blob: https: wss://*.citra-ai.com; frame-src 'self' blob: https://accounts.google.com https://api.citra-ai.com https://testapi.citra-ai.com https://dashboard.citra-ai.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://open.spotify.com https://www.figma.com https://miro.com; media-src 'self' blob: data: https://firebasestorage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com;"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

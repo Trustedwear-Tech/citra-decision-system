@@ -1,0 +1,7 @@
+# These files are baked into a Linux container and MUST be LF on Windows
+# checkouts. Without this, git's autocrlf turns the shebang into `#!/bin/sh\r`
+# and tini fails with "exec /srv/citra/entrypoint.sh failed: No such file or
+# directory" at container start.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+entrypoint.sh text eol=lf

@@ -1,0 +1,340 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra dept-stack — full dept in a single compose file
+# =============================================================================
+# Everything one department needs: mongodb, redis, milvus (+etcd+minio),
+# citra-service, dept-mcp, dept-backup sidecar.
+#
+# The shared discovery-service, user-service, reranker, and observability
+# stack run centrally (separate compose); LLMs come from third-party APIs.
+#
+# Usage:
+#   cp .env.template .env     # fill in all secrets
+#   docker network create citra-network
+#   docker compose up -d
+#
+# Bring-up order is managed by depends_on + healthchecks so
+# `docker compose up -d` is a one-shot command.
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-restart: &default-restart
+  restart: unless-stopped
+
+networks:
+  citra-network:
+    external: true
+
+volumes:
+  mongodb_data:
+  redis_data:
+  milvus_etcd_data:
+  milvus_minio_data:
+  milvus_data:
+  backup_metrics:
+  prometheus_data:
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # State: MongoDB (single-node replica set so transactions + change streams work)
+  # ---------------------------------------------------------------------------
+  mongodb:
+    <<: *default-restart
+    image: mongo:7.0
+    container_name: dept-${DEPT_ID}-mongodb
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    networks: [citra-network]
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "try { rs.status().ok } catch(e) {
+          rs.initiate({_id:'rs0',members:[{_id:0,host:'dept-${DEPT_ID}-mongodb:27017'}]}).ok
+        }"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging: *default-logging
+
+  # ---------------------------------------------------------------------------
+  # State: Redis (cache, task queues)
+  # ---------------------------------------------------------------------------
+  redis:
+    <<: *default-restart
+    image: redis:7.2-alpine
+    container_name: dept-${DEPT_ID}-redis
+    # AOF persistence (everysec) so locks/queues survive a restart.
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes", "--appendfsync", "everysec"]
+    networks: [citra-network]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  # ---------------------------------------------------------------------------
+  # State: Milvus + its own etcd + internal MinIO
+  # ---------------------------------------------------------------------------
+  milvus-etcd:
+    <<: *default-restart
+    image: quay.io/coreos/etcd:v3.5.16
+    container_name: dept-${DEPT_ID}-milvus-etcd
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: >
+      etcd
+      --advertise-client-urls=http://127.0.0.1:2379
+      --listen-client-urls=http://0.0.0.0:2379
+      --data-dir=/etcd
+    networks: [citra-network]
+    volumes:
+      - milvus_etcd_data:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging: *default-logging
+
+  milvus-minio:
+    <<: *default-restart
+    image: minio/minio:RELEASE.2024-09-22T00-33-43Z
+    container_name: dept-${DEPT_ID}-milvus-minio
+    environment:
+      MINIO_ROOT_USER: ${MILVUS_MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MILVUS_MINIO_SECRET_KEY}
+    command: minio server /data --console-address ":9001"
+    networks: [citra-network]
+    volumes:
+      - milvus_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging: *default-logging
+
+  milvus:
+    <<: *default-restart
+    image: milvusdb/milvus:v2.4.17
+    container_name: dept-${DEPT_ID}-milvus
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: dept-${DEPT_ID}-milvus-etcd:2379
+      MINIO_ADDRESS: dept-${DEPT_ID}-milvus-minio:9000
+      MINIO_ACCESS_KEY_ID: ${MILVUS_MINIO_ACCESS_KEY}
+      MINIO_SECRET_ACCESS_KEY: ${MILVUS_MINIO_SECRET_KEY}
+    depends_on:
+      milvus-etcd: {condition: service_healthy}
+      milvus-minio: {condition: service_healthy}
+    networks: [citra-network]
+    volumes:
+      - milvus_data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9091/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    logging: *default-logging
+
+  # ---------------------------------------------------------------------------
+  # App: Citra-Service (per-dept query/orchestration plane)
+  # ---------------------------------------------------------------------------
+  citra-service:
+    <<: *default-restart
+    image: ${CITRA_SERVICE_IMAGE:-citra-ai/citra-service:latest}
+    container_name: dept-${DEPT_ID}-citra-service
+    depends_on:
+      mongodb: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      milvus: {condition: service_healthy}
+    environment:
+      - ORG_ID=${ORG_ID}
+      - DEPT_ID=${DEPT_ID}
+      - MONGO_URI=mongodb://root:${MONGODB_PASSWORD}@dept-${DEPT_ID}-mongodb:27017/?authSource=admin&replicaSet=rs0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@dept-${DEPT_ID}-redis:6379/0
+      - MILVUS_URI=http://dept-${DEPT_ID}-milvus:19530
+      - MILVUS_COLLECTION=citra
+      - DISCOVERY_SERVICE_URL=${DISCOVERY_SERVICE_URL}
+      - SERVICE_API_KEY=${SERVICE_API_KEY}
+      - INFERENCE_BASE_URL=${INFERENCE_BASE_URL}
+      - INFERENCE_API_KEY=${INFERENCE_API_KEY}
+      - RERANKER_SERVICE_URL=${RERANKER_SERVICE_URL}
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
+      - MCP_CALL_HARD_CAP=60
+      # Error tracker (GlitchTip / Sentry) — no-op when unset
+      - SENTRY_DSN=${CITRA_SERVICE_SENTRY_DSN:-}
+      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.05}
+      - ENVIRONMENT=${ENVIRONMENT:-prod}
+    networks: [citra-network]
+    ports:
+      - "${CITRA_SERVICE_PORT:-7001}:7001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging: *default-logging
+
+  # ---------------------------------------------------------------------------
+  # App: Dept MCP (v2.0.0 — query-plane only; ingestion runs in Citra Workflow Engine)
+  # ---------------------------------------------------------------------------
+  dept-mcp:
+    <<: *default-restart
+    image: ${DEPT_MCP_IMAGE:-citra-ai/dept-mcp:2.0.0}
+    container_name: dept-${DEPT_ID}-mcp
+    depends_on:
+      milvus: {condition: service_healthy}
+    environment:
+      - ORG_ID=${ORG_ID}
+      - DEPT_IDS=${DEPT_ID}
+      - MCP_API_KEY=${MCP_API_KEY}
+      - DISCOVERY_URL=${DISCOVERY_SERVICE_URL}
+      - MILVUS_URI=http://dept-${DEPT_ID}-milvus:19530
+      - MILVUS_COLLECTION_PREFIX=${MILVUS_COLLECTION_PREFIX:-mcp}
+      # Central Citra Mongo — holds the dept_sources registry and audit log.
+      - CITRA_MONGO_URI=${CITRA_MONGO_URI}
+      - CITRA_MONGO_DB=${CITRA_MONGO_DB:-citra-ai}
+      - SOURCES_REFRESH_SECONDS=${SOURCES_REFRESH_SECONDS:-60}
+      - EMBEDDING_BASE_URL=${INFERENCE_BASE_URL}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY}
+      - LLM_BASE_URL=${INFERENCE_BASE_URL}
+      - LLM_API_KEY=${INFERENCE_API_KEY}
+      - RERANKER_URL=${RERANKER_SERVICE_URL}
+      # AuthZ: verify the forwarded X-User-JWT against Citra's shared HS256
+      # secret (the same key Citra-User-Service signs session tokens with).
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTHZ_ENFORCE=${AUTHZ_ENFORCE:-true}
+      # Error tracker (GlitchTip / Sentry) — no-op when unset
+      - SENTRY_DSN=${DEPT_MCP_SENTRY_DSN:-}
+      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.05}
+      - ENVIRONMENT=${ENVIRONMENT:-prod}
+    networks: [citra-network]
+    ports:
+      - "${MCP_PORT:-8090}:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    logging: *default-logging
+
+  # ---------------------------------------------------------------------------
+  # Ops: encrypted backups to dept-controlled S3/MinIO
+  # ---------------------------------------------------------------------------
+  dept-backup:
+    <<: *default-restart
+    build:
+      context: ./backup
+    image: citra-ai/dept-backup:latest
+    container_name: dept-${DEPT_ID}-backup
+    depends_on:
+      mongodb: {condition: service_healthy}
+      milvus: {condition: service_healthy}
+    environment:
+      - DEPT_ID=${DEPT_ID}
+      - MONGO_URI=mongodb://root:${MONGODB_PASSWORD}@dept-${DEPT_ID}-mongodb:27017/?authSource=admin&replicaSet=rs0
+      - MILVUS_URI=http://dept-${DEPT_ID}-milvus:19530
+      - MILVUS_HOST=dept-${DEPT_ID}-milvus
+      - MILVUS_MINIO_HOST=dept-${DEPT_ID}-milvus-minio
+      - MILVUS_MINIO_ACCESS_KEY=${MILVUS_MINIO_ACCESS_KEY}
+      - MILVUS_MINIO_SECRET_KEY=${MILVUS_MINIO_SECRET_KEY}
+      - BACKUP_INTERVAL=${BACKUP_INTERVAL:-21600}
+      - BACKUP_S3_ENDPOINT=${BACKUP_S3_ENDPOINT}
+      - BACKUP_S3_BUCKET=${BACKUP_S3_BUCKET}
+      - BACKUP_S3_ACCESS_KEY=${BACKUP_S3_ACCESS_KEY}
+      - BACKUP_S3_SECRET_KEY=${BACKUP_S3_SECRET_KEY}
+      - BACKUP_RESTIC_PASSWORD=${BACKUP_RESTIC_PASSWORD}
+      - BACKUP_RETENTION_HOURLY=24
+      - BACKUP_RETENTION_DAILY=30
+      - BACKUP_RETENTION_WEEKLY=52
+    networks: [citra-network]
+    volumes:
+      - ${DEPT_CONFIG_DIR:-./config}:/etc/citra:ro
+      - backup_metrics:/var/lib/node_exporter/textfile_collector
+    logging: *default-logging
+
+  # ---------------------------------------------------------------------------
+  # Observability (per-dept agents) — scrape local services + ship to central
+  # ---------------------------------------------------------------------------
+  # Prometheus agent mode: scrapes dept services locally and remote_writes to
+  # the central Prometheus. Zero permanent storage, low footprint.
+  prometheus:
+    <<: *default-restart
+    image: prom/prometheus:v2.54.1
+    container_name: dept-${DEPT_ID}-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=2h"
+      - "--enable-feature=agent"
+    environment:
+      - DEPT_ID=${DEPT_ID}
+      - ORG_ID=${ORG_ID}
+      - CENTRAL_PROMETHEUS_URL=${CENTRAL_PROMETHEUS_URL}
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+      - backup_metrics:/var/lib/node_exporter/textfile_collector:ro
+    networks: [citra-network]
+    logging: *default-logging
+
+  # Promtail tails container logs (Docker socket) and ships to central Loki
+  # with dept + container labels.
+  promtail:
+    <<: *default-restart
+    image: grafana/promtail:3.1.1
+    container_name: dept-${DEPT_ID}-promtail
+    command: ["-config.file=/etc/promtail/promtail.yml"]
+    environment:
+      - DEPT_ID=${DEPT_ID}
+      - ORG_ID=${ORG_ID}
+      - CENTRAL_LOKI_URL=${CENTRAL_LOKI_URL}
+    volumes:
+      - ./observability/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [citra-network]
+    logging: *default-logging
+
+  # node-exporter: host-level metrics + reads dept-backup's textfile
+  # collector output (last-success timestamp, durations, sizes).
+  node-exporter:
+    <<: *default-restart
+    image: prom/node-exporter:v1.8.2
+    container_name: dept-${DEPT_ID}-node-exporter
+    command:
+      - "--path.rootfs=/host"
+      - "--collector.textfile.directory=/var/lib/node_exporter/textfile_collector"
+    volumes:
+      - /:/host:ro,rslave
+      - backup_metrics:/var/lib/node_exporter/textfile_collector:ro
+    networks: [citra-network]
+    logging: *default-logging
+

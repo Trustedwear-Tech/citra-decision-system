@@ -1,0 +1,76 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — Redis Module
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  # Cache Redis — general app cache, rate-limits, locks. May run an eviction
+  # policy; must NOT host the durable job queue (see queue-redis below).
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    # AOF persistence (everysec) for cache durability.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    ports:
+      - "6379:6379"
+    networks:
+      - citra-network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+      test: ["CMD", "redis-cli", "ping"]
+    logging: *default-logging
+
+  # DEDICATED durable job-queue Redis (citra-queue Streams). Kept SEPARATE from
+  # the cache above and pinned to maxmemory-policy=noeviction so Stream entries
+  # (queued/in-flight jobs) can NEVER be evicted under memory pressure — that
+  # would silently drop jobs and defeat AOF durability. Services reach it as
+  # host `queue-redis` via QUEUE_REDIS_HOST; ops can reach it on host :6380.
+  queue-redis:
+    image: redis:7-alpine
+    container_name: queue-redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-}",
+              "--appendonly", "yes", "--appendfsync", "everysec",
+              "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6380:6379"
+    networks:
+      - citra-network
+    volumes:
+      - queue_redis_data:/data
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
+    logging: *default-logging
+
+volumes:
+  redis_data:
+    driver: local
+  queue_redis_data:
+    driver: local
+
+networks:
+  citra-network:
+    external: true

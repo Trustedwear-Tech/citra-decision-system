@@ -1,0 +1,368 @@
+[
+  {
+    "application_id": "LAN-2026-004550",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 91.8,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 bureau score below 650 on unsecured product; income below floor; ITR does not corroborate declared income",
+      "reasoning": "Bureau score 617 triggers a hard decline under Policy \u00a74 for an unsecured personal loan. ITR-declared income (\u20b934,083/month) falls below the \u20b940,000 self-employed income floor (Policy \u00a72.2), and the 53% gap between ITR and declared income cannot be bridged without verification (SOP \u00a75.5, six officer corrections). Overdue \u20b91,31,400 is an additional adverse.",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 108.9,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 bureau score 617 on unsecured personal loan is a mandatory decline under policy \u00a74",
+      "reasoning": "CRIF score 617 places the applicant in the 'Below 650 \u2014 Decline unless fully secured' band per Retail Credit Policy \u00a74. This is an unsecured personal loan, so no override path exists. Additionally, the ITR-computed income (~\u20b934,083/mo) falls below the \u20b940,000 self-employed income floor (Policy \u00a72.2), and declared income (\u20b972,500/mo) is not corroborated by the filed ITR (\u20b94,09,000/yr), a 53% gap that independently triggers verification under SOP \u00a77.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-000171",
+    "arm": "treatment",
+    "product": "home",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 103.2,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR above cap with bureau score under 700 (mandatory decline), plus LTV breach and document deficiency",
+      "reasoning": "FOIR 57.67% exceeds the 55% cap for the \u20b950,001\u2013\u20b91,50,000 income bracket, and bureau score 690 is under 700. Per Retail Credit Policy \u00a73.1, this combination is a decline with no deviation permitted. Additionally, LTV 83.68% breaches the 75% cap for home loans above \u20b975 lakh (\u00a73.2); income_proof_type 'payslip' does not match self-employed occupation requiring ITR + bank statements (Income Verification SOP \u00a72); 9 bureau enquiries exceed 6 (\u00a74); and \u20b979,300 overdue must be cleared. Coded reason: FOIR above cap.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 130.4,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR above cap with bureau score under 700 is a mandatory decline; LTV also breaches the 75% cap for home loans above \u20b975L",
+      "reasoning": "Per Retail Credit Policy \u00a73.1: FOIR 57.67% exceeds the 55% cap for the \u20b950,001\u2013\u20b91,50,000 income band, and bureau score (690) is under 700 \u2014 this combination is a decline, not a deviation. Independently, LTV 83.68% exceeds the 75% cap for home loans above \u20b975L per \u00a73.2. The income proof type 'payslip' does not match the applicant's self-employed-professional occupation per Income Verification SOP \u00a72, and the bureau shows \u20b979,300 overdue at other lenders plus 9 enquiries in 6 months.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-001767",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 61.1,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 FOIR 95% exceeds the 45% cap for income \u2264\u20b950,000",
+      "reasoning": "The application FOIR of 95% is more than double the 45% maximum permitted under Retail Credit Policy \u00a73.1 for the applicant's income bracket (\u20b933,500/month). This is a hard policy breach that cannot be cured by deviation. Compounding factors: ITR-declared income (\u20b93.62L) does not corroborate declared income (\u20b94.02L) per SOP \u00a77, the mandatory document set is incomplete (missing bank statements and Form 16 per SOP \u00a72), and the DSA-sourced file lacks direct employer verification per [C-002].",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 84.6,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR of 95% far exceeds the 45% cap for the applicant's income band; loan is unaffordable under policy",
+      "reasoning": "The applicant's net monthly income of \u20b933,500 falls in the \u2264\u20b950,000 band, where Retail Credit Policy \u00a73.1 caps FOIR at 45%. The application's FOIR is 95.0% \u2014 more than double the cap. This is a hard policy breach and the loan is plainly unaffordable. A secondary concern: ITR-declared income (\u20b93.62L) does not fully corroborate the declared annual income (\u20b94.02L), a ~10% variance flagged under Income Verification SOP \u00a77. Bureau is clean (722, no writeoffs, no overdue) but cannot rescue an unaffordable FOIR.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-001321",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 70.8,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 bureau score 564 below 650 threshold for unsecured personal loan",
+      "reasoning": "Hard policy break under Retail Credit Policy \u00a74: bureau score 564 is below 650, and the product is unsecured (personal loan) \u2014 no 'fully secured' exception available. Contributing factors: overdue \u20b95,800 at another lender and incomplete income documentation (missing ITR for self-employed per SOP \u00a72).",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 54.2,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 bureau score 564 below 650 threshold for unsecured personal loan",
+      "reasoning": "Retail Credit Policy \u00a74: sub-650 scores are a mandatory decline for unsecured products. This is a personal loan (unsecured). No exception applies. Secondary: income docs incomplete (bank_statement only for self-employed; SOP \u00a72 requires ITR). Overdue \u20b95,800. FOIR 45.74% is fine, ITR corroboration is fine.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-002291",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 81.6,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Under Review \u2014 refer for income verification; filed return does not corroborate declared income",
+      "reasoning": "Self-employed applicant submitted payslips instead of the SOP \u00a72 mandatory set (ITR + 12m bank statements). ITR-declared income (\u20b931.86L) is ~11.8% below declared monthly \u00d7 12 (\u20b936.12L). Bureau is clean (804, no write-offs, no overdue) and FOIR (18.6%) is well within the 60% cap. Per five consistent officer corrections, an ITR mismatch is an escalation trigger, not a decline \u2014 refer for verification.",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 121.2,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 refer for income verification; wrong document set (payslips for a self-employed applicant) and ITR does not corroborate declared income",
+      "reasoning": "Two independent grounds prevent sanction: (1) applicant is self_employed but submitted payslips \u2014 Income Verification SOP \u00a72 requires ITR (2 AY) + 12 months' bank statements for self-employed professionals, making the mandatory set incomplete; (2) ITR-declared income (\u20b931.86L) does not corroborate declared monthly \u00d7 12 (\u20b936.12L), an 11.8% gap. Per SOP \u00a77, the computed figure must be used and the difference noted. Per SOP \u00a78 and consistent officer corrections, escalate to Credit Manager. FOIR (18.6% vs 60% cap), bureau (804), and income floor all otherwise pass.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-004399",
+    "arm": "treatment",
+    "product": "business",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 91.4,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 FOIR above cap, product unavailable to salaried, document set incomplete",
+      "reasoning": "Business loan per Policy \u00a72.2 is n/a for salaried applicants \u2014 hard product mismatch. FOIR 95% far exceeds the 55% cap for the \u20b950,001\u2013\u20b91,50,000 band (Policy \u00a73.1). Income document set incomplete: only bank_statement provided; salaried requires payslips + bank statement + Form 16 (SOP \u00a72). ITR-declared income \u20b93.16L does not corroborate declared \u20b96.42L (51% gap, SOP \u00a77). Bureau enquiries at 8 exceed the 6-enquiry threshold requiring written explanation (Policy \u00a74). Each breach is independently fatal.",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 105.2,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR 95% breaches the 55% cap; business loan ineligible for salaried applicant; income not corroborated",
+      "reasoning": "FOIR of 95% is 40pp above the 55% cap for the \u20b950k\u2013\u20b91.5L income band (\u00a73.1)\u2014independently fatal. Business loan income floor is 'n/a' for salaried (\u00a72.2). ITR income (\u20b93.16L) is only 49.2% of annualised declared income (\u20b96.42L), breaching SOP \u00a77 corroboration requirement.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-002172",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 71.8,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 income below floor, FOIR above cap with no bureau score, incomplete documentation, and ITR does not corroborate declared income",
+      "reasoning": "Hard policy decline under \u00a72.2 (income \u20b923,500 < \u20b925,000 floor) and \u00a73.1 (FOIR 48.51% > 45% cap with null score = mandatory decline). Income docs incomplete per SOP \u00a72 \u2014 only bank_statement, missing payslips and Form 16. ITR \u20b986,000 vs implied \u20b92.82L (69.5% gap) \u2014 filed return does not corroborate declared income. KYC pending. No discretion for under_review.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 68.9,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 income below floor",
+      "reasoning": "Declared monthly income \u20b923,500 is below the \u20b925,000 minimum for personal loan (salaried) under Retail Credit Policy \u00a72.2 \u2014 a hard, non-discretionary decline. FOIR at 48.51% also breaches the 45% cap for income \u2264\u20b950,000 under \u00a73.1. Income documentation is incomplete (only bank statement, missing payslips and Form 16 per Income Verification SOP \u00a72). Coded decline reason: income_below_floor.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-000515",
+    "arm": "treatment",
+    "product": "lap",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 83.1,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 LTV 87.54% exceeds LAP maximum (65% residential / 55% commercial); no deviation path",
+      "reasoning": "The LTV of 87.54% breaches the hard cap in Retail Credit Policy \u00a73.2 for both residential (65%) and commercial (55%) LAP, with no deviation provision. Secondary: income documentation is incomplete per Income Verification SOP \u00a72 (only bank_statement for a business applicant requiring ITR + financials), and KYC is pending per KYC SOP \u00a71.",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 99.0,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 LTV 87.54% far exceeds the 65%/55% LAP cap; no deviation provision exists",
+      "reasoning": "Hard policy breach: Retail Credit Policy \u00a73.2 caps LAP LTV at 65% (residential) / 55% (commercial). Application's 87.54% exceeds both with no override path. Secondary: income docs incomplete (ITR missing per SOP \u00a72), ITR (~\u20b929.69L) does not corroborate declared annual (~\u20b933.72L), and KYC is pending.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-009749",
+    "arm": "control",
+    "product": "home",
+    "channel": "branch",
+    "with_memory": {
+      "http": 200,
+      "secs": 137.6,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 escalate for Credit Head bureau approval, document rectification, and income verification",
+      "reasoning": "Bureau score 617 triggers the \u00a74 'below 650' secured-loan exception requiring Credit Head approval. Income proof is the wrong document set: applicant is salaried but submitted only ITR \u2014 SOP \u00a72 mandates payslips, bank statements, and Form 16 for salaried applicants. ITR-declared \u20b98.9L does not corroborate annualised declared income of \u20b99.84L (~9.5% gap), which per officer corrections requires referral for income verification. Overdue \u20b91.10L at other lenders flagged per \u00a74. FOIR (29.52%) and LTV (71.14%) are within policy.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 91.8,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 escalate for Credit Head approval; bureau below 650 + income documentation incomplete + ITR does not corroborate declared income",
+      "reasoning": "Bureau score 617 triggers mandatory Credit Head review per Retail Credit Policy \u00a74 (below-650 band). Additionally, salaried applicant submitted ITR instead of mandatory payslip+statement+Form16 set (Income Verification SOP \u00a72), and ITR income (\u20b98.90L) does not corroborate declared annual income (\u20b99.84L). Overdue \u20b91,09,900 at other lenders requires clearance before disbursement.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-010220",
+    "arm": "control",
+    "product": "auto",
+    "channel": "digital",
+    "with_memory": {
+      "http": 200,
+      "secs": 101.2,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 refer for income verification; ITR does not corroborate declared income",
+      "reasoning": "ITR-declared income (\u20b97,32,000) falls ~9% short of declared monthly income annualised (\u20b98,04,000). SOP \u00a77 requires the documented figure to govern eligibility, and all 7 officer corrections on this app consistently refer such ITR-declared-vs-declared mismatches for verification rather than approving or rejecting outright. Additionally, income_proof_type 'payslip' alone does not confirm the full SOP \u00a72 mandatory salaried set (3 payslips + 6 months' bank statements + Form 16) is on file. All other policy gates \u2014 FOIR (14.97% vs 55% cap), LTV (59.92% vs 85%), bureau score (717, no write-offs/overdues), and income floor (\u20b967k vs \u20b920k) \u2014 are satisfied.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 96.5,
+      "injected": [],
+      "cited": [],
+      "decision": "Approved \u2014 clears all policy gates; minor ITR gap noted",
+      "reasoning": "FOIR 14.97% under 55% cap (\u00a73.1). LTV 59.92% under 85% (\u00a73.2). Bureau 717 with no adverse flags (\u00a74). Income \u20b967,000 exceeds auto floor (\u00a72.2). 9% ITR gap is routine for salaried employees. No hard breach.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-006298",
+    "arm": "control",
+    "product": "personal",
+    "channel": "digital",
+    "with_memory": {
+      "http": 401,
+      "secs": 2.0,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-011643",
+    "arm": "control",
+    "product": "personal",
+    "channel": "branch",
+    "with_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 401,
+      "secs": 2.0,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  }
+]

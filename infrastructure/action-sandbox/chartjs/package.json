@@ -1,0 +1,11 @@
+{
+  "name": "citra-chartjs-renderer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Baked-in Chart.js -> PNG renderer for the Citra agent sandbox. render.js reads a Chart.js config JSON on stdin and writes a PNG on stdout; citra_toolkit.report.make_chartjs_png() shells out to it.",
+  "main": "render.js",
+  "dependencies": {
+    "chart.js": "4.4.7",
+    "canvas": "^3.1.0"
+  }
+}

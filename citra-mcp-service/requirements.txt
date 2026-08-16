@@ -1,0 +1,9 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+httpx==0.27.2
+pydantic==2.9.2
+python-dotenv==1.2.2
+pyjwt==2.13.0
+colorama==0.4.6; sys_platform == "win32"
+# Error tracking → GlitchTip (Sentry-compatible). No-op unless SENTRY_DSN is set.
+sentry-sdk[fastapi]>=2.14.0

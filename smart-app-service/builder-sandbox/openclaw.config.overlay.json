@@ -1,0 +1,22 @@
+{
+  "agents": {
+    "defaults": {
+      "memorySearch": { "enabled": false },
+      "bootstrapMaxChars": 120000,
+      "bootstrapTotalMaxChars": 400000
+    },
+    "list": [
+      {
+        "id": "main",
+        "subagents": { "allowAgents": ["runtime-verifier"] }
+      },
+      {
+        "id": "runtime-verifier",
+        "name": "Runtime Verifier",
+        "workspace": "/workspace/.openclaw/agents/runtime-verifier",
+        "agentDir": "/workspace/.openclaw/agents/runtime-verifier",
+        "subagents": { "allowAgents": [] }
+      }
+    ]
+  }
+}

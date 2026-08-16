@@ -1,0 +1,67 @@
+# docker-compose.yml for smart-app-service (port 9100)
+# AppSpec/AgentSpec orchestration + build-pod manager.
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/smart-app-service:${IMAGE_TAG}
+# Config from Vault (no .env in prod).
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/smart-app-service:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  ports:
+    - 9100
+  volumes:
+    - ~/citra-ai/logs/smart-app-service:/app/logs
+  networks:
+    - citra-ai-net
+    - citra-action-approved-egress
+  # action-sandbox-host runs with network_mode=host on :7090; this lets the
+  # container reach it via the docker bridge gateway on Linux.
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+  healthcheck:
+    # python:slim has no curl — use urllib one-liner (always shipped with python)
+    test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:9100/health',timeout=3).status==200 else 1)\""]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+
+services:
+  smart-app-service-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: smart-app-service-prod
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_ROLE_ID: "51094af1-2a33-f00c-ced3-051dfb269deb"
+      VAULT_SECRET_PATH: "prod/smart-app-service"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://citra-tempo:4318/v1/traces"
+      OTEL_EXCLUDED_URLS: "/health,/metrics"
+
+  smart-app-service-test:
+    <<: *common
+    profiles: [test]
+    container_name: smart-app-service-test
+    environment:
+      TZ: "America/New_York"
+      ENVIRONMENT: "test"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: "test/smart-app-service"
+
+networks:
+  citra-ai-net:
+    external: true
+    name: citra-ai-net
+  citra-action-approved-egress:
+    external: true
+    name: citra-action-approved-egress
+

@@ -1,0 +1,143 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# GlitchTip — open-source, Sentry-SDK-compatible exception tracker
+# =============================================================================
+# Purpose
+#   Groups and de-duplicates exceptions from every Citra service (backend +
+#   UI) and emails on new / regressed issues.
+#
+#   This is COMPLEMENTARY to Loki / Alertmanager:
+#     • Loki            → raw structured logs (everything)
+#     • Alertmanager    → metric-derived SLO alerts (circuit open, queue full…)
+#     • GlitchTip       → exception grouping, UI errors, first-seen emails
+#
+# Services
+#   glitchtip-postgres  — metadata + event store
+#   glitchtip-redis     — task broker
+#   glitchtip-web       — UI + ingest API  (port 8800 on the host)
+#   glitchtip-worker    — Celery worker processing ingested events
+#   glitchtip-migrate   — one-shot migrations job (runs on each `up`)
+#
+# Env required (compose .env in infrastructure/compose/):
+#   GLITCHTIP_SECRET_KEY=<random 50-char>
+#   GLITCHTIP_DB_PASSWORD=<strong>
+#   GLITCHTIP_DEFAULT_FROM_EMAIL=alerts@citra.ai
+#   GLITCHTIP_EMAIL_URL=submission+smtps://user:pass@smtp.example:465
+#   GLITCHTIP_DOMAIN=https://errors.citra.internal      # used in email links
+#
+# After first boot
+#   1. Visit http://<host>:8800 and create the superuser account shown in the
+#      glitchtip-migrate logs.
+#   2. Create one organisation (e.g. "Citra"), then one project per service
+#      (citra-service, dept-mcp, citra-ui, user-service, inference-service…).
+#   3. Copy each project's DSN into the corresponding service env (SENTRY_DSN).
+# =============================================================================
+
+x-json-logging: &json-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+x-glitchtip-base-env: &glitchtip-base-env
+  SECRET_KEY: ${GLITCHTIP_SECRET_KEY:?set in .env}
+  DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD:?}@glitchtip-postgres:5432/glitchtip
+  REDIS_URL: redis://glitchtip-redis:6379/0
+  PORT: "8080"
+  EMAIL_URL: ${GLITCHTIP_EMAIL_URL:-}
+  DEFAULT_FROM_EMAIL: ${GLITCHTIP_DEFAULT_FROM_EMAIL:-alerts@citra.ai}
+  GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-http://localhost:8800}
+  # Retention in days (events are deleted after). Raise if you need audit depth.
+  GLITCHTIP_MAX_EVENT_LIFE_DAYS: "7"
+  CELERY_WORKER_AUTOSCALE: "1,3"
+
+services:
+  glitchtip-postgres:
+    image: postgres:15-alpine
+    container_name: glitchtip-postgres
+    restart: unless-stopped
+    logging: *json-logging
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD:?set in .env}
+      POSTGRES_DB: glitchtip
+    volumes:
+      - glitchtip_postgres_data:/var/lib/postgresql/data
+    networks: [citra-network]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  glitchtip-redis:
+    image: redis:7-alpine
+    container_name: glitchtip-redis
+    restart: unless-stopped
+    logging: *json-logging
+    networks: [citra-network]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  # One-shot migrations. Keeps upgrades safe; will re-run on every `up`.
+  glitchtip-migrate:
+    image: glitchtip/glitchtip:v4.1
+    container_name: glitchtip-migrate
+    depends_on:
+      glitchtip-postgres: {condition: service_healthy}
+    environment: *glitchtip-base-env
+    command: ./bin/run-migrate.sh
+    networks: [citra-network]
+    restart: "no"
+    logging: *json-logging
+
+  glitchtip-web:
+    image: glitchtip/glitchtip:v4.1
+    container_name: glitchtip-web
+    restart: unless-stopped
+    logging: *json-logging
+    depends_on:
+      glitchtip-postgres: {condition: service_healthy}
+      glitchtip-redis:    {condition: service_healthy}
+      glitchtip-migrate:  {condition: service_completed_successfully}
+    environment: *glitchtip-base-env
+    ports:
+      - "${GLITCHTIP_PORT:-8800}:8080"
+    networks: [citra-network]
+    healthcheck:
+      # glitchtip image has no curl — use python (always present in this Django image)
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/api/0/',timeout=5).status<500 else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:v4.1
+    container_name: glitchtip-worker
+    restart: unless-stopped
+    logging: *json-logging
+    depends_on:
+      glitchtip-postgres: {condition: service_healthy}
+      glitchtip-redis:    {condition: service_healthy}
+      glitchtip-migrate:  {condition: service_completed_successfully}
+    environment: *glitchtip-base-env
+    command: ./bin/run-celery-with-beat.sh
+    networks: [citra-network]
+
+volumes:
+  glitchtip_postgres_data:
+
+networks:
+  citra-network:
+    external: true

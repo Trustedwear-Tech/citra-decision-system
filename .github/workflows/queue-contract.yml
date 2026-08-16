@@ -1,0 +1,76 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Queue Contract — protects the SHARED citra_queue from a change in one consumer
+# (e.g. a workflow requirement) silently breaking another (e.g. smart-app
+# triggers). Runs automatically on any PR that touches the queue library or a
+# consumer of it. The real protection is the citra-queue real-Redis contract
+# test: smart-app's own tests MOCK the queue, so only exercising the actual
+# public API catches a contract/mechanics break.
+# =============================================================================
+name: Queue Contract
+
+on:
+  pull_request:
+    paths:
+      - 'citra-common/citra-queue/**'
+      - 'smart-app-service/trigger_queue.py'
+      - 'smart-app-service/tests/test_trigger_queue.py'
+      - 'smart-app-service/tests/test_trigger_retry_dlq.py'
+      - 'Citra-Worker/worker.py'
+      - '.github/workflows/queue-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  # The authoritative gate: the queue library's own unit tests PLUS a real-Redis
+  # exercise of the full public-API contract (round-trip, retry-backoff, DLQ).
+  citra-queue-contract:
+    name: citra-queue contract (lib + real-Redis)
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 3s --health-retries 5
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: '6379'
+      # Tiny backoff so the integration test's promote path is exercised fast.
+      CITRA_WORKER_RETRY_BACKOFF_BASE: '0.1'
+      CITRA_WORKER_RETRY_BACKOFF_JITTER: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install citra-queue + test deps
+        run: pip install -e ./citra-common/citra-queue pytest pytest-asyncio redis
+      - name: Run contract + integration tests
+        run: pytest citra-common/citra-queue/tests/ -q
+
+  # Secondary gate: the smart-app trigger consumer's own dispatch + retry/DLQ
+  # logic (mocked queue). Catches a regression in how smart-app USES the queue.
+  smartapp-consumer:
+    name: smart-app trigger consumer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install smart-app-service deps
+        working-directory: smart-app-service          # so `-e ../citra-*` resolve
+        run: pip install -r requirements.txt pytest pytest-asyncio
+      - name: Run trigger consumer tests
+        working-directory: smart-app-service
+        run: pytest tests/test_trigger_queue.py tests/test_trigger_retry_dlq.py -q

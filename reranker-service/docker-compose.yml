@@ -1,0 +1,82 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+services:
+  reranker-service:
+    image: ghcr.io/trustedwear-tech/citra-ai/reranker-service:${IMAGE_TAG:-prod-latest}
+    container_name: reranker-service
+    ports:
+      - "7302:7302"
+    # .vault_secret is a host-only one-line bootstrap credential (mode 600,
+    # root). Contains only VAULT_SECRET_ID. All real secrets/observability
+    # config read from Vault at startup via citra_service_utils.load_from_vault().
+    env_file:
+      - .vault_secret
+    environment:
+      - PORT=7302
+      - HOST=0.0.0.0
+      - RERANKER_MODEL_GPU=BAAI/bge-reranker-v2-m3
+      - RERANKER_MODEL_CPU=cross-encoder/ms-marco-MiniLM-L-6-v2
+      # Two preloaded workers on CPU: --preload loads the model once in the
+      # gunicorn master and forks, so the weights are COW-shared and the
+      # second worker adds almost no RAM. Two workers keep /health and
+      # concurrent reranks responsive while one worker is busy scoring.
+      # NOTE: compose interpolates the command's ${GUNICORN_WORKERS:-2} from
+      # the HOST env/.env, not from this environment: block — keep both in sync.
+      - GUNICORN_WORKERS=2
+      - VAULT_ADDR=${VAULT_ADDR:-http://vault:8200}
+      - VAULT_ROLE_ID=093ea18f-a103-350b-d762-e5f425619348
+      - VAULT_SECRET_PATH=prod/reranker-service
+    restart: unless-stopped
+    networks:
+      - citra-network
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - /home/ubuntu/citra-ai/logs/reranker-service:/app/logs
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G
+        reservations:
+          cpus: "1"
+          memory: 2G
+    command:
+        - gunicorn
+        - main:app
+        - -k
+        - uvicorn.workers.UvicornWorker
+        - --preload
+        - -w
+        - ${GUNICORN_WORKERS:-2}
+        - -b
+        - 0.0.0.0:7302
+        - --timeout
+        - "60"
+        - --graceful-timeout
+        - "30"
+        - --access-logfile
+        - /app/logs/reranker-service.log
+        - --error-logfile
+        - /app/logs/reranker-service.log
+        - --capture-output
+        - --log-level
+        - info
+        - --access-logformat
+        - '{"time":"%(t)s","pid":"%(p)s","status":%(s)s,"method":"%(m)s","path":"%(U)s","latency":"%(L)s"}'
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network
+    driver: bridge

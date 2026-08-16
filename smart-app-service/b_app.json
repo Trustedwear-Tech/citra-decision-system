@@ -1,0 +1,200 @@
+{
+  "spec_version": "v0",
+  "slug": "theft-recovery-triage",
+  "title": "Theft Recovery Triage",
+  "kind": "app",
+  "agent_id": "theft_recovery_agent",
+  "description": "Queue of pending electricity-theft cases with AI-recommended next recovery actions. Officers review and approve each recommendation before it writes back to the source system. A morning trigger precomputes recommendations daily at 7 AM.",
+  "theme": {
+    "dark_mode": false
+  },
+  "data_sources": [
+    {
+      "id": "ds_theft_cases",
+      "type": "mcp",
+      "ref": "field_operations.theft_cases"
+    },
+    {
+      "id": "ds_pending",
+      "type": "workflow_staging",
+      "ref": "theft-recovery-triage",
+      "filters": {
+        "slug": "theft-recovery-triage",
+        "status": "pending_review",
+        "max_age_days": 30
+      }
+    },
+    {
+      "id": "ds_history",
+      "type": "workflow_staging",
+      "ref": "theft-recovery-triage",
+      "filters": {
+        "slug": "theft-recovery-triage",
+        "status": { "$in": ["applied", "rejected", "cancelled"] }
+      }
+    },
+    {
+      "id": "ds_policy",
+      "type": "rag",
+      "ref": "bsphcl_policy_library"
+    }
+  ],
+  "navigation": {
+    "style": "sidebar",
+    "default_page": "inbox",
+    "show_chat_globally": true
+  },
+  "pages": [
+    {
+      "id": "inbox",
+      "title": "Pending Cases",
+      "icon": "inbox",
+      "layout": "grid",
+      "panels": [
+        {
+          "id": "pending_cases",
+          "type": "queue",
+          "title": "Cases awaiting triage",
+          "data_source": "ds_theft_cases",
+          "columns": ["case_id", "consumer_id", "detection_date", "assessed_amount", "recovery_status", "fir_filed"],
+          "actions": [
+            {
+              "label": "Review",
+              "is_row_click": true,
+              "navigate": {
+                "page": "case_detail",
+                "params": { "id": "{row.case_id}" }
+              }
+            },
+            {
+              "label": "Triage",
+              "agent_action": "triage_case",
+              "args": { "case_id": "{row.case_id}" }
+            }
+          ]
+        },
+        {
+          "id": "recommendations",
+          "type": "queue",
+          "title": "AI recommendations to review",
+          "data_source": "ds_pending",
+          "columns": ["case_natural_key", "llm_recommendation_text", "status", "created_at"],
+          "actions": [
+            {
+              "label": "Review",
+              "is_row_click": true,
+              "navigate": {
+                "page": "recommendation_detail",
+                "params": { "id": "{row.workflow_execution_id}:{row.case_natural_key}" }
+              }
+            }
+          ]
+        },
+        {
+          "id": "recent_decisions",
+          "type": "queue",
+          "title": "Recent decisions",
+          "data_source": "ds_history",
+          "columns": ["case_natural_key", "status", "llm_recommendation_text", "updated_at"]
+        },
+        {
+          "id": "amount_chart",
+          "type": "chart",
+          "title": "Assessed amount by recovery status",
+          "chart_type": "bar",
+          "data_source": "ds_theft_cases",
+          "x": "recovery_status",
+          "y": "assessed_amount"
+        }
+      ]
+    },
+    {
+      "id": "case_detail",
+      "title": "Case Detail",
+      "hide_in_nav": true,
+      "layout": "stack",
+      "params": [{ "name": "id", "required": true }],
+      "panels": [
+        {
+          "id": "case_view",
+          "type": "detail",
+          "linked_to": "pending_cases",
+          "id_field": "case_id",
+          "sections": [
+            {
+              "type": "fields",
+              "title": "Case information",
+              "fields": ["case_id", "consumer_id", "detection_date", "assessed_amount", "recovery_status", "fir_filed", "fir_reference", "closed_date"]
+            },
+            {
+              "type": "markdown",
+              "title": "What to check",
+              "content": "Review the inspection finding, consumer billing history, and any tamper events before deciding. Check if the assessed amount warrants an FIR (threshold: ₹1,00,000) and whether arrears exceed ₹50,000."
+            },
+            {
+              "type": "agent_timeline",
+              "title": "AI decision history"
+            },
+            {
+              "type": "agent_chat",
+              "title": "Ask about this case",
+              "agent_role": "theft_recovery_agent"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recommendation_detail",
+      "title": "AI Recommendation",
+      "hide_in_nav": true,
+      "layout": "stack",
+      "params": [{ "name": "id", "required": true }],
+      "panels": [
+        {
+          "id": "rec_view",
+          "type": "detail",
+          "linked_to": "recommendations",
+          "id_field": "case_natural_key",
+          "sections": [
+            {
+              "type": "fields",
+              "title": "Recommendation"
+            },
+            {
+              "type": "markdown",
+              "title": "Review guidance",
+              "content": "The AI has recommended a recovery action. Review the reasoning and proposed write below. You may override the recommended status or FIR flag before approving. Click Approve to commit, or Reject/Cancel to discard."
+            },
+            {
+              "type": "approval",
+              "title": "Decide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "policy_library",
+      "title": "Policy & SOPs",
+      "icon": "book",
+      "layout": "stack",
+      "panels": [
+        {
+          "id": "policies",
+          "type": "document_view",
+          "title": "Theft inspection & recovery guidelines",
+          "data_source": "ds_policy"
+        }
+      ]
+    }
+  ],
+  "triggers": [
+    {
+      "id": "morning_triage",
+      "type": "schedule.cron",
+      "action": "triage_case",
+      "cron": "0 7 * * *"
+    }
+  ]
+}

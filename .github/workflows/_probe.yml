@@ -1,0 +1,30 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# TEMPORARY diagnostic. Deploys have failed with startup_failure (zero jobs)
+# since 26 Jul while deploy.yml itself is unchanged since the last successful
+# run. This probe uses NO external actions and no secrets, so:
+#   * it starts  -> runners/billing are fine; the blocker is an action
+#                   reference or an org allowlist on actions/*
+#   * it fails   -> nothing can run at all (billing / org policy), and no
+#                   workflow change can fix it from this side
+# Delete once the cause is known.
+name: _probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Can a job start at all?
+        run: echo "runner reached; no external actions used"

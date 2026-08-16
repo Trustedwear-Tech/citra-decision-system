@@ -1,0 +1,169 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+name: Build & Deploy Citra-Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: 'Target environment'
+        options:
+          - prod
+          - test
+        required: true
+        default: 'test'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push main service image
+        run: |
+          IMAGE=${{ env.IMAGE_PREFIX }}/citra-service
+
+          docker build \
+            --build-arg APP_ENV=${{ inputs.environment }} \
+            -t ${IMAGE}:${{ inputs.environment }}-${{ github.sha }} \
+            -t ${IMAGE}:${{ inputs.environment }}-latest \
+            .
+
+          docker push ${IMAGE}:${{ inputs.environment }}-${{ github.sha }}
+          docker push ${IMAGE}:${{ inputs.environment }}-latest
+
+      - name: Build & push credit-flush image
+        run: |
+          IMAGE=${{ env.IMAGE_PREFIX }}/credit-flush-service
+
+          docker build \
+            --build-arg APP_ENV=${{ inputs.environment }} \
+            -f credit-flush-service/Dockerfile \
+            -t ${IMAGE}:${{ inputs.environment }}-${{ github.sha }} \
+            -t ${IMAGE}:${{ inputs.environment }}-latest \
+            .
+
+          docker push ${IMAGE}:${{ inputs.environment }}-${{ github.sha }}
+          docker push ${IMAGE}:${{ inputs.environment }}-latest
+
+  deploy:
+    name: Deploy to Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          COMMIT_SHA: ${{ github.sha }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: IMAGE_PREFIX,ENVIRONMENT,COMMIT_SHA,GHCR_PAT
+          command_timeout: 15m
+          script: |
+            set -e
+
+            IMAGE_PREFIX="${IMAGE_PREFIX}"
+            ENV="${ENVIRONMENT}"
+            SHA="${COMMIT_SHA}"
+            SERVICE_DIR="$HOME/Citra-AI/Citra-Service"
+
+            echo "=== Deploying Citra-Service ($ENV) - $SHA ==="
+
+            # Login to GHCR
+            echo "${GHCR_PAT}" | docker login ghcr.io -u github --password-stdin
+
+            # Pull new images
+            echo "--- Pulling images ---"
+            docker pull ${IMAGE_PREFIX}/citra-service:${ENV}-latest
+            docker pull ${IMAGE_PREFIX}/credit-flush-service:${ENV}-latest
+
+            # Retag to local names that docker-compose expects
+            docker tag ${IMAGE_PREFIX}/citra-service:${ENV}-latest citra-ai:${ENV}
+            docker tag ${IMAGE_PREFIX}/credit-flush-service:${ENV}-latest credit-flush:${ENV}
+
+            cd ${SERVICE_DIR}
+
+            if [ "${ENV}" = "prod" ]; then
+              echo "--- Rolling deploy (prod, 2 replicas at a time) ---"
+
+              # Batch 1: replicas 1-2
+              echo "Restarting replicas 1-2..."
+              docker compose --profile prod up -d --no-build citra-ai-prod-1 citra-ai-prod-2
+              sleep 15
+              for c in citra-ai-prod-1 citra-ai-prod-2; do
+                echo "Health check: $c"
+                docker exec $c curl -fsS http://127.0.0.1:7001/health || echo "WARNING: $c health check failed"
+              done
+
+              # Batch 2: replicas 3-4
+              echo "Restarting replicas 3-4..."
+              docker compose --profile prod up -d --no-build citra-ai-prod-3 citra-ai-prod-4
+              sleep 15
+              for c in citra-ai-prod-3 citra-ai-prod-4; do
+                echo "Health check: $c"
+                docker exec $c curl -fsS http://127.0.0.1:7001/health || echo "WARNING: $c health check failed"
+              done
+
+              # Batch 3: replicas 5-6
+              echo "Restarting replicas 5-6..."
+              docker compose --profile prod up -d --no-build citra-ai-prod-5 citra-ai-prod-6
+              sleep 15
+              for c in citra-ai-prod-5 citra-ai-prod-6; do
+                echo "Health check: $c"
+                docker exec $c curl -fsS http://127.0.0.1:7001/health || echo "WARNING: $c health check failed"
+              done
+
+              # Batch 4: replicas 7-8
+              echo "Restarting replicas 7-8..."
+              docker compose --profile prod up -d --no-build citra-ai-prod-7 citra-ai-prod-8
+              sleep 15
+              for c in citra-ai-prod-7 citra-ai-prod-8; do
+                echo "Health check: $c"
+                docker exec $c curl -fsS http://127.0.0.1:7001/health || echo "WARNING: $c health check failed"
+              done
+
+              # Credit flush service
+              echo "Restarting credit-flush..."
+              docker compose --profile prod up -d --no-build citra-ai-prod-credit-flush
+
+              echo "=== Prod rolling deploy complete ==="
+            else
+              echo "--- Test deploy ---"
+              docker compose --profile test up -d --no-build
+              sleep 10
+              docker exec citra-ai-test-1 curl -fsS http://127.0.0.1:7001/health || echo "WARNING: test health check failed"
+              echo "=== Test deploy complete ==="
+            fi
+
+            # Cleanup dangling images
+            docker image prune -f
+
+            echo "=== Deploy finished ==="

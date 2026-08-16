@@ -1,0 +1,500 @@
+{
+  "_doc": "Acme Bank - Loan Application Triage. Exported from the dev database (the BUILDER produced this one; the other three are hand-authored). Slug kept as loan-application-triage because corrections and clauses are keyed by app_slug - renaming would orphan the seeded judgements and the A/B evidence behind them.",
+  "session_id": "demo_seed_acme_bank_loan_triage_v1",
+  "skills": [],
+  "app_spec": {
+    "slug": "loan-application-triage",
+    "title": "Loan Application Triage",
+    "description": "Review and decide on retail loan applications — credit policy checks, income verification, and bureau review for credit officers.",
+    "headless": false,
+    "item_review_gate": "hard",
+    "case_signature": {
+      "version": 1,
+      "facets": [
+        {
+          "family": "product",
+          "kind": "enum",
+          "dataset_id": null,
+          "from_column": "product",
+          "values": [
+            "auto",
+            "lap",
+            "home",
+            "business",
+            "personal"
+          ],
+          "value_map": null,
+          "edges": null,
+          "from_columns": null,
+          "signal_id": null
+        },
+        {
+          "family": "amount_band",
+          "kind": "band",
+          "dataset_id": null,
+          "from_column": "amount_requested",
+          "values": null,
+          "value_map": null,
+          "edges": [
+            500000.0,
+            1000000.0,
+            2500000.0
+          ],
+          "from_columns": null,
+          "signal_id": null
+        },
+        {
+          "family": "foir_band",
+          "kind": "band",
+          "dataset_id": null,
+          "from_column": "foir_percent",
+          "values": null,
+          "value_map": null,
+          "edges": [
+            30.0,
+            50.0,
+            70.0
+          ],
+          "from_columns": null,
+          "signal_id": null
+        },
+        {
+          "family": "income_proof",
+          "kind": "presence",
+          "dataset_id": null,
+          "from_column": "income_proof_type",
+          "values": null,
+          "value_map": null,
+          "edges": null,
+          "from_columns": null,
+          "signal_id": null
+        },
+        {
+          "family": "sourcing_channel",
+          "kind": "enum",
+          "dataset_id": null,
+          "from_column": "sourcing_channel",
+          "values": [
+            "digital",
+            "dsa",
+            "bancassurance",
+            "branch"
+          ],
+          "value_map": null,
+          "edges": null,
+          "from_columns": null,
+          "signal_id": null
+        }
+      ],
+      "reason_codes": [
+        {
+          "code": "income_not_corroborated",
+          "label": "Income not corroborated",
+          "hint": null,
+          "aliases": []
+        },
+        {
+          "code": "bureau_adverse",
+          "label": "Bureau history adverse",
+          "hint": null,
+          "aliases": []
+        },
+        {
+          "code": "document_missing",
+          "label": "Document missing or incomplete",
+          "hint": null,
+          "aliases": []
+        },
+        {
+          "code": "policy_exclusion",
+          "label": "Policy exclusion applies",
+          "hint": null,
+          "aliases": []
+        },
+        {
+          "code": "amount_incorrect",
+          "label": "Amount incorrect",
+          "hint": null,
+          "aliases": []
+        },
+        {
+          "code": "data_stale_or_wrong",
+          "label": "Source data stale or wrong",
+          "hint": null,
+          "aliases": []
+        },
+        {
+          "code": "policy_misread",
+          "label": "Policy misapplied",
+          "hint": "The rule the agent cited does not apply, or it read the threshold wrong.",
+          "aliases": []
+        },
+        {
+          "code": "deviation_applies",
+          "label": "Deviation path applies",
+          "hint": "Policy allows this with an approved deviation the agent did not consider.",
+          "aliases": []
+        },
+        {
+          "code": "context_not_visible",
+          "label": "Context the agent could not see",
+          "hint": "Verified offline, or existing relationship history not in the source data.",
+          "aliases": []
+        },
+        {
+          "code": "other",
+          "label": "Something else",
+          "hint": null,
+          "aliases": []
+        }
+      ],
+      "learning": {
+        "promotion_min_officers": 3,
+        "clause_budget_words": 1000
+      }
+    },
+    "owner_type": "service_account",
+    "owner_id": "svc:work-rohit-trustedweartech-com@acme-bank.citra.ai",
+    "tenant_id": "acme-bank",
+    "org_id": "acme-bank",
+    "dept_ids": [],
+    "audience": "dept:lending",
+    "inheritance_policy": "archive",
+    "inheritance_target": null,
+    "inheritance_grace_days": 30,
+    "kind": "app",
+    "agent_id": "loan_triage_agent",
+    "theme": {
+      "primary": "#0F766E",
+      "accent": null,
+      "logo_url": null,
+      "dark_mode": false,
+      "locale": null,
+      "currency": null,
+      "company_name": "Acme Bank",
+      "font": null,
+      "radius": null,
+      "density": null,
+      "surface": null,
+      "mode": null,
+      "chart_palette": null
+    },
+    "data_sources": [
+      {
+        "id": "ds_applications",
+        "type": "mcp",
+        "ref": "loan_origination.loan_applications",
+        "doc_types": [],
+        "filters": {
+          "status": {
+            "$in": [
+              "new",
+              "under_review"
+            ]
+          }
+        },
+        "mode": "merge"
+      },
+      {
+        "id": "ds_open_applications",
+        "type": "mcp",
+        "ref": "loan_origination.loan_applications",
+        "doc_types": [],
+        "filters": {
+          "status": [
+            "new",
+            "under_review"
+          ]
+        },
+        "mode": "merge"
+      }
+    ],
+    "dataset_directory": [],
+    "panels": [],
+    "pages": [
+      {
+        "id": "loan_triage",
+        "path": null,
+        "title": "Loan Triage",
+        "icon": "clipboard-list",
+        "hide_in_nav": false,
+        "permissions": [],
+        "kind": "standard",
+        "layout": "grid",
+        "panels": [
+          {
+            "id": "triage_chart",
+            "title": "Applications by Product",
+            "icon": null,
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_applications",
+            "query": {},
+            "x": "product",
+            "y": "application_id",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "count"
+          },
+          {
+            "id": "app_queue",
+            "title": "Applications",
+            "icon": null,
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_open_applications",
+            "query": {},
+            "columns": [
+              "application_id",
+              "product",
+              "amount_requested",
+              "foir_percent",
+              "itr_declared_income",
+              "income_proof_type",
+              "sourcing_channel",
+              "applied_at",
+              "status"
+            ],
+            "actions": [
+              {
+                "label": "Review",
+                "icon": null,
+                "agent_action": "review_application",
+                "navigate": null,
+                "args": {},
+                "is_row_click": false
+              }
+            ],
+            "view": "split",
+            "page_size": null,
+            "searchable_columns": [],
+            "filters": [],
+            "badge_column": "status",
+            "badge_colors": {
+              "new": "blue",
+              "under_review": "amber",
+              "approved": "green",
+              "rejected": "red",
+              "disbursed": "green"
+            },
+            "secondary_columns": [
+              "applied_at"
+            ],
+            "column_formats": {
+              "amount_requested": "currency",
+              "itr_declared_income": "currency",
+              "foir_percent": "progress",
+              "status": "status_pill",
+              "applied_at": "relative_time"
+            },
+            "title_column": null,
+            "default_sort": {
+              "column": "applied_at",
+              "dir": "asc"
+            },
+            "group_by": null
+          },
+          {
+            "id": "app_detail",
+            "title": "Application Details",
+            "icon": null,
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "detail",
+            "linked_to": "app_queue",
+            "id_field": null,
+            "layout": "profile",
+            "header_fields": [
+              "application_id",
+              "product",
+              "amount_requested",
+              "foir_percent"
+            ],
+            "status_field": "status",
+            "status_colors": {
+              "new": "blue",
+              "under_review": "amber",
+              "approved": "green",
+              "rejected": "red",
+              "disbursed": "green"
+            },
+            "sections": [
+              {
+                "type": "fields",
+                "title": "Application",
+                "icon": null,
+                "agent_role": null,
+                "data_source": null,
+                "fields": [
+                  "application_id",
+                  "customer_id",
+                  "product",
+                  "amount_requested",
+                  "tenure_months",
+                  "roi_offered",
+                  "applied_at",
+                  "branch_code",
+                  "sourcing_channel",
+                  "income_proof_type",
+                  "itr_declared_income",
+                  "ltv_percent",
+                  "foir_percent",
+                  "status",
+                  "decision_reason",
+                  "decided_by",
+                  "decided_at"
+                ],
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "agent_timeline",
+                "title": "Review History",
+                "icon": null,
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "comments",
+                "title": "Officer Notes",
+                "icon": null,
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              }
+            ]
+          }
+        ],
+        "params": []
+      }
+    ],
+    "navigation": {
+      "style": "sidebar",
+      "default_page": "loan_triage",
+      "show_chat_globally": false
+    },
+    "permissions": {},
+    "triggers": [],
+    "design_dossier": null,
+    "custom_modules": []
+  },
+  "agent_spec": {
+    "agent_id": "loan_triage_agent",
+    "name": "Loan Application Triage",
+    "description": null,
+    "model_tier": "large",
+    "system_prompt": "You are a credit officer's assistant for Acme Bank's retail lending. Your job: review a loan application against the bank's credit policy and income verification SOP, then recommend a credit decision with reasoning.\n\nCRITICAL: You may call each tool at most ONCE per review. After a tool returns, do NOT call it again — the result is final. Re-querying the same source is the #1 error and wastes time.\n\nTHE RECORD: The selected application's fields arrive in your Inputs — treat them as authoritative case data. Do NOT re-read the application; you already have it.\n\nPROCESS — exactly 3 tool calls, then decide:\nCALL 1: lookup_customer (by customer_id from Inputs, using filters).\nCALL 2: lookup_bureau (by application_id from Inputs, using filters).\nCALL 3: search_policy_library (FOIR cap for the product + income verification SOP).\nTHEN STOP CALLING TOOLS. You now have the customer record, bureau pull, and policy guidance. Weigh the evidence:\n- FOIR against the policy cap\n- Bureau score and history (writeoff_flag, overdue_amount, active_loans)\n- Income corroboration (declared monthly_income × 12 vs itr_declared_income)\n- Documentation (income_proof_type present?)\n\nDECIDE:\n- approved — clears all policy checks and income is corroborated.\n- rejected — hard policy breach (FOIR over cap, adverse bureau with writeoff, income mismatch > 20%).\n- under_review — borderline case or needs a senior credit officer / credit committee review. State why in decision_reason.\n\nCall record_credit_decision ONCE to persist.\n\nRULES:\n- Never re-query any source. If you already called lookup_customer, do NOT call it again.\n- The policy library may be unreachable — flag this and base your decision on the data you have.\n- Never recommend approval outside policy caps — explain which cap is breached.\n- The FOIR cap varies by product — check the policy for the specific product.\n- An ITR-declared income materially below declared monthly_income×12 is a red flag — flag it.\n- Your reasoning will be audited — cite the specific policy clause or SOP section that governs each decision.",
+    "input_schema": null,
+    "tools": [],
+    "tools_v2": [
+      {
+        "name": "lookup_customer",
+        "description": "Look up the applicant by customer_id — returns declared monthly_income, occupation, existing_emi, cibil_score, kyc_status.",
+        "kind": "mcp",
+        "source_id": "loan_origination",
+        "tool_name": "Lending — Origination & Underwriting",
+        "input_schema_ref": null,
+        "dataset_id": "loan_origination.customers",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_bureau",
+        "description": "Look up the bureau pull by application_id — returns bureau, score, enquiries_6m, active_loans, overdue_amount, writeoff_flag.",
+        "kind": "mcp",
+        "source_id": "loan_origination",
+        "tool_name": "Lending — Origination & Underwriting",
+        "input_schema_ref": null,
+        "dataset_id": "loan_origination.bureau_pulls",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "search_policy_library",
+        "description": "Search Acme Bank's credit policy, income verification SOP, and underwriting guidelines for FOIR caps and document requirements.",
+        "kind": "rag",
+        "source_id": "acme_bank_policy_library",
+        "top_k": 8,
+        "classification_max": null
+      },
+      {
+        "name": "record_credit_decision",
+        "description": "Persist the credit decision on the loan application — sets status, decision_reason, decided_by, and decided_at.",
+        "kind": "mcp_action",
+        "source_id": "loan_origination",
+        "dataset_id": "loan_origination.loan_applications",
+        "action_id": "record_credit_decision",
+        "input_schema": {
+          "type": "object",
+          "required": [
+            "application_id",
+            "status"
+          ],
+          "properties": {
+            "application_id": {
+              "type": "string",
+              "description": "Target application."
+            },
+            "status": {
+              "type": "string",
+              "description": "approved | rejected | under_review."
+            },
+            "decision_reason": {
+              "type": "string",
+              "description": "Why — shown to the customer and the auditor."
+            },
+            "decided_by": {
+              "type": "string",
+              "description": "Deciding officer."
+            },
+            "decided_at": {
+              "type": "string",
+              "description": "ISO timestamp of the decision."
+            }
+          }
+        },
+        "editable_fields": []
+      }
+    ],
+    "mcps": [],
+    "rag": [],
+    "memory_namespace": null,
+    "sub_agents": [],
+    "actions": [
+      {
+        "name": "review_application",
+        "description": "Review a loan application against credit policy and income verification SOP, then recommend a credit decision.",
+        "model_tier": "large",
+        "delegates_to": [],
+        "approval_required": false,
+        "input_schema": null,
+        "output_schema": null,
+        "editable_fields": [],
+        "on_approve": [],
+        "on_reject": [],
+        "failure_policy": null,
+        "data_bindings": null,
+        "anchor_read": null
+      }
+    ],
+    "hitl_policy": null,
+    "grounding": null,
+    "outcome_poll": null
+  }
+}

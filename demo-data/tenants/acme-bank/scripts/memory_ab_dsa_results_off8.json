@@ -1,0 +1,370 @@
+[
+  {
+    "application_id": "LAN-2026-004717",
+    "arm": "treatment",
+    "product": "home",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 92.7,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Under Review \u2014 escalate to Credit Manager for income verification, document set correction, and FOIR deviation approval",
+      "reasoning": "FOIR at 63.38% breaches the 55% cap for the \u20b950K\u20131.5L income band (Policy \u00a73.1). ITR-declared income (\u20b93.45L) is only ~36% of declared annual income (\u20b99.6L) \u2014 a material mismatch that the officer-corrections record consistently treats as requiring referral for income verification. Additionally, the applicant is salaried but submitted ITR instead of the mandatory payslips + bank statements + Form 16 (SOP \u00a72), meaning the income figure used for eligibility is not computed from the correct document set (SOP \u00a77). DSA sourcing triggers C-002 employer verification.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 85.8,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 refer to Credit Manager for FOIR deviation and income verification",
+      "reasoning": "Two independent triggers: (1) FOIR 63.38% breaches the 55% cap for \u20b950,001\u2013\u20b91,50,000 income band (Policy \u00a73.1 \u2014 requires Credit Manager approval, not auto-decline since score \u2265700). (2) Income documentation is deficient: salaried applicant submitted ITR instead of the mandatory payslip+Form16+salary-statement set (SOP \u00a72). The filed ITR declares \u20b93.45L vs \u20b99.6L declared \u2014 a 64% gap that fails income corroboration (SOP \u00a77) and would place the applicant below the \u20b930K/mo home-loan floor (\u00a72.2). Seven recent officer corrections consistently refer such non-corroboration cases for verification.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-011465",
+    "arm": "treatment",
+    "product": "home",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 87.6,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR 95% exceeds the 55% cap by a margin that no reasonable deviation can justify",
+      "reasoning": "Retail Credit Policy \u00a73.1 caps FOIR at 55% for the \u20b950,001\u2013\u20b91,50,000 income band. The application reports 95% \u2014 existing EMI \u20b912,900 plus proposed EMI would consume nearly the entire \u20b950,500 monthly income. This is a hard policy breach with no plausible path to a deviation. Additionally, \u00a74 triggers the credit-hunger indicator at 9 enquiries in 6 months (threshold: 6), with no written explanation on file.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 83.2,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 FOIR 95% requires Credit Manager deviation approval",
+      "reasoning": "FOIR at 95% is 40pp above the 55% cap for the \u20b950,001\u2013\u20b91,50,000 income slab (Retail Credit Policy \u00a73.1). Bureau score 731 means this is not an auto-decline, but the magnitude of deviation plus 9 bureau enquiries (triggering the credit-hunger disclosure requirement under \u00a74) makes officer-level sanction inappropriate. Income is corroborated (ITR \u20b96.09L vs declared \u20b96.06L), LTV is healthy at 55.82%, and bureau is otherwise clean.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-007407",
+    "arm": "treatment",
+    "product": "lap",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 52.3,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 LTV 78.09% breaches LAP cap of 65% (residential) / 55% (commercial)",
+      "reasoning": "The LTV of 78.09% exceeds both LAP caps in \u00a73.2 of the Retail Credit Policy. This is a non-delegable hard decline \u2014 no Credit Manager override or deviation path exists for LTV breaches. Even absent the LTV issue, the bureau score (676) requires Credit Manager review under \u00a74, the document set is deficient (ITR alone for a salaried applicant instead of payslips + bank statement + Form 16 per SOP \u00a72), and DSA sourcing triggers mandatory employer verification under C-002.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 89.2,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 escalate to Credit Manager for LTV cap breach, bureau score band, and incomplete income documentation",
+      "reasoning": "Three independent escalation triggers: (1) LTV 78.09% exceeds both LAP caps of 65% (residential) and 55% (commercial) per Retail Credit Policy \u00a73.2 with no deviation provision; (2) bureau score 676 falls in the 650\u2013699 Credit Manager review band per Policy \u00a74, with an overdue \u20b93,700 that must clear before disbursement; (3) a salaried applicant submitted ITR instead of the mandatory payslips + bank statement + Form 16 set required by Income Verification SOP \u00a72 \u2014 incomplete document set per SOP \u00a78.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-003761",
+    "arm": "treatment",
+    "product": "home",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 80.3,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Under Review \u2014 correct the income-proof documentation gap before sanction",
+      "reasoning": "Credit fundamentals are strong (FOIR 33.01%, bureau 819, LTV 63.28%, ITR corroborates declared income within ~1%), but the income_proof_type is 'payslip' for a self-employed applicant, which does not satisfy Income Verification SOP \u00a72 mandatory document set. DSA sourcing also triggers C-002 business-continuity verification. Recommend officer reconcile documentation before approving.",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 101.1,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 document set mismatch (self-employed with payslips); refer to Credit Manager",
+      "reasoning": "All policy caps pass \u2014 FOIR 33.01% (cap 55%), LTV 63.28% (cap 80%), bureau 819 with no adverse, income above self-employed floor. But SOP \u00a72 mandates ITR + bank statements for self-employed applicants; the file has payslips. ITR income (\u20b912.30L) virtually corroborates declared (\u20b912.42L), so no misrepresentation \u2014 purely a documentation gap. Per all 7 officer correction precedents, this pattern routes to under_review for verification, not rejection.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-004907",
+    "arm": "treatment",
+    "product": "auto",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 102.3,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Recommended: Approved \u2014 all policy checks pass; ITR corroborates declared income within tolerance",
+      "reasoning": "FOIR 47.64% within 55% cap for \u20b950K\u2013\u20b91.5L bracket. Bureau score 755, no write-offs or overdue. ITR-declared \u20b910.4L corroborates payslip-annualised \u20b910.86L within \u00b15% per SOP \u00a73.4. Income above auto floor. LTV 65.66% within auto cap. DSA-sourced \u2014 officer may apply C-002 employer verification at discretion, but it is a judgement, not a blocking rule.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 95.2,
+      "injected": [],
+      "cited": [],
+      "decision": "Approved \u2014 all policy checks pass; FOIR 47.64% within 55% cap, CIBIL 755 clean bureau, LTV within limit, income corroborated for salaried applicant",
+      "reasoning": "Every hard check clears: FOIR 47.64% under the 55% cap for the \u20b950k\u2013\u20b91.5L band (Policy \u00a73.1); CIBIL 755 with no writeoff, zero overdue, and enquiries at the threshold (6, not over \u2014 Policy \u00a74); LTV 65.66% under auto caps (Policy \u00a73.2); KYC verified. The ~4.2% gap between ITR (\u20b910.40L) and annualised declared (\u20b910.86L) is immaterial for a salaried applicant whose primary income verification is payslips + bank statements (Income Verification SOP \u00a72), and is consistent with normal salary deductions \u2014 it does not trigger the 'ITR does not corroborate' concern from officer corrections, which involved far larger gaps.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-011110",
+    "arm": "treatment",
+    "product": "home",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 245.3,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 FOIR 95% exceeds 55% cap with bureau 621 (<700); mandatory decline",
+      "reasoning": "FOIR 95.0% vs 55% cap plus bureau score 621 triggers the hard decline rule in \u00a73.1. Independent of this, bureau <650 and \u20b9154,200 overdue at other lenders are additional adverse flags. Income corroboration (ITR \u20b99.03L vs declared \u20b98.76L) passes, but the FOIR breach is dispositive.",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 285.4,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR above cap with bureau score under 700 triggers mandatory decline",
+      "reasoning": "FOIR at 95.0% against the 55% cap for the \u20b950,001\u2013\u20b91,50,000 income band, combined with a bureau score of 621 (well under 700), triggers the mandatory decline rule in Retail Credit Policy \u00a73.1: 'Above cap plus a bureau score under 700 is a decline, not a deviation.' No discretion exists. Additionally, the bureau score of 621 independently falls in the 'Below 650 \u2014 Decline unless fully secured and approved by Credit Head' band (\u00a74), and the \u20b91,54,200 overdue at other lenders is adverse. Income corroboration (ITR \u20b99.03L vs declared \u20b98.76L, ~3.1% variance), income floor, LTV, and KYC all pass, but these do not override the FOIR+bureau hard decline.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-002526",
+    "arm": "treatment",
+    "product": "auto",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 67.4,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 NRI applicant outside retail credit policy scope; route to NRI desk",
+      "reasoning": "Per Retail Credit Policy \u00a72.1, NRI applications are outside this policy and must route to the NRI desk. The customer segment is 'nri', making this application ineligible for processing under the retail credit framework. Secondary flags include 7 bureau enquiries in 6 months (requires written explanation per \u00a74) and DSA sourcing that triggers C-002 employer verification requirements, but the NRI classification is the dispositive policy breach.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 78.8,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 re-route to NRI desk; application outside standard retail credit policy per \u00a72.1",
+      "reasoning": "Customer segment is NRI. Retail Credit Policy \u00a72.1 explicitly excludes NRI applications and routes them to the NRI desk. This file was processed through DSA in error. Additionally, 7 bureau enquiries in 6 months exceeds the \u00a74 threshold requiring written explanation. All other parameters (FOIR 48.92% within 55% cap, score 779, no adverse bureau, LTV 76.37% within 85%, income corroborated within ~3%) are satisfactory but cannot be actioned under this policy until the NRI routing issue is resolved.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-011091",
+    "arm": "treatment",
+    "product": "auto",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 85.9,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR above cap",
+      "reasoning": "FOIR of 95.0% breaches the 45% maximum for net monthly income up to \u20b950,000 (Retail Credit Policy \u00a73.1). Existing EMI \u20b97,500 already consumes 27.3% of \u20b927,500; the proposed EMI would leave only \u20b91,375 disposable \u2014 the loan is unaffordable. Bureau score 727 does not trigger the automatic decline clause (that requires both score <700 and FOIR above cap), but a 50pp deviation is not a marginal exception.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 81.6,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 escalate to Credit Manager for FOIR deviation approval",
+      "reasoning": "FOIR at 95.00% far exceeds the 45% cap for the \u20b927,500/month income band (Retail Credit Policy \u00a73.1). Bureau score of 727 clears the 700 threshold, so this is not an automatic decline; the policy routes it to Credit Manager for written deviation justification. All other checks pass: income floor, LTV, bureau, KYC, and income corroboration (~5.5% ITR variance).",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-003893",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 106.9,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 income below floor and FOIR above cap with sub-700 bureau (automatic decline)",
+      "reasoning": "Two independent hard-policy decline triggers. (1) \u00a72.2 income floor: self-employed personal loan requires \u20b940,000 net monthly income; applicant declares \u20b934,000 (ITR annualises to ~\u20b935,917). (2) \u00a73.1 FOIR: 95.0% exceeds the 45% cap for income \u2264\u20b950k, and bureau score 698 (<700) makes this an automatic decline with no deviation permitted. The \u20b968,800 overdue, 7 enquiries/6m, and pending KYC reinforce but are not needed. ITR corroboration is within tolerance (~5.6% variance) so the past-officer-correction pattern on ITR mismatch does not apply.",
+      "used_judgement": true,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-008536",
+    "arm": "treatment",
+    "product": "auto",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 401,
+      "secs": 2.0,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-004179",
+    "arm": "treatment",
+    "product": "home",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  },
+  {
+    "application_id": "LAN-2026-004186",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 401,
+      "secs": 2.1,
+      "injected": [],
+      "cited": [],
+      "decision": null,
+      "reasoning": null,
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  }
+]

@@ -1,0 +1,104 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI — Traefik Reverse Proxy / Load Balancer Configuration
+# =============================================================================
+# Routes all traffic through a single ingress point.
+# TLS termination, WebSocket upgrade, rate limiting, and load balancing.
+#
+# Service ports (internal Docker network):
+#   citra-ui:80          — Frontend (static Expo build)
+#   citra-service:7001   — Core AI backend API
+#   citra-user-service:7004 — Authentication & user management
+#   citra-reranker:7302  — ML re-ranking
+#   citra-playwright:3001  — Web page rendering
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Global settings
+# ---------------------------------------------------------------------------
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+# ---------------------------------------------------------------------------
+# Entrypoints
+# ---------------------------------------------------------------------------
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      sanitizePath: false
+
+  websecure:
+    address: ":443"
+    http:
+      sanitizePath: false
+
+  traefik:
+    address: ":8080"
+
+
+# ---------------------------------------------------------------------------
+# API / Dashboard (optional, disable in production)
+# ---------------------------------------------------------------------------
+api:
+  dashboard: true
+  insecure: true
+
+ping:
+  entryPoint: web
+
+# ---------------------------------------------------------------------------
+# Providers
+# ---------------------------------------------------------------------------
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# ---------------------------------------------------------------------------
+# Access log
+# ---------------------------------------------------------------------------
+accessLog:
+  filePath: /logs/access.log
+  format: json
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: drop
+      names:
+        X-Forwarded-For: keep
+        X-Request-Id: keep
+
+log:
+  level: DEBUG
+  filePath: /logs/traefik.log
+
+serversTransport:
+  insecureSkipVerify: false
+  maxIdleConnsPerHost: 200
+
+experimental:
+  http3: false
+
+metrics:
+  prometheus: {}
+
+# ---------------------------------------------------------------------------
+# TLS — Let's Encrypt (uncomment for automatic certs)
+# ---------------------------------------------------------------------------
+certificatesResolvers:
+  le:
+    acme:
+      email: admin@citra-ai.com
+      storage: /letsencrypt/acme.json
+      keyType: RSA4096
+      httpChallenge:
+        entryPoint: web

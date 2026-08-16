@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOURCES Section Citation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-title { font-weight: bold; margin-bottom: 10px; color: #333; }
+        .test-input { background: #f5f5f5; padding: 10px; margin: 10px 0; white-space: pre-line; }
+        .test-output { background: #e8f5e8; padding: 10px; margin: 10px 0; }
+        .citation-link { color: #0066cc; text-decoration: underline; cursor: pointer; font-weight: 500; }
+        .log { background: #1e1e1e; color: #d4d4d4; padding: 10px; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>📝 SOURCES Section Citation Test</h1>
+    <p>Testing citations in the SOURCES section only (end-of-response format)</p>
+
+    <div class="test-section">
+        <div class="test-title">1. Response with SOURCES Section (Mixed Citations)</div>
+        <div class="test-input">Based on the company policies and recent presentations, Citra AI Software PRIVATE LIMITED offers comprehensive technology solutions.
+
+The company focuses on innovative approaches to meet client requirements while maintaining high standards of quality and security.
+
+SOURCES:
+- TW-presentation-new--67679d55f1a6c1e4d51d7ad7
+- Company Policy--aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+- Meeting Notes--12345678-abcd-efgh-ijkl-123456789012
+- Industry Report 2024
+- General Knowledge</div>
+        <div class="test-output" id="sources-test"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">2. Response without SOURCES Section</div>
+        <div class="test-input">This is a general response that doesn't reference any specific documents. It provides general information based on common knowledge.</div>
+        <div class="test-output" id="no-sources-test"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">3. Response with SOURCES Section (No Document IDs)</div>
+        <div class="test-input">Here's some information about technology trends.
+
+SOURCES:
+- Industry Analysis Report
+- Technology Magazine Article
+- General Knowledge</div>
+        <div class="test-output" id="general-sources-test"></div>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <script>
+        // Mock theme
+        const theme = { 
+            isDark: false, 
+            text: '#333333',
+            inputBackground: '#f5f5f5'
+        };
+        
+        // Mock isCitationDebugEnabled
+        function isCitationDebugEnabled() {
+            return true;
+        }
+
+        // Mock DocumentService
+        const DocumentService = {
+            downloadDocument: async (documentId) => {
+                console.log('Mock download for:', documentId);
+                return { 
+                    download_url: 'https://example.com/mock-download',
+                    filename: `document_${documentId}.pdf`
+                };
+            }
+        };
+
+        // Mock inlineMarkdownToHtml
+        function inlineMarkdownToHtml(text) {
+            return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        }
+
+        // Mock ClickableCitation component
+        function ClickableCitation({ documentId, children, theme }) {
+            const handleClick = (e) => {
+                e.preventDefault();
+                if (!documentId || documentId.trim() === '') {
+                    alert(`Citation detected: "${children}"\n\nThis appears to be a document reference, but no document ID was found.`);
+                    return;
+                }
+                alert(`Download: ${children} (ID: ${documentId})`);
+            };
+            
+            return `<a href="#" class="citation-link" onclick="handleCitationClick('${documentId}', '${children}'); return false;">${children}</a>`;
+        }
+
+        // Global function for handling citation clicks
+        function handleCitationClick(documentId, title) {
+            if (!documentId || documentId.trim() === '') {
+                alert(`Citation detected: "${title}"\n\nThis appears to be a document reference, but no document ID was found.`);
+                return;
+            }
+            alert(`Download: ${title} (ID: ${documentId})`);
+        }
+
+        // Function to parse SOURCES section and make document references clickable
+        function parseSourcesSection(sourcesText, theme) {
+            console.log('[CITATION_DEBUG] Parsing SOURCES section:', sourcesText);
+            
+            // Split sources section into lines
+            const lines = sourcesText.split('\n');
+            const headerLine = lines[0]; // "SOURCES:"
+            const sourceLines = lines.slice(1).filter(line => line.trim());
+            
+            let html = `<div style="margin-top: 1em; margin-bottom: 1em;">`;
+            html += `<div style="font-weight: bold; color: ${theme.text}; margin-bottom: 0.5em;">${headerLine}</div>`;
+            
+            sourceLines.forEach((line, index) => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return;
+                
+                // Remove bullet point if present
+                const cleanLine = trimmedLine.replace(/^[-•*]\s*/, '');
+                
+                // Check if this line contains a document ID pattern (DocumentName--DocumentID)
+                const documentMatch = cleanLine.match(/^(.+?)--([A-Za-z0-9-_]{10,})$/);
+                
+                if (documentMatch) {
+                    const [, documentName, documentId] = documentMatch;
+                    console.log('[CITATION_DEBUG] Found downloadable source:', { documentName, documentId });
+                    
+                    html += `<div style="margin-left: 1em; margin-bottom: 0.2em;">• ${ClickableCitation({ documentId, children: documentName, theme })}</div>`;
+                } else {
+                    // Regular source without download capability
+                    html += `<div style="margin-left: 1em; margin-bottom: 0.2em; color: ${theme.text};">• ${cleanLine}</div>`;
+                }
+            });
+            
+            html += `</div>`;
+            return html;
+        }
+
+        // Main parsing function
+        function parseTextWithCitations(text, theme) {
+            console.log('[CITATION_DEBUG] Parsing text for citations. Snippet:', text.slice(0, 200));
+            
+            // Check if this text contains a SOURCES section
+            const sourcesMatch = text.match(/SOURCES:\s*([\s\S]*?)(?:\n\n|$)/i);
+            if (sourcesMatch) {
+                const beforeSources = text.substring(0, sourcesMatch.index);
+                const sourcesSection = sourcesMatch[0];
+                const afterSources = text.substring(sourcesMatch.index + sourcesSection.length);
+                
+                console.log('[CITATION_DEBUG] Found SOURCES section, parsing for downloadable documents');
+                
+                let html = '';
+                if (beforeSources) {
+                    html += inlineMarkdownToHtml(beforeSources);
+                }
+                html += parseSourcesSection(sourcesSection, theme);
+                if (afterSources) {
+                    html += inlineMarkdownToHtml(afterSources);
+                }
+                return html;
+            }
+            
+            console.log('[CITATION_DEBUG] No SOURCES section found');
+            return inlineMarkdownToHtml(text);
+        }
+
+        // Test function
+        function testSourcesParsing() {
+            const logEl = document.getElementById('log');
+            
+            // Test cases
+            const tests = [
+                { 
+                    id: 'sources-test', 
+                    text: `Based on the company policies and recent presentations, Citra AI Software PRIVATE LIMITED offers comprehensive technology solutions.
+
+The company focuses on innovative approaches to meet client requirements while maintaining high standards of quality and security.
+
+SOURCES:
+- TW-presentation-new--67679d55f1a6c1e4d51d7ad7
+- Company Policy--aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+- Meeting Notes--12345678-abcd-efgh-ijkl-123456789012
+- Industry Report 2024
+- General Knowledge` 
+                },
+                { 
+                    id: 'no-sources-test', 
+                    text: `This is a general response that doesn't reference any specific documents. It provides general information based on common knowledge.` 
+                },
+                { 
+                    id: 'general-sources-test', 
+                    text: `Here's some information about technology trends.
+
+SOURCES:
+- Industry Analysis Report
+- Technology Magazine Article
+- General Knowledge` 
+                }
+            ];
+            
+            let allLogs = [];
+            
+            tests.forEach(test => {
+                console.log(`\n=== Testing: ${test.id} ===`);
+                allLogs.push(`=== Testing: ${test.id} ===`);
+                
+                const result = parseTextWithCitations(test.text, theme);
+                const outputEl = document.getElementById(test.id);
+                outputEl.innerHTML = result;
+            });
+            
+            // Update log
+            logEl.innerHTML = allLogs.join('\n');
+        }
+        
+        // Run tests on page load
+        window.onload = testSourcesParsing;
+    </script>
+</body>
+</html>

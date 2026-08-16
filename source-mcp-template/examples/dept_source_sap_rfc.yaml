@@ -1,0 +1,81 @@
+# =============================================================================
+# Dept Source — SAP NetWeaver RFC / BAPI (on-prem ECC or S/4HANA)
+# =============================================================================
+# Use this when the customer CANNOT expose OData services (preferred path:
+# odata_connector.py + dept_source_sap_odata.yaml). RFC is needed for
+# transparent-table reads (RFC_READ_TABLE) or BAPI calls that have no OData
+# equivalent.
+#
+# Prerequisites on the dept-MCP host:
+#   1. SAP NW RFC SDK unpacked to /opt/sap/nwrfcsdk + env
+#        SAPNWRFC_HOME=/opt/sap/nwrfcsdk
+#        LD_LIBRARY_PATH=/opt/sap/nwrfcsdk/lib
+#   2. pip install pyrfc==3.3.1
+#
+# Service-user hygiene: create a dedicated SAP user (e.g. CITRA_RFC) with
+# the MINIMUM authorisation needed for the BAPIs / tables this source exposes.
+# Do NOT reuse SAP_ALL. Audit via SU01 + ST03N.
+# =============================================================================
+
+source_id: acme-s4-rfc
+dept_id:   sap-bw
+org_id:    acme-corp
+type:      structured
+is_active: true
+
+name: ACME S/4HANA — RFC / BAPI surface
+description: |
+  Read-only RFC access to ACME's on-prem S/4HANA system (SID PRD,
+  client 100). Exposes transparent-table reads (MARA, MARC, EKKO, BSEG)
+  and a small set of curated read BAPIs (BAPI_MATERIAL_GET_DETAIL,
+  BAPI_SALESORDER_GETLIST, BAPI_USER_GET_DETAIL). Writes are blocked at
+  the connector level — use the SAP S/4HANA OData service instead.
+
+tags: [sap, erp, rfc, bapi, on-prem]
+
+visibility:
+  roles_allowed: [dept_admin, org_admin, super_admin]  # tighter — SAP is sensitive
+  cross_org_ids: []
+  public_within_org: false
+
+connection:
+  type: sap_rfc
+  env_prefix: ACME_S4_RFC
+  sysnr: "00"
+  client: "100"
+  lang: EN
+  saprouter: "/H/router.acme.com/S/3299/H/sap-prd"   # optional
+
+# Env vars set on the dept-mcp container (NEVER commit values to git):
+#   ACME_S4_RFC_ASHOST  = saphana01.acme.internal
+#   ACME_S4_RFC_USER    = CITRA_RFC
+#   ACME_S4_RFC_PASSWD  = (from Vault)
+# For load-balanced logon, replace ASHOST with MSHOST + GROUP + SYSID.
+
+datasets:
+  - id: acme-s4-rfc.mara
+    physical_name: MARA
+    name: Material master (MARA)
+    kind: sap_rfc
+    description: SAP transparent table — material master records. Use field MATNR for joins.
+    read_via:
+      kind: sap_rfc
+      table: MARA                          # connector calls RFC_READ_TABLE
+      # Default fields the agent can SELECT without listing them all.
+      extra:
+        default_fields: [MATNR, MTART, MATKL, MEINS, ERSDA]
+
+  - id: acme-s4-rfc.salesorder_getlist
+    physical_name: BAPI_SALESORDER_GETLIST
+    name: Sales orders — list (BAPI)
+    kind: sap_rfc
+    description: |
+      BAPI for paged sales-order lookup. Agent supplies the function
+      parameters in the query payload:
+        {"function": "BAPI_SALESORDER_GETLIST",
+         "parameters": {"CUSTOMER_NUMBER": "0000010001", "MATERIAL": "*"}}
+    read_via:
+      kind: sap_rfc                        # connector dispatches by query.function
+
+options:
+  query_timeout_seconds: 30

@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <!-- Background gradient: deep navy → indigo -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1120"/>
+      <stop offset="55%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+
+    <!-- Headline accent gradient -->
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+
+    <!-- Subtle vertical edge fade -->
+    <linearGradient id="leftFade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Dot-grid pattern for background texture -->
+    <pattern id="dots" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.2" fill="#6366F1" fill-opacity="0.16"/>
+    </pattern>
+
+    <!-- Layer-stack glyph (right side decoration) -->
+    <symbol id="layerStack" viewBox="0 0 220 220">
+      <!-- 4 stacked horizontal bars representing data/knowledge/model/agentic layers -->
+      <rect x="20" y="30"  width="180" height="34" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+      <rect x="20" y="76"  width="180" height="34" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+      <rect x="20" y="122" width="180" height="34" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+      <rect x="20" y="168" width="180" height="34" rx="6" fill="#312E81" stroke="#6366F1" stroke-width="2"/>
+      <!-- top layer accent: agentic active -->
+      <circle cx="190" cy="185" r="5" fill="#22D3EE"/>
+      <!-- small labels (dots on the left of each layer) -->
+      <circle cx="35" cy="47" r="3" fill="#64748B"/>
+      <circle cx="35" cy="93" r="3" fill="#64748B"/>
+      <circle cx="35" cy="139" r="3" fill="#64748B"/>
+      <circle cx="35" cy="185" r="3" fill="#A5B4FC"/>
+    </symbol>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+  <rect width="320" height="630" fill="url(#leftFade)"/>
+
+  <!-- Decorative layer-stack on the right -->
+  <g transform="translate(880, 340)" opacity="0.95">
+    <use href="#layerStack" width="280" height="280"/>
+    <text x="140" y="320" text-anchor="middle"
+          font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700"
+          fill="#94A3B8" letter-spacing="2">DATA · KNOWLEDGE · MODEL · AGENTIC</text>
+  </g>
+
+  <!-- =================== TOP BAR =================== -->
+  <!-- Logo dot + wordmark -->
+  <g transform="translate(60, 70)">
+    <circle cx="22" cy="22" r="22" fill="#6366F1"/>
+    <circle cx="22" cy="22" r="9" fill="#0F172A"/>
+    <text x="60" y="32" font-family="Arial Black, Arial, Helvetica, sans-serif"
+          font-size="38" font-weight="900" fill="#F8FAFC" letter-spacing="-1">
+      Citra AI
+    </text>
+  </g>
+
+  <!-- Status pill (top-right) -->
+  <g transform="translate(960, 65)">
+    <rect x="0" y="0" width="180" height="36" rx="18" fill="#052E1A" stroke="#22C55E" stroke-width="1.5"/>
+    <circle cx="22" cy="18" r="5" fill="#22C55E"/>
+    <text x="36" y="24" font-family="Arial, Helvetica, sans-serif"
+          font-size="14" font-weight="700" fill="#86EFAC" letter-spacing="1.5">
+      SOVEREIGN AI
+    </text>
+  </g>
+
+  <!-- =================== HERO HEADLINE =================== -->
+  <!-- Accent bar -->
+  <rect x="60" y="170" width="6" height="120" rx="3" fill="url(#accent)"/>
+
+  <text x="84" y="210" font-family="Arial, Helvetica, sans-serif"
+        font-size="20" font-weight="700" fill="#A5B4FC" letter-spacing="3">
+    THE AGENTIC OPERATING LAYER
+  </text>
+  <text x="82" y="276" font-family="Arial Black, Arial, Helvetica, sans-serif"
+        font-size="64" font-weight="900" fill="#F8FAFC" letter-spacing="-2">
+    Run your enterprise
+  </text>
+  <text x="82" y="346" font-family="Arial Black, Arial, Helvetica, sans-serif"
+        font-size="64" font-weight="900" fill="#F8FAFC" letter-spacing="-2">
+    with <tspan fill="url(#accent)">agentic AI</tspan>.
+  </text>
+
+  <!-- =================== FEATURE STRIP =================== -->
+  <g transform="translate(60, 410)" font-family="Arial, Helvetica, sans-serif">
+    <!-- Row 1 -->
+    <g transform="translate(0, 0)">
+      <circle cx="10" cy="10" r="10" fill="#22C55E" fill-opacity="0.15" stroke="#22C55E" stroke-width="1.5"/>
+      <path d="M5,10 L9,14 L15,6" stroke="#22C55E" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="16" font-size="20" font-weight="600" fill="#E2E8F0">
+        Operations that run themselves — apps shipped in plain English
+      </text>
+    </g>
+    <!-- Row 2 -->
+    <g transform="translate(0, 40)">
+      <circle cx="10" cy="10" r="10" fill="#22C55E" fill-opacity="0.15" stroke="#22C55E" stroke-width="1.5"/>
+      <path d="M5,10 L9,14 L15,6" stroke="#22C55E" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="16" font-size="20" font-weight="600" fill="#E2E8F0">
+        A month of analyst work in one conversation, on SAP &#183; Salesforce &#183; SQL
+      </text>
+    </g>
+    <!-- Row 3 -->
+    <g transform="translate(0, 80)">
+      <circle cx="10" cy="10" r="10" fill="#22C55E" fill-opacity="0.15" stroke="#22C55E" stroke-width="1.5"/>
+      <path d="M5,10 L9,14 L15,6" stroke="#22C55E" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="16" font-size="20" font-weight="600" fill="#E2E8F0">
+        24/7 agentic workflow engine on your own infrastructure
+      </text>
+    </g>
+    <!-- Row 4 -->
+    <g transform="translate(0, 120)">
+      <circle cx="10" cy="10" r="10" fill="#22C55E" fill-opacity="0.15" stroke="#22C55E" stroke-width="1.5"/>
+      <path d="M5,10 L9,14 L15,6" stroke="#22C55E" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="30" y="16" font-size="20" font-weight="600" fill="#E2E8F0">
+        Sovereign by architecture &#8212; zero copy, zero ETL, zero egress
+      </text>
+    </g>
+  </g>
+
+  <!-- =================== BOTTOM STRIP =================== -->
+  <line x1="60" y1="588" x2="1140" y2="588" stroke="#1E293B" stroke-width="1"/>
+  <text x="60" y="615" font-family="Arial, Helvetica, sans-serif"
+        font-size="17" font-weight="500" fill="#64748B" letter-spacing="1">
+    ONE PLATFORM &#183; YOUR INFRASTRUCTURE &#183; YOUR INTELLIGENCE
+  </text>
+  <text x="1140" y="615" text-anchor="end"
+        font-family="Arial Black, Arial, Helvetica, sans-serif"
+        font-size="19" font-weight="900" fill="#A5B4FC" letter-spacing="0.5">
+    citra-ai.com
+  </text>
+</svg>

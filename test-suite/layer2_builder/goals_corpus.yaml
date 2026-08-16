@@ -1,0 +1,71 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# Builder eval corpus — BA goals chosen to exercise the whole vocabulary.
+# Each goal declares the vocabulary it SHOULD produce; the live runner drives the
+# real builder and checks the published spec actually contains it (+ passes all
+# validators + the smoke gate). Offline, the runner reports corpus vocabulary
+# coverage (union of `expects` below) so you can see the corpus spans the space.
+#
+# Add goals until `expects` unions cover every panel type + tool kind you support.
+
+goals:
+  - id: sql_queue_detail
+    goal: >
+      Build an equipment-inspection triage app over field_operations.equipment_inspections:
+      a queue of inspections, click one to see its detail. Read-only.
+    expects:
+      panels: [queue, detail]
+      tool_kinds: [mcp]
+      validators: [S-01, data_binding]
+
+  - id: fraud_screen
+    goal: >
+      Fraud-screen equipment inspections — detect duplicate/reused defect photos,
+      cross-check photo↔report↔asset, weigh into a pass/repair/fail recommendation
+      with officer-governed approval and override.
+    expects:
+      panels: [queue, detail]
+      tool_kinds: [mcp, consistency_check, fraud_synthesis, image_analyze, doc_extract]
+      validators: [E-03, W-06, G-01, mcp_action_input_schema]
+
+  - id: rest_lookup
+    goal: >
+      A read-only Directory Lookup: enter a User ID, show that user's name, email,
+      city and company from the public_directory REST/API source.
+    expects:
+      panels: [form, table]
+      tool_kinds: [mcp, validate_form]
+      validators: [S-01, data_binding]
+
+  - id: form_crud_overlay
+    goal: >
+      A new-employee intake form (name, department dropdown from HR, offer date)
+      that creates a record, plus an app-owned review-note overlay per record.
+    expects:
+      panels: [form, detail]
+      tool_kinds: [mcp, mcp_action, validate_form]
+      validators: [update_identifier, W-01, W-06]
+
+  - id: dashboard_charts
+    goal: >
+      An outage operations dashboard: KPIs and bar/line charts of outages by
+      district and by day, with a narrator copilot.
+    expects:
+      panels: [dashboard, chart, agent_chat]
+      tool_kinds: [mcp, llm]
+      validators: [D-02, V-CHART-01]
+
+  - id: docs_rag
+    goal: >
+      A policy Q&A app over the acme_power_policy_library corpus — ask a question,
+      get a grounded answer with citations, and browse the source documents.
+    expects:
+      panels: [agent_chat, document_view]
+      tool_kinds: [rag, llm]
+      validators: [H-04, G-01]

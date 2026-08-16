@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+#
+# Seed one demo tenant end-to-end against the running local stack:
+#   org + users + departments -> Postgres data -> demo MCP container
+#   -> RAG documents -> data catalogue -> published Decision Apps.
+#
+# NOTE ON THE SOURCE REGISTRY (changed 2026-07-10):
+#   The June 2026 draft of this script ran `mongoimport` to push
+#   tenants/<t>/mcp/sources.json into the Mongo `dept_sources` collection. That
+#   step is GONE. The MCP is now FILE-DEFINED: the same sources.json is mounted
+#   read-only at /app/sources.json and read via SOURCES_FILE. The central-Mongo
+#   load mode was REMOVED from source-mcp-template/config.py, not deprecated -
+#   the MCP now refuses to boot without SOURCES_FILE or SOURCES_JSON. Re-adding
+#   a mongoimport here would write a collection nothing reads.
+#   See docs/change-the-demo.md.
+#
+# Prereqs on host: docker, curl, python3 (a venv is created automatically).
+# The main stack must already be up:  make start
+#
+# Usage:  ./scripts/quickstart/seed-demo.sh acme-bank
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$REPO_ROOT"
+TENANT="${1:-acme-bank}"
+COMPOSE="docker compose -f docker-compose.quickstart.yml"
+
+# -- Per-tenant Postgres wiring (database lives in the shared citra-postgres) --
+case "$TENANT" in
+  acme-bank) PG_ENV="ACME_BANK_PG_CONN"; PG_CONN="postgresql://acme_bank:acme_bank_demo_pw@localhost:5432/acme_bank" ;;
+  *) echo "Unknown tenant '$TENANT' (this tree ships: acme-bank)" >&2; exit 1 ;;
+esac
+
+TENANT_DIR="demo-data/tenants/$TENANT"
+[ -d "$TENANT_DIR" ] || { echo "Tenant dir not found: $TENANT_DIR" >&2; exit 1; }
+
+getenv() { grep -E "^$1=" .env | head -1 | cut -d= -f2-; }
+JWT_SECRET="$(getenv JWT_SECRET)"
+ADMIN_EMAIL="$(getenv ADMIN_EMAIL)"; ADMIN_EMAIL="${ADMIN_EMAIL:-admin@citra-ai.com}"
+[ -n "$JWT_SECRET" ] || { echo "JWT_SECRET missing from .env" >&2; exit 1; }
+
+# -- Python venv with the seed-script deps (cross-platform) -------------------
+PYBIN="$(command -v python3 || command -v python || true)"
+[ -n "$PYBIN" ] || { echo "python3/python not found on PATH - install Python 3." >&2; exit 1; }
+VENV="$REPO_ROOT/.venv-seed"
+[ -d "$VENV/bin" ] || [ -d "$VENV/Scripts" ] || { echo "-> creating seed venv ($VENV)"; "$PYBIN" -m venv "$VENV"; }
+if [ -d "$VENV/bin" ]; then PY="$VENV/bin/python"; else PY="$VENV/Scripts/python"; fi
+"$PY" -m pip -q install --upgrade pip >/dev/null 2>&1 || true
+"$PY" -m pip -q install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3 >/dev/null 2>&1 || \
+  "$PY" -m pip install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3
+
+# -- 0. Validate the source registry BEFORE anything else ---------------------
+# RegistrySource is extra="forbid": one unknown key and the MCP hard-fails at
+# boot, several minutes into the seed. Catch it here instead.
+echo "-> [0/6] validating $TENANT_DIR/mcp/sources.json"
+"$PY" source-mcp-template/validate_sources.py "$TENANT_DIR/mcp/sources.json" \
+  || { echo "   [FAIL] sources.json is invalid - the MCP would refuse to boot." >&2; exit 1; }
+
+# -- Mint a super-admin JWT for the seed_tenant admin API ---------------------
+echo "-> minting super-admin token"
+ADMIN_JWT="$("$PY" - "$JWT_SECRET" "$ADMIN_EMAIL" <<'PYEOF'
+import sys, time, jwt
+secret, email = sys.argv[1], sys.argv[2]
+print(jwt.encode({
+    "user_id": email, "email": email, "org_id": "citra-ai",
+    "roles": ["super_admin"], "dept_ids": [],
+    "iss": "Citra-AI", "iat": int(time.time()), "exp": int(time.time()) + 3600,
+}, secret, algorithm="HS256"))
+PYEOF
+)"
+
+# -- 1. Org + departments + demo users ----------------------------------------
+echo "-> [1/6] seeding org + users ($TENANT)"
+"$PY" demo-data/scripts/seed_tenant.py --tenant "$TENANT" \
+    --admin-token "$ADMIN_JWT" --user-service-url http://localhost:7004
+
+# -- 2. Postgres system-of-record data ----------------------------------------
+echo "-> [2/6] seeding Postgres ($PG_CONN)"
+env "$PG_ENV=$PG_CONN" "$PY" "$TENANT_DIR/scripts/seed_postgres.py" --conn "$PG_CONN"
+
+# -- 3. Demo MCP container (registers itself with discovery-service) ----------
+# --env-file points compose's ${VAR} interpolation at the ROOT .env, so the AI
+# keys (LLM_API_KEY, EMBEDDING_*) actually reach the MCP's NL->SQL planner.
+# Without it the environment: block's :-defaults win over env_file and the
+# user's key never lands in the container.
+echo "-> [3/6] starting the demo MCP container (reads sources.json via SOURCES_FILE)"
+docker compose --env-file "$REPO_ROOT/.env" -f "$TENANT_DIR/mcp/docker-compose.yml" up -d --build
+
+echo "-> waiting for the MCP to register its sources with discovery"
+# "Dept MCP ready" is the unconditional startup banner - it logs even when
+# every registration call below it failed, so it is not evidence of success.
+# The real per-tool marker is "[REGISTRATION] Registered tool: ..."; a
+# "Failed to register" anywhere means the batch is not actually done
+# (confirmed live: a cross-network DNS failure logged "ready" while every
+# registration failed, and the catalogue silently stayed at 0 datasets).
+registered=0
+for _ in $(seq 1 40); do
+  logs="$(docker compose --env-file "$REPO_ROOT/.env" -f "$TENANT_DIR/mcp/docker-compose.yml" logs 2>&1)"
+  if printf '%s' "$logs" | grep -qE "\[REGISTRATION\] Registered tool:" \
+       && ! printf '%s' "$logs" | grep -qE "\[REGISTRATION\] Failed to register"; then
+    echo "   [ok] MCP sources registered"; registered=1; break
+  fi
+  sleep 2
+done
+if [ "$registered" != 1 ]; then
+  echo "   [FAIL] the MCP did not register within 80s." >&2
+  echo "          Publishing now would fail 'source_not_found' for every app." >&2
+  echo "          Check: docker compose -f $TENANT_DIR/mcp/docker-compose.yml logs" >&2
+  exit 1
+fi
+
+# -- 4. Ingest the tenant's RAG documents (SOP library) into Milvus -----------
+if [ -f "$TENANT_DIR/scripts/ingest_docs.py" ] && [ -d "$TENANT_DIR/raw" ]; then
+  echo "-> [4/6] ingesting SOP documents into Milvus"
+  # Runs INSIDE citra-service, not in the host seed venv. ingest_docs.py imports
+  # Citra-Service application code (dept_library_store -> utils), which pulls in
+  # fastapi, llama_index and the rest of that service's dependency tree — the
+  # seed venv installs none of it, so on a fresh clone this step died with
+  # ModuleNotFoundError and RAG grounding was silently absent from every demo.
+  # Installing that tree into the venv is whack-a-mole; the container already
+  # has it, and reaches Milvus and MinIO by service name.
+  #
+  # The copy target matters: ingest_docs.py resolves REPO_ROOT as parents[4] of
+  # its own path, so landing it at /app/demo-data/tenants/<t>/scripts/ makes
+  # that resolve to /app, where /app/Citra-Service is — the script's path math
+  # then works unchanged.
+  SVC_CID="$($COMPOSE ps -q citra-service 2>/dev/null || true)"
+  if [ -z "$SVC_CID" ]; then
+    echo "   [!] citra-service is not running - skipping SOP ingestion."
+  else
+    # MSYS_NO_PATHCONV stops Git Bash on Windows rewriting /app/... into a
+    # Windows path before docker sees it. Harmless elsewhere.
+    MSYS_NO_PATHCONV=1 docker exec "$SVC_CID" mkdir -p /app/demo-data/tenants
+    MSYS_NO_PATHCONV=1 docker cp "$TENANT_DIR" "$SVC_CID:/app/demo-data/tenants/$TENANT"
+    MSYS_NO_PATHCONV=1 docker exec -w /app/Citra-Service "$SVC_CID" \
+      python "/app/demo-data/tenants/$TENANT/scripts/ingest_docs.py" \
+      || echo "   [!] SOP ingestion failed - RAG answers will be ungrounded."
+  fi
+fi
+
+# -- 5. Build the data catalogue ----------------------------------------------
+# data-discovery runs a leader-gated crawl at startup, so the catalogue is
+# usually already populated by now. This is the explicit refresh.
+echo "-> [5/6] refreshing the data catalogue"
+JWT_SECRET="$JWT_SECRET" "$PY" scripts/quickstart/build_catalogue.py --org "$TENANT" \
+  || echo "   [!] catalogue crawl failed - the Builder's dataset palette will be empty. Re-run: JWT_SECRET=... python scripts/quickstart/build_catalogue.py --org $TENANT"
+
+# -- 6. Publish the Decision Apps ---------------------------------------------
+echo "-> [6/6] publishing Decision Apps"
+"$PY" demo-data/scripts/publish_apps.py \
+    --smart-app-url http://localhost:9100 \
+    --jwt-secret "$JWT_SECRET" \
+    --tenant-id "$TENANT" \
+    --apps-dir "$TENANT_DIR/apps" \
+    --user-id "$ADMIN_EMAIL"
+
+echo ""
+echo "Demo '$TENANT' seeded. Sign in at http://localhost:8081 as $ADMIN_EMAIL,"
+echo "then impersonate into the '$TENANT' org to run its Decision Apps."

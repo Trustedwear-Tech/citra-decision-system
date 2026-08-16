@@ -1,0 +1,19 @@
+# Shared infra utils incl. the canonical PII/semantic-type column classifier
+# (citra_service_utils.data_classifier) — single source of truth shared with
+# the Citra Workflow Engine's Dept Data Flow ingestion.
+-e ../citra-common/citra-service-utils
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+pydantic-settings==2.6.0
+motor==3.6.0
+httpx==0.27.2
+PyJWT==2.13.0
+openai==1.54.4
+# Catalogue vector index (semantic dataset search for the builder). Pinned to
+# match Citra-Service against the shared Zilliz cluster. catalogue_vectors
+# fails open only when vectoring is explicitly DISABLED; when enabled, a
+# missing client fails loud (no silent degradation).
+pymilvus==2.6.10
+# Error tracking → GlitchTip (Sentry-compatible). No-op unless SENTRY_DSN is set.
+sentry-sdk[fastapi]>=2.14.0

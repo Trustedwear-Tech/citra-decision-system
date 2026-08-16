@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euo pipefail
+# =============================================================================
+# Citra tenant box bootstrap — ${customer_id} / ${environment}
+# Installs Docker + Traefik, lays down the per-service replica override, and
+# prepares the box. Image pulls + secrets are driven by the EXISTING SSM deploy
+# flow (deploy.ps1 -> GHCR); this only makes the box ready to receive it.
+# =============================================================================
+
+apt-get update -y
+curl -fsSL https://get.docker.com | sh          # docker engine + compose plugin
+usermod -aG docker ubuntu || true
+mkdir -p /home/ubuntu/citra-ai /etc/traefik/dynamic /letsencrypt /logs
+
+# ── Per-service replica override (Terraform-rendered from service_replicas) ──
+cat > /home/ubuntu/citra-ai/compose.override.yml <<'COMPOSE_OVERRIDE'
+${compose_override}
+COMPOSE_OVERRIDE
+
+# ── Traefik dynamic routing for the PUBLIC services ──────────────────────────
+# (docker-DNS resolves each compose service name across its replicas, so one
+# upstream URL per service load-balances automatically.)
+cat > /etc/traefik/dynamic/citra.yml <<'TRAEFIK'
+http:
+  routers:
+%{ for name, cfg in public_services ~}
+    ${name}:
+      rule: "PathPrefix(`${cfg.path}`)"
+      entryPoints: [web]
+      service: ${name}
+%{ endfor ~}
+  services:
+%{ for name, cfg in public_services ~}
+    ${name}:
+      loadBalancer:
+        servers:
+          - url: "http://${name}:${cfg.port}"
+%{ endfor ~}
+TRAEFIK
+
+echo "[bootstrap] ${customer_id}/${environment} box ready — run the SSM deploy" \
+     "(deploy.ps1 -> GHCR pull -> docker compose -f compose.yml -f compose.override.yml up -d)"

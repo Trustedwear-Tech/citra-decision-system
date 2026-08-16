@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citra AI Blog — Sovereign AI, Workflow Agents, RAG &amp; Enterprise AI Insights</title>
+  <meta name="description"
+    content="Insights on Citra's flagship Self-Improving Decision Apps & Decision Services (recommend, act, learn), sovereign AI, private-cloud deployment, workflow agents, RAG architecture, model fine-tuning, and how enterprises run AI without leaking data. Guides, comparisons, and use cases.">
+  <meta name="keywords"
+    content="Citra Decision Apps, Decision Service, self-improving decision apps, Citra AI blog, sovereign AI, private AI, private cloud AI, open-source LLMs, workflow agents, RAG, MCP, model fine-tuning, AI consulting, enterprise AI, AI governance, data sovereignty">
+
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="author" content="Citra AI Team">
+  <meta name="theme-color" content="#6366f1">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://citra-ai.com/blog/">
+  <meta property="og:title" content="Citra AI Blog — Sovereign AI, Workflow Agents &amp; Enterprise AI">
+  <meta property="og:description"
+    content="Insights on Citra's flagship Decision Apps & Decision Services, sovereign AI, private-cloud deployment, workflow agents, RAG, fine-tuning, and enterprise AI rollout.">
+  <meta property="og:image" content="https://citra-ai.com/images/og-image.png">
+  <meta property="og:site_name" content="Citra AI">
+  <meta property="og:locale" content="en_US">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://citra-ai.com/blog/">
+  <meta name="twitter:title" content="Citra AI Blog — Sovereign AI &amp; Enterprise AI Insights">
+  <meta name="twitter:description"
+    content="Sovereign AI, workflow agents, RAG, fine-tuning, and enterprise AI rollout — practical guides from Citra.">
+  <meta name="twitter:image" content="https://citra-ai.com/images/twitter-card.png">
+  <meta name="twitter:site" content="@citraai">
+
+  <link rel="canonical" href="https://citra-ai.com/blog/">
+  <link rel="alternate" hreflang="en" href="https://citra-ai.com/blog/">
+
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "Citra AI Blog",
+    "url": "https://citra-ai.com/blog/",
+    "description": "Insights on sovereign AI, private-cloud deployment, workflow agents, RAG, fine-tuning, and enterprise AI rollout.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Trustedwear Tech Private Limited",
+      "logo": {"@type": "ImageObject", "url": "https://citra-ai.com/logo.png"}
+    },
+    "blogPost": [
+      {"@type": "BlogPosting", "headline": "Citra Self-Improving Decision Apps — UI, Agent, and Dashboard Authored by Your BA", "url": "https://citra-ai.com/blog/citra-smart-apps-ba-built.html", "datePublished": "2026-05-09", "description": "A Citra Decision App bundles a real UI, an automated agent, and a live KPI dashboard — all authored by your BA in natural language. Motor claims auto-triage, vendor onboarding, underwriter workbench: line-of-business apps with no developer required."},
+      {"@type": "BlogPosting", "headline": "What Enterprises Need from Sovereign AI — The Three Non-Negotiables", "url": "https://citra-ai.com/blog/what-enterprises-need-from-sovereign-ai.html", "datePublished": "2026-05-06", "description": "Three non-negotiables every enterprise has when adopting AI: data sovereignty, platform consolidation, and measurable ROI in weeks. Here is exactly how Citra delivers each one."}
+    ]
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://citra-ai.com/"},
+      {"@type": "ListItem", "position": 2, "name": "Blog", "item": "https://citra-ai.com/blog/"}
+    ]
+  }
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.65; color: #1f2937; background: #ffffff; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+    header { background: #0F172A; color: white; padding: 1rem 0; position: sticky; top: 0; z-index: 100; }
+    .header-content { display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 1.5rem; font-weight: 800; color: white; text-decoration: none; }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav a { color: white; text-decoration: none; font-size: 0.95rem; }
+    nav a:hover { color: #818CF8; }
+    .nav-cta { background: #6366f1; color: white !important; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; }
+    .nav-cta:hover { background: #4f46e5; }
+
+    .hero { background: linear-gradient(135deg, #0F172A 0%, #312e81 100%); color: white; padding: 4.5rem 0 3.5rem; text-align: center; }
+    .eyebrow { display: inline-block; background: rgba(99,102,241,0.15); color: #c7d2fe; border: 1px solid rgba(99,102,241,0.3); padding: 0.4rem 0.9rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.25rem; }
+    .hero h1 { font-size: 2.6rem; font-weight: 800; max-width: 860px; margin: 0 auto 1rem; line-height: 1.15; }
+    .hero p { font-size: 1.1rem; max-width: 720px; margin: 0 auto; color: #cbd5e1; }
+
+    .filters { padding: 2rem 0 0; }
+    .filter-row { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .chip { background: #f1f5f9; color: #334155; padding: 0.45rem 0.95rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; border: 1px solid #e2e8f0; }
+    .chip.active { background: #6366f1; color: white; border-color: #6366f1; }
+
+    .section { padding: 3rem 0; }
+    .section-title { font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
+    .section-title .label { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #6366f1; background: #eef2ff; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid #c7d2fe; }
+
+    .featured-card { background: linear-gradient(135deg, #1e293b 0%, #312e81 100%); color: white; border-radius: 18px; padding: 3rem; margin-bottom: 2rem; }
+    .featured-card .meta { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: #c7d2fe; font-weight: 700; margin-bottom: 0.75rem; }
+    .featured-card h2 { font-size: 1.85rem; line-height: 1.2; margin-bottom: 0.75rem; }
+    .featured-card h2 a { color: white; text-decoration: none; }
+    .featured-card h2 a:hover { color: #c7d2fe; }
+    .featured-card p { color: #cbd5e1; font-size: 1.05rem; max-width: 720px; margin-bottom: 1.25rem; }
+    .read-more { display: inline-block; background: white; color: #4f46e5; padding: 0.7rem 1.25rem; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.92rem; }
+    .read-more:hover { background: #f1f5f9; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.75rem; transition: transform .15s ease, box-shadow .15s ease; display: flex; flex-direction: column; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,0.06); }
+    .card .meta { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6366f1; margin-bottom: 0.5rem; }
+    .card .meta .date { color: #94a3b8; font-weight: 500; margin-left: 0.5rem; }
+    .card h3 { font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem; line-height: 1.3; }
+    .card h3 a { color: #0f172a; text-decoration: none; }
+    .card h3 a:hover { color: #4f46e5; }
+    .card p { color: #475569; font-size: 0.95rem; flex-grow: 1; margin-bottom: 1rem; }
+    .card .link { color: #4f46e5; font-weight: 700; text-decoration: none; font-size: 0.9rem; }
+    .card .link:hover { text-decoration: underline; }
+
+    .topics { background: #f8fafc; padding: 4rem 0; }
+    .topics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+    .topic-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem; }
+    .topic-card h3 { font-size: 1.05rem; color: #0f172a; margin-bottom: 0.4rem; }
+    .topic-card p { color: #64748b; font-size: 0.92rem; }
+
+    .cta-banner { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 3rem 2rem; border-radius: 16px; text-align: center; margin: 3rem 0; }
+    .cta-banner h2 { font-size: 1.65rem; color: white; margin-bottom: 0.5rem; }
+    .cta-banner p { color: rgba(255,255,255,0.9); margin-bottom: 1.5rem; }
+    .cta-white { display: inline-block; background: white; color: #4f46e5; padding: 0.85rem 1.5rem; border-radius: 10px; text-decoration: none; font-weight: 700; }
+    .cta-white:hover { background: #f1f5f9; }
+
+    footer { background: #0F172A; color: #94a3b8; padding: 3rem 0 2rem; }
+    footer .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+    footer h4 { color: #F1F5F9; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; font-weight: 700; }
+    footer ul { list-style: none; }
+    footer ul li { padding: 0.25rem 0; }
+    footer a { color: #94a3b8; text-decoration: none; font-size: 0.92rem; }
+    footer a:hover { color: #818CF8; }
+    .footer-bottom { border-top: 1px solid rgba(148,163,184,0.15); padding-top: 1.5rem; text-align: center; font-size: 0.85rem; }
+
+    @media (max-width: 900px) {
+      .grid, .topics-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.85rem; }
+      .featured-card { padding: 2rem; }
+      .featured-card h2 { font-size: 1.4rem; }
+      footer .footer-grid { grid-template-columns: 1fr 1fr; }
+      nav ul { display: none; }
+    }
+    @media (max-width: 600px) {
+      footer .footer-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <a href="/static-seo/" class="logo">Citra AI</a>
+        <nav aria-label="Main navigation">
+          <ul>
+            <li><a href="/static-seo/">Home</a></li>
+            <li><a href="/blog/">Blog</a></li>
+            <li><a href="/static-seo/faq.html">FAQ</a></li>
+            <li><a href="/contactus">Contact</a></li>
+            <li><a href="/app" rel="nofollow" class="nav-cta">Launch App</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">Citra AI Blog</span>
+        <h1>Self-Improving Decision Apps, sovereign AI, and enterprise rollout — done right.</h1>
+        <p>Practical guides on our flagship Decision Apps &amp; Decision Services — apps and services that recommend,
+          act, and learn — plus running AI inside your own infrastructure: open-source models, RAG architecture,
+          workflow automation, fine-tuning, and the discipline of grounded, citable answers.</p>
+      </div>
+    </section>
+
+    <!-- TOPIC FILTERS -->
+    <section class="filters">
+      <div class="container">
+        <div class="filter-row">
+          <span class="chip active">All</span>
+          <span class="chip">Decision Apps &amp; Services</span>
+          <span class="chip">Sovereign AI</span>
+          <span class="chip">Workflow Agents</span>
+          <span class="chip">RAG &amp; Knowledge</span>
+          <span class="chip">Comparisons</span>
+          <span class="chip">Use Cases</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURED -->
+    <section class="section">
+      <div class="container">
+        <article class="featured-card" style="background: linear-gradient(135deg, #1e1b4b 0%, #4338CA 50%, #6D28D9 100%);">
+          <div class="meta">📌 Pinned · Flagship · Decision Apps &amp; Decision Services · 2026-05-09</div>
+          <h2><a href="/blog/citra-smart-apps-ba-built.html">Citra Self-Improving Decision Apps &amp; Decision Services — UI, Agent, and Dashboard Authored by Your BA</a></h2>
+          <p>Citra's flagship. Three things every line-of-business team needs &mdash; a real UI, an automated agent that pre-processes the routine, and a live KPI dashboard &mdash; all built by your BA in natural language. The app recommends the decision, acts within your policy gate, and learns from every outcome; the same logic ships headless as a Decision Service your systems can call. Motor-claims auto-triage compresses weeks of manual work into a daily 30-minute review. No developer required.</p>
+          <a href="/blog/citra-smart-apps-ba-built.html" class="read-more">Read the article →</a>
+        </article>
+        <article class="featured-card" style="margin-top: 1.5rem;">
+          <div class="meta">📌 Pinned · Featured · Sovereign AI · 2026-05-06</div>
+          <h2><a href="/blog/what-enterprises-need-from-sovereign-ai.html">What Enterprises Need from Sovereign AI —
+              The Three Non-Negotiables</a></h2>
+          <p>After three years of AI hype, enterprise buyers ask three brutally specific questions: does our data stay
+            ours, can one platform replace five tools, and will we see ROI in weeks — not quarters? Here is exactly how
+            Citra delivers on each one.</p>
+          <a href="/blog/what-enterprises-need-from-sovereign-ai.html" class="read-more">Read the article →</a>
+        </article>
+      </div>
+    </section>
+
+    <!-- USE CASES -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title"><span class="label">Use Cases</span> Real workflows enterprises automate today</h2>
+        <div class="grid">
+          <article class="card">
+            <div class="meta">Decision Apps <span class="date">· 2026-05-09</span></div>
+            <h3><a href="/blog/citra-smart-apps-ba-built.html">Decision Apps — Motor Claims Auto-Triage, BA-Built</a></h3>
+            <p>The agent auto-approves claims under &dollar;500. High-value claims land in the BA queue with a
+              recommended decision and policy citation. Weeks of triage become a daily 30-minute review.</p>
+            <a href="/blog/citra-smart-apps-ba-built.html" class="link">Read more →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="cta-banner">
+          <h2>Bring sovereign AI to your enterprise</h2>
+          <p>Try Citra Cloud free, or talk to us about private-cloud rollout and consulting.</p>
+          <a href="/app" class="cta-white" rel="nofollow">Try Citra Cloud Free</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div style="color:#F1F5F9; font-weight: 800; font-size: 1.15rem; margin-bottom: 0.5rem;">Citra AI</div>
+          <p style="font-size: 0.92rem;">Sovereign AI for enterprises. Open-source models. Private cloud.
+            Your data, your infrastructure, your IP.</p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="/static-seo/">Platform Overview</a></li>
+            <li><a href="/static-seo/faq.html">FAQ</a></li>
+            <li><a href="/app" rel="nofollow">Launch App</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="/blog/">Blog</a></li>
+            <li><a href="/contactus">Contact Sales</a></li>
+            <li><a href="/sitemap.xml">Sitemap</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="/privacy-policy">Privacy Policy</a></li>
+            <li><a href="/terms-of-service">Terms of Service</a></li>
+            <li><a href="/cookie-notice.html">Cookies</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 Citra AI. Trustedwear Tech Private Limited. All rights reserved.
+      </div>
+    </div>
+  </footer>
+</body>
+
+</html>

@@ -1,0 +1,150 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI Platform — CI Pipeline
+# =============================================================================
+
+name: CI
+
+# Manual-only: this pipeline does NOT run automatically on push/PR.
+# Trigger it from the Actions tab ("Run workflow") or `gh workflow run CI`.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # License Header Check
+  # ---------------------------------------------------------------------------
+  license-headers:
+    name: License Headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check license headers
+        run: |
+          chmod +x scripts/add-headers.sh
+          ./scripts/add-headers.sh --check
+
+  # ---------------------------------------------------------------------------
+  # Python Services — Lint & Test
+  # ---------------------------------------------------------------------------
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - Citra-Service
+          - duckdb-query-service
+          - reranker-service
+          - playwright-render-service
+          - citra-mcp-server
+          - Monitoring-Service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install linter
+        run: pip install ruff
+      - name: Lint
+        run: ruff check ${{ matrix.service }}/ --select E,F,W --ignore E501
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Node.js Services — Lint
+  # ---------------------------------------------------------------------------
+  node-lint:
+    name: Node.js Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - Citra-User-Service
+          # citra-agent was in the matrix but is not in this tree -- it was not
+          # carried over in the OSS split. The job could only ever fail with
+          # "No such file or directory", and it took the whole matrix down with
+          # it. Nobody noticed because this workflow is workflow_dispatch only
+          # and had never run.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: npm ci --ignore-scripts
+      - name: Lint (if configured)
+        working-directory: ${{ matrix.service }}
+        run: npx eslint . --ext .js --no-error-on-unmatched-pattern || true
+
+  # ---------------------------------------------------------------------------
+  # Docker Build Verification
+  # ---------------------------------------------------------------------------
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: Citra-Service
+            dockerfile: Dockerfile
+          - service: Citra-User-Service
+            dockerfile: Dockerfile
+          - service: duckdb-query-service
+            dockerfile: Dockerfile
+          - service: reranker-service
+            dockerfile: Dockerfile
+          - service: playwright-render-service
+            dockerfile: Dockerfile
+          - service: citra-mcp-server
+            dockerfile: Dockerfile
+          - service: Monitoring-Service
+            dockerfile: Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: |
+          docker build -t citra-${{ matrix.service }}:test \
+            -f ${{ matrix.service }}/${{ matrix.dockerfile }} \
+            ${{ matrix.service }}/
+
+  # ---------------------------------------------------------------------------
+  # Security Scanning
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, python
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # ---------------------------------------------------------------------------
+  # Secret Scanning (prevent credential leaks)
+  # ---------------------------------------------------------------------------
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

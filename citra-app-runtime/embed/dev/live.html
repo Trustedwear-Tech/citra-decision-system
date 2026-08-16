@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Citra embed — LIVE dev E2E</title>
+<style>
+  /* Hostile host styles, as in the stubbed harness. */
+  body { font-family: Georgia, serif; background: #eef1f5; margin: 0; padding: 32px; }
+  h2 { color: crimson; text-transform: uppercase; }
+  button { background: yellow !important; font-size: 30px; }
+  .host-chrome { max-width: 1100px; margin: 0 auto; }
+  .host-note { background: #fff; border: 1px solid #cbd5e1; padding: 12px 16px;
+               border-radius: 6px; margin-bottom: 20px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="host-chrome">
+  <div class="host-note">
+    <strong>“Bank” page — served from a DIFFERENT origin to the runtime.</strong>
+    Nothing here is stubbed: the bundle, the spec and every API call go to the
+    real smart-app-service. This is the only setup in which CORS actually
+    applies — the Playwright harness intercepts requests before it does, which
+    is why the missing <code>X-Citra-Embed-Key</code> in the preflight was
+    invisible until now.
+  </div>
+  <h2>Their own heading, in their own style</h2>
+  <div id="citra-decision"></div>
+</div>
+
+<script src="http://localhost:3100/v1/citra.js"></script>
+<script>
+  window.citraEvents = { error: [], recommendation: [], decision: [] };
+  // A REAL application_id from the acme-bank Postgres behind the dept-MCP, so
+  // the card exercises the data plane rather than rendering an empty record.
+  window.LIVE_RECORD_ID = 'LAN-2026-000001';
+  window.mountLive = function (key, token, recordId) {
+    const citra = Citra.init({
+      baseUrl: 'http://localhost:3100',
+      getToken: function () { return token; },
+      onError: function (e) { window.citraEvents.error.push(String(e)); },
+    });
+    window.__citra = citra;
+    window.__mount = citra.mount('#citra-decision', {
+      embed: key,
+      recordId: recordId || window.LIVE_RECORD_ID,
+      theme: { primary: '#0b5fff', radius: 6, density: 'compact' },
+      onRecommendation: function (d) { window.citraEvents.recommendation.push(d); },
+      onDecision: function (d) { window.citraEvents.decision.push(d); },
+    });
+    return true;
+  };
+</script>
+</body>
+</html>

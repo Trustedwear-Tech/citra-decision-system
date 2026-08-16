@@ -1,0 +1,78 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+name: GHCR Cleanup (keep last two)
+
+# Prune old GHCR container versions across ALL org packages, keeping the moving
+# `*-latest` tags (prod-latest / test-latest) + the build `cache` tag + the ONE
+# immediately-previous build  ==  the last TWO versions (latest + 1 prior).
+#
+# WHY a dedicated action (not "delete all untagged"): every build pushes a
+# multi-arch **manifest list** + a provenance/attestation manifest. Those child
+# manifests are UNTAGGED but are REFERENCED by the `*-latest` tag. A naive
+# delete-untagged corrupts `latest` (pull → `manifest unknown`). dataaxiom's
+# action is manifest-aware: it computes the digests referenced by retained tags
+# and never deletes them, so `latest` stays intact.
+#
+# SAFETY:
+#   - dry_run defaults to TRUE. The first run only REPORTS what it WOULD delete.
+#     Review the job log, then re-run with dry_run=false to actually delete.
+#   - `*-latest` + `cache` are always retained, PLUS the single most-recent
+#     prior tagged build (1-step rollback). Everything older — `prod-<sha>` /
+#     `test-<sha>` beyond that, and orphaned untagged digests — is removed.
+#     Want a deeper rollback window? raise `keep-n-tagged`.
+#
+# TOKEN: GITHUB_TOKEN (packages: write) works for packages linked to this repo.
+#   If org packages were pushed from other repos and cleanup 404/403s, create a
+#   classic PAT with `delete:packages` + `read:packages`, store it as the repo
+#   secret PACKAGE_CLEANUP, and this workflow will prefer it automatically.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report only (true) vs actually delete (false)"
+        type: boolean
+        default: true
+      packages:
+        description: "Package glob (names are nested under citra-ai/, so use citra-ai/*)"
+        type: string
+        default: "citra-ai/*"
+  schedule:
+    - cron: "0 3 * * 0"   # weekly, Sunday 03:00 UTC (always dry-run via default? no — see note)
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prune GHCR versions (keep *-latest + cache)
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          owner: Trustedwear-Tech
+          # Org packages are nested under the citra-ai/ path; a bare `*` glob
+          # does not match across the `/`, so default to citra-ai/*.
+          packages: ${{ github.event.inputs.packages || 'citra-ai/*' }}
+          # Retain ONLY these tags; everything else (prod-<sha>, test-<sha>, …)
+          # is eligible for deletion. Globs supported.
+          exclude-tags: "*-latest,cache"
+          # Of the NON-excluded tagged versions, keep this many most-recent.
+          # 1 = keep the single previous build → latest + 1 prior = last TWO.
+          keep-n-tagged: 1
+          # Delete untagged digests — manifest-aware: those referenced by a
+          # retained tag (the *-latest manifest list + its attestation) are
+          # preserved automatically, so `latest` is never broken.
+          delete-untagged: true
+          # Verify retained images still resolve after the prune.
+          validate: true
+          # Scheduled runs force dry-run unless dispatched with dry_run=false.
+          dry-run: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.dry_run }}
+          token: ${{ secrets.PACKAGE_CLEANUP || secrets.GITHUB_TOKEN }}

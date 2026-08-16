@@ -1,0 +1,113 @@
+﻿
+**/__pycache__/
+/graphiti-knowledge-service/venv
+/storage-pricing-service/node_modules
+*.log
+Data-Download/acts_download_progress.json
+Data-Download/acts_download_progress.json
+*.log
+/playwright-render-service/venv
+/Citra-Service/.venv
+/Citra-Service/myenv
+/citra-agent/node_modules
+/citra-agent/node_modules
+.playwright-mcp
+/reranker-service/venv
+/discovery-service/venv
+/action-sandbox-host/venv
+/action-chat-service/venv
+*.tar
+
+/Citra-Worker/venv
+/citra-workflow/venv
+/citra-mcp-service/venv
+/infrastructure/action-sandbox/runner/tests
+/data-discovery-service/venv
+/source-mcp-template/venv
+
+# Bundled .env export for sharing (contains secrets - never commit)
+export_env/
+export_env.zip
+
+# Vault diff reports contain full secret values - never commit.
+reports
+citra-app-runtime/tsconfig.tsbuildinfo
+
+# AWS SSM scratch / parameter files written by the deploy tooling (not source)
+.ssm_*.json
+/smart-app-service/.env.secret
+Citra-UI/.firebase-token
+/decision-api-sdk/typescript/node_modules
+/test-suite/layer3_ui/node_modules
+/infra/milvus-standalone/volumes
+
+# Per-tenant demo MCP secrets. These files hold the shared JWT_SECRET, the
+# MCP_API_KEY, embedding/LLM keys and bucket credentials — never commit them.
+# (acme-power / acme-cement / bihar-gov were committed before this rule; see
+# docs/acme-bank-demo-plan.md. Untracking them does NOT scrub git history, so
+# those values need rotating.)
+demo-data/tenants/*/mcp/.env
+
+# Generated demo claim documents — rebuilt by generate_claim_documents.py
+demo-data/tenants/*/scripts/_generated_docs/
+
+# local backup artifacts (may contain prod secrets) — never commit
+backup/
+
+# transient .env snapshots taken by scripts/local-dev/rewire-env-to-local.py
+*.bak.pre-local-*
+
+# Test coverage output — generated, never committed. 22 files of it were
+# tracked, including lcov-report HTML that embeds source of deleted features.
+coverage/
+
+# --- added by the OSS release generator ---
+.env
+.env.*
+!.env*example
+!.env*sample
+!.env*template
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+.firebase-token
+*.bak
+*.bak.*
+*.orig
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+node_modules/
+.next/
+.expo/
+*.tsbuildinfo
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+tmp/
+.tmp/
+/.venv-seed
+
+# Scratch/e2e artefacts — may embed tokens
+.e2e_*
+_*.log
+_jwt.txt
+
+# Runtime logs — never committed
+logs/
+*.jsonl
+*.log

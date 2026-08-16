@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citation Download Test</title>
+    <style>
+        .citation-link {
+            color: #007bff;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: linear-gradient(90deg, transparent 0%, rgba(0, 123, 255, 0.1) 50%, transparent 100%);
+            background-size: 200% 100%;
+            background-position: 100% 0;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .citation-link:hover {
+            color: #0056b3;
+            background-position: 0 0;
+            text-decoration: none;
+            box-shadow: 0 1px 3px rgba(0, 123, 255, 0.3);
+        }
+
+        .citation-link:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body>
+    <h1>Citation Download Test</h1>
+    
+    <p>Testing citation parsing and download functionality:</p>
+    
+    <div id="test-message">
+        📋 Citation Reference: <span class="citation-link" onclick="downloadDocument('67679d55f1a6c1e4d51d7ad7', 'Test Document.pdf')">Test Document.pdf--67679d55f1a6c1e4d51d7ad7</span>
+    </div>
+    
+    <p>Expected behavior:</p>
+    <ul>
+        <li>Citation should be styled as a clickable link</li>
+        <li>Hover should show visual feedback</li>
+        <li>Click should show "Downloading..." temporarily</li>
+        <li>Should extract document ID and call download API</li>
+    </ul>
+
+    <script>
+        // Mock DocumentService for testing
+        window.downloadDocument = async (documentId, documentName) => {
+            console.log(`🔗 Citation clicked: ${documentName} (ID: ${documentId})`);
+            
+            const target = window.event?.target;
+            const originalText = target?.textContent || documentName;
+            
+            if (target) {
+                target.textContent = 'Downloading...';
+                target.style.pointerEvents = 'none';
+                target.style.opacity = '0.7';
+            }
+            
+            // Simulate download delay
+            setTimeout(() => {
+                console.log(`✅ Mock download completed for: ${documentName}`);
+                alert(`Mock download completed for: ${documentName}\nDocument ID: ${documentId}`);
+                
+                if (target) {
+                    target.textContent = originalText;
+                    target.style.pointerEvents = 'auto';
+                    target.style.opacity = '1';
+                }
+            }, 2000);
+        };
+    </script>
+</body>
+</html>

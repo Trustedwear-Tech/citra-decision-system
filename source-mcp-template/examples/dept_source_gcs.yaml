@@ -1,0 +1,68 @@
+# =============================================================================
+# Dept Source — Google Cloud Storage (Parquet / CSV / XLSX in a bucket)
+# =============================================================================
+# Uses DatasetKind.duckdb — the existing dispatcher branch handles gs:// URIs
+# natively via DuckDB's httpfs extension. The optional connectors/gcs_connector.py
+# adds list_objects / extract_schema / presigned_url for catalogue building.
+#
+# Prerequisites on the dept-MCP host:
+#   pip install duckdb>=1.0.0                        # already in default reqs
+#   pip install google-cloud-storage>=2.16.0          # only if you use the helpers
+#
+# Credentials — TWO ways:
+#   1. HMAC keys (simplest, works with DuckDB's httpfs natively):
+#        GCS_HMAC_ACCESS_KEY_ID = GOOG1E...
+#        GCS_HMAC_SECRET        = ...
+#      Generate via `gcloud storage hmac create <SA>` against a SA with
+#      Storage Object Viewer on the bucket. The duckdb dispatcher
+#      installs these as a DuckDB SECRET on first use.
+#   2. SA JSON (used only by gcs_connector helpers — list_objects /
+#      presigned_url). Not needed for SELECT execution.
+#        ACME_OPS_GCS_CREDENTIALS_FILE = /run/secrets/ops-gcs-sa.json
+# =============================================================================
+
+source_id: acme-ops-gcs-parquet
+dept_id:   ops
+org_id:    acme-corp
+type:      structured
+is_active: true
+
+name: ACME Ops — Daily plant exports (GCS)
+description: |
+  Per-plant daily parquet drops from the OT historian into
+  gs://acme-ops-prod/historian/<plant_id>/yyyy=YYYY/mm=MM/dd=DD/*.parquet.
+  Schema: ts, plant_id, machine_id, sensor, value, unit, quality_flag.
+  ~80 GB/year, partitioned. Use for sensor-level drilldowns and
+  short-window anomaly checks. Aggregates >1 month are in BigQuery.
+
+tags: [operations, historian, sensors, parquet, gcs]
+
+visibility:
+  roles_allowed: [user, dept_admin, org_admin, super_admin]
+  cross_org_ids: []
+  public_within_org: false
+
+# Connection block is light — the duckdb dispatcher reads credentials from
+# the GCS_HMAC_* env vars at runtime.
+connection:
+  type: gcs                              # informational; dispatch keys on dataset.kind
+  env_prefix: ACME_OPS_GCS
+  default_bucket: acme-ops-prod
+
+datasets:
+  - id: acme-ops-gcs-parquet.historian_daily
+    physical_name: historian_daily
+    name: Historian daily readings
+    kind: duckdb                          # the dispatcher's existing duckdb branch handles gs://
+    description: |
+      One row per sensor reading. Glob lets DuckDB project partitions —
+      filter by ts BETWEEN ... in the WHERE clause and DuckDB will prune.
+    read_via:
+      kind: duckdb
+      table: historian_daily              # the agent SELECTs from this name
+      files:
+        - gs://acme-ops-prod/historian/*/yyyy=*/mm=*/dd=*/*.parquet
+      extra: {}
+
+options:
+  query_timeout_seconds: 90

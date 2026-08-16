@@ -1,0 +1,36 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# apps.citra-ai.com -> citra-app-runtime-prod (SmartApp runtime).
+# Direct path: Cloudflare -> ALB (citra-ai-tg :80) -> this Traefik router.
+# Auth: the runtime receives the user JWT via the launch URL's ?_t= query
+# param (Traefik passes query string + headers through unchanged), then
+# forwards it to the dept-MCP as X-User-JWT. No path strip (runtime serves
+# the SmartApp UI at /<slug>).
+http:
+  routers:
+    smart_app_runtime:
+      entryPoints:
+        - web
+      rule: "Host(`apps.citra-ai.com`)"
+      service: smart_app_runtime_svc
+  services:
+    smart_app_runtime_svc:
+      loadBalancer:
+        passHostHeader: true
+        # The agent endpoints (/api/chat, /api/run, /api/apps/.../approve) now
+        # keepalive-STREAM (SSE) so long turns don't 504. Use slow_timeouts
+        # (responseHeaderTimeout 1800s / idleConnTimeout 600s — same transport
+        # the smart_app_service + action_chat SSE routers use) instead of the
+        # default, and flush each chunk immediately so heartbeats reach the
+        # client without proxy buffering.
+        serversTransport: slow_timeouts
+        responseForwarding:
+          flushInterval: "100ms"
+        servers:
+          - url: "http://citra-app-runtime-prod:3100"

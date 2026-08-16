@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Citra AI",
+    "owner": "CitraAI",
+    "scheme": "com.citra.citraai",
+    "slug": "snack-e648fda8-9285-4a2c-b428-2065674c1833",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/citra-logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/citra-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.citra.citraai"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/citra-logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.citra.citraai",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "com.citra.citraai"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/citra-logo.png",
+      "name": "Citra AI",
+      "shortName": "Citra AI",
+      "lang": "en",
+      "scope": "/",
+      "themeColor": "#3498db",
+      "backgroundColor": "#ffffff",
+      "display": "standalone",
+      "orientation": "any",
+      "startUrl": "/",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

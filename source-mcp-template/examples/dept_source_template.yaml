@@ -1,0 +1,125 @@
+# =============================================================================
+# Dept Source — Taxonomy-Aware Template
+# =============================================================================
+# Drop this into the Citra-Service ``dept_sources`` Mongo collection (one
+# document per source). Operators / Studio engineers fill in the TODO markers
+# during a customer engagement.
+#
+# Lifecycle:
+#   1. You insert/edit this document in Mongo (or via Citra-Service admin UI).
+#   2. The dept-mcp polls ``dept_sources`` and re-loads on change.
+#   3. dept-mcp re-registers with discovery-service on each load.
+#   4. Citra-Service routing LLM picks up the new taxonomy on its next
+#      /tools/available refresh (5-min cache) and starts injecting
+#      ``doc_types`` filters automatically.
+#
+# Required fields are marked REQUIRED. Everything else is optional.
+# =============================================================================
+
+# ── Identity ────────────────────────────────────────────────────────────────
+source_id: TODO_source_id          # REQUIRED — stable slug, e.g. "plant-policies-and-sops"
+dept_id:   TODO_dept_id            # REQUIRED — matches dept-mcp's DEPT_IDS, e.g. "plant_ops"
+org_id:    TODO_org_id             # REQUIRED — tenant identifier, e.g. "acme-cement"
+type:      semantic                # REQUIRED — semantic | structured | mongodb | rest_api
+is_active: true
+
+# ── Display / routing ───────────────────────────────────────────────────────
+name: TODO Display Name            # Shown in admin UI + LLM tool selector
+description: |                     # REQUIRED — what the routing LLM sees.
+  TODO: 1-3 sentences describing what data this source contains.
+  Mention BUSINESS INTENT (not table names), TIME COVERAGE, and any
+  customer-specific vocabulary or acronyms. Keep it under ~600 chars so
+  it does not bloat the routing LLM context.
+  Example: "Plant Operations document library — policies, SOPs,
+  equipment manuals, and external standards (BIS, GCCA). Covers kiln,
+  mill, cooler, crusher, conveyor, packing. Last updated quarterly."
+
+tags:
+  - TODO_tag_1                     # e.g. "plant", "operations", "compliance"
+  - TODO_tag_2
+
+# ── Taxonomy (semantic sources only) ────────────────────────────────────────
+# Surfaced to the routing LLM as enum values for the ``doc_types`` parameter.
+# Each entry's id MUST match what the ingestion pipeline writes to the
+# Milvus ``doc_type`` field (see VectorSinkNode default_doc_type / per-item
+# override).
+#
+# Drop this block entirely for structured / mongodb / rest_api sources.
+taxonomy:
+  doc_types:
+    - id: policy
+      label: Policies
+      synonyms: [rule, guideline, code of conduct, norm]
+      examples:
+        - TODO_policy_example_1    # e.g. "Confined Space Entry Policy v3"
+        - TODO_policy_example_2
+
+    - id: sop
+      label: Standard Operating Procedures
+      synonyms: [procedure, runbook, work instruction, how-to]
+      examples:
+        - TODO_sop_example_1       # e.g. "Kiln 3 Startup SOP"
+        - TODO_sop_example_2
+
+    - id: manual
+      label: Equipment / Technical Manuals
+      synonyms: [handbook, datasheet, OEM manual, specification]
+      examples:
+        - TODO_manual_example_1    # e.g. "FLSmidth Kiln OEM Manual"
+
+    - id: contract
+      label: Contracts & Agreements
+      synonyms: [agreement, MoU, PO terms, vendor contract]
+      examples:
+        - TODO_contract_example_1
+
+    - id: regulation
+      label: External Regulations & Standards
+      synonyms: [BIS, GCCA, statute, circular, government rule]
+      examples:
+        - TODO_regulation_example_1   # e.g. "BIS 1489-1:2015 OPC"
+
+    # Optional extras — uncomment if the customer has these categories.
+    # - id: report
+    #   label: Reports & MIS
+    #   synonyms: [board pack, monthly review, MIS]
+    #   examples: []
+    # - id: correspondence
+    #   label: Correspondence
+    #   synonyms: [memo, circular, email]
+    #   examples: []
+
+  # Classification levels exposed to the routing LLM so it can request a
+  # ceiling (e.g. "search public + internal only"). Order matters:
+  # public < internal < confidential < restricted.
+  classification_levels:
+    - public
+    - internal
+    - confidential
+    # - restricted   # uncomment only if such data is actually ingested
+
+# ── Visibility / access control (PDP) ───────────────────────────────────────
+visibility:
+  roles_allowed:                   # JWT roles permitted to query this source
+    - user
+    - dept_admin
+    - org_admin
+    - super_admin
+  cross_org_ids: []                # Other org_ids granted read access (rare)
+  public_within_org: false         # true → any user in this org can see it
+
+# ── Ingestion linkage ───────────────────────────────────────────────────────
+# The Citra Workflow Engine pipeline that ingests this source. The pipeline's
+# VectorSinkNode should set ``default_doc_type`` to one of the taxonomy ids
+# above, OR tag chunks per-item via ``item.metadata.doc_type`` for mixed
+# pipelines (e.g. one Sharepoint folder containing both policies and SOPs).
+workflow_id: TODO_workflow_id      # Mongo _id of the ingestion workflow
+
+# ── Connection (only for non-semantic types) ────────────────────────────────
+# For ``type: semantic`` sources ingestion runs in a workflow, NOT here.
+# For SQL / Mongo / API sources, a connection_ref points to a stored
+# credential profile.
+# connection_ref: TODO_credential_profile_id
+
+# ── Optional ────────────────────────────────────────────────────────────────
+query_timeout_seconds: 30          # Per-source override (capped by MCP_CALL_HARD_CAP)

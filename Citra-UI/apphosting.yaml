@@ -1,0 +1,77 @@
+# Settings for Backend (on Cloud Run).
+# See https://firebase.google.com/docs/app-hosting/configure#cloud-run
+runConfig:
+  minInstances: 0
+  # maxInstances: 100
+  # concurrency: 80
+  # cpu: 1
+  # memoryMiB: 512
+
+# Environment variables and secrets.
+env:
+  # Configure environment variables for Firebase App Hosting
+  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
+  - variable: EXPO_PUBLIC_ENVIRONMENT
+    value: production
+    availability:
+      - BUILD
+      - RUNTIME
+  
+  - variable: EXPO_PUBLIC_CLOUD_BASE_URL
+    value: https://api.citra-ai.com
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_CLOUD_TRANSCRIBE_URL
+    value: https://api.citra-ai.com/whisper/transcribe
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_CLOUD_CITRA_SERVICE
+    value: https://api.citra-ai.com/citra-ai/
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_API_TIMEOUT
+    value: "300000"
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_MAX_RETRY_ATTEMPTS
+    value: "3"
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_ENABLE_ENHANCED_RAG
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_ENABLE_SMART_SUGGESTIONS
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_ENABLE_INTENT_ANALYSIS
+    value: "true"
+    availability:
+      - BUILD
+      - RUNTIME
+      
+  - variable: EXPO_PUBLIC_ENABLE_DEBUG_LOGGING
+    value: "false"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  # Grant access to secrets in Cloud Secret Manager.
+  # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
+  # - variable: MY_SECRET
+  #   secret: mySecretRef

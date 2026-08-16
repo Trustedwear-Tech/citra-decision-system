@@ -1,0 +1,316 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI Platform — Release & Publish Pipeline
+# =============================================================================
+# Manual trigger — builds all service images, publishes to GHCR, creates
+# a GitHub Release with version table and changelog.
+# =============================================================================
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (semver, e.g. 1.0.0)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run — build images but do not push or create release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write        # For sigstore signing
+  attestations: write    # For GitHub attestations
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+  VERSION: ${{ inputs.version }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Validate version & create git tag
+  # ---------------------------------------------------------------------------
+  validate:
+    name: Validate Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: v${{ inputs.version }}
+    steps:
+      - name: Validate semver format
+        run: |
+          if ! echo "${{ inputs.version }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Invalid version format '${{ inputs.version }}'. Expected semver (e.g. 1.0.0 or 1.0.0-rc.1)"
+            exit 1
+          fi
+          echo "✅ Version v${{ inputs.version }} is valid"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check tag does not already exist
+        run: |
+          if git rev-parse "v${{ inputs.version }}" >/dev/null 2>&1; then
+            echo "::error::Tag v${{ inputs.version }} already exists"
+            exit 1
+          fi
+
+      # The licence converts each released version to Apache-2.0 four years
+      # AFTER that version shipped, so the Change Date belongs to the release,
+      # not to the repository. Nothing used to move it: LICENSE still named
+      # version 0.1.0 with a 2030-08-09 Change Date, and a release cut in 2028
+      # against that file would have converted after two years instead of four.
+      # A version published as open source cannot be re-closed, so a missed bump
+      # gives away the remaining years permanently.
+      #
+      # This runs BEFORE the tag is created. A tag pointing at a commit whose
+      # LICENSE names the wrong version is the precise failure being prevented.
+      - name: Set the BUSL Change Date for this release
+        run: |
+          python3 scripts/set_license_change_date.py --version "${{ inputs.version }}"
+          git --no-pager diff -- LICENSE
+
+      - name: Commit the licence bump
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- LICENSE; then
+            echo "LICENSE already carries this version and Change Date."
+          else
+            git add LICENSE
+            git commit -m "chore(license): v${{ inputs.version }} converts to Apache-2.0 four years from release"
+            # If branch protection rejects this, the job fails and NO tag is
+            # created -- which is the outcome we want. Never tag a stale LICENSE.
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+      # Belt and braces: whatever happened above, refuse to tag unless LICENSE
+      # now names this version with a Change Date exactly four years out.
+      - name: Refuse to tag a stale LICENSE
+        run: |
+          python3 scripts/set_license_change_date.py \
+            --version "${{ inputs.version }}" --check
+
+      # A signed tag is cryptographic proof of what was released, when, and by
+      # whom -- evidence a file header cannot provide, and the cheapest item on
+      # the provenance list. It needs a key, so it is conditional; what it is
+      # NOT is silent. An unsigned release says so in the log and in the job
+      # summary, because a release everyone assumes is signed and isn't is worse
+      # than one openly known to be unsigned.
+      - name: Import the signing key
+        id: signing
+        if: ${{ !inputs.dry_run }}
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No GPG_PRIVATE_KEY secret — tag v${{ inputs.version }} will be UNSIGNED."
+            echo "> :warning: **Release tag is unsigned.** Add a \`GPG_PRIVATE_KEY\` secret to sign future releases — see docs/license-stamping-plan.md." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')
+          echo "default-cache-ttl 3600" >> ~/.gnupg/gpg-agent.conf
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          gpg-connect-agent reloadagent /bye
+          git config user.signingkey "$KEY_ID"
+          git config commit.gpgsign true
+          git config tag.gpgsign true
+          git config gpg.program gpg
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+          echo "Signing with key $KEY_ID"
+
+      - name: Create and push tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
+            # Sign, then VERIFY. A signing step that silently produced an
+            # unsigned tag would be the worst of both worlds.
+            git tag -s "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+            git tag -v "v${{ inputs.version }}"
+          else
+            git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+          fi
+          git push origin "v${{ inputs.version }}"
+
+  # ---------------------------------------------------------------------------
+  # Build and publish Docker images
+  # ---------------------------------------------------------------------------
+  publish-images:
+    name: Publish ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: citra-service
+            context: Citra-Service
+            dockerfile: Citra-Service/Dockerfile
+          - service: user-service
+            context: Citra-User-Service
+            dockerfile: Citra-User-Service/Dockerfile
+          - service: citra-ui
+            context: Citra-UI
+            dockerfile: Citra-UI/Dockerfile.web
+          - service: duckdb-query-service
+            context: duckdb-query-service
+            dockerfile: duckdb-query-service/Dockerfile
+          - service: reranker-service
+            context: reranker-service
+            dockerfile: reranker-service/Dockerfile
+          - service: playwright-render-service
+            context: playwright-render-service
+            dockerfile: playwright-render-service/Dockerfile
+          - service: mcp-server
+            context: citra-mcp-server
+            dockerfile: citra-mcp-server/Dockerfile
+          - service: monitoring-service
+            context: Monitoring-Service
+            dockerfile: Monitoring-Service/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: ${{ !inputs.dry_run }}
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ inputs.version }}
+            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
+          labels: |
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Attest build provenance
+        if: ${{ !inputs.dry_run }}
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Output image info
+        run: |
+          echo "### ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: \`${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ inputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Digest: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Dry run: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+
+  # ---------------------------------------------------------------------------
+  # Generate SBOM
+  # ---------------------------------------------------------------------------
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: publish-images
+    if: ${{ !inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+
+  # ---------------------------------------------------------------------------
+  # Create GitHub Release
+  # ---------------------------------------------------------------------------
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [publish-images, sbom]
+    if: ${{ !inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" > CHANGELOG.txt
+          else
+            git log --pretty=format:"- %s (%h)" -50 > CHANGELOG.txt
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: Citra AI Platform v${{ inputs.version }}
+          files: sbom.spdx.json
+          body: |
+            ## Citra AI Platform v${{ inputs.version }}
+
+            ### Docker Images
+
+            All images published to GitHub Container Registry:
+
+            | Service | Image | Tag |
+            |---------|-------|-----|
+            | Core AI Backend | `${{ env.IMAGE_PREFIX }}/citra-service` | `${{ inputs.version }}` |
+            | Web Frontend | `${{ env.IMAGE_PREFIX }}/citra-ui` | `${{ inputs.version }}` |
+            | User Service | `${{ env.IMAGE_PREFIX }}/user-service` | `${{ inputs.version }}` |
+            | DuckDB Query Service | `${{ env.IMAGE_PREFIX }}/duckdb-query-service` | `${{ inputs.version }}` |
+            | Reranker Service | `${{ env.IMAGE_PREFIX }}/reranker-service` | `${{ inputs.version }}` |
+            | Playwright Render | `${{ env.IMAGE_PREFIX }}/playwright-render-service` | `${{ inputs.version }}` |
+            | MCP Server | `${{ env.IMAGE_PREFIX }}/mcp-server` | `${{ inputs.version }}` |
+            | Monitoring | `${{ env.IMAGE_PREFIX }}/monitoring-service` | `${{ inputs.version }}` |
+
+            ### Quick Start (Self-Hosted)
+
+            ```bash
+            # Pull all images
+            CITRA_IMAGE_TAG=${{ inputs.version }} docker compose \
+              -f infrastructure/compose/docker-compose.base.yml \
+              -f infrastructure/compose/docker-compose.prebuilt.yml \
+              --env-file .env up -d
+            ```
+
+            ### Changelog
+            ${{ steps.changelog.outputs.changelog }}
+          generate_release_notes: true

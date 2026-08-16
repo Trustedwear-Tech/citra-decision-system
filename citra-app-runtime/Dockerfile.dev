@@ -1,0 +1,28 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache curl bash
+
+# Copy package files for dependency caching
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --legacy-peer-deps
+
+# Expose Next.js port
+EXPOSE 3100
+
+ENV PORT=3100
+ENV NODE_ENV=production
+
+# Build a production bundle into the image (no watcher at runtime).
+# Source is baked in here (no bind mount), so code changes require a rebuild:
+#   .\dev-docker.ps1  ->  Re-deploy services  ->  One service  ->  citra-app-runtime
+COPY . .
+RUN npm run build
+
+# Serve the production build (next start -p 3100). No file watching.
+CMD ["npm", "start"]

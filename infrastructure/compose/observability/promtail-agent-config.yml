@@ -1,0 +1,82 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Promtail (agent) — ships a non-obs box's Docker logs → central Loki
+# =============================================================================
+# ⚠️ DO NOT DELETE — dormant in demo-prod, REQUIRED in the customer topology.
+# Demo-prod is one box (Citra-AI-1) which hosts the obs stack itself, so nothing
+# runs this agent today. Every additional box in the customer topology needs it
+# to ship logs to the central Loki. See docs/deployment-topology.md.
+#
+# Runs on boxes that do NOT host the observability stack. Discovers all Docker
+# containers via the local socket and forwards them to the central Loki on the
+# app box. A constant `host` label distinguishes boxes in Grafana.
+#
+# Requires `-config.expand-env=true` so ${LOKI_PUSH_HOST} / ${OBS_HOST_LABEL}
+# are read from the container environment (set in docker-compose.obs-agent.yml).
+#
+# Grafana query examples:
+#   {host="citra-common"}                       -- all Common-box logs
+#   {host="citra-common", container="vault"}    -- Vault only
+# =============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /tmp/promtail-positions.yaml
+
+clients:
+  - url: http://${LOKI_PUSH_HOST}:3100/loki/api/v1/push
+    batchsize: 1048576   # 1 MiB
+    batchwait: 1s
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["com.docker.compose.project"]
+
+    relabel_configs:
+      # constant label identifying which host these logs came from
+      - target_label: host
+        replacement: ${OBS_HOST_LABEL}
+
+      # container name (strip leading slash Docker prepends)
+      - source_labels: [__meta_docker_container_name]
+        regex: /(.*)
+        target_label: container
+
+      # compose service name — primary label in Grafana queries
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        target_label: service
+
+      # stdout vs stderr
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: stream
+
+      # compose project (env) — lets you scope to prod vs staging
+      - source_labels: [__meta_docker_container_label_com_docker_compose_project]
+        target_label: project
+
+    pipeline_stages:
+      # Docker json-file driver wraps each line as {"log":"...\n","stream":"...","time":"..."}
+      - json:
+          expressions:
+            output: log
+            stream: stream
+      - labels:
+          stream:
+      - output:
+          source: output

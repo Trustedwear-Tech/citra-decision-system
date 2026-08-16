@@ -1,0 +1,32 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install system dependencies if any needed
+RUN apk add --no-cache curl bash
+
+# Copy package files for dependency caching
+COPY package.json package-lock.json* ./
+
+# Install dependencies (development dependencies are required)
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --legacy-peer-deps
+
+# Install the static file server BEFORE copying source so frontend rebuilds
+# (which only change source) reuse this cached layer.
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g serve
+
+# Bake the production web build into the image (no Metro watcher at runtime).
+# .dockerignore excludes .env.production / .env.test so the export resolves to
+# .env (EXPO_PUBLIC_ENVIRONMENT=development -> localhost API URLs), matching the
+# previous `expo start --web` behavior. Code changes require a rebuild:
+#   .\dev-docker.ps1  ->  Re-deploy services  ->  One service  ->  citra-ui
+COPY . .
+RUN npm run web:build
+
+# Expose Expo Web port
+EXPOSE 8081
+
+# Serve the static export. No file watching.
+CMD ["serve", "-s", "dist", "-l", "8081"]

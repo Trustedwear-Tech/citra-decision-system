@@ -1,0 +1,347 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI - Pre-Built Container Images (REFERENCE / LOCAL-DEV ONLY)
+# =============================================================================
+# Status as of 2026-05-15: this file is NOT what runs on Citra-AI-1.
+# The actual cloud deploy uses per-service compose files at
+# /home/ubuntu/citra-ai/services/<ServiceName>/docker-compose.yml with
+# Citra-Service sharded 8x. See memory project_actual_box_deploy_layout
+# for the full topology.
+#
+# Keep this file as:
+#   (a) Local-dev / single-box quickstart (`docker compose -f prebuilt.yml up -d`)
+#   (b) A canonical "what's the full service list" reference - mirrors the CI
+#       matrix in .github/workflows/deploy.yml.
+#
+# scripts/deploy.ps1 targets the per-service compose files, not this one.
+#
+# Service inventory matches the 16-service local-dev list, minus the two that
+# don't run as long-lived containers in cloud:
+#   - citra-ui          → deployed to Firebase, not EC2
+#   - citra-app-builder → ephemeral image, spawned per-build by action-sandbox-host
+#
+# Usage (on Citra-AI-1):
+#   cd /home/ubuntu/Citra-AI/infrastructure
+#   docker compose --project-name citra-ai \
+#     --env-file /home/ubuntu/Citra-AI/.env \
+#     -f compose/docker-compose.base.yml \
+#     -f compose/docker-compose.prebuilt.yml \
+#     up -d
+#
+# Override the tag (CI publishes both <env>-<sha> and <env>-latest):
+#   CITRA_IMAGE_TAG=prod-latest docker compose ... up -d
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-common: &common
+  restart: unless-stopped
+  env_file:
+    - ../../.env
+  networks:
+    - citra-network
+  logging: *default-logging
+
+services:
+  # ---------------------------------------------------------------------------
+  # Citra-Service — core AI backend
+  # ---------------------------------------------------------------------------
+  citra-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/citra-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: citra-service
+    ports:
+      - "${CITRA_SERVICE_PORT:-7001}:7001"
+    volumes:
+      - citra_service_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Citra-User-Service — auth + user management (Node/Express)
+  # ---------------------------------------------------------------------------
+  citra-user-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/citra-user-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: citra-user-service
+    ports:
+      - "${USER_SERVICE_PORT:-7004}:7004"
+    volumes:
+      - user_service_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # duckdb-query-service — embedded analytic engine
+  # ---------------------------------------------------------------------------
+  duckdb-query-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/duckdb-query-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: duckdb-query-service
+    ports:
+      - "${DUCKDB_PORT:-7050}:7050"
+    volumes:
+      - duckdb_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7050/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # reranker-service — ML re-ranking
+  # ---------------------------------------------------------------------------
+  reranker-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/reranker-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: reranker-service
+    ports:
+      - "${RERANKER_PORT:-7302}:7302"
+    volumes:
+      - reranker_models:/root/.cache/huggingface
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7302/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # discovery-service — tool/MCP registry
+  # ---------------------------------------------------------------------------
+  discovery-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/discovery-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: discovery-service
+    ports:
+      - "${DISCOVERY_PORT:-7150}:7150"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7150/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # action-sandbox-host — owns local Docker daemon, spawns sandbox containers
+  # NOTE: requires /var/run/docker.sock mounted. Do NOT expose port publicly.
+  # ---------------------------------------------------------------------------
+  action-sandbox-host:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/action-sandbox-host:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: action-sandbox-host
+    ports:
+      - "127.0.0.1:${SANDBOX_HOST_PORT:-7090}:7090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # action-chat-service — multi-step chat / agent loop
+  # ---------------------------------------------------------------------------
+  action-chat-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/action-chat-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: action-chat-service
+    ports:
+      - "${ACTIONCHAT_PORT:-8090}:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # smart-app-service — AppSpec/AgentSpec orchestration + build pod manager
+  # ---------------------------------------------------------------------------
+  smart-app-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/smart-app-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: smart-app-service
+    environment:
+      # Run 2+ uvicorn workers so a single long Decision-App /run (1-2 min of
+      # sequential LLM iterations) cannot starve every concurrent request on one
+      # worker (observed: the accept-backlog fills and new connections are
+      # refused until the run finishes). Safe to scale here: per-replica
+      # singletons are leader-elected and the trigger-queue consumer joins a
+      # Redis Streams consumer group (see smart-app-service/Dockerfile). Tune via
+      # SMART_APP_WEB_CONCURRENCY; size the Mongo pool to workers × replicas.
+      WEB_CONCURRENCY: "${SMART_APP_WEB_CONCURRENCY:-2}"
+    ports:
+      - "${SMART_APP_PORT:-9100}:9100"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # citra-app-runtime — Next.js multi-tenant runtime for published Apps
+  # ---------------------------------------------------------------------------
+  citra-app-runtime:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/citra-app-runtime:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: citra-app-runtime
+    ports:
+      - "${RUNTIME_PORT:-3100}:3100"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3100/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # data-discovery-service — MCP/source catalogue crawler
+  # ---------------------------------------------------------------------------
+  data-discovery-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/data-discovery-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: data-discovery-service
+    ports:
+      - "${DATA_DISCOVERY_PORT:-7160}:7160"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:7160/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # citra-worker — async queue worker (no http port)
+  # ---------------------------------------------------------------------------
+  citra-worker:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/citra-worker:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: citra-worker
+
+  # ---------------------------------------------------------------------------
+  # citra-workflow — workflow engine
+  # ---------------------------------------------------------------------------
+  citra-workflow:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/citra-workflow:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: citra-workflow
+    ports:
+      - "${WORKFLOW_PORT:-9200}:9200"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # citra-mcp-service — internal MCP gateway
+  # ---------------------------------------------------------------------------
+  citra-mcp-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/citra-mcp-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: citra-mcp-service
+    ports:
+      - "${MCP_PORT:-9300}:9300"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9300/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # playwright-render-service - server-side page render / screenshot / PDF
+  # ---------------------------------------------------------------------------
+  playwright-render-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/playwright-render-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: playwright-render-service
+    ports:
+      - "${PLAYWRIGHT_PORT:-3001}:3001"
+    shm_size: "1gb"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # monitoring-service - alertmanager webhook receiver + email/SES dispatch
+  # ---------------------------------------------------------------------------
+  monitoring-service:
+    <<: *common
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/monitoring-service:${CITRA_IMAGE_TAG:-prod-latest}
+    container_name: monitoring-service
+    ports:
+      - "${MONITORING_WEBHOOK_PORT:-8400}:8400"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8400/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # citra-app-builder - ephemeral build pod. NOT started by `docker compose up`
+  # (profile-gated). Image is pinned here so `docker compose pull` warms the
+  # registry cache; action-sandbox-host spawns container instances on demand.
+  # To pre-pull: `docker compose --profile builder pull citra-app-builder`
+  # ---------------------------------------------------------------------------
+  citra-app-builder:
+    image: ${CITRA_IMAGE_PREFIX:-ghcr.io/trustedwear-tech/citra-ai}/citra-app-builder:${CITRA_IMAGE_TAG:-prod-latest}
+    profiles: ["builder"]
+
+  # ---------------------------------------------------------------------------
+  # Excluded from this stack (intentional):
+  #   citra-ui          - deployed to Firebase via Citra-UI/deploy-simple.ps1
+  # ---------------------------------------------------------------------------
+
+volumes:
+  citra_service_logs:
+    driver: local
+  user_service_logs:
+    driver: local
+  duckdb_data:
+    driver: local
+  reranker_models:
+    driver: local
+
+networks:
+  citra-network:
+    external: true

@@ -1,0 +1,626 @@
+{
+  "_doc": "Acme Bank — Collections Prioritisation. Hand-authored PublishRequest (app_spec + agent_spec), published by demo-data/scripts/publish_apps.py. Identifiers must match SPEC.md §7. The case_signature is mandatory: without it officer corrections are stored uncoded and consolidation can only ever use them to reinforce, never to author — the app would record feedback forever and learn nothing.",
+  "session_id": "demo_seed_acme_bank_collections_priority_v1",
+  "skills": [],
+  "app_spec": {
+    "spec_version": "v0",
+    "slug": "acme-bank-collections-priority",
+    "title": "Collections Prioritisation",
+    "description": "Ranks the day's delinquent loan accounts for the collections desk — who to work first, on which channel — using bucket, overdue amount and the account's own contact history, grounded in the Collections & Recovery SOP.",
+    "headless": false,
+    "previous_owners": [],
+    "tenant_id": "acme-bank",
+    "org_id": "acme-bank",
+    "dept_ids": [
+      "collections"
+    ],
+    "audience": "dept:collections",
+    "inheritance_policy": "archive",
+    "inheritance_target": null,
+    "inheritance_grace_days": 30,
+    "kind": "app",
+    "agent_id": "agent_acme_bank_collections_priority_v1",
+    "theme": null,
+    "data_sources": [
+      {
+        "id": "ds_delinquencies",
+        "type": "mcp",
+        "ref": "loan_servicing.delinquencies",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_accounts",
+        "type": "mcp",
+        "ref": "loan_servicing.loan_accounts",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_activities",
+        "type": "mcp",
+        "ref": "loan_servicing.collection_activities",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_schedule",
+        "type": "mcp",
+        "ref": "loan_servicing.repayment_schedule",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_policy",
+        "type": "rag",
+        "ref": "acme_bank_policy_library",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_account_activities",
+        "type": "mcp",
+        "ref": "loan_servicing.collection_activities",
+        "doc_types": [],
+        "filters": {
+          "loan_account_no": "{param.id}"
+        },
+        "mode": "merge"
+      }
+    ],
+    "dataset_directory": [],
+    "case_signature": {
+      "version": 1,
+      "facets": [
+        {
+          "family": "bucket",
+          "kind": "enum",
+          "from_column": "bucket",
+          "values": [
+            "0",
+            "1-30",
+            "31-60",
+            "61-90",
+            "90+"
+          ]
+        },
+        {
+          "family": "overdue_band",
+          "kind": "band",
+          "from_column": "overdue_amount",
+          "edges": [
+            50000,
+            300000,
+            1500000
+          ]
+        },
+        {
+          "family": "last_payment",
+          "kind": "presence",
+          "from_column": "last_paid_on"
+        },
+        {
+          "family": "risk_flag",
+          "kind": "enum",
+          "from_column": "risk_flag",
+          "values": [
+            "none",
+            "skip_trace",
+            "dispute",
+            "legal"
+          ]
+        }
+      ],
+      "reason_codes": [
+        {
+          "code": "wrong_priority",
+          "label": "Wrong priority for this account"
+        },
+        {
+          "code": "already_paid",
+          "label": "Already paid or cleared"
+        },
+        {
+          "code": "dispute_raised",
+          "label": "Customer has raised a dispute"
+        },
+        {
+          "code": "wrong_contact",
+          "label": "Contact details are wrong"
+        },
+        {
+          "code": "legal_hold",
+          "label": "Account is under legal hold"
+        },
+        {
+          "code": "hardship_case",
+          "label": "Genuine hardship — different treatment"
+        },
+        {
+          "code": "other",
+          "label": "Something else"
+        }
+      ],
+      "learning": {
+        "promotion_min_officers": 3,
+        "clause_budget_words": 1000
+      }
+    },
+    "pages": [
+      {
+        "id": "worklist",
+        "kind": "standard",
+        "title": "Today's worklist",
+        "panels": [
+          {
+            "id": "priority_worklist",
+            "title": "Accounts to work today",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_delinquencies",
+            "query": {},
+            "columns": [
+              "loan_account_no",
+              "bucket",
+              "dpd",
+              "overdue_amount",
+              "last_paid_on",
+              "risk_flag"
+            ],
+            "actions": [
+              {
+                "label": "Open account",
+                "agent_action": null,
+                "navigate": {
+                  "page": "account_detail",
+                  "params": {
+                    "id": "{row.loan_account_no}"
+                  }
+                },
+                "args": {},
+                "is_row_click": true
+              },
+              {
+                "label": "Log a contact attempt",
+                "agent_action": "log_collection_activity",
+                "navigate": null,
+                "args": {},
+                "is_row_click": false
+              }
+            ],
+            "view": "table",
+            "page_size": 25,
+            "searchable_columns": [
+              "loan_account_no"
+            ],
+            "filters": [],
+            "badge_column": "bucket",
+            "title_column": "loan_account_no",
+            "default_sort": {
+              "column": "dpd",
+              "dir": "desc"
+            },
+            "group_by": null
+          },
+          {
+            "id": "worklist_by_bucket",
+            "title": "Delinquent accounts by bucket",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_delinquencies",
+            "query": {},
+            "x": "bucket",
+            "y": "count",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "count"
+          }
+        ]
+      },
+      {
+        "id": "account_detail",
+        "kind": "standard",
+        "title": "Account",
+        "panels": [
+          {
+            "id": "account_view",
+            "title": "Account and contact history",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "detail",
+            "linked_to": "priority_worklist",
+            "id_field": "loan_account_no",
+            "sections": [
+              {
+                "type": "fields",
+                "title": "Delinquency",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "markdown",
+                "title": "What to check",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": "Work the account against the Collections & Recovery SOP. Check the bucket and DPD, the overdue amount, and the contact history. A promise to pay that was NOT kept (`ptp_kept = false`) is materially different from a first contact — escalate one contact tier rather than taking a fresh promise. Stop collection activity entirely on a `dispute` outcome and route it to servicing. Contact only between 08:00 and 19:00. Cite the SOP clause you relied on.",
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "agent_timeline",
+                "title": "Contact attempts",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "documents",
+                "title": "Collections SOP",
+                "agent_role": null,
+                "data_source": "ds_policy",
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "agent_chat",
+                "title": "Ask the collections co-pilot",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              }
+            ]
+          },
+          {
+            "id": "contact_history",
+            "title": "Contact history for this account",
+            "icon": null,
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_account_activities",
+            "query": {},
+            "columns": [
+              "attempted_at",
+              "channel",
+              "outcome",
+              "ptp_date",
+              "ptp_amount",
+              "ptp_kept",
+              "notes"
+            ],
+            "actions": [],
+            "view": "table",
+            "page_size": 25,
+            "searchable_columns": [],
+            "filters": [],
+            "badge_column": "outcome",
+            "badge_colors": {},
+            "secondary_columns": [],
+            "column_formats": {},
+            "title_column": "outcome",
+            "default_sort": {
+              "column": "attempted_at",
+              "dir": "desc"
+            },
+            "group_by": null
+          }
+        ]
+      },
+      {
+        "id": "policy",
+        "kind": "standard",
+        "title": "Policy",
+        "panels": [
+          {
+            "id": "policy_library",
+            "title": "Collections, NPA staging and the Fair Practices Code",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "document_view",
+            "data_source": "ds_policy",
+            "doc_types": [
+              "sop",
+              "circular",
+              "code"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "assistant",
+        "kind": "standard",
+        "title": "Assistant",
+        "panels": [
+          {
+            "id": "collections_chat",
+            "title": "Ask the collections co-pilot",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "agent_chat",
+            "agent_role": null,
+            "starter_prompts": [
+              "Who should I call first today, and why?",
+              "Show me accounts in bucket 61-90 with a broken promise to pay.",
+              "What does the SOP say about contacting a customer who has raised a dispute?"
+            ]
+          }
+        ]
+      }
+    ],
+    "navigation": {
+      "style": "sidebar",
+      "default_page": "worklist",
+      "show_chat_globally": false
+    },
+    "permissions": {},
+    "triggers": [],
+    "requirements_unmet": [],
+    "preview_mode": false,
+    "preview_until": null,
+    "status": "published"
+  },
+  "agent_spec": {
+    "spec_version": "v0",
+    "agent_id": "agent_acme_bank_collections_priority_v1",
+    "name": "Collections Prioritisation Agent (Acme Bank)",
+    "description": "Ranks delinquent accounts for the day and recommends the channel and next action, per the Collections & Recovery SOP.",
+    "model_tier": "tier_b",
+    "system_prompt": "You are the Collections Prioritisation co-pilot for Acme Bank's retail collections desk. You help an officer decide WHO to work today, on WHICH channel, and WHAT to do next. You never contact anyone yourself and you never move money.\n\nYour RULES are the SOP — the Collections & Recovery SOP, the Fair Practices Code and the asset-classification circular, retrieved through `ds_policy`. They are supreme. Cite the clause you relied on.\n\nPrioritise in the order the SOP gives (§9): (1) accounts with a promise to pay falling due today; (2) accounts about to roll into a worse bucket — DPD 28-30, 58-60, 88-90, because the boundary is a stage change and after it the account is harder and more expensive; (3) the highest overdue amount within the worst bucket; (4) accounts with no contact attempt in the last 7 days. EXCLUDE accounts flagged `dispute` or `legal` from routine worklists entirely.\n\nRead the contact history before recommending anything. A promise to pay with `ptp_kept = false` is a BROKEN promise — escalate one contact tier and do not simply take another promise; two broken promises go to the Collections Manager first. A `dispute` outcome stops collection activity on the disputed amount immediately. `wrong_number` means the account needs data correction, not another call.\n\nChannel follows the bucket (§2): 1-30 is SMS/WhatsApp/call, 31-60 adds a field visit, 61-90 adds a Collections Manager call. Contact only between 08:00 and 19:00.\n\nTreat genuine hardship — job loss, hospitalisation, business disruption — as a case for a workable arrangement referred to the manager, not as a harder call. Recovery is the recovery of a debt, not a punishment.\n\nWhen the officer logs the outcome of a contact, call `log_collection_activity` with the account, channel, outcome and any promise date and amount. [[write-back]]",
+    "actions": [
+      {
+        "name": "log_collection_activity",
+        "description": "Log a contact attempt and its outcome against a loan account, including any promise to pay.",
+        "model_tier": null,
+        "delegates_to": [],
+        "approval_required": true,
+        "input_schema": {
+          "type": "object",
+          "required": [
+            "loan_account_no"
+          ],
+          "properties": {
+            "loan_account_no": {
+              "type": "string"
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "channel",
+            "outcome",
+            "rationale",
+            "sop_clause_cited"
+          ],
+          "properties": {
+            "channel": {
+              "type": "string",
+              "enum": [
+                "call",
+                "sms",
+                "whatsapp",
+                "field",
+                "legal"
+              ]
+            },
+            "outcome": {
+              "type": "string",
+              "enum": [
+                "ptp",
+                "no_contact",
+                "dispute",
+                "refused",
+                "paid",
+                "wrong_number"
+              ]
+            },
+            "ptp_date": {
+              "type": "string"
+            },
+            "ptp_amount": {
+              "type": "number"
+            },
+            "rationale": {
+              "type": "string"
+            },
+            "sop_clause_cited": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "hitl_policy": null,
+    "rag": [],
+    "mcps": [],
+    "grounding": {
+      "source_id": "loan_servicing",
+      "dataset_id": "loan_servicing.collection_activities",
+      "source_kind": "sql",
+      "query": null,
+      "filters": {},
+      "max_results": 5000,
+      "source_id_field": "activity_id",
+      "input_fields": [
+        "loan_account_no",
+        "channel"
+      ],
+      "output_fields": [
+        "outcome",
+        "ptp_kept"
+      ],
+      "decision_field": "outcome",
+      "terminal_states": [],
+      "severity_field": null,
+      "reasoning_field": "notes",
+      "target_count": 6,
+      "per_decision_min": 1,
+      "min_samples": 4,
+      "min_canonical": 0,
+      "shrink_floor": 0.5,
+      "required_decision_classes": [],
+      "min_decision_fill_rate": 0.3,
+      "source_profile_baseline": {
+        "signals": {
+          "note": "demo seed grounding — acme-bank collections"
+        }
+      },
+      "evaluation_verdict": "Demo (Acme Bank): logged contact attempts carry the channel and the outcome, including whether a promise to pay was kept, so grounding on past activity is meaningful."
+    },
+    "outcome_poll": {
+      "enabled": true,
+      "auto_refresh": false,
+      "window_days": 14.0,
+      "kind": "sql",
+      "table": "delinquencies",
+      "key_field": "loan_account_no",
+      "payload_key_field": "loan_account_no",
+      "status_field": "bucket",
+      "good_values": [
+        "0",
+        "1-30"
+      ],
+      "bad_values": [
+        "90+"
+      ],
+      "neutral_values": [
+        "31-60",
+        "61-90"
+      ],
+      "hold_field": "risk_flag"
+    },
+    "learning_log": [],
+    "input_schema": null,
+    "memory_namespace": null,
+    "sub_agents": [],
+    "tools_v2": [
+      {
+        "name": "lookup_contact_history",
+        "description": "Contact attempts already made on this loan account — channel, outcome, promise-to-pay date/amount and whether it was kept. Read this BEFORE recommending the next contact: a broken PTP is a different situation from a first attempt. Columns: activity_id, loan_account_no, agent_id, channel, attempted_at, outcome, ptp_date, ptp_amount, ptp_kept, notes.",
+        "kind": "mcp",
+        "source_id": "loan_servicing",
+        "tool_name": "Collections & Recovery",
+        "input_schema_ref": null,
+        "dataset_id": "loan_servicing.collection_activities",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_loan_account",
+        "description": "The loan account — product, sanctioned amount, EMI, tenure and current status. Columns: loan_account_no, customer_id, application_id, product, principal, roi, emi_amount, tenure_months, disbursed_on, outstanding, dpd, bucket, npa_class, branch_code, restructured.",
+        "kind": "mcp",
+        "source_id": "loan_servicing",
+        "tool_name": "Collections & Recovery",
+        "input_schema_ref": null,
+        "dataset_id": "loan_servicing.loan_accounts",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_repayment_schedule",
+        "description": "Instalment-level history for the account, including which instalments bounced. Columns: schedule_id, loan_account_no, installment_no, due_date, emi_due, paid_amount, paid_on, status, bounce_reason.",
+        "kind": "mcp",
+        "source_id": "loan_servicing",
+        "tool_name": "Collections & Recovery",
+        "input_schema_ref": null,
+        "dataset_id": "loan_servicing.repayment_schedule",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "search_policy_library",
+        "description": "Search the Collections & Recovery SOP, the Fair Practices Code and the NPA circular for contact rules, PTP handling, dispute routing and calling hours.",
+        "kind": "rag",
+        "source_id": "acme_bank_policy_library",
+        "top_k": 8,
+        "classification_max": null
+      },
+      {
+        "name": "log_collection_activity",
+        "description": "Log the contact attempt and its outcome against the loan account, including any promise to pay.",
+        "kind": "mcp_action",
+        "source_id": "loan_servicing",
+        "dataset_id": "loan_servicing.collection_activities",
+        "action_id": "log_collection_activity",
+        "input_schema": {
+          "type": "object",
+          "required": [
+            "activity_id",
+            "loan_account_no",
+            "agent_id",
+            "channel",
+            "attempted_at",
+            "outcome"
+          ],
+          "properties": {
+            "activity_id": {
+              "type": "string",
+              "description": "New activity id."
+            },
+            "loan_account_no": {
+              "type": "string",
+              "description": "Target loan account."
+            },
+            "agent_id": {
+              "type": "string",
+              "description": "Collections agent."
+            },
+            "channel": {
+              "type": "string",
+              "description": "call | sms | whatsapp | field | legal."
+            },
+            "attempted_at": {
+              "type": "string",
+              "description": "ISO timestamp of the attempt."
+            },
+            "outcome": {
+              "type": "string",
+              "description": "ptp | no_contact | dispute | refused | paid | wrong_number."
+            },
+            "ptp_date": {
+              "type": "string",
+              "description": "Promised date, when outcome=ptp."
+            },
+            "ptp_amount": {
+              "type": "number",
+              "description": "Promised amount, INR."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Officer note."
+            }
+          }
+        },
+        "editable_fields": []
+      }
+    ]
+  }
+}

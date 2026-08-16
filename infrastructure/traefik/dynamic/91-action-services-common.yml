@@ -1,0 +1,47 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# NOT DEPLOYED. This file is not present in the live Traefik dynamic dir on any
+# box (verified 2026-07-26 against /home/ubuntu/citra-ai/traefik/dynamic/).
+# Action Chat is parked, and sandbox-host runs on the app box, so nothing here
+# is serving traffic.
+#
+# The sandboxhost URL below pointed at 172.31.23.112 (Citra-AI-Common) until
+# that box was decommissioned in 2026-07; it now points at the app box private
+# IP so the file is at least correct if it is ever mounted.
+# See docs/deployment-topology.md.
+http:
+  routers:
+    actionchat_internal:
+      entryPoints:
+        - web
+      rule: Host(`actionchat.internal`)
+      service: actionchat_internal_svc
+      middlewares:
+        - secure_headers
+
+    sandboxhost_internal:
+      entryPoints:
+        - web
+      rule: Host(`sandboxhost.internal`)
+      service: sandboxhost_internal_svc
+      middlewares:
+        - secure_headers
+
+  services:
+    actionchat_internal_svc:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: http://action-chat-service:8090
+
+    sandboxhost_internal_svc:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: http://172.31.39.51:7090

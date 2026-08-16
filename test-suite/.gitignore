@@ -1,0 +1,11 @@
+# generated coverage cells (emitted by the tests, aggregated by coverage_report.py)
+.coverage-cells/
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+# node / playwright (layer3_ui)
+node_modules/
+test-results/
+playwright-report/
+**/*-snapshots/

@@ -1,0 +1,5146 @@
+{
+  "$defs": {
+    "AgentChatPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent Role"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "starter_prompts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Starter Prompts",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "agent_chat",
+          "enum": [
+            "agent_chat"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "AgentChatPanel",
+      "type": "object"
+    },
+    "AppNavigation": {
+      "additionalProperties": false,
+      "description": "Top-level nav chrome for multi-page apps. Ignored when pages[] empty.",
+      "properties": {
+        "default_page": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Page id that '/' resolves to. Defaults to the first page in pages[].",
+          "title": "Default Page"
+        },
+        "show_chat_globally": {
+          "default": false,
+          "description": "When True, an agent_chat panel (if any) is rendered as a floating, persistent chat across every page rather than being placed inside one page.",
+          "title": "Show Chat Globally",
+          "type": "boolean"
+        },
+        "style": {
+          "default": "sidebar",
+          "enum": [
+            "sidebar",
+            "topbar",
+            "none"
+          ],
+          "title": "Style",
+          "type": "string"
+        }
+      },
+      "title": "AppNavigation",
+      "type": "object"
+    },
+    "AppStatus": {
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "title": "AppStatus",
+      "type": "string"
+    },
+    "AutoProcessPolicy": {
+      "additionalProperties": false,
+      "description": "The per-trigger policy that gates autonomous commit. See\ndocs/auto-process-plan.md. The human approves THIS policy (build +\ngovernance time); the agent then executes it per instance, deterministically.",
+      "properties": {
+        "auto_commit_when": {
+          "$ref": "#/$defs/Condition"
+        },
+        "confidence_min": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence Min"
+        },
+        "max_auto_per_run": {
+          "default": 50,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Max Auto Per Run",
+          "type": "integer"
+        },
+        "on_miss": {
+          "const": "recommend",
+          "default": "recommend",
+          "enum": [
+            "recommend"
+          ],
+          "title": "On Miss",
+          "type": "string"
+        },
+        "rate_limit_per_hour": {
+          "anyOf": [
+            {
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rate Limit Per Hour"
+        },
+        "value_cap": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueCap"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "auto_commit_when"
+      ],
+      "title": "AutoProcessPolicy",
+      "type": "object"
+    },
+    "CalendarPanel": {
+      "additionalProperties": false,
+      "description": "A month-grid calendar of records from a tabular data source. Each row\nwith a value in ``date_field`` is placed on its day; ``title_field`` labels\nthe event and ``color_field`` (optional, low-cardinality) tints it. Read-\nonly; clicking a day's event can navigate via the queue/detail pattern in a\nfuture revision.",
+      "properties": {
+        "color_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional low-cardinality column whose value tints the event chip.",
+          "title": "Color Field"
+        },
+        "data_source": {
+          "title": "Data Source",
+          "type": "string"
+        },
+        "date_field": {
+          "description": "Row column holding the event date (ISO date or datetime).",
+          "title": "Date Field",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "query": {
+          "title": "Query",
+          "type": "object"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "title_field": {
+          "description": "Row column shown as the event label.",
+          "title": "Title Field",
+          "type": "string"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "calendar",
+          "enum": [
+            "calendar"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "data_source",
+        "date_field",
+        "title_field"
+      ],
+      "title": "CalendarPanel",
+      "type": "object"
+    },
+    "CaseSignature": {
+      "additionalProperties": false,
+      "description": "Per-app facet vocabulary + reason taxonomy + learning controls.\n\nLives on the APP, not on the source: two apps bound to the same dataset care\nabout different facets, and app_spec changes publish without an MCP image\nrebuild (sources.json changes do not).\n\nOPTIONAL. Clause memory is the only memory path either way — an app without\na signature still learns, its clauses simply carry no facet scope (they are\nglobal within their (modality, task_type) bucket) and its officers pick from\nno reason taxonomy. Declaring one buys SCOPING and CODING, not membership.",
+      "properties": {
+        "confirmed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed At"
+        },
+        "confirmed_by": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed By"
+        },
+        "confirmed_families": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 24,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed Families"
+        },
+        "facets": {
+          "items": {
+            "$ref": "#/$defs/FacetSpec"
+          },
+          "maxItems": 24,
+          "minItems": 1,
+          "title": "Facets",
+          "type": "array"
+        },
+        "learning": {
+          "$ref": "#/$defs/LearningControls"
+        },
+        "reason_codes": {
+          "items": {
+            "$ref": "#/$defs/ReasonCodeSpec"
+          },
+          "maxItems": 20,
+          "title": "Reason Codes",
+          "type": "array"
+        },
+        "version": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "facets"
+      ],
+      "title": "CaseSignature",
+      "type": "object"
+    },
+    "ChartPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregation": {
+          "anyOf": [
+            {
+              "enum": [
+                "count",
+                "sum",
+                "avg",
+                "min",
+                "max"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation"
+        },
+        "chart_type": {
+          "enum": [
+            "line",
+            "bar",
+            "pie",
+            "area",
+            "funnel",
+            "scatter"
+          ],
+          "title": "Chart Type",
+          "type": "string"
+        },
+        "data_source": {
+          "title": "Data Source",
+          "type": "string"
+        },
+        "group_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group By"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "query": {
+          "title": "Query",
+          "type": "object"
+        },
+        "stacked": {
+          "default": false,
+          "title": "Stacked",
+          "type": "boolean"
+        },
+        "time_grain": {
+          "anyOf": [
+            {
+              "enum": [
+                "minute",
+                "hour",
+                "day",
+                "week",
+                "month",
+                "quarter",
+                "year"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Grain"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "chart",
+          "enum": [
+            "chart"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "x": {
+          "title": "X",
+          "type": "string"
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "title": "Y"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "chart_type",
+        "data_source",
+        "x",
+        "y"
+      ],
+      "title": "ChartPanel",
+      "type": "object"
+    },
+    "Condition": {
+      "additionalProperties": false,
+      "description": "A deterministic predicate evaluated by the runtime for auto-process —\nNO LLM, NO eval. Exactly ONE form:\n  - LEAF: ``field`` + ``op`` (+ ``value``)\n  - COMBINATOR: one of ``all`` / ``any`` / ``not_``\n  - ``always: true`` — UNCONDITIONAL: auto-commit ALL of the agent's\n    decisions that pass the safety bounds (severity ceiling / confidence /\n    value_cap). This is the BA explicitly opening auto-process with NO\n    business gate — the highest-autonomy mode; the builder must confirm it\n    and flag that there is no deterministic business bound.\n\nThe gate BOUNDS which of the agent's decisions auto-commit (blast radius:\nvalue / severity / scope); it does NOT verify the agent is correct.\n``field`` addresses the decision context by dotted path:\n  - ``payload.<k>``  — the agent's proposed write payload\n  - ``row.<k>``      — the source record that triggered the run\n  - ``result.<k>``   — the agent's structured output (e.g. ``confidence``)",
+      "properties": {
+        "all": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Condition"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "All"
+        },
+        "always": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Always"
+        },
+        "any": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Condition"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Any"
+        },
+        "field": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        },
+        "not": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Condition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "op": {
+          "anyOf": [
+            {
+              "enum": [
+                "==",
+                "!=",
+                "<",
+                "<=",
+                ">",
+                ">=",
+                "in",
+                "not_in",
+                "between",
+                "matches"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Op"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "title": "Condition",
+      "type": "object"
+    },
+    "CustomModule": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "integrity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Integrity"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "url"
+      ],
+      "title": "CustomModule",
+      "type": "object"
+    },
+    "DashboardMetric": {
+      "additionalProperties": false,
+      "properties": {
+        "agg": {
+          "enum": [
+            "count",
+            "sum",
+            "avg",
+            "min",
+            "max",
+            "ratio"
+          ],
+          "title": "Agg",
+          "type": "string"
+        },
+        "compare": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricCompare"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Source"
+        },
+        "field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filter"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target"
+        },
+        "thresholds": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 4,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thresholds"
+        },
+        "trend": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricTrend"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "window": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window"
+        }
+      },
+      "required": [
+        "name",
+        "agg"
+      ],
+      "title": "DashboardMetric",
+      "type": "object"
+    },
+    "DashboardPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "metrics": {
+          "items": {
+            "$ref": "#/$defs/DashboardMetric"
+          },
+          "minItems": 1,
+          "title": "Metrics",
+          "type": "array"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "dashboard",
+          "enum": [
+            "dashboard"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "metrics"
+      ],
+      "title": "DashboardPanel",
+      "type": "object"
+    },
+    "DataSource": {
+      "additionalProperties": false,
+      "properties": {
+        "doc_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Doc Types",
+          "type": "array"
+        },
+        "filters": {
+          "title": "Filters",
+          "type": "object"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "mode": {
+          "default": "merge",
+          "enum": [
+            "merge",
+            "thread"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "ref": {
+          "title": "Ref",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "mcp",
+            "rag",
+            "static",
+            "smart_app_records",
+            "workflow_staging",
+            "decision_ledger"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "ref"
+      ],
+      "title": "DataSource",
+      "type": "object"
+    },
+    "DatasetDirectoryColumn": {
+      "additionalProperties": false,
+      "description": "Trimmed catalogue column projected onto the directory.\n\nThe full ``data-discovery-service`` ``CatalogueColumn`` has 15+ fields\n(mapping_source, mapping_confidence, foreign refs, etc.) that the\nruntime agent does not need. We carry only what the LLM uses to\ndecide what to query and how to redact: the display name, the\nsemantic / physical type, the PII flag, and (when present) a short\ndescription / value-set hint.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "pii": {
+          "default": false,
+          "title": "Pii",
+          "type": "boolean"
+        },
+        "semantic_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Semantic Type"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "title": "DatasetDirectoryColumn",
+      "type": "object"
+    },
+    "DatasetDirectoryEntry": {
+      "additionalProperties": false,
+      "description": "Resolved dataset ↔ tool relationship, hydrated at publish time.\n\nSmart-app's primary navigation surface is the dataset catalogue.\nActions reference ``(source_id, dataset_id)`` via DataBindings; the\nruntime agent needs zero-lookup access to \"given this dataset_id:\nwhich MCP tool serves it, what columns does it have, is any of it\nPII, what write actions are available?\"\n\nThe directory is a denormalised snapshot built at publish time from\nTWO upstream registries:\n\n  * **discovery-service** — source-level metadata (source name,\n    taxonomy_summary, source_type, query_timeout).\n  * **data-discovery-service** — dataset-level metadata (dataset\n    name + description, kind, columns, has_pii, row_count_approx,\n    write_actions, mcp_base_url).\n\nBoth refresh on every republish, so a column added by the crawler\nor a tool endpoint rotation lands in the next publish — the\ndirectory ages with the AppSpec, not behind it.",
+      "properties": {
+        "access": {
+          "default": "read",
+          "description": "Directionality of the binding(s) that reference this dataset. read = at least one DataBindingRead; write = at least one DataBindingWrite; read_write = both.",
+          "enum": [
+            "read",
+            "write",
+            "read_write"
+          ],
+          "title": "Access",
+          "type": "string"
+        },
+        "columns": {
+          "description": "Trimmed column list with semantic_type and pii flag. The runtime LLM picks columns from here without round-tripping to the catalogue. PII flags drive redaction at dispatch_query_dataset.",
+          "items": {
+            "$ref": "#/$defs/DatasetDirectoryColumn"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "data_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Data Types",
+          "type": "array"
+        },
+        "dataset_description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Description of this dataset from the catalogue.",
+          "title": "Dataset Description"
+        },
+        "dataset_id": {
+          "description": "The catalogue dataset key the action references. Matches DataBindingRead.dataset_id.",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "dataset_name": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Display name for THIS dataset (e.g. 'Claims Staging Q4 2025'). Falls back to source_name when the catalogue is unreachable at publish time.",
+          "title": "Dataset Name"
+        },
+        "has_pii": {
+          "default": false,
+          "description": "True when any column is flagged pii. Surfaced to the agent so it knows redaction is in effect for this dataset.",
+          "title": "Has Pii",
+          "type": "boolean"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Dataset kind from data-discovery-service: sql | odata | soql | rest | semantic | mongodb. Drives which dispatch shape the runtime uses.",
+          "title": "Kind"
+        },
+        "mcp_base_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Dept-MCP base URL (host:port, no path). When present the runtime hits ``{mcp_base_url}/query`` directly without needing the catalogue's ``read_via.target``.",
+          "title": "Mcp Base Url"
+        },
+        "query_timeout_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query Timeout Seconds"
+        },
+        "row_count_approx": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Approximate row count from the crawler.",
+          "title": "Row Count Approx"
+        },
+        "source_description": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Description from the discovery registration.",
+          "title": "Source Description"
+        },
+        "source_id": {
+          "description": "discovery-service source_id that owns this dataset.",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_name": {
+          "description": "Human-readable tool name from discovery-service.",
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "One of: semantic | structured | mongodb | rest_api.",
+          "title": "Source Type"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "taxonomy_summary": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "One-line summary of doc_types from the source taxonomy (e.g. 'invoices, receipts, statements'). Empty for non-semantic sources.",
+          "title": "Taxonomy Summary"
+        },
+        "write_actions": {
+          "description": "Write actions exposed by this dataset (e.g. 'create_claim', 'close_ticket'). The runtime's synthetic perform_action tool dispatches against these.",
+          "items": {
+            "$ref": "#/$defs/DatasetDirectoryWriteAction"
+          },
+          "title": "Write Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "dataset_id",
+        "source_id",
+        "source_name"
+      ],
+      "title": "DatasetDirectoryEntry",
+      "type": "object"
+    },
+    "DatasetDirectoryWriteAction": {
+      "additionalProperties": false,
+      "description": "Trimmed catalogue write-action projected onto the directory.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "verb": {
+          "title": "Verb",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "verb"
+      ],
+      "title": "DatasetDirectoryWriteAction",
+      "type": "object"
+    },
+    "DetailAction": {
+      "additionalProperties": false,
+      "description": "A button on a detail panel that runs an agent action on THIS record.\n\nWhy this exists rather than reusing ``QueueAction``: until now the only\nplace an ``agent_action`` could hang was a queue action, so a surface that\nshows exactly one record — an embed card — had to carry a one-row queue\npurely to hold the button. That queue then rendered a search box, a\nCards/Table/Split switcher and a row counter over a data source pinned to\na single id, none of which can ever do anything, AND repeated every field\nthe detail panel below it was already showing.\n\n``QueueAction`` is the wrong shape to reuse: ``is_row_click`` is\nmeaningless without rows, and silently accepting it would let a builder\nauthor something that reads as configured and does nothing.",
+      "properties": {
+        "agent_action": {
+          "description": "Agent action to invoke, with the panel's resolved record as the inputs. Required — unlike a queue action there is no navigate alternative, because a detail panel IS the destination.",
+          "title": "Agent Action",
+          "type": "string"
+        },
+        "args": {
+          "description": "Constant inputs merged on top of the record. Use for a value the action's input_schema requires but the record has no column for. Keys here override record keys of the same name.",
+          "title": "Args",
+          "type": "object"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "agent_action"
+      ],
+      "title": "DetailAction",
+      "type": "object"
+    },
+    "DetailPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "actions": {
+          "description": "Buttons that run an agent action against the record this panel shows. On an EMBED page this is the trigger — it replaces the one-row queue that used to exist only to hold the button.",
+          "items": {
+            "$ref": "#/$defs/DetailAction"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "data_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Read the record DIRECTLY from this data source instead of through a queue. For surfaces where the record id arrives from outside and there is no list to click — principally an EMBED page, where the host application already knows which record the officer is looking at and passes it in. Mutually exclusive with ``linked_to``.",
+          "title": "Data Source"
+        },
+        "header_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Header Fields",
+          "type": "array"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "id_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Column identifying one record, on the linked queue's source or on ``data_source``. The detail view matches the ?id= page param against it. When omitted, the runtime auto-detects a column named id / *_id / record_id.",
+          "title": "Id Field"
+        },
+        "layout": {
+          "default": "stack",
+          "enum": [
+            "stack",
+            "profile"
+          ],
+          "title": "Layout",
+          "type": "string"
+        },
+        "linked_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Queue/table panel this detail reads its record from. The classic binding: the officer clicks a row, the detail resolves that record from the queue's data_source. Mutually exclusive with ``data_source``.",
+          "title": "Linked To"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "sections": {
+          "items": {
+            "$ref": "#/$defs/DetailSection"
+          },
+          "title": "Sections",
+          "type": "array"
+        },
+        "status_colors": {
+          "additionalProperties": {
+            "enum": [
+              "green",
+              "amber",
+              "red",
+              "blue",
+              "slate"
+            ],
+            "type": "string"
+          },
+          "title": "Status Colors",
+          "type": "object"
+        },
+        "status_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status Field"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "detail",
+          "enum": [
+            "detail"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "DetailPanel",
+      "type": "object"
+    },
+    "DetailSection": {
+      "additionalProperties": true,
+      "properties": {
+        "agent_role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent Role"
+        },
+        "collapsed": {
+          "default": false,
+          "title": "Collapsed",
+          "type": "boolean"
+        },
+        "collapsible": {
+          "default": false,
+          "title": "Collapsible",
+          "type": "boolean"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content"
+        },
+        "data_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Source"
+        },
+        "fields": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fields"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "roles": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Roles"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "type": {
+          "enum": [
+            "agent_timeline",
+            "agent_chat",
+            "approval",
+            "attachment",
+            "comments",
+            "documents",
+            "fields",
+            "markdown"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "DetailSection",
+      "type": "object"
+    },
+    "DocumentViewPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "data_source": {
+          "title": "Data Source",
+          "type": "string"
+        },
+        "doc_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Doc Types",
+          "type": "array"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "document_view",
+          "enum": [
+            "document_view"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "data_source"
+      ],
+      "title": "DocumentViewPanel",
+      "type": "object"
+    },
+    "FacetSpec": {
+      "additionalProperties": false,
+      "description": "One facet FAMILY. Emits at most one ``family:value`` token per case.\n\nMost families are a column that ALREADY carries a closed vocabulary in the\ndataset ontology — the builder is not designing a taxonomy, they are marking\nwhich columns are decision-relevant.",
+      "properties": {
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Aliases",
+          "type": "array"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Dataset the column belongs to. Defaults to the app's primary dataset.",
+          "title": "Dataset Id"
+        },
+        "edges": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 6,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Edges"
+        },
+        "family": {
+          "description": "Token prefix, e.g. 'loss_type' → 'loss_type:theft'.",
+          "pattern": "^[a-z][a-z0-9_]{0,31}$",
+          "title": "Family",
+          "type": "string"
+        },
+        "from_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From Column"
+        },
+        "from_columns": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From Columns"
+        },
+        "kind": {
+          "enum": [
+            "enum",
+            "band",
+            "presence",
+            "age_band",
+            "signal"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "signal_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal Id"
+        },
+        "value_map": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Raw value → canonical value, for legacy encodings.",
+          "title": "Value Map"
+        },
+        "values": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 40,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Values"
+        }
+      },
+      "required": [
+        "family",
+        "kind"
+      ],
+      "title": "FacetSpec",
+      "type": "object"
+    },
+    "FactorBand": {
+      "additionalProperties": false,
+      "description": "One named outcome for a factor.\n\nTwo flavours, and a factor must not mix them (enforced in FactorSpec):\n\n  * SCORE-BASED — every band but the last carries ``max``, an upper bound\n    (inclusive) on the factor's own score. Code assigns the band; the model\n    never picks it.\n  * LABEL-ONLY  — no band carries ``max``. The evaluator picks from this\n    closed set, because the threshold lives in the SOP's own units (days\n    late, a ratio, a torque figure) and not in score space.\n\nThe last band is always the catch-all and carries no ``max``.",
+      "properties": {
+        "hint": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hint"
+        },
+        "label": {
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inclusive upper bound on the factor's SCORE. Omit on the final (catch-all) band. Omit on every band for a label-only factor.",
+          "title": "Max"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "FactorBand",
+      "type": "object"
+    },
+    "FactorReads": {
+      "additionalProperties": false,
+      "description": "WHERE this factor's evidence comes from — declared, never discovered.\n\nLoad-bearing. Without it the model hunts for its own data at run time and\nthe same case scores differently on consecutive days, which is exactly the\nproperty a model-validation team tests for and rejects.\n\n``where`` may interpolate anchor-record fields as ``{record.<field>}``. The\nanchor read resolves FIRST and every factor read fans out from what it\nreturned — a factor cannot be evaluated before the base record is known.",
+      "properties": {
+        "dataset_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Dataset / table for kind='dataset'. For kind='document' this is the attachment column on the anchor record.",
+          "title": "Dataset Id"
+        },
+        "kind": {
+          "default": "dataset",
+          "enum": [
+            "dataset",
+            "document",
+            "lookup"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "MCP source. Defaults to the app's primary source.",
+          "title": "Source Id"
+        },
+        "tool_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "For kind='lookup': the agent-spec tool that performs the external call (bureau / KYC / sanctions).",
+          "title": "Tool Name"
+        },
+        "where": {
+          "anyOf": [
+            {
+              "maxLength": 400,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Predicate, e.g. \"dealer_id == {record.dealer_id} AND invoice_date >= today-365d\".",
+          "title": "Where"
+        }
+      },
+      "title": "FactorReads",
+      "type": "object"
+    },
+    "FactorSet": {
+      "additionalProperties": false,
+      "description": "The app's declared rubric. OPTIONAL, and absent is the common case —\nmost Decision Apps have prose reasons and no grid, which is correct.\n\nTwo shapes, and the choice is PERMANENT for a published app version:\n\n  * ``composite`` — weights, a total, a grade. Credit, dealer finance,\n    limit review. Approval authority usually keys off the grade.\n  * ``checklist`` — judged criteria with citations and NO total. Aviation\n    inspection, KYC, claim triage. Summing them would be meaningless and\n    unsafe: a hull crack and a scuffed placard do not average.\n\n``checklist`` is a first-class mode, not a degraded composite. A checklist\napp is never prompted for weights, because there are none to give.\n\nWhy permanent: an app that silently grew a total one day would change how\nevery one of its past outputs should be read — the same class of harm as\nmemory quietly moving a score. Changing mode is a NEW VERSION with its own\nhuman confirmation (enforced at publish, not here: this model cannot see\nthe previously published spec).",
+      "properties": {
+        "factors": {
+          "items": {
+            "$ref": "#/$defs/FactorSpec"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Factors",
+          "type": "array"
+        },
+        "gates": {
+          "items": {
+            "$ref": "#/$defs/GateSpec"
+          },
+          "maxItems": 12,
+          "title": "Gates",
+          "type": "array"
+        },
+        "grade_scale": {
+          "items": {
+            "$ref": "#/$defs/GradeStep"
+          },
+          "maxItems": 12,
+          "title": "Grade Scale",
+          "type": "array"
+        },
+        "mode": {
+          "enum": [
+            "composite",
+            "checklist"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "terminology": {
+          "$ref": "#/$defs/FactorTerminology"
+        }
+      },
+      "required": [
+        "mode",
+        "factors"
+      ],
+      "title": "FactorSet",
+      "type": "object"
+    },
+    "FactorSopRef": {
+      "additionalProperties": false,
+      "description": "The passage this factor is judged against.\n\nProvenance, on the same principle as a clause: a reviewer can check the\nextraction, and when the policy document changes we know which factors it\naffects.",
+      "properties": {
+        "doc_path": {
+          "anyOf": [
+            {
+              "maxLength": 400,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Doc Path"
+        },
+        "excerpt": {
+          "anyOf": [
+            {
+              "maxLength": 600,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Excerpt"
+        },
+        "fingerprint": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fingerprint"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query"
+        },
+        "source": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "title": "FactorSopRef",
+      "type": "object"
+    },
+    "FactorSpec": {
+      "additionalProperties": false,
+      "description": "One declared factor. The customer's, not ours.",
+      "properties": {
+        "bands": {
+          "items": {
+            "$ref": "#/$defs/FactorBand"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Bands",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "reads": {
+          "$ref": "#/$defs/FactorReads"
+        },
+        "scope": {
+          "default": "entity",
+          "enum": [
+            "entity",
+            "case"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "sop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactorSopRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "maximum": 1000.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weight"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "reads",
+        "bands"
+      ],
+      "title": "FactorSpec",
+      "type": "object"
+    },
+    "FactorTerminology": {
+      "additionalProperties": false,
+      "description": "What the SCREEN calls these things.\n\nThe engine says 'factor' forever. A bank says Scorecard/factor/Grade; an\nairline says Evaluation criteria/check/Disposition. Nothing in the renderer,\nthe aggregator or the validator may contain domain vocabulary — if it does,\nthe abstraction has already failed.",
+      "properties": {
+        "band": {
+          "default": "Band",
+          "maxLength": 24,
+          "minLength": 1,
+          "title": "Band",
+          "type": "string"
+        },
+        "composite": {
+          "default": "Grade",
+          "description": "What the overall result is called. Composite mode only.",
+          "maxLength": 24,
+          "minLength": 1,
+          "title": "Composite",
+          "type": "string"
+        },
+        "panel": {
+          "default": "Assessment",
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Panel",
+          "type": "string"
+        },
+        "row": {
+          "default": "factor",
+          "maxLength": 24,
+          "minLength": 1,
+          "title": "Row",
+          "type": "string"
+        }
+      },
+      "title": "FactorTerminology",
+      "type": "object"
+    },
+    "FilterBarPanel": {
+      "additionalProperties": false,
+      "description": "A declarative strip of filter controls bound to page params. Allowed on\nBOTH dashboard and standard pages. Each control sets a URL param on change;\nthe page re-renders and every panel referencing ``{param.<param>}``\nre-queries. No per-app code, no data writes — purely sets the view's filter\nparams, riding the existing param → server-render → re-query plumbing.",
+      "properties": {
+        "controls": {
+          "items": {
+            "$ref": "#/$defs/FilterControl"
+          },
+          "maxItems": 6,
+          "minItems": 1,
+          "title": "Controls",
+          "type": "array"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "filter_bar",
+          "enum": [
+            "filter_bar"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "controls"
+      ],
+      "title": "FilterBarPanel",
+      "type": "object"
+    },
+    "FilterControl": {
+      "additionalProperties": false,
+      "description": "One control in a ``filter_bar`` — binds a page param to a selectable\nvalue. On change the runtime updates the URL query (``?<param>=…``) and the\npage re-renders server-side, so every panel whose query references\n``{param.<param>}`` re-queries. View-only: a filter sets the view's params,\nit never writes to a source system.",
+      "properties": {
+        "all_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "All",
+          "description": "Label for the clear/no-filter option (sets the param to empty).",
+          "title": "All Label"
+        },
+        "control_type": {
+          "default": "dropdown",
+          "enum": [
+            "dropdown",
+            "segment",
+            "daterange"
+          ],
+          "title": "Control Type",
+          "type": "string"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Initial value pushed to the URL on first load when the param is absent.",
+          "title": "Default"
+        },
+        "label": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OptionsSource"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Where the control's choices come from — a static list or live DISTINCT values from a declared data_source (reuses OptionsSource, resolved by the /field-options endpoint). Required for dropdown/segment; ignored for daterange."
+        },
+        "param": {
+          "description": "The page param this control sets; panels reference it as {param.<param>}.",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "title": "Param",
+          "type": "string"
+        }
+      },
+      "required": [
+        "param",
+        "label"
+      ],
+      "title": "FilterControl",
+      "type": "object"
+    },
+    "FormOnSubmit": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent Action"
+        },
+        "navigate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NavigateTarget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Page to navigate to after the form submits. When combined with agent_action / tool_name the write runs first; navigation fires only on success, with {result.*} substitution available."
+        },
+        "tool_name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "pattern": "^[a-z][a-z0-9_.]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Direct-write tools_v2 tool fired on submit with the form fields as arguments — NO LLM. Use instead of agent_action for deterministic user writes. Routed to /apps/{slug}/tool/{name}.",
+          "title": "Tool Name"
+        }
+      },
+      "title": "FormOnSubmit",
+      "type": "object"
+    },
+    "FormPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted_file_types": {
+          "description": "Optional MIME-type allowlist (e.g. ['image/jpeg', 'image/png', 'application/pdf']). Empty = accept any image / PDF. The runtime enforces this before calling vision_ocr.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Accepted File Types",
+          "type": "array"
+        },
+        "accepts_files": {
+          "default": false,
+          "description": "When True, the panel renders a file-upload widget alongside the form fields. The runtime forwards uploaded images / PDFs to the agent as part of the action input. The agent is then expected to use the vision_ocr tool to read them. Publish-time validators reject AppSpec / AgentSpec pairs that have accepts_files=True without a vision_ocr tool.",
+          "title": "Accepts Files",
+          "type": "boolean"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "key_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "edit mode: the record's identifier column, SELECTED FROM THE DATASET CATALOGUE (whatever the key column is named there — not a fixed name). Used to fetch current values AND re-sent on submit so the write targets the existing record. Required when mode='edit'.",
+          "title": "Key Field"
+        },
+        "mode": {
+          "default": "create",
+          "enum": [
+            "create",
+            "edit"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "on_submit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FormOnSubmit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "prefill_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "edit mode: the data_source id to read the current record from (matched by ?id= against key_field). Required when mode='edit'.",
+          "title": "Prefill Source"
+        },
+        "schema_inline": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema Inline"
+        },
+        "schema_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema Ref"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/FormStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "form",
+          "enum": [
+            "form"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "FormPanel",
+      "type": "object"
+    },
+    "FormStep": {
+      "additionalProperties": false,
+      "description": "One step of a multi-step (wizard) form. ``fields`` lists the schema\nproperty names shown on this step; the runtime paginates the form into\nsteps with Back / Next and submits on the last step. Any property not\nnamed in any step renders on the final step (nothing is silently dropped).",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Fields",
+          "type": "array"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "fields"
+      ],
+      "title": "FormStep",
+      "type": "object"
+    },
+    "GateSpec": {
+      "additionalProperties": false,
+      "description": "A hard pass/fail policy condition, evaluated BEFORE any factor.\n\nGates and scored factors are two objects and must never blend. \"Single-\ndealer exposure cannot exceed X% of anchor turnover\" is pass/fail — it\nshort-circuits. If a gate fails the composite is irrelevant, and rendering\n\"68/100 — declined\" beneath it is actively confusing.\n\nA gate is always deterministic: it is served by a ``check_evaluate`` tool in\n``mode='rule'``, which runs no LLM and fails LOUD to 'flag' on error rather\nthan passing silently.",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "reads": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactorReads"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FactorSopRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "GateSpec",
+      "type": "object"
+    },
+    "GradeStep": {
+      "additionalProperties": false,
+      "description": "One rung of the grade scale. ``min`` is a PERCENTAGE of the maximum\nattainable score (0–100), never a raw total — so a rubric whose weights sum\nto 60 or 120 grades correctly without anyone having to normalise by hand.\nThe final step is the catch-all and carries no ``min``.",
+      "properties": {
+        "grade": {
+          "maxLength": 24,
+          "minLength": 1,
+          "title": "Grade",
+          "type": "string"
+        },
+        "hint": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hint"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        }
+      },
+      "required": [
+        "grade"
+      ],
+      "title": "GradeStep",
+      "type": "object"
+    },
+    "HeroPanel": {
+      "additionalProperties": false,
+      "description": "Page-header band (runtime-ui-modernization-plan.md C1): icon +\nheadline + optional live metric + up to two navigation actions. One per\npage, first panel — it gives the page a designed opening instead of a\ntitle floating over a grid. Actions are NAVIGATION only (no agent_action\n— a hero is chrome, not a work surface).",
+      "properties": {
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/QueueAction"
+          },
+          "maxItems": 2,
+          "title": "Actions",
+          "type": "array"
+        },
+        "headline": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Headline",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "metric": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DashboardMetric"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "maxLength": 240,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtitle"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "hero",
+          "enum": [
+            "hero"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "headline"
+      ],
+      "title": "HeroPanel",
+      "type": "object"
+    },
+    "LearningControls": {
+      "additionalProperties": false,
+      "properties": {
+        "clause_budget_words": {
+          "default": 1000,
+          "maximum": 4000,
+          "minimum": 100,
+          "title": "Clause Budget Words",
+          "type": "integer"
+        },
+        "promotion_min_officers": {
+          "default": 3,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Promotion Min Officers",
+          "type": "integer"
+        }
+      },
+      "title": "LearningControls",
+      "type": "object"
+    },
+    "MapPanel": {
+      "additionalProperties": false,
+      "description": "A geospatial marker map (Leaflet / OpenStreetMap) of records from a\ntabular data source. Each row with numeric ``lat_field`` + ``lng_field``\ndrops a marker; ``label_field`` (optional) names it in the popup. Read-only\noverview — for editing a location use a form.",
+      "properties": {
+        "data_source": {
+          "title": "Data Source",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "label_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional column shown in the marker popup.",
+          "title": "Label Field"
+        },
+        "lat_field": {
+          "description": "Row column holding latitude (numeric, -90..90).",
+          "title": "Lat Field",
+          "type": "string"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit"
+        },
+        "lng_field": {
+          "description": "Row column holding longitude (numeric, -180..180).",
+          "title": "Lng Field",
+          "type": "string"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "query": {
+          "title": "Query",
+          "type": "object"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "map",
+          "enum": [
+            "map"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "data_source",
+        "lat_field",
+        "lng_field"
+      ],
+      "title": "MapPanel",
+      "type": "object"
+    },
+    "MarkdownPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "markdown",
+          "enum": [
+            "markdown"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "content"
+      ],
+      "title": "MarkdownPanel",
+      "type": "object"
+    },
+    "MetricCompare": {
+      "additionalProperties": false,
+      "description": "Prior-period comparison for a KPI tile (the ▲/▼ delta chip).\n\nThe runtime computes the metric over the latest period PRESENT IN THE DATA\n(anchored to ``MAX(date_field)``, not the wall clock) and the period\n``periods`` grains earlier, both windowed on ``date_field``, and renders\nthe percentage change. Anchoring to the data's latest period (not \"today\")\nkeeps the delta meaningful when the data lags the calendar. Use for FLOW\nmetrics (assessed latest-day vs prior-day, collected this week vs last) —\nthe delta is meaningless for a pure stock count unless you have history.",
+      "properties": {
+        "date_field": {
+          "description": "Date/timestamp column to window on.",
+          "title": "Date Field",
+          "type": "string"
+        },
+        "grain": {
+          "default": "day",
+          "enum": [
+            "day",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ],
+          "title": "Grain",
+          "type": "string"
+        },
+        "periods": {
+          "default": 1,
+          "maximum": 12,
+          "minimum": 1,
+          "title": "Periods",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "date_field"
+      ],
+      "title": "MetricCompare",
+      "type": "object"
+    },
+    "MetricTrend": {
+      "additionalProperties": false,
+      "description": "Sparkline series for a KPI tile — a real grouped-by-time aggregate.",
+      "properties": {
+        "date_field": {
+          "description": "Date/timestamp column to bucket by.",
+          "title": "Date Field",
+          "type": "string"
+        },
+        "grain": {
+          "default": "day",
+          "enum": [
+            "day",
+            "week",
+            "month"
+          ],
+          "title": "Grain",
+          "type": "string"
+        },
+        "points": {
+          "default": 14,
+          "maximum": 60,
+          "minimum": 2,
+          "title": "Points",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "date_field"
+      ],
+      "title": "MetricTrend",
+      "type": "object"
+    },
+    "NavigateTarget": {
+      "additionalProperties": false,
+      "description": "Client-side navigation directive.\n\nUsed in ``FormPanel.on_submit.navigate`` and ``QueueAction.navigate`` to\nmove the user to another page after an action fires. ``params`` values\nmay use templates:\n\n- ``\"{row.<field>}\"`` on a queue action — substitutes the clicked row's\n  field at navigate-time.\n- ``\"{result.<field>}\"`` on a form on_submit — substitutes the agent's\n  action output.\n- ``\"{form.<field>}\"`` on a form on_submit — substitutes a field the\n  user typed into the form.",
+      "properties": {
+        "page": {
+          "description": "Target page id. Must reference AppSpec.pages[].id.",
+          "minLength": 1,
+          "title": "Page",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "required": [
+        "page"
+      ],
+      "title": "NavigateTarget",
+      "type": "object"
+    },
+    "NoticePanel": {
+      "additionalProperties": false,
+      "description": "A static, non-interactive callout band — info / warning / error /\nsuccess. Surfaces guidance, an SLA caveat, or a procedural notice at the\ntop of a page. Carries NO data binding (for a live number use a dashboard\nKPI tile). ``content`` is plain text / inline markdown; the runtime renders\nit safely — never raw HTML.",
+      "properties": {
+        "content": {
+          "description": "The notice body — plain text or inline markdown.",
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tone": {
+          "default": "info",
+          "enum": [
+            "info",
+            "warn",
+            "error",
+            "success"
+          ],
+          "title": "Tone",
+          "type": "string"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "notice",
+          "enum": [
+            "notice"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "content"
+      ],
+      "title": "NoticePanel",
+      "type": "object"
+    },
+    "NotificationFeed": {
+      "additionalProperties": false,
+      "description": "One feed in a notification centre — a FULLY builder-defined attention\nlist. The platform does NOT hardcode what a notification is: a feed reads\nany ``data_source`` with any ``filters`` predicate and maps catalogue columns\nto the item's title/subtitle. (The one built-in is ``kind='approvals'``,\nwhich reads the platform's reviewer inbox — not a data_source.)",
+      "properties": {
+        "filters": {
+          "description": "predicate selecting which rows are notable — ANY condition, with columns DERIVED FROM THE DATASET CATALOGUE (no fixed names). Mongo- style operators are supported ({col:{'$lt':x}}, {'$gte'}, {'$in':[…]}, bare equality). For time-relative conditions use the tokens {now}, {now-<N><unit>}, {now+<N><unit>} (unit = s|m|h|d|w), e.g. an overdue feed = {<due column>: {'$lt': '{now}'}}; a 'stale > 48h' feed = {<opened column>: {'$lt': '{now-48h}'}}.",
+          "title": "Filters",
+          "type": "object"
+        },
+        "kind": {
+          "default": "data_source",
+          "description": "'data_source' — read rows of `source` matching `filters`. 'approvals' — the platform reviewer inbox (pending recommendations); ignores source/filters/title_field/sub_field.",
+          "enum": [
+            "data_source",
+            "approvals"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "description": "group/badge label for items from this feed (e.g. 'Overdue', 'High value', 'Approvals').",
+          "title": "Label",
+          "type": "string"
+        },
+        "limit": {
+          "default": 50,
+          "maximum": 200,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "navigate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NavigateTarget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "where a click on this feed's item routes; navigate.params are templated from the item's row via {row.<column>} (a real catalogue column)."
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "data_source id to read (required when kind='data_source').",
+          "title": "Source"
+        },
+        "sub_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "catalogue column for the item's secondary line (optional).",
+          "title": "Sub Field"
+        },
+        "title_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "catalogue column to title each item (falls back to an id-like column).",
+          "title": "Title Field"
+        },
+        "tone": {
+          "anyOf": [
+            {
+              "enum": [
+                "info",
+                "success",
+                "warning",
+                "danger",
+                "neutral"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "badge colour for this feed's items (default neutral).",
+          "title": "Tone"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "NotificationFeed",
+      "type": "object"
+    },
+    "NotificationsPanel": {
+      "additionalProperties": false,
+      "description": "A notification centre — a read-only list of attention items. Fully\nGENERIC: the builder declares one or more ``feeds`` (see NotificationFeed);\na notification can surface ANYTHING the builder defines (overdue, flagged,\nhigh-value, awaiting-review, …), not a fixed SLA/approvals pair. Each feed's\nitems render with its label/tone and route via its own ``navigate``.",
+      "properties": {
+        "feeds": {
+          "description": "the feeds this centre aggregates — fully builder-defined.",
+          "items": {
+            "$ref": "#/$defs/NotificationFeed"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "title": "Feeds",
+          "type": "array"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "notifications",
+          "enum": [
+            "notifications"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "feeds"
+      ],
+      "title": "NotificationsPanel",
+      "type": "object"
+    },
+    "OptionItem": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "value": {
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "OptionItem",
+      "type": "object"
+    },
+    "OptionsSource": {
+      "additionalProperties": false,
+      "description": "Where a select / multiselect / lookup field gets its choices.\n\n- ``static``      : the literal ``values`` list (resolved client-side).\n- ``data_source`` : live DISTINCT ``value_column`` (+ optional\n  ``label_column``) from a declared ``data_source``, optionally scoped by\n  ``filter`` (supports ``${record.<col>}`` / ``${param.<name>}``\n  interpolation). Resolved server-side via the options endpoint — this is\n  what \"prepopulates the combo so the officer can pick any option\".\n- ``agent``       : candidate options the LLM returns in the plan output\n  under ``_options.<field>`` (e.g. \"top 3 JEs for this case\").",
+      "properties": {
+        "data_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Source"
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filter"
+        },
+        "kind": {
+          "default": "static",
+          "enum": [
+            "static",
+            "data_source",
+            "agent"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label Column"
+        },
+        "limit": {
+          "default": 200,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "search": {
+          "default": false,
+          "title": "Search",
+          "type": "boolean"
+        },
+        "value_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Column"
+        },
+        "values": {
+          "items": {
+            "$ref": "#/$defs/OptionItem"
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "title": "OptionsSource",
+      "type": "object"
+    },
+    "Page": {
+      "additionalProperties": false,
+      "properties": {
+        "hide_in_nav": {
+          "default": false,
+          "description": "When True, the page is reachable via navigate() but does not appear in the sidebar/topbar — typical for detail pages.",
+          "title": "Hide In Nav",
+          "type": "boolean"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Lucide icon name rendered in the page nav (e.g. 'home', 'inbox').",
+          "title": "Icon"
+        },
+        "id": {
+          "description": "Stable page id. Used in URL (/{slug}/{id}) and as the target of navigate actions.",
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "standard",
+          "description": "Page purpose. 'standard' (default) = ordinary app page. 'dashboard' = executive treatment: KPI + chart grid rendered with the ECharts exec theme, topped by the hero-brief copilot (the app's narrator agent in read-only chat_mode). A dashboard page allows only chart / dashboard (KPI) / agent_chat / markdown panels and requires the app to declare agent_id.",
+          "enum": [
+            "standard",
+            "dashboard",
+            "embed"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "layout": {
+          "default": "grid",
+          "description": "How panels in this page are arranged. grid = 12-col responsive (default), stack = full-width single column, split = 50/50 two-column, tabs = each panel becomes a tab.",
+          "enum": [
+            "grid",
+            "stack",
+            "split",
+            "tabs"
+          ],
+          "title": "Layout",
+          "type": "string"
+        },
+        "panels": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "agent_chat": "#/$defs/AgentChatPanel",
+                "calendar": "#/$defs/CalendarPanel",
+                "chart": "#/$defs/ChartPanel",
+                "dashboard": "#/$defs/DashboardPanel",
+                "detail": "#/$defs/DetailPanel",
+                "document_view": "#/$defs/DocumentViewPanel",
+                "filter_bar": "#/$defs/FilterBarPanel",
+                "form": "#/$defs/FormPanel",
+                "hero": "#/$defs/HeroPanel",
+                "map": "#/$defs/MapPanel",
+                "markdown": "#/$defs/MarkdownPanel",
+                "notice": "#/$defs/NoticePanel",
+                "notifications": "#/$defs/NotificationsPanel",
+                "queue": "#/$defs/QueuePanel",
+                "stat_strip": "#/$defs/StatStripPanel",
+                "timeline": "#/$defs/TimelinePanel"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/FormPanel"
+              },
+              {
+                "$ref": "#/$defs/QueuePanel"
+              },
+              {
+                "$ref": "#/$defs/DetailPanel"
+              },
+              {
+                "$ref": "#/$defs/DashboardPanel"
+              },
+              {
+                "$ref": "#/$defs/HeroPanel"
+              },
+              {
+                "$ref": "#/$defs/StatStripPanel"
+              },
+              {
+                "$ref": "#/$defs/TimelinePanel"
+              },
+              {
+                "$ref": "#/$defs/ChartPanel"
+              },
+              {
+                "$ref": "#/$defs/AgentChatPanel"
+              },
+              {
+                "$ref": "#/$defs/DocumentViewPanel"
+              },
+              {
+                "$ref": "#/$defs/MarkdownPanel"
+              },
+              {
+                "$ref": "#/$defs/NoticePanel"
+              },
+              {
+                "$ref": "#/$defs/CalendarPanel"
+              },
+              {
+                "$ref": "#/$defs/MapPanel"
+              },
+              {
+                "$ref": "#/$defs/FilterBarPanel"
+              },
+              {
+                "$ref": "#/$defs/NotificationsPanel"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Panels",
+          "type": "array"
+        },
+        "params": {
+          "items": {
+            "$ref": "#/$defs/PageParam"
+          },
+          "title": "Params",
+          "type": "array"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "pattern": "^/[a-zA-Z0-9/_:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional explicit URL path under /{slug}. Defaults to '/{id}'. Use '/' for the landing page.",
+          "title": "Path"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "id",
+        "panels"
+      ],
+      "title": "Page",
+      "type": "object"
+    },
+    "PageParam": {
+      "additionalProperties": false,
+      "description": "Declared URL query param for a page.\n\nPanels inside the page can reference these via ``{param.<name>}`` in\n``query`` filters or ``data_source`` template fields. The runtime\nsubstitutes them server-side when fetching panel data.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "type": {
+          "default": "string",
+          "enum": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "PageParam",
+      "type": "object"
+    },
+    "QueueAction": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Agent action to invoke. Mutually compatible with navigate — both run, action first, navigation after.",
+          "title": "Agent Action"
+        },
+        "args": {
+          "description": "Constant inputs merged into the agent_action call on top of the clicked row. Use this to supply a value the action's input_schema requires but the queue has no column for (e.g. a fixed record_type / category discriminator). Keys here override row keys of the same name.",
+          "title": "Args",
+          "type": "object"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "is_row_click": {
+          "default": false,
+          "description": "When True, this action also fires on plain row click (not just its button). Only one action per queue may have this set.",
+          "title": "Is Row Click",
+          "type": "boolean"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "navigate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NavigateTarget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Page to navigate to when the action is clicked. Typical use: queue-row drill-down to a detail page."
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "QueueAction",
+      "type": "object"
+    },
+    "QueuePanel": {
+      "additionalProperties": false,
+      "properties": {
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/QueueAction"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "badge_colors": {
+          "additionalProperties": {
+            "enum": [
+              "green",
+              "amber",
+              "red",
+              "blue",
+              "slate"
+            ],
+            "type": "string"
+          },
+          "title": "Badge Colors",
+          "type": "object"
+        },
+        "badge_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Badge Column"
+        },
+        "column_formats": {
+          "additionalProperties": {
+            "enum": [
+              "status_pill",
+              "currency",
+              "relative_time",
+              "progress",
+              "grade"
+            ],
+            "type": "string"
+          },
+          "title": "Column Formats",
+          "type": "object"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "data_source": {
+          "title": "Data Source",
+          "type": "string"
+        },
+        "default_sort": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QueueSort"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "filters": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Filters",
+          "type": "array"
+        },
+        "group_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group By"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "page_size": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Size"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "query": {
+          "title": "Query",
+          "type": "object"
+        },
+        "searchable_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Searchable Columns",
+          "type": "array"
+        },
+        "secondary_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Secondary Columns",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "title_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title Column"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "queue",
+          "enum": [
+            "queue"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "view": {
+          "default": "cards",
+          "enum": [
+            "cards",
+            "table",
+            "kanban",
+            "split"
+          ],
+          "title": "View",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "data_source"
+      ],
+      "title": "QueuePanel",
+      "type": "object"
+    },
+    "QueueSort": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "title": "Column",
+          "type": "string"
+        },
+        "dir": {
+          "default": "asc",
+          "enum": [
+            "asc",
+            "desc"
+          ],
+          "title": "Dir",
+          "type": "string"
+        }
+      },
+      "required": [
+        "column"
+      ],
+      "title": "QueueSort",
+      "type": "object"
+    },
+    "ReasonCodeSpec": {
+      "additionalProperties": false,
+      "description": "One entry in the app's closed reject-reason taxonomy. The officer picks\na code; the code is what aggregates. Free text alone cannot cluster.",
+      "properties": {
+        "aliases": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 8,
+          "title": "Aliases",
+          "type": "array"
+        },
+        "code": {
+          "pattern": "^[a-z][a-z0-9_]{0,39}$",
+          "title": "Code",
+          "type": "string"
+        },
+        "hint": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hint"
+        },
+        "label": {
+          "maxLength": 60,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "label"
+      ],
+      "title": "ReasonCodeSpec",
+      "type": "object"
+    },
+    "RubricEvidence": {
+      "additionalProperties": false,
+      "description": "What the builder actually saw, so a human can check the verdict without\nre-reading the whole document.",
+      "properties": {
+        "excerpt": {
+          "anyOf": [
+            {
+              "maxLength": 600,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Excerpt"
+        },
+        "factors_named": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Factors Named"
+        },
+        "grade_scale_present": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grade Scale Present"
+        },
+        "weights_present": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Weights Present"
+        }
+      },
+      "title": "RubricEvidence",
+      "type": "object"
+    },
+    "RubricFinding": {
+      "additionalProperties": false,
+      "description": "What the builder found when it read the policy — recorded as a FACT.\n\nWhy this exists (docs/factor-scorecard-plan.md, phase 6). FS-05 originally\ninferred \"this app scores\" from the app's own prose: weight words plus\naggregate words. It worked, and then the builder walked around it — the\nsecond build described the same assessment without the trigger vocabulary\nand sailed through. That is not a bug in the regex; it is the wrong thing to\nwatch. Prose is a RENDERING of intent, and a language model can re-render on\ndemand. Hardening the pattern is an arms race fought on the model's home\nground.\n\nSo the check moved onto something the builder must STATE. It already reads\nthe SOP and reaches a conclusion; that conclusion used to live in the chat\nand evaporate. Written down, publish can compare it against what was\nactually declared, with no vocabulary to paraphrase away.\n\nThis does NOT make evasion impossible: a builder can still record\n``verdict=\"none\"`` over a policy that plainly carries a rubric. What changes\nis the act required — from rephrasing a sentence, invisibly, to stating a\nfalse fact about a NAMED document, attributed, timestamped, and put in front\nof a human who can object. The same principle as the rest of this feature:\nnot preventing wrongness, making it visible and attributable.\n\nDeliberately carries NO fingerprint. Drift detection is a separate concern\nand a low-value one: the SOP passage itself is re-read on every run, so the\nevidence is always current, and only the weights are frozen — which change\nthrough a committee, not silently. This record is about what was FOUND and\nDECLARED, not about watching a document.",
+      "properties": {
+        "confirmed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed At"
+        },
+        "confirmed_by": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmed By"
+        },
+        "doc_path": {
+          "anyOf": [
+            {
+              "maxLength": 400,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Doc Path"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RubricEvidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "maxLength": 600,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "source": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "weighted_rubric",
+            "criteria_checklist",
+            "none"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "verdict"
+      ],
+      "title": "RubricFinding",
+      "type": "object"
+    },
+    "StatStripPanel": {
+      "additionalProperties": false,
+      "description": "Compact horizontal KPI band (C2) — the same server-computed metrics as\na dashboard panel, rendered as a dense strip WITH delta arrows and\nsparklines (give metrics ``compare``/``trend`` or the strip is just small\nnumbers). 2-6 metrics; one strip per page reads best.",
+      "properties": {
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "metrics": {
+          "items": {
+            "$ref": "#/$defs/DashboardMetric"
+          },
+          "maxItems": 6,
+          "minItems": 2,
+          "title": "Metrics",
+          "type": "array"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "stat_strip",
+          "enum": [
+            "stat_strip"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "metrics"
+      ],
+      "title": "StatStripPanel",
+      "type": "object"
+    },
+    "Theme": {
+      "additionalProperties": false,
+      "properties": {
+        "accent": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accent"
+        },
+        "chart_palette": {
+          "anyOf": [
+            {
+              "enum": [
+                "calm",
+                "vivid",
+                "mono",
+                "brand"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chart Palette"
+        },
+        "company_name": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Company Name"
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "ISO-4217 currency, e.g. 'USD', 'INR', 'EUR'. Default USD.",
+          "title": "Currency"
+        },
+        "dark_mode": {
+          "default": false,
+          "title": "Dark Mode",
+          "type": "boolean"
+        },
+        "density": {
+          "anyOf": [
+            {
+              "enum": [
+                "comfortable",
+                "compact"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Density"
+        },
+        "font": {
+          "anyOf": [
+            {
+              "enum": [
+                "inter",
+                "source-sans",
+                "ibm-plex",
+                "system"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Font"
+        },
+        "locale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "BCP-47 locale, e.g. 'en-US', 'en-IN', 'en-GB'. Default en-US.",
+          "title": "Locale"
+        },
+        "logo_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo Url"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "light",
+                "dark",
+                "auto"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        },
+        "primary": {
+          "anyOf": [
+            {
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Primary"
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "enum": [
+                "sharp",
+                "soft",
+                "round"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Radius"
+        },
+        "surface": {
+          "anyOf": [
+            {
+              "enum": [
+                "flat",
+                "elevated",
+                "glass"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Surface"
+        }
+      },
+      "title": "Theme",
+      "type": "object"
+    },
+    "TimelinePanel": {
+      "additionalProperties": false,
+      "description": "Vertical event feed (C3) bound to any tabular data source: one entry\nper row, newest first, positioned by ``date_field``. Case histories,\ndecision ledgers, outage logs. Read-only.",
+      "properties": {
+        "badge_colors": {
+          "additionalProperties": {
+            "enum": [
+              "green",
+              "amber",
+              "red",
+              "blue",
+              "slate"
+            ],
+            "type": "string"
+          },
+          "title": "Badge Colors",
+          "type": "object"
+        },
+        "badge_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Badge Field"
+        },
+        "data_source": {
+          "title": "Data Source",
+          "type": "string"
+        },
+        "date_field": {
+          "description": "Row column holding the event date/time.",
+          "title": "Date Field",
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "icon_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon Field"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit"
+        },
+        "permissions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Permissions",
+          "type": "array"
+        },
+        "query": {
+          "title": "Query",
+          "type": "object"
+        },
+        "subtitle_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtitle Field"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "title_field": {
+          "description": "Row column shown as the entry title.",
+          "title": "Title Field",
+          "type": "string"
+        },
+        "tool_buttons": {
+          "description": "UI buttons that invoke tools_v2 entries directly (no LLM). Each button is rendered alongside the panel's primary content. Validated at publish time against the bound AgentSpec's tools_v2 list.",
+          "items": {
+            "$ref": "#/$defs/ToolButton"
+          },
+          "title": "Tool Buttons",
+          "type": "array"
+        },
+        "type": {
+          "const": "timeline",
+          "enum": [
+            "timeline"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "data_source",
+        "date_field",
+        "title_field"
+      ],
+      "title": "TimelinePanel",
+      "type": "object"
+    },
+    "ToolButton": {
+      "additionalProperties": false,
+      "description": "A panel button that invokes a `tools_v2` tool directly, bypassing\nthe LLM. Use for deterministic side-effects where the BA already\nknows the tool name and its arguments don't need natural-language\nreasoning (e.g. \"Refresh\", \"Submit for Approval\", \"Verify Policy\").\n\nThe runtime gates each click on:\n  1. ``tool_name`` exists in ``agent_spec.tools_v2``\n  2. ``tool_name`` is listed in *this* panel's ``tool_buttons[]``\n     (a leaked /apps/{slug}/tool/{name} call cannot escape the\n     panel's allowlist)\n  3. The user's JWT passes the standard panel ``permissions`` check",
+      "properties": {
+        "args": {
+          "description": "Static / templated arguments forwarded to the tool. Field references like ``{form.policy_number}`` are resolved by the renderer from the panel's current state before POST.",
+          "title": "Args",
+          "type": "object"
+        },
+        "confirm": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When set, the renderer shows a confirm dialog with this text before invoking. Required (publish-time) for buttons bound to a write (kind='mcp_action') tool — always set it for destructive / irreversible direct writes.",
+          "title": "Confirm"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "roles": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional per-button role allowlist. When set, only users holding at least one of these roles may fire the button (enforced server-side in /apps/{slug}/tool/{name}, on top of the panel's permissions). Use to restrict a direct write (e.g. assign / transfer / close) to supervisors without splitting it onto a separate panel.",
+          "title": "Roles"
+        },
+        "tool_name": {
+          "description": "Must match a `tools_v2[].name` on the linked AgentSpec.",
+          "maxLength": 120,
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "title": "Tool Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "tool_name"
+      ],
+      "title": "ToolButton",
+      "type": "object"
+    },
+    "Trigger": {
+      "additionalProperties": false,
+      "description": "How an action is invoked outside of a user click.\n\nAll non-user triggers run as the **app's tenant service principal**\n(``user_id = \"system:<slug>\"``), never as an end-user. HITL gates,\naudit, and tenant scoping all still apply.",
+      "properties": {
+        "action": {
+          "description": "Name of the AgentSpec action this trigger invokes.",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Action",
+          "type": "string"
+        },
+        "args": {
+          "description": "Args passed to the poll tool. Use '$last_cursor' as a placeholder.",
+          "title": "Args",
+          "type": "object"
+        },
+        "auto_process_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AutoProcessPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cron": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "5-field cron expression (m h d M w). Tenant tz unless overridden.",
+          "title": "Cron"
+        },
+        "dedup_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Field on each returned row used to dedup vs prior runs.",
+          "title": "Dedup Key"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "every_seconds": {
+          "anyOf": [
+            {
+              "maximum": 86400,
+              "minimum": 30,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Interval triggers fire every N seconds. Min 30s.",
+          "title": "Every Seconds"
+        },
+        "execution_mode": {
+          "default": "recommend",
+          "enum": [
+            "recommend",
+            "auto_process"
+          ],
+          "title": "Execution Mode",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "input_template": {
+          "description": "Template applied to each new row to produce the action's inputs. Use '$row.<path>' to reference fields on the row.",
+          "title": "Input Template",
+          "type": "object"
+        },
+        "max_concurrency": {
+          "default": 2,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Max Concurrency",
+          "type": "integer"
+        },
+        "secret_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reference to the HMAC secret used to verify the webhook signature. Format: 'env:NAME' or 'vault://...'. The runtime resolves it from environment / vault — never inline.",
+          "title": "Secret Ref"
+        },
+        "tool": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "MCP tool name to call on each tick (poll triggers).",
+          "title": "Tool"
+        },
+        "type": {
+          "enum": [
+            "user_action",
+            "webhook",
+            "schedule.cron",
+            "schedule.interval",
+            "poll"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "tz": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "IANA tz, e.g. 'America/New_York'.",
+          "title": "Tz"
+        },
+        "use_case": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Friendly label for this trigger/agent in the roster UI.",
+          "title": "Use Case"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "action"
+      ],
+      "title": "Trigger",
+      "type": "object"
+    },
+    "ValueCap": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "description": "payload.<k> / row.<k> numeric field to cap.",
+          "maxLength": 200,
+          "title": "Field",
+          "type": "string"
+        },
+        "max": {
+          "description": "Auto-commit only when the field's value is <= max.",
+          "title": "Max",
+          "type": "number"
+        }
+      },
+      "required": [
+        "field",
+        "max"
+      ],
+      "title": "ValueCap",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "References the AgentSpec that powers this app. Required for kind='app' (and specifically required when any page has kind='dashboard', to power the hero-brief copilot).",
+      "title": "Agent Id"
+    },
+    "app_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "App Id"
+    },
+    "audience": {
+      "default": "owner",
+      "title": "Audience",
+      "type": "string"
+    },
+    "case_signature": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CaseSignature"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "custom_modules": {
+      "items": {
+        "$ref": "#/$defs/CustomModule"
+      },
+      "title": "Custom Modules",
+      "type": "array"
+    },
+    "data_sources": {
+      "items": {
+        "$ref": "#/$defs/DataSource"
+      },
+      "title": "Data Sources",
+      "type": "array"
+    },
+    "deployed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deployed At"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "design_dossier": {
+      "anyOf": [
+        {
+          "maxLength": 20000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Markdown summary produced by the discovery skill: trigger, inputs, tools, RAG, HITL thresholds, post-actions, schedule, failure policy. Stored alongside the spec for sign-off & audit.",
+      "title": "Design Dossier"
+    },
+    "factor_set": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FactorSet"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "headless": {
+      "default": false,
+      "title": "Headless",
+      "type": "boolean"
+    },
+    "item_review_gate": {
+      "default": "hard",
+      "enum": [
+        "hard",
+        "soft",
+        "none"
+      ],
+      "title": "Item Review Gate",
+      "type": "string"
+    },
+    "kind": {
+      "const": "app",
+      "default": "app",
+      "description": "Artefact kind. 'app' = a Power AI App with an agent (one or more pages; any page may set page.kind='dashboard' for the executive KPI/chart + hero-brief treatment — a 'dashboard' is just an app whose primary page is a dashboard page). The legacy 'dashboard' kind is retired and coerced to this shape.",
+      "enum": [
+        "app"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "navigation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AppNavigation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Top-level nav chrome for multi-page apps. Ignored when pages[] is empty."
+    },
+    "pages": {
+      "description": "Multi-page layout. When non-empty, panels[] MUST be empty. Each page is rendered at /{slug}/{page.id}. The first page (or the page whose path='/') is the landing page.",
+      "items": {
+        "$ref": "#/$defs/Page"
+      },
+      "title": "Pages",
+      "type": "array"
+    },
+    "panels": {
+      "description": "Single-page shorthand. When set and pages[] is empty, the runtime synthesises one implicit page at path='/' containing these panels. Mutually exclusive with pages[].",
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "agent_chat": "#/$defs/AgentChatPanel",
+            "calendar": "#/$defs/CalendarPanel",
+            "chart": "#/$defs/ChartPanel",
+            "dashboard": "#/$defs/DashboardPanel",
+            "detail": "#/$defs/DetailPanel",
+            "document_view": "#/$defs/DocumentViewPanel",
+            "filter_bar": "#/$defs/FilterBarPanel",
+            "form": "#/$defs/FormPanel",
+            "hero": "#/$defs/HeroPanel",
+            "map": "#/$defs/MapPanel",
+            "markdown": "#/$defs/MarkdownPanel",
+            "notice": "#/$defs/NoticePanel",
+            "notifications": "#/$defs/NotificationsPanel",
+            "queue": "#/$defs/QueuePanel",
+            "stat_strip": "#/$defs/StatStripPanel",
+            "timeline": "#/$defs/TimelinePanel"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/FormPanel"
+          },
+          {
+            "$ref": "#/$defs/QueuePanel"
+          },
+          {
+            "$ref": "#/$defs/DetailPanel"
+          },
+          {
+            "$ref": "#/$defs/DashboardPanel"
+          },
+          {
+            "$ref": "#/$defs/HeroPanel"
+          },
+          {
+            "$ref": "#/$defs/StatStripPanel"
+          },
+          {
+            "$ref": "#/$defs/TimelinePanel"
+          },
+          {
+            "$ref": "#/$defs/ChartPanel"
+          },
+          {
+            "$ref": "#/$defs/AgentChatPanel"
+          },
+          {
+            "$ref": "#/$defs/DocumentViewPanel"
+          },
+          {
+            "$ref": "#/$defs/MarkdownPanel"
+          },
+          {
+            "$ref": "#/$defs/NoticePanel"
+          },
+          {
+            "$ref": "#/$defs/CalendarPanel"
+          },
+          {
+            "$ref": "#/$defs/MapPanel"
+          },
+          {
+            "$ref": "#/$defs/FilterBarPanel"
+          },
+          {
+            "$ref": "#/$defs/NotificationsPanel"
+          }
+        ]
+      },
+      "title": "Panels",
+      "type": "array"
+    },
+    "permissions": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Permissions",
+      "type": "object"
+    },
+    "preview_mode": {
+      "default": false,
+      "title": "Preview Mode",
+      "type": "boolean"
+    },
+    "preview_until": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Preview Until"
+    },
+    "promoted_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Promoted At"
+    },
+    "promoted_to_slug": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Promoted To Slug"
+    },
+    "requirements_unmet": {
+      "description": "Capabilities the BA requested that the platform doesn't currently support. Recorded by the builder during discovery so admins can see what apps are blocked on missing features.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Requirements Unmet",
+      "type": "array"
+    },
+    "rubric_finding": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RubricFinding"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "slug": {
+      "pattern": "^[a-z0-9][a-z0-9_-]{1,62}$",
+      "title": "Slug",
+      "type": "string"
+    },
+    "spec_version": {
+      "const": "v0",
+      "default": "v0",
+      "enum": [
+        "v0"
+      ],
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/AppStatus",
+      "default": "draft"
+    },
+    "tenant_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tenant Id"
+    },
+    "theme": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Theme"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "title": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "triggers": {
+      "description": "Non-user invocation paths (webhook / schedule / poll). Empty means the app is only ever started by user actions.",
+      "items": {
+        "$ref": "#/$defs/Trigger"
+      },
+      "title": "Triggers",
+      "type": "array"
+    },
+    "version": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Version"
+    }
+  },
+  "required": [
+    "slug",
+    "spec_version",
+    "title"
+  ],
+  "title": "AppSpec",
+  "type": "object"
+}

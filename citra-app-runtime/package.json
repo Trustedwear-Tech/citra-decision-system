@@ -1,0 +1,35 @@
+{
+  "name": "citra-app-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant Next.js runtime that renders Citra Power AI Apps from AppSpec JSON.",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "build:embed": "node scripts/build-embed.mjs",
+    "typecheck:embed": "tsc --noEmit -p embed/tsconfig.json",
+    "start": "next start -p 3100",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/leaflet": "^1.9.21",
+    "echarts": "^6.1.0",
+    "echarts-for-react": "^3.0.6",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.25.0",
+    "next": "^15.5.21",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.7",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "esbuild": "^0.24.0",
+    "eslint": "8.57.0",
+    "eslint-config-next": "^15.5.21",
+    "typescript": "5.4.5"
+  }
+}

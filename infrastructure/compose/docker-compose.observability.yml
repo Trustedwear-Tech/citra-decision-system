@@ -1,0 +1,147 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra — Central Observability Stack
+# =============================================================================
+# Run on the control plane (next to discovery-service, user-service, etc).
+# Per-dept Prometheus agents remote_write to the central Prometheus here; Loki
+# receives logs from per-dept Promtails. Alertmanager posts alerts to
+# Monitoring-Service's /webhook/alert, which already speaks SES/SMTP/webhook.
+#
+#   docker compose -f infrastructure/compose/docker-compose.observability.yml up -d
+# =============================================================================
+
+version: "3.8"
+
+x-json-logging: &json-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+networks:
+  citra-network:
+    external: true
+
+volumes:
+  prometheus_data:
+  loki_data:
+  tempo_data:
+  grafana_data:
+  alertmanager_data:
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: citra-prometheus
+    restart: unless-stopped
+    logging: *json-logging
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-remote-write-receiver"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks: [citra-network]
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: citra-alertmanager
+    restart: unless-stopped
+    logging: *json-logging
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks: [citra-network]
+
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: citra-loki
+    restart: unless-stopped
+    logging: *json-logging
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ./observability/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks: [citra-network]
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    container_name: citra-tempo
+    restart: unless-stopped
+    logging: *json-logging
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./observability/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200"    # HTTP query
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    networks: [citra-network]
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: citra-promtail
+    restart: unless-stopped
+    logging: *json-logging
+    command: ["-config.file=/etc/promtail/promtail-config.yml"]
+    volumes:
+      - ./observability/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on: [loki]
+    networks: [citra-network]
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: citra-node-exporter
+    restart: unless-stopped
+    logging: *json-logging
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks: [citra-network]
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: citra-grafana
+    restart: unless-stopped
+    logging: *json-logging
+    depends_on: [prometheus, loki, tempo, promtail]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_FEATURE_TOGGLES_ENABLE: "traceqlEditor"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks: [citra-network]
+

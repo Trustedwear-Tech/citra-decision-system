@@ -1,0 +1,58 @@
+﻿# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Citra AI â€” Monitoring Service Module
+# =============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  monitoring-service:
+    build:
+      context: .
+    container_name: citra-monitoring
+    restart: unless-stopped
+    networks:
+      - citra-network
+    environment:
+      - ALERT_TRANSPORT=${ALERT_TRANSPORT:-log}
+      - EMAIL_DEFAULT_SENDER=${MONITOR_EMAIL_FROM:-}
+      - EMAIL_DEFAULT_TO=${MONITOR_EMAIL_TO:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - ALERT_WEBHOOK_URL=${ALERT_WEBHOOK_URL:-}
+      - LOG_DIRECTORIES=/logs/citra-service,/logs/user-service,/logs/playwright-render-service
+      - DOCKER_CHECK_INTERVAL_SECONDS=30
+      - ALERT_COOLDOWN_SECONDS=600
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - citra_service_logs:/logs/citra-service:ro
+      - user_service_logs:/logs/user-service:ro
+      - monitoring_logs:/monitoring-service/logs
+    logging: *default-logging
+
+volumes:
+  citra_service_logs:
+    external: true
+    name: compose_citra_service_logs
+  user_service_logs:
+    external: true
+    name: compose_user_service_logs
+  monitoring_logs:
+    driver: local
+
+networks:
+  citra-network:
+    external: true

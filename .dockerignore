@@ -1,0 +1,52 @@
+# =============================================================================
+# Root .dockerignore for Citra-AI Monorepo
+# =============================================================================
+
+# VCS & IDE Directories
+.git/
+.github/
+.vscode/
+.idea/
+.gitignore
+.gitattributes
+
+# Python Virtual Environments & Packages
+**/venv/
+**/myenv/
+**/.venv/
+**/env/
+**/.env
+**/.env.*
+
+# Python Cache & Build Artifacts
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/*.pytest_cache
+**/.pytest_cache
+**/.mypy_cache
+**/*.egg-info/
+**/build/
+**/dist/
+
+# Node.js node_modules
+**/node_modules/
+npm-debug.log
+yarn-error.log
+
+# Next.js, Expo, and Web Build Artifacts
+**/.next/
+**/.expo/
+**/web-build/
+
+# Log Files & Databases
+**/logs/
+**/*.log
+**/*.db
+**/*.sqlite
+
+# Temporary & Swap Files
+**/.tmp/
+**/*.swp
+**/*~

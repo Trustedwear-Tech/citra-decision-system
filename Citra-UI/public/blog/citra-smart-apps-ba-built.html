@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citra Self-Improving Decision Apps — UI, Agent, and Dashboard Authored by Your BA | Citra AI</title>
+    <meta name="description"
+        content="Citra's flagship Decision App bundles a real UI, an automated agent, and a live KPI dashboard — all authored by your BA in natural language. It recommends, acts within a policy gate, and learns from every outcome; the same logic ships headless as a Decision Service. Motor claims auto-triage, vendor onboarding, underwriter workbench: line-of-business apps with no developer required.">
+    <meta name="keywords"
+        content="Citra Decision Apps, Decision Service, self-improving decision apps, flagship product, BA-built apps, no-code enterprise apps, line-of-business apps, motor claims automation, claims triage, underwriter workbench, vendor onboarding, BPM, agentic apps, natural language app builder, sovereign AI apps, private-cloud business apps">
+
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="author" content="Rohit, Founder of Citra AI">
+    <meta name="theme-color" content="#7c3aed">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://citra-ai.com/blog/citra-smart-apps-ba-built.html">
+    <meta property="og:title" content="Citra Self-Improving Decision Apps — UI, Agent, and Dashboard Authored by Your BA">
+    <meta property="og:description"
+        content="Citra's flagship. Three things every line-of-business team needs — UI, agent, dashboard — built by your BA in natural language. It recommends, acts, and learns; the same logic ships headless as a Decision Service. Weeks of triage become a daily review. No developer required.">
+    <meta property="og:image" content="https://citra-ai.com/images/og-image.png">
+    <meta property="og:site_name" content="Citra AI">
+    <meta property="article:published_time" content="2026-05-09">
+    <meta property="article:modified_time" content="2026-05-09">
+    <meta property="article:author" content="Rohit">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Citra Self-Improving Decision Apps — UI, Agent, and Dashboard Authored by Your BA">
+    <meta name="twitter:description"
+        content="A Decision App bundles UI + agent + dashboard, authored in natural language by your BA. Motor claims, underwriting, vendor onboarding — weeks of work compressed into a daily review.">
+    <meta name="twitter:image" content="https://citra-ai.com/images/twitter-card.png">
+    <meta name="twitter:site" content="@citraai">
+
+    <link rel="canonical" href="https://citra-ai.com/blog/citra-smart-apps-ba-built.html">
+    <link rel="alternate" hreflang="en" href="https://citra-ai.com/blog/citra-smart-apps-ba-built.html">
+
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Citra Self-Improving Decision Apps — UI, Agent, and Dashboard Authored by Your BA",
+        "description": "A Citra Decision App bundles a real UI, an automated agent, and a live KPI dashboard — all authored by your BA in natural language. Motor claims auto-triage, vendor onboarding, underwriter workbench: line-of-business apps with no developer required.",
+        "url": "https://citra-ai.com/blog/citra-smart-apps-ba-built.html",
+        "datePublished": "2026-05-09",
+        "dateModified": "2026-05-09",
+        "author": {
+            "@type": "Person",
+            "name": "Rohit",
+            "jobTitle": "Founder",
+            "worksFor": { "@type": "Organization", "name": "Citra AI" }
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Trustedwear Tech Private Limited",
+            "logo": { "@type": "ImageObject", "url": "https://citra-ai.com/logo.png" }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://citra-ai.com/blog/citra-smart-apps-ba-built.html"
+        },
+        "image": "https://citra-ai.com/images/og-image.png",
+        "wordCount": 2100,
+        "keywords": ["Citra Decision Apps", "BA-built apps", "no-code business apps", "claims triage", "agent automation", "natural language app builder", "sovereign AI apps"]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://citra-ai.com/" },
+            { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://citra-ai.com/blog/" },
+            { "@type": "ListItem", "position": 3, "name": "Citra Decision Apps — UI, Agent, Dashboard by Your BA", "item": "https://citra-ai.com/blog/citra-smart-apps-ba-built.html" }
+        ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is a Citra Decision App?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "A Citra Decision App is a published line-of-business application that bundles three things every team needs: a real UI (forms, queues, detail panels, embedded agent chat), an automated agent that pre-processes the routine work, and a live KPI dashboard. The whole app is authored by a business analyst in natural language — no developer required — and published at apps.citra.ai/{slug}, wired to your enterprise data."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How is a Decision App different from a low-code platform?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Low-code platforms still require someone to lay out screens, model data, and wire actions — usually a developer or a power user with weeks of training. A Decision App is described in natural language: the BA says what business outcome they want, and the builder agent generates the UI, the agent, and the KPI dashboard together, wired to enterprise data sources via MCP, RAG, and DuckDB. It is not a screen builder; it is an outcome builder."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can a Decision App really replace weeks of manual triage?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes — by automating the routine cases and surfacing only the exceptions. A motor-claims Decision App auto-approves claims under a configurable threshold, runs policy lookups via RAG, and routes high-value or fraud-flagged claims into a queue with a recommended decision and policy citation. The BA opens the app once a day to review only the items that need human judgment. Customers report compressing weeks of monthly triage into a daily 30-minute review."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What about approvals and audit?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Decision Apps include named-approver gates, non-self-approval enforcement, and per-tenant audit logging on every step, every approval, and every decision. Compliance teams get an audit trail by default; security teams get tenant isolation; leadership gets a dashboard of throughput and SLA risk. The Decision App tier is built on the same governed sovereign stack as the rest of Citra."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Where does a Decision App run?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Inside your perimeter — in your private cloud, exactly like the rest of the Citra platform. Decision Apps connect to your enterprise data through MCP servers, internal SQL, files, lakehouse tables, and RAG indexes. No data leaves your environment, no foreign model trains on your IP, and the published URL at apps.citra.ai/{slug} is served by your own deployment."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1f2937; background: #ffffff; }
+        .container { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+
+        header { background: #0F172A; color: white; padding: 1rem 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+        .header-content { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: white; text-decoration: none; }
+        nav ul { list-style: none; display: flex; gap: 1.5rem; }
+        nav a { color: #cbd5e1; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+        nav a:hover { color: white; }
+
+        .post-hero { background: linear-gradient(135deg, #1e1b4b 0%, #4338CA 50%, #6D28D9 100%); color: white; padding: 4rem 0 3rem; }
+        .post-hero .container { max-width: 860px; }
+        .breadcrumb { font-size: 0.85rem; color: #DDD6FE; margin-bottom: 1rem; }
+        .breadcrumb a { color: #DDD6FE; text-decoration: none; }
+        .breadcrumb a:hover { color: white; }
+        .post-tag { display: inline-block; background: rgba(167, 139, 250, 0.25); color: #DDD6FE; padding: 0.3rem 0.8rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1rem; border: 1px solid rgba(167, 139, 250, 0.4); }
+        .post-hero h1 { font-size: 2.5rem; font-weight: 800; line-height: 1.15; margin-bottom: 1rem; letter-spacing: -0.02em; }
+        .post-hero h1 span { color: #C4B5FD; }
+        .post-meta-hero { color: #DDD6FE; font-size: 0.95rem; }
+
+        main { padding: 3rem 0 2rem; background: #fafafa; }
+        .post-content h2 { font-size: 1.75rem; color: #0f172a; margin: 2.5rem 0 1rem; font-weight: 800; }
+        .post-content h3 { font-size: 1.25rem; color: #1e293b; margin: 1.75rem 0 0.75rem; font-weight: 700; }
+        .post-content p { color: #334155; margin-bottom: 1.1rem; font-size: 1.05rem; }
+        .post-content ul, .post-content ol { margin: 0 0 1.25rem 1.5rem; color: #334155; }
+        .post-content li { margin-bottom: 0.5rem; font-size: 1.05rem; }
+        .post-content a { color: #6D28D9; text-decoration: none; border-bottom: 1px dashed #C4B5FD; }
+        .post-content a:hover { color: #4338CA; border-bottom-style: solid; }
+        .post-content strong { color: #0f172a; font-weight: 700; }
+
+        .three-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin: 2rem 0 2.5rem; }
+        .pillar-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem; }
+        .pillar-icon { width: 44px; height: 44px; border-radius: 10px; background: #EDE9FE; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; font-size: 1.4rem; }
+        .pillar-icon.workflow { background: #DBEAFE; }
+        .pillar-icon.dashboard { background: #FEF3C7; }
+        .pillar-card h3 { font-size: 1.1rem; color: #0f172a; margin: 0 0 0.5rem; font-weight: 800; }
+        .pillar-card p { font-size: 0.92rem; color: #475569; margin-bottom: 0; line-height: 1.55; }
+
+        .citra-fix { background: linear-gradient(135deg, #1e1b4b 0%, #4338CA 100%); color: white; border-radius: 16px; padding: 2.25rem 2rem; margin: 2rem 0 2.5rem; text-align: center; }
+        .citra-fix h2 { color: white; font-size: 1.65rem; margin: 0 0 0.75rem; }
+        .citra-fix h2 span { color: #C4B5FD; }
+        .citra-fix p { color: #DDD6FE; font-size: 1rem; margin: 0 auto; max-width: 640px; }
+
+        .key-takeaway { background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); border: 1px solid #C4B5FD; border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0; }
+        .key-takeaway h3 { color: #4338CA; margin-top: 0; }
+        .key-takeaway p { margin-bottom: 0; }
+
+        blockquote { border-left: 4px solid #7C3AED; margin: 1.5rem 0; padding: 1rem 1.25rem; background: #F5F3FF; border-radius: 0 8px 8px 0; font-style: italic; color: #475569; }
+
+        .example-card { background: white; border: 1px solid #e2e8f0; border-left: 4px solid #7C3AED; border-radius: 12px; padding: 1.5rem 1.75rem; margin: 1rem 0; }
+        .example-card .tag { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #7C3AED; margin-bottom: 0.5rem; display: block; }
+        .example-card h3 { font-size: 1.15rem; color: #0f172a; margin: 0 0 0.5rem; font-weight: 800; }
+        .example-card p { color: #475569; font-size: 0.98rem; margin-bottom: 0; }
+
+        .pillar-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.5rem 0 2.5rem; padding: 1.5rem; background: #0F172A; border-radius: 14px; }
+        .pillar-strip-item .label { font-size: 1.1rem; font-weight: 800; color: #C4B5FD; margin-bottom: 0.25rem; }
+        .pillar-strip-item .text { color: #CBD5E1; font-size: 0.85rem; line-height: 1.45; }
+
+        .chip-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0 2rem; }
+        .chip-list span { background: #F5F3FF; color: #4338CA; border: 1px solid #C4B5FD; padding: 0.4rem 0.85rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
+
+        .faq-section { margin: 3rem 0; }
+        .faq-item { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.5rem; margin-bottom: 1rem; }
+        .faq-item h3 { font-size: 1.1rem; color: #1e293b; margin: 0 0 0.5rem; }
+        .faq-item p { color: #475569; font-size: 0.98rem; margin-bottom: 0; }
+
+        .author-box { display: flex; align-items: center; gap: 1.25rem; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin: 3rem 0; }
+        .author-avatar { width: 60px; height: 60px; background: linear-gradient(135deg, #7C3AED, #4338CA); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.25rem; flex-shrink: 0; }
+        .author-info h4 { color: #1e293b; font-size: 1rem; margin-bottom: 0.25rem; }
+        .author-info p { color: #64748b; font-size: 0.9rem; margin-bottom: 0; }
+
+        .cta-banner { background: linear-gradient(135deg, #7C3AED 0%, #4338CA 100%); color: white; padding: 3rem 2rem; border-radius: 16px; text-align: center; margin: 2rem 0 3rem; }
+        .cta-banner h2 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.75rem; color: white; }
+        .cta-banner p { font-size: 1rem; margin-bottom: 1.5rem; opacity: 0.95; color: white; }
+        .cta-white { display: inline-block; background: white; color: #4338CA; padding: 0.9rem 2.25rem; border-radius: 8px; text-decoration: none; font-weight: 700; }
+
+        .related-posts { margin: 2rem 0 3rem; }
+        .related-posts h3 { font-size: 1.35rem; color: #1e293b; margin-bottom: 1.25rem; }
+        .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+        .related-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; }
+        .related-card h4 { font-size: 1rem; margin-bottom: 0.5rem; }
+        .related-card h4 a { color: #1e293b; text-decoration: none; }
+        .related-card h4 a:hover { color: #7C3AED; }
+        .related-card p { font-size: 0.88rem; color: #64748b; margin-bottom: 0; }
+
+        footer { background: #1e293b; color: #94a3b8; text-align: center; padding: 2rem 0; }
+        footer a { color: #94a3b8; text-decoration: none; }
+        footer a:hover { color: #C4B5FD; }
+        footer nav { margin-top: 0.75rem; }
+
+        @media (max-width: 768px) {
+            .post-hero h1 { font-size: 1.85rem; }
+            .three-grid { grid-template-columns: 1fr; }
+            .pillar-strip { grid-template-columns: 1fr 1fr; }
+            .author-box { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">Citra AI</a>
+                <nav aria-label="Main navigation">
+                    <ul>
+                        <li><a href="/static-seo/">Home</a></li>
+                        <li><a href="/blog/">Blog</a></li>
+                        <li><a href="/static-seo/faq.html">FAQ</a></li>
+                        <li><a href="/app" rel="nofollow">Launch App</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <section class="post-hero">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="/">Home</a> &rsaquo; <a href="/blog/">Blog</a> &rsaquo; Citra Decision Apps — Authored by Your BA
+            </div>
+            <span class="post-tag">Decision Apps · Featured</span>
+            <h1>Citra Self-Improving Decision Apps — <span>UI, Agent, and Dashboard, Authored by Your BA</span></h1>
+            <div class="post-meta-hero">By Rohit, Founder of Citra AI &middot; May 9, 2026 &middot; 8 min read</div>
+        </div>
+    </section>
+
+    <main>
+        <article class="post-content">
+            <div class="container">
+
+                <p>Every line-of-business team — claims, underwriting, vendor ops, KYC, support — needs the same three
+                    things to do their job: <strong>a real UI</strong> to handle work in front of them, <strong>an
+                    automated agent</strong> that takes the routine cases off their plate, and <strong>a live KPI
+                    dashboard</strong> that tells leadership how the queue is moving.</p>
+
+                <p>Today they get none of it without a developer. The BA writes a Word doc, files a ticket, waits a
+                    quarter for IT, and ends up with a portal that looks like 2014 — without the agent, without the
+                    dashboard, and obsolete the moment the policy changes.</p>
+
+                <p>A <strong>Citra Decision App</strong> is what closes that gap — and it's Citra's flagship product.
+                    Your business analyst describes the business outcome in plain English. A sandboxed builder agent
+                    ships a published app at <code>apps.citra.ai/{slug}</code> that bundles all three pieces — UI,
+                    agent, dashboard — wired to your enterprise data, governed by your tenant, deployed inside your
+                    perimeter. It <strong>recommends</strong> each decision, <strong>acts</strong> within your policy
+                    gate (auto-committing the routine calls and escalating the high-stakes ones), and
+                    <strong>learns</strong> from every outcome so next week's recommendations are sharper. <strong>No
+                    developer required.</strong></p>
+
+                <p>When the consumer of a decision is another system rather than a person working a queue, the same
+                    self-improving logic ships headless as a <strong>Decision Service</strong> — the flagship's API form.
+                    Your existing systems call it to request a governed, auditable decision in-line, and it feeds the
+                    same owned operational memory as the apps. Use a <strong>Decision App</strong> when people work the
+                    queue; use a <strong>Decision Service</strong> when a system needs the call.</p>
+
+                <h2>The three things every Decision App bundles</h2>
+
+                <div class="three-grid">
+                    <div class="pillar-card">
+                        <div class="pillar-icon">🖥️</div>
+                        <h3>Real UI</h3>
+                        <p>Form, queue, detail panel, embedded agent chat — generated from the BA's description, not
+                            stitched together by a developer.</p>
+                    </div>
+                    <div class="pillar-card">
+                        <div class="pillar-icon workflow">⚙️</div>
+                        <h3>Real agent</h3>
+                        <p>Auto-process the routine cases, escalate the exceptions with a recommended decision and a
+                            policy citation. Connected to MCP, RAG, and DuckDB sources.</p>
+                    </div>
+                    <div class="pillar-card">
+                        <div class="pillar-icon dashboard">📊</div>
+                        <h3>Real dashboard</h3>
+                        <p>KPIs, charts, and trends the BA builds and owns. Live numbers leadership can act on, not a
+                            ticket to BI for next sprint.</p>
+                    </div>
+                </div>
+
+                <div class="citra-fix">
+                    <h2>Authored in <span>natural language.</span></h2>
+                    <p>The BA describes the business process. Citra's sandboxed builder agent ships the published app —
+                        UI, agent, dashboard, approvals, audit — all wired to your enterprise data. No developer
+                        sprint. No portal-shaped tech debt.</p>
+                </div>
+
+                <h2>Worked example: motor claims auto-triage</h2>
+
+                <p>Take the most common pain in any motor insurer's operations team: a backlog of claims, all queued for
+                    a human reviewer regardless of size. A junior reviewer spends three hours every morning approving
+                    fifty &dollar;200 windshield replacements before they get to the &dollar;15,000 collision claim that
+                    actually needed their attention.</p>
+
+                <p>The BA describes the business outcome they want:</p>
+
+                <blockquote>
+                    "Build me an app that auto-approves motor claims under $500. Anything above that, route to my queue
+                    with a recommended decision and the policy clause it depends on. Show me a dashboard of SLA risk,
+                    monthly payout, and fraud-flag rate."
+                </blockquote>
+
+                <p>The Decision App ships. Inside an hour the BA has:</p>
+
+                <ul>
+                    <li>An <strong>intake form</strong> for new claims (and a connector pulling from the existing claims
+                        system through MCP).</li>
+                    <li>An <strong>agent</strong> that classifies claim type, runs the under-$500 check, fires the
+                        policy-RAG lookup for high-value claims, and writes a recommended decision into the queue
+                        record.</li>
+                    <li>A <strong>queue UI</strong> showing only the high-value items — each with the recommended
+                        decision and the cited policy clause.</li>
+                    <li>A <strong>detail panel</strong> with embedded agent chat so the BA can ask "why this
+                        recommendation?" and get a grounded answer.</li>
+                    <li>A <strong>dashboard</strong> tracking SLA breach risk, monthly payout, fraud-flag rate, and
+                        approval throughput.</li>
+                    <li><strong>Audit logging</strong> on every step, every recommendation, every approval — per
+                        tenant.</li>
+                </ul>
+
+                <p>Three months later that team is no longer running daily three-hour triage. The morning review takes
+                    thirty minutes. The dashboard goes to the COO. The BA owns the whole thing — they tweaked the
+                    threshold from &dollar;500 to &dollar;750 last week without filing a single IT ticket.</p>
+
+                <h2>Three more apps that look exactly the same shape</h2>
+
+                <div class="example-card">
+                    <span class="tag">Insurance</span>
+                    <h3>Motor Claims Auto-Triage</h3>
+                    <p>The agent auto-approves claims under &dollar;500. High-value claims land in the BA queue with a
+                        recommended decision and policy citation. Dashboard tracks SLA risk, monthly payout, fraud-flag
+                        rate. Weeks of triage become a daily review.</p>
+                </div>
+
+                <div class="example-card">
+                    <span class="tag">Lending</span>
+                    <h3>Underwriter Workbench</h3>
+                    <p>Application form &rarr; risk triage &rarr; approver hierarchy &rarr; bureau + policy RAG &rarr;
+                        decision with rejection notes. Underwriters review only what their tier requires. Audit trail
+                        per tenant.</p>
+                </div>
+
+                <div class="example-card">
+                    <span class="tag">Operations</span>
+                    <h3>Vendor Onboarding</h3>
+                    <p>KYC form &rarr; compliance checks via MCP &rarr; dashboard of pending items &rarr;
+                        named-approver gate &rarr; auditable status. The vendor ops manager watches the dashboard, not
+                        the email inbox.</p>
+                </div>
+
+                <h2>Why this isn't another no-code platform</h2>
+
+                <p>Low-code and no-code platforms have existed for ten years. Why hasn't every BA built a claims app
+                    already? Because those platforms still require somebody to:</p>
+
+                <ul>
+                    <li>Lay out screens.</li>
+                    <li>Model the data.</li>
+                    <li>Wire up actions and conditions.</li>
+                    <li>Stitch in integrations.</li>
+                    <li>Build dashboards in a separate BI tool.</li>
+                </ul>
+
+                <p>That somebody is, in practice, a developer or a heavily trained power user. The BA still files the
+                    ticket.</p>
+
+                <p>A Decision App is different because the BA describes the <strong>business outcome</strong> — not the
+                    screens. The builder agent generates the UI, the agent, and the KPI dashboard <em>together</em>,
+                    coherent with each other, wired to your enterprise data. It's not a screen builder; it's an outcome
+                    builder.</p>
+
+                <div class="key-takeaway">
+                    <h3>The litmus test</h3>
+                    <p>Can your BA add a new approval threshold, change a queue rule, or add a KPI to the dashboard
+                        without filing an IT ticket? If yes, you have a Decision App. If no, you have a portal that needs a
+                        developer.</p>
+                </div>
+
+                <h2>What you actually get in every Decision App</h2>
+
+                <div class="chip-list">
+                    <span>UI + agent + dashboard in one app</span>
+                    <span>Natural-language authoring &mdash; no developer</span>
+                    <span>Auto-handle routine, escalate the rest</span>
+                    <span>BA-built KPIs and charts</span>
+                    <span>Agent chat embedded</span>
+                    <span>HITL approvers + non-self-approval</span>
+                    <span>MCP / RAG / DuckDB data sources</span>
+                    <span>Tenant share with explicit grants</span>
+                    <span>Private-cloud deployment</span>
+                </div>
+
+                <div class="pillar-strip">
+                    <div class="pillar-strip-item">
+                        <div class="label">Real UI</div>
+                        <div class="text">Form, queue, detail, agent chat &mdash; generated from your description.</div>
+                    </div>
+                    <div class="pillar-strip-item">
+                        <div class="label">Real agent</div>
+                        <div class="text">Auto-process the routine, escalate the rest with recommendations.</div>
+                    </div>
+                    <div class="pillar-strip-item">
+                        <div class="label">Real dashboard</div>
+                        <div class="text">KPIs, charts, and trends the BA builds and owns.</div>
+                    </div>
+                    <div class="pillar-strip-item">
+                        <div class="label">Real audit</div>
+                        <div class="text">Every step, approval, and decision logged per tenant.</div>
+                    </div>
+                </div>
+
+                <h2>Why the sovereignty story matters here too</h2>
+
+                <p>A motor-claims app is touching policy data, customer records, and payout decisions. A vendor-KYC app
+                    is touching identity documents and financial information. These are the workloads where SaaS AI is
+                    a non-starter — and where most low-code platforms also fall down because they ship as
+                    multi-tenant SaaS hosted somewhere your security team has never heard of.</p>
+
+                <p>Citra Decision Apps run inside <em>your</em> perimeter — in your private cloud — on the same
+                    sovereign stack as the rest of Citra. The published <code>apps.citra.ai/{slug}</code> URL is served
+                    by your own deployment. Data doesn't egress. Models don't train on your IP. Audit log is yours.</p>
+
+                <p>That's why a Decision App is something a regulated business actually deploys, instead of yet another
+                    "AI app builder" that gets blocked at the security review.</p>
+
+                <h2>Where Decision Apps fit in the Citra stack</h2>
+
+                <p>The Agentic Layer of Citra is two-tier on purpose:</p>
+
+                <ul>
+                    <li><strong>Decision Apps</strong> — what this post is about. The BA tier. Authored in natural
+                        language, ships UI + agent + dashboard together, runs on the sovereign stack.</li>
+                    <li><strong>Agentic Workflow Engine</strong> — the IT tier. A developer-grade canvas with
+                        AI-agentic decision nodes for complex, cross-vertical processes that need explicit composition
+                        — application screening with multi-rule scoring, multi-step decisioning, long-running flows.</li>
+                </ul>
+
+                <p>Most line-of-business apps land in the Decision App tier and never need to touch the Workflow Engine
+                    canvas. When they do, the same governed data, the same tenant audit, and the same model layer
+                    underpin both — so handing off from a BA-built app to an IT-built workflow doesn't mean rebuilding
+                    on a different stack.</p>
+
+                <h2>The honest summary</h2>
+
+                <p>For ten years the answer to "let's give the BA a real app" was "file a ticket and wait." That was
+                    fine when shipping a portal meant a lengthy developer project and the policy didn't change for two
+                    years. Neither of those is true anymore.</p>
+
+                <p>Citra Decision Apps move the work where it actually belongs: the BA, who knows the business process,
+                    describes the outcome they want; the platform ships the UI, the agent, and the dashboard, all
+                    wired to enterprise data, all governed, all on your infrastructure. Weeks of manual triage become
+                    a daily review. The KPIs that used to live in a stale slide deck now live in a dashboard the BA
+                    owns.</p>
+
+                <p>That's the gap a Decision App closes &mdash; and it's the gap that decides whether a regulated team
+                    actually deploys an AI app, or just keeps reading slide decks about one.</p>
+
+                <h2>Frequently Asked Questions</h2>
+
+                <div class="faq-section">
+                    <div class="faq-item">
+                        <h3>What is a Citra Decision App?</h3>
+                        <p>A published line-of-business app that bundles UI, agent, and KPI dashboard, authored by
+                            your BA in natural language. Served at <code>apps.citra.ai/{slug}</code>, wired to your
+                            enterprise data, deployed inside your perimeter.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>How is it different from low-code?</h3>
+                        <p>Low-code asks the BA to lay out screens, model the data, and wire actions &mdash; usually
+                            with a developer alongside. A Decision App asks the BA to describe the business outcome; the
+                            builder agent generates the UI, the agent, and the KPI dashboard together.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Can it really replace weeks of manual triage?</h3>
+                        <p>Yes &mdash; by automating the routine cases and surfacing only the exceptions. A motor-claims
+                            Decision App auto-approves under-threshold claims, runs policy lookups via RAG, and routes
+                            high-value items into a queue with a recommended decision and citation. Customers compress
+                            weeks of monthly triage into a daily 30-minute review.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>What about approvals and audit?</h3>
+                        <p>Decision Apps include named-approver gates, non-self-approval enforcement, and per-tenant audit
+                            logging on every step, approval, and decision &mdash; built into the platform, not bolted on.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Where does a Decision App run?</h3>
+                        <p>Inside your perimeter &mdash; in your private cloud, on the same sovereign Citra stack.
+                            No data egress, no foreign training, no SaaS hop. The published URL is served by your own
+                            deployment.</p>
+                    </div>
+                </div>
+
+                <div class="cta-banner">
+                    <h2>Ship a Decision App for your team</h2>
+                    <p>Bring us your highest-volume manual workflow &mdash; claims triage, vendor onboarding, KYC, MIS
+                        roll-ups. We'll build the Decision App with your BA on a 30-minute call.</p>
+                    <a href="/static-seo/" class="cta-white">Talk to Citra &rarr;</a>
+                </div>
+
+                <div class="author-box">
+                    <div class="author-avatar">R</div>
+                    <div class="author-info">
+                        <h4>Rohit, Founder of Citra AI</h4>
+                        <p>Building the sovereign AI platform regulated enterprises actually deploy &mdash; open-source
+                            models, in your private cloud, with apps your BA owns end-to-end.</p>
+                    </div>
+                </div>
+
+                <div class="related-posts">
+                    <h3>Related reading</h3>
+                    <div class="related-grid">
+                        <div class="related-card">
+                            <h4><a href="/blog/what-enterprises-need-from-sovereign-ai.html">What Enterprises Need from
+                                    Sovereign AI</a></h4>
+                            <p>The three non-negotiables every enterprise has when adopting AI &mdash; and how Citra
+                                delivers each.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </article>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Trustedwear Tech Private Limited. All rights reserved.</p>
+            <nav>
+                <a href="/">Home</a> &middot; <a href="/blog/">Blog</a> &middot; <a href="/static-seo/faq.html">FAQ</a>
+                &middot; <a href="/privacy-policy.html">Privacy</a> &middot; <a href="/terms-of-service.html">Terms</a>
+            </nav>
+        </div>
+    </footer>
+</body>
+
+</html>

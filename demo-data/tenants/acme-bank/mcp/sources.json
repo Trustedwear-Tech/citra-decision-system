@@ -1,0 +1,1723 @@
+[
+  {
+    "source_id": "loan_origination",
+    "dept_id": "lending",
+    "org_id": "acme-bank",
+    "type": "structured",
+    "is_active": true,
+    "is_demo": true,
+    "name": "Lending — Origination & Underwriting",
+    "description": "Loan origination system: customer master, applications, bureau pulls and disbursements. Drives the Loan Application Triage Decision App.",
+    "tags": [
+      "lending",
+      "credit",
+      "underwriting",
+      "origination",
+      "bureau"
+    ],
+    "organization": {
+      "name": "Acme Bank & Insurance Ltd",
+      "short_name": "Acme Bank",
+      "brand_color": "#0F766E"
+    },
+    "domain": {
+      "vertical": "banking",
+      "sub_vertical": "loan_origination",
+      "country": "IN"
+    },
+    "visibility": {
+      "roles_allowed": [
+        "user",
+        "dept_admin",
+        "org_admin",
+        "super_admin"
+      ],
+      "cross_org_ids": [],
+      "public_within_org": false
+    },
+    "connection": {
+      "type": "postgres",
+      "env_prefix": "ACME_BANK_SQL"
+    },
+    "datasets": [
+      {
+        "id": "loan_origination.customers",
+        "physical_name": "customers",
+        "name": "Customer master",
+        "kind": "sql",
+        "description": "Retail borrowers across 10 Indian cities. Declared income, existing EMI obligations, bureau score and KYC state. Identifiers are masked at rest (pan_masked, aadhaar_last4, mobile_masked) — no full PAN, Aadhaar or mobile number exists in this table.",
+        "read_via": {
+          "kind": "sql",
+          "target": "customers"
+        },
+        "columns": [
+          {
+            "name": "customer_id",
+            "physical_name": "customer_id",
+            "type": "string",
+            "description": "Customer id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "name_full",
+            "physical_name": "name_full",
+            "type": "string",
+            "description": "Customer name."
+          },
+          {
+            "name": "pan_masked",
+            "physical_name": "pan_masked",
+            "type": "string",
+            "description": "PAN with the identifying pair masked (ABCXX1234F)."
+          },
+          {
+            "name": "aadhaar_last4",
+            "physical_name": "aadhaar_last4",
+            "type": "string",
+            "description": "Last four digits of Aadhaar only."
+          },
+          {
+            "name": "mobile_masked",
+            "physical_name": "mobile_masked",
+            "type": "string",
+            "description": "Mobile with only the last four digits (XXXXXX1234)."
+          },
+          {
+            "name": "email",
+            "physical_name": "email",
+            "type": "string",
+            "description": "Contact email."
+          },
+          {
+            "name": "city",
+            "physical_name": "city",
+            "type": "string",
+            "description": "City of residence."
+          },
+          {
+            "name": "state",
+            "physical_name": "state",
+            "type": "string",
+            "description": "State."
+          },
+          {
+            "name": "pin",
+            "physical_name": "pin",
+            "type": "string",
+            "description": "PIN code."
+          },
+          {
+            "name": "occupation",
+            "physical_name": "occupation",
+            "type": "string",
+            "description": "salaried | self_employed | professional | business."
+          },
+          {
+            "name": "employer_name",
+            "physical_name": "employer_name",
+            "type": "string",
+            "description": "Employer, or 'Self' for non-salaried."
+          },
+          {
+            "name": "monthly_income_declared",
+            "physical_name": "monthly_income_declared",
+            "type": "number",
+            "description": "Monthly income as DECLARED by the customer, INR."
+          },
+          {
+            "name": "existing_emi",
+            "physical_name": "existing_emi",
+            "type": "number",
+            "description": "Existing monthly EMI obligations, INR."
+          },
+          {
+            "name": "cibil_score",
+            "physical_name": "cibil_score",
+            "type": "number",
+            "description": "Bureau score 300-900. NULL means new-to-credit."
+          },
+          {
+            "name": "kyc_status",
+            "physical_name": "kyc_status",
+            "type": "string",
+            "description": "verified | pending | re_kyc_due."
+          },
+          {
+            "name": "customer_segment",
+            "physical_name": "customer_segment",
+            "type": "string",
+            "description": "mass | affluent | hni | nri."
+          },
+          {
+            "name": "onboarded_on",
+            "physical_name": "onboarded_on",
+            "type": "date",
+            "description": "Date the customer relationship began."
+          }
+        ]
+      },
+      {
+        "id": "loan_origination.loan_applications",
+        "physical_name": "loan_applications",
+        "name": "Loan applications",
+        "kind": "sql",
+        "description": "Applications across home, personal, auto, LAP and business loans. Rows with status new/under_review are the live credit queue. Carries BOTH monthly_income_declared (on the customer) and itr_declared_income (income per the tax filing) — the two disagreeing is a real-world underwriting tell that no checklist enumerates.",
+        "read_via": {
+          "kind": "sql",
+          "target": "loan_applications"
+        },
+        "columns": [
+          {
+            "name": "application_id",
+            "physical_name": "application_id",
+            "type": "string",
+            "description": "Application id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "customer_id",
+            "physical_name": "customer_id",
+            "type": "string",
+            "description": "Applicant → customers.customer_id."
+          },
+          {
+            "name": "product",
+            "physical_name": "product",
+            "type": "string",
+            "description": "home | personal | auto | lap | business."
+          },
+          {
+            "name": "amount_requested",
+            "physical_name": "amount_requested",
+            "type": "number",
+            "description": "Requested loan amount, INR."
+          },
+          {
+            "name": "tenure_months",
+            "physical_name": "tenure_months",
+            "type": "number",
+            "description": "Requested tenure in months."
+          },
+          {
+            "name": "roi_offered",
+            "physical_name": "roi_offered",
+            "type": "number",
+            "description": "Offered rate of interest, % per annum."
+          },
+          {
+            "name": "applied_at",
+            "physical_name": "applied_at",
+            "type": "datetime",
+            "description": "When the application was submitted."
+          },
+          {
+            "name": "branch_code",
+            "physical_name": "branch_code",
+            "type": "string",
+            "description": "Originating branch."
+          },
+          {
+            "name": "sourcing_channel",
+            "physical_name": "sourcing_channel",
+            "type": "string",
+            "description": "branch | dsa | digital | bancassurance."
+          },
+          {
+            "name": "income_proof_type",
+            "physical_name": "income_proof_type",
+            "type": "string",
+            "description": "payslip | itr | bank_statement. NULL means no proof on file."
+          },
+          {
+            "name": "itr_declared_income",
+            "physical_name": "itr_declared_income",
+            "type": "number",
+            "description": "Annual income as per the TAX FILING, INR. NULL when no filing was produced. Compare against monthly_income_declared × 12 — a large shortfall is a corroboration failure, not necessarily a rejection."
+          },
+          {
+            "name": "ltv_percent",
+            "physical_name": "ltv_percent",
+            "type": "number",
+            "description": "Loan-to-value %, secured products only."
+          },
+          {
+            "name": "foir_percent",
+            "physical_name": "foir_percent",
+            "type": "number",
+            "description": "Fixed-obligation-to-income ratio %."
+          },
+          {
+            "name": "status",
+            "physical_name": "status",
+            "type": "string",
+            "description": "new | under_review | approved | rejected | disbursed."
+          },
+          {
+            "name": "decision_reason",
+            "physical_name": "decision_reason",
+            "type": "string",
+            "description": "Free-text reason recorded with the decision."
+          },
+          {
+            "name": "decided_by",
+            "physical_name": "decided_by",
+            "type": "string",
+            "description": "Officer who decided."
+          },
+          {
+            "name": "decided_at",
+            "physical_name": "decided_at",
+            "type": "datetime",
+            "description": "When the decision was recorded."
+          }
+        ],
+        "write_actions": [
+          {
+            "id": "record_credit_decision",
+            "verb": "update",
+            "description": "Record the credit decision on an application, with the reason and the deciding officer.",
+            "sql_template": "UPDATE loan_applications SET status=:status, decision_reason=:decision_reason, decided_by=:decided_by, decided_at=:decided_at WHERE application_id=:application_id",
+            "key_fields": [
+              "application_id"
+            ],
+            "roles_allowed_write": [
+              "dept_admin",
+              "org_admin",
+              "super_admin"
+            ],
+            "input_schema": {
+              "type": "object",
+              "required": [
+                "application_id",
+                "status"
+              ],
+              "properties": {
+                "application_id": {
+                  "type": "string",
+                  "description": "Target application."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "approved | rejected | under_review."
+                },
+                "decision_reason": {
+                  "type": "string",
+                  "description": "Why — shown to the customer and the auditor."
+                },
+                "decided_by": {
+                  "type": "string",
+                  "description": "Deciding officer.",
+                  "x-citra-fill": "actor"
+                },
+                "decided_at": {
+                  "type": "string",
+                  "description": "Set by the server at the moment of the write.",
+                  "x-citra-fill": "now"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "loan_origination.bureau_pulls",
+        "physical_name": "bureau_pulls",
+        "name": "Credit bureau pulls",
+        "kind": "sql",
+        "description": "One bureau pull per application (CIBIL / Experian / CRIF): score, recent enquiries, active loans, overdue amount and write-off flag.",
+        "read_via": {
+          "kind": "sql",
+          "target": "bureau_pulls"
+        },
+        "columns": [
+          {
+            "name": "pull_id",
+            "physical_name": "pull_id",
+            "type": "string",
+            "description": "Pull id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "application_id",
+            "physical_name": "application_id",
+            "type": "string",
+            "description": "→ loan_applications.application_id."
+          },
+          {
+            "name": "bureau",
+            "physical_name": "bureau",
+            "type": "string",
+            "description": "cibil | experian | crif."
+          },
+          {
+            "name": "score",
+            "physical_name": "score",
+            "type": "number",
+            "description": "Bureau score at pull time."
+          },
+          {
+            "name": "enquiries_6m",
+            "physical_name": "enquiries_6m",
+            "type": "number",
+            "description": "Enquiries in the last 6 months — credit hunger."
+          },
+          {
+            "name": "active_loans",
+            "physical_name": "active_loans",
+            "type": "number",
+            "description": "Live loans across lenders."
+          },
+          {
+            "name": "overdue_amount",
+            "physical_name": "overdue_amount",
+            "type": "number",
+            "description": "Currently overdue across lenders, INR."
+          },
+          {
+            "name": "writeoff_flag",
+            "physical_name": "writeoff_flag",
+            "type": "boolean",
+            "description": "Any written-off account on record."
+          },
+          {
+            "name": "pulled_at",
+            "physical_name": "pulled_at",
+            "type": "datetime",
+            "description": "When the bureau was pulled."
+          }
+        ]
+      },
+      {
+        "id": "loan_origination.disbursements",
+        "physical_name": "disbursements",
+        "name": "Disbursements",
+        "kind": "sql",
+        "description": "Money actually released against approved applications, with UTR and masked destination account.",
+        "read_via": {
+          "kind": "sql",
+          "target": "disbursements"
+        },
+        "columns": [
+          {
+            "name": "disbursement_id",
+            "physical_name": "disbursement_id",
+            "type": "string",
+            "description": "Disbursement id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "application_id",
+            "physical_name": "application_id",
+            "type": "string",
+            "description": "→ loan_applications.application_id."
+          },
+          {
+            "name": "amount",
+            "physical_name": "amount",
+            "type": "number",
+            "description": "Amount disbursed, INR."
+          },
+          {
+            "name": "disbursed_at",
+            "physical_name": "disbursed_at",
+            "type": "date",
+            "description": "Disbursement date."
+          },
+          {
+            "name": "utr",
+            "physical_name": "utr",
+            "type": "string",
+            "description": "Unique transaction reference."
+          },
+          {
+            "name": "account_masked",
+            "physical_name": "account_masked",
+            "type": "string",
+            "description": "Destination account, last four digits only."
+          },
+          {
+            "name": "ifsc",
+            "physical_name": "ifsc",
+            "type": "string",
+            "description": "Destination IFSC."
+          }
+        ]
+      }
+    ],
+    "query_timeout_seconds": 30,
+    "created_at": {
+      "$date": "2026-08-07T15:43:44.953889+00:00"
+    }
+  },
+  {
+    "source_id": "loan_servicing",
+    "dept_id": "collections",
+    "org_id": "acme-bank",
+    "type": "structured",
+    "is_active": true,
+    "is_demo": true,
+    "name": "Collections & Recovery",
+    "description": "Loan servicing and collections: the live book with DPD and NPA staging, instalment history, the delinquency worklist and every contact attempt. Drives the Collections Prioritisation Decision App.",
+    "tags": [
+      "collections",
+      "recovery",
+      "dpd",
+      "npa",
+      "servicing"
+    ],
+    "organization": {
+      "name": "Acme Bank & Insurance Ltd",
+      "short_name": "Acme Bank",
+      "brand_color": "#0F766E"
+    },
+    "domain": {
+      "vertical": "banking",
+      "sub_vertical": "loan_recovery",
+      "country": "IN"
+    },
+    "visibility": {
+      "roles_allowed": [
+        "user",
+        "dept_admin",
+        "org_admin",
+        "super_admin"
+      ],
+      "cross_org_ids": [],
+      "public_within_org": false
+    },
+    "connection": {
+      "type": "postgres",
+      "env_prefix": "ACME_BANK_SQL"
+    },
+    "datasets": [
+      {
+        "id": "loan_servicing.loan_accounts",
+        "physical_name": "loan_accounts",
+        "name": "Loan accounts",
+        "kind": "sql",
+        "description": "Live loan book with DPD, bucket and NPA staging. Bucket and npa_class are the fields collections strategy keys on.",
+        "read_via": {
+          "kind": "sql",
+          "target": "loan_accounts"
+        },
+        "columns": [
+          {
+            "name": "loan_account_no",
+            "physical_name": "loan_account_no",
+            "type": "string",
+            "description": "Loan account number — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "customer_id",
+            "physical_name": "customer_id",
+            "type": "string",
+            "description": "→ customers.customer_id."
+          },
+          {
+            "name": "application_id",
+            "physical_name": "application_id",
+            "type": "string",
+            "description": "Originating application, when known."
+          },
+          {
+            "name": "product",
+            "physical_name": "product",
+            "type": "string",
+            "description": "home | personal | auto | lap | business."
+          },
+          {
+            "name": "principal",
+            "physical_name": "principal",
+            "type": "number",
+            "description": "Sanctioned principal, INR."
+          },
+          {
+            "name": "roi",
+            "physical_name": "roi",
+            "type": "number",
+            "description": "Rate of interest, % per annum."
+          },
+          {
+            "name": "emi_amount",
+            "physical_name": "emi_amount",
+            "type": "number",
+            "description": "Monthly instalment, INR."
+          },
+          {
+            "name": "tenure_months",
+            "physical_name": "tenure_months",
+            "type": "number",
+            "description": "Tenure in months."
+          },
+          {
+            "name": "disbursed_on",
+            "physical_name": "disbursed_on",
+            "type": "date",
+            "description": "Disbursement date."
+          },
+          {
+            "name": "outstanding",
+            "physical_name": "outstanding",
+            "type": "number",
+            "description": "Principal outstanding, INR."
+          },
+          {
+            "name": "dpd",
+            "physical_name": "dpd",
+            "type": "number",
+            "description": "Days past due."
+          },
+          {
+            "name": "bucket",
+            "physical_name": "bucket",
+            "type": "string",
+            "description": "0 | 1-30 | 31-60 | 61-90 | 90+."
+          },
+          {
+            "name": "npa_class",
+            "physical_name": "npa_class",
+            "type": "string",
+            "description": "standard | sma_0 | sma_1 | sma_2 | sub_standard."
+          },
+          {
+            "name": "branch_code",
+            "physical_name": "branch_code",
+            "type": "string",
+            "description": "Servicing branch."
+          },
+          {
+            "name": "restructured",
+            "physical_name": "restructured",
+            "type": "boolean",
+            "description": "Whether the loan has been restructured."
+          }
+        ]
+      },
+      {
+        "id": "loan_servicing.repayment_schedule",
+        "physical_name": "repayment_schedule",
+        "name": "Repayment schedule",
+        "kind": "sql",
+        "description": "Instalment-level repayment history. status=bounced carries the NACH return reason, which is what separates 'cannot pay' from 'did not pay'.",
+        "read_via": {
+          "kind": "sql",
+          "target": "repayment_schedule"
+        },
+        "columns": [
+          {
+            "name": "schedule_id",
+            "physical_name": "schedule_id",
+            "type": "string",
+            "description": "Schedule row id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "loan_account_no",
+            "physical_name": "loan_account_no",
+            "type": "string",
+            "description": "→ loan_accounts.loan_account_no."
+          },
+          {
+            "name": "installment_no",
+            "physical_name": "installment_no",
+            "type": "number",
+            "description": "Instalment sequence number."
+          },
+          {
+            "name": "due_date",
+            "physical_name": "due_date",
+            "type": "date",
+            "description": "Instalment due date."
+          },
+          {
+            "name": "emi_due",
+            "physical_name": "emi_due",
+            "type": "number",
+            "description": "Amount due, INR."
+          },
+          {
+            "name": "paid_amount",
+            "physical_name": "paid_amount",
+            "type": "number",
+            "description": "Amount actually received, INR."
+          },
+          {
+            "name": "paid_on",
+            "physical_name": "paid_on",
+            "type": "date",
+            "description": "Receipt date, when paid."
+          },
+          {
+            "name": "status",
+            "physical_name": "status",
+            "type": "string",
+            "description": "paid | partial | unpaid | bounced."
+          },
+          {
+            "name": "bounce_reason",
+            "physical_name": "bounce_reason",
+            "type": "string",
+            "description": "NACH return reason, e.g. insufficient_funds."
+          }
+        ]
+      },
+      {
+        "id": "loan_servicing.delinquencies",
+        "physical_name": "delinquencies",
+        "name": "Delinquency snapshot",
+        "kind": "sql",
+        "description": "Current delinquency position per account — the collections worklist. risk_flag marks accounts under dispute, legal hold or skip-trace.",
+        "read_via": {
+          "kind": "sql",
+          "target": "delinquencies"
+        },
+        "columns": [
+          {
+            "name": "delinquency_id",
+            "physical_name": "delinquency_id",
+            "type": "string",
+            "description": "Row id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "loan_account_no",
+            "physical_name": "loan_account_no",
+            "type": "string",
+            "description": "→ loan_accounts.loan_account_no."
+          },
+          {
+            "name": "as_of",
+            "physical_name": "as_of",
+            "type": "date",
+            "description": "Snapshot date."
+          },
+          {
+            "name": "dpd",
+            "physical_name": "dpd",
+            "type": "number",
+            "description": "Days past due."
+          },
+          {
+            "name": "bucket",
+            "physical_name": "bucket",
+            "type": "string",
+            "description": "0 | 1-30 | 31-60 | 61-90 | 90+."
+          },
+          {
+            "name": "overdue_amount",
+            "physical_name": "overdue_amount",
+            "type": "number",
+            "description": "Total overdue, INR."
+          },
+          {
+            "name": "last_paid_on",
+            "physical_name": "last_paid_on",
+            "type": "date",
+            "description": "Date of the last receipt."
+          },
+          {
+            "name": "risk_flag",
+            "physical_name": "risk_flag",
+            "type": "string",
+            "description": "none | skip_trace | dispute | legal."
+          }
+        ]
+      },
+      {
+        "id": "loan_servicing.collection_activities",
+        "physical_name": "collection_activities",
+        "name": "Collection activities",
+        "kind": "sql",
+        "description": "Every contact attempt and its outcome. A promise-to-pay with ptp_kept=false is a broken promise — materially different from a first-time PTP and the strongest signal in this table.",
+        "read_via": {
+          "kind": "sql",
+          "target": "collection_activities"
+        },
+        "columns": [
+          {
+            "name": "activity_id",
+            "physical_name": "activity_id",
+            "type": "string",
+            "description": "Activity id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "loan_account_no",
+            "physical_name": "loan_account_no",
+            "type": "string",
+            "description": "→ loan_accounts.loan_account_no."
+          },
+          {
+            "name": "agent_id",
+            "physical_name": "agent_id",
+            "type": "string",
+            "description": "Collections agent."
+          },
+          {
+            "name": "channel",
+            "physical_name": "channel",
+            "type": "string",
+            "description": "call | sms | whatsapp | field | legal."
+          },
+          {
+            "name": "attempted_at",
+            "physical_name": "attempted_at",
+            "type": "datetime",
+            "description": "When contact was attempted."
+          },
+          {
+            "name": "outcome",
+            "physical_name": "outcome",
+            "type": "string",
+            "description": "ptp | no_contact | dispute | refused | paid | wrong_number."
+          },
+          {
+            "name": "ptp_date",
+            "physical_name": "ptp_date",
+            "type": "date",
+            "description": "Promised payment date, when a PTP was taken."
+          },
+          {
+            "name": "ptp_amount",
+            "physical_name": "ptp_amount",
+            "type": "number",
+            "description": "Promised amount, INR."
+          },
+          {
+            "name": "ptp_kept",
+            "physical_name": "ptp_kept",
+            "type": "boolean",
+            "description": "Whether the promise was honoured. false = broken promise."
+          },
+          {
+            "name": "notes",
+            "physical_name": "notes",
+            "type": "string",
+            "description": "Officer note."
+          }
+        ],
+        "write_actions": [
+          {
+            "id": "log_collection_activity",
+            "verb": "insert",
+            "description": "Log a contact attempt and its outcome against a loan account.",
+            "sql_template": "INSERT INTO collection_activities (activity_id, loan_account_no, agent_id, channel, attempted_at, outcome, ptp_date, ptp_amount, notes) VALUES (:activity_id, :loan_account_no, :agent_id, :channel, :attempted_at, :outcome, :ptp_date, :ptp_amount, :notes)",
+            "key_fields": [
+              "activity_id"
+            ],
+            "roles_allowed_write": [
+              "dept_admin",
+              "org_admin",
+              "super_admin"
+            ],
+            "input_schema": {
+              "type": "object",
+              "required": [
+                "activity_id",
+                "loan_account_no",
+                "agent_id",
+                "channel",
+                "attempted_at",
+                "outcome"
+              ],
+              "properties": {
+                "activity_id": {
+                  "type": "string",
+                  "description": "New activity id."
+                },
+                "loan_account_no": {
+                  "type": "string",
+                  "description": "Target loan account."
+                },
+                "agent_id": {
+                  "type": "string",
+                  "description": "Collections agent."
+                },
+                "channel": {
+                  "type": "string",
+                  "description": "call | sms | whatsapp | field | legal."
+                },
+                "attempted_at": {
+                  "type": "string",
+                  "description": "ISO timestamp of the attempt."
+                },
+                "outcome": {
+                  "type": "string",
+                  "description": "ptp | no_contact | dispute | refused | paid | wrong_number."
+                },
+                "ptp_date": {
+                  "type": "string",
+                  "description": "Promised date, when outcome=ptp."
+                },
+                "ptp_amount": {
+                  "type": "number",
+                  "description": "Promised amount, INR."
+                },
+                "notes": {
+                  "type": "string",
+                  "description": "Officer note."
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "query_timeout_seconds": 30,
+    "created_at": {
+      "$date": "2026-08-07T15:43:44.953889+00:00"
+    }
+  },
+  {
+    "source_id": "insurance_claims",
+    "dept_id": "claims",
+    "org_id": "acme-bank",
+    "type": "structured",
+    "is_active": true,
+    "is_demo": true,
+    "name": "General Insurance — Claims",
+    "description": "Motor, health and property claims with their policies, filed documents and surveyor reports. Drives the Insurance Claim Triage Decision App, including per-document and per-photo review.",
+    "tags": [
+      "insurance",
+      "claims",
+      "motor",
+      "health",
+      "property",
+      "survey"
+    ],
+    "organization": {
+      "name": "Acme Bank & Insurance Ltd",
+      "short_name": "Acme Bank",
+      "brand_color": "#0F766E"
+    },
+    "domain": {
+      "vertical": "insurance",
+      "sub_vertical": "claims",
+      "country": "IN"
+    },
+    "visibility": {
+      "roles_allowed": [
+        "user",
+        "dept_admin",
+        "org_admin",
+        "super_admin"
+      ],
+      "cross_org_ids": [],
+      "public_within_org": false
+    },
+    "connection": {
+      "type": "postgres",
+      "env_prefix": "ACME_BANK_SQL"
+    },
+    "datasets": [
+      {
+        "id": "insurance_claims.policies",
+        "physical_name": "policies",
+        "name": "Policies (general insurance)",
+        "kind": "sql",
+        "description": "Motor, health and property policies. intimation_window_days is the contractual deadline for reporting a loss — a claim intimated past it is an exclusion path, not merely a late claim.",
+        "read_via": {
+          "kind": "sql",
+          "target": "policies"
+        },
+        "columns": [
+          {
+            "name": "policy_no",
+            "physical_name": "policy_no",
+            "type": "string",
+            "description": "Policy number — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "customer_id",
+            "physical_name": "customer_id",
+            "type": "string",
+            "description": "→ customers.customer_id."
+          },
+          {
+            "name": "line",
+            "physical_name": "line",
+            "type": "string",
+            "description": "motor | health | property."
+          },
+          {
+            "name": "product_name",
+            "physical_name": "product_name",
+            "type": "string",
+            "description": "Marketed product name."
+          },
+          {
+            "name": "sum_insured",
+            "physical_name": "sum_insured",
+            "type": "number",
+            "description": "Sum insured, INR."
+          },
+          {
+            "name": "premium_annual",
+            "physical_name": "premium_annual",
+            "type": "number",
+            "description": "Annual premium, INR."
+          },
+          {
+            "name": "start_date",
+            "physical_name": "start_date",
+            "type": "date",
+            "description": "Cover start."
+          },
+          {
+            "name": "end_date",
+            "physical_name": "end_date",
+            "type": "date",
+            "description": "Cover end."
+          },
+          {
+            "name": "status",
+            "physical_name": "status",
+            "type": "string",
+            "description": "active | lapsed | cancelled | expired."
+          },
+          {
+            "name": "nominee_name",
+            "physical_name": "nominee_name",
+            "type": "string",
+            "description": "Nominee."
+          },
+          {
+            "name": "intimation_window_days",
+            "physical_name": "intimation_window_days",
+            "type": "number",
+            "description": "Days within which a loss must be intimated."
+          }
+        ]
+      },
+      {
+        "id": "insurance_claims.claims",
+        "physical_name": "claims",
+        "name": "Claims",
+        "kind": "sql",
+        "description": "Claims across motor, health and property. Rows with status intimated/under_survey are the live triage queue. intimation_delay_days is loss-to-intimation in days — compare it against the policy's intimation_window_days.",
+        "read_via": {
+          "kind": "sql",
+          "target": "claims"
+        },
+        "columns": [
+          {
+            "name": "claim_id",
+            "physical_name": "claim_id",
+            "type": "string",
+            "description": "Claim id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "policy_no",
+            "physical_name": "policy_no",
+            "type": "string",
+            "description": "→ policies.policy_no."
+          },
+          {
+            "name": "customer_id",
+            "physical_name": "customer_id",
+            "type": "string",
+            "description": "→ customers.customer_id."
+          },
+          {
+            "name": "claim_type",
+            "physical_name": "claim_type",
+            "type": "string",
+            "description": "own_damage | third_party | theft | hospitalisation | fire | burglary."
+          },
+          {
+            "name": "loss_date",
+            "physical_name": "loss_date",
+            "type": "date",
+            "description": "Date of loss."
+          },
+          {
+            "name": "intimated_at",
+            "physical_name": "intimated_at",
+            "type": "datetime",
+            "description": "When the claim was intimated."
+          },
+          {
+            "name": "intimation_delay_days",
+            "physical_name": "intimation_delay_days",
+            "type": "number",
+            "description": "Days between loss and intimation."
+          },
+          {
+            "name": "claimed_amount",
+            "physical_name": "claimed_amount",
+            "type": "number",
+            "description": "Amount claimed, INR."
+          },
+          {
+            "name": "approved_amount",
+            "physical_name": "approved_amount",
+            "type": "number",
+            "description": "Amount approved, INR."
+          },
+          {
+            "name": "status",
+            "physical_name": "status",
+            "type": "string",
+            "description": "intimated | under_survey | approved | rejected | settled."
+          },
+          {
+            "name": "rejection_reason",
+            "physical_name": "rejection_reason",
+            "type": "string",
+            "description": "Reason recorded on repudiation."
+          },
+          {
+            "name": "surveyor_id",
+            "physical_name": "surveyor_id",
+            "type": "string",
+            "description": "Assigned surveyor."
+          },
+          {
+            "name": "fir_number",
+            "physical_name": "fir_number",
+            "type": "string",
+            "description": "FIR reference. NULL means no FIR on file."
+          },
+          {
+            "name": "tat_days",
+            "physical_name": "tat_days",
+            "type": "number",
+            "description": "Turnaround time in days, once decided."
+          },
+          {
+            "name": "decided_by",
+            "physical_name": "decided_by",
+            "type": "string",
+            "description": "Officer who decided."
+          },
+          {
+            "name": "decided_at",
+            "physical_name": "decided_at",
+            "type": "datetime",
+            "description": "When the decision was recorded."
+          }
+        ],
+        "write_actions": [
+          {
+            "id": "record_claim_decision",
+            "verb": "update",
+            "description": "Record the claim decision with the approved amount or the repudiation reason.",
+            "sql_template": "UPDATE claims SET status=:status, approved_amount=:approved_amount, rejection_reason=:rejection_reason, decided_by=:decided_by, decided_at=:decided_at WHERE claim_id=:claim_id",
+            "key_fields": [
+              "claim_id"
+            ],
+            "roles_allowed_write": [
+              "dept_admin",
+              "org_admin",
+              "super_admin"
+            ],
+            "input_schema": {
+              "type": "object",
+              "required": [
+                "claim_id",
+                "status"
+              ],
+              "properties": {
+                "claim_id": {
+                  "type": "string",
+                  "description": "Target claim."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "approved | rejected | settled."
+                },
+                "approved_amount": {
+                  "type": "number",
+                  "description": "Approved amount, INR."
+                },
+                "rejection_reason": {
+                  "type": "string",
+                  "description": "Reason, when repudiating."
+                },
+                "decided_by": {
+                  "type": "string",
+                  "description": "Deciding officer.",
+                  "x-citra-fill": "actor"
+                },
+                "decided_at": {
+                  "type": "string",
+                  "description": "Set by the server at the moment of the write.",
+                  "x-citra-fill": "now"
+                }
+              }
+            }
+          },
+          {
+            "id": "assign_surveyor",
+            "verb": "update",
+            "description": "Assign a surveyor and move the claim into survey.",
+            "sql_template": "UPDATE claims SET surveyor_id=:surveyor_id, status='under_survey' WHERE claim_id=:claim_id",
+            "key_fields": [
+              "claim_id"
+            ],
+            "roles_allowed_write": [
+              "dept_admin",
+              "org_admin",
+              "super_admin"
+            ],
+            "input_schema": {
+              "type": "object",
+              "required": [
+                "claim_id",
+                "surveyor_id"
+              ],
+              "properties": {
+                "claim_id": {
+                  "type": "string",
+                  "description": "Target claim."
+                },
+                "surveyor_id": {
+                  "type": "string",
+                  "description": "Surveyor to assign."
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "insurance_claims.claim_documents",
+        "physical_name": "claim_documents",
+        "name": "Claim documents",
+        "kind": "sql",
+        "description": "Documents and photos filed against a claim. content_sha256 is the content hash — two claims sharing one is the same file submitted twice, which the platform's duplicate-artifact screen flags.",
+        "read_via": {
+          "kind": "sql",
+          "target": "claim_documents"
+        },
+        "columns": [
+          {
+            "name": "document_id",
+            "physical_name": "document_id",
+            "type": "string",
+            "description": "Document id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "claim_id",
+            "physical_name": "claim_id",
+            "type": "string",
+            "description": "→ claims.claim_id."
+          },
+          {
+            "name": "doc_type",
+            "physical_name": "doc_type",
+            "type": "string",
+            "description": "fir | repair_estimate | invoice | discharge_summary | damage_photo | policy_copy."
+          },
+          {
+            "name": "file_url",
+            "physical_name": "file_url",
+            "type": "string",
+            "description": "Stored object location."
+          },
+          {
+            "name": "uploaded_at",
+            "physical_name": "uploaded_at",
+            "type": "datetime",
+            "description": "Upload timestamp."
+          },
+          {
+            "name": "verified",
+            "physical_name": "verified",
+            "type": "boolean",
+            "description": "Whether the document has been verified."
+          },
+          {
+            "name": "content_sha256",
+            "physical_name": "content_sha256",
+            "type": "string",
+            "description": "Content hash — equal hashes mean identical bytes."
+          }
+        ]
+      },
+      {
+        "id": "insurance_claims.surveyor_reports",
+        "physical_name": "surveyor_reports",
+        "name": "Surveyor reports",
+        "kind": "sql",
+        "description": "Independent surveyor assessment: what they found, what they assessed, and what they recommend.",
+        "read_via": {
+          "kind": "sql",
+          "target": "surveyor_reports"
+        },
+        "columns": [
+          {
+            "name": "report_id",
+            "physical_name": "report_id",
+            "type": "string",
+            "description": "Report id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "claim_id",
+            "physical_name": "claim_id",
+            "type": "string",
+            "description": "→ claims.claim_id."
+          },
+          {
+            "name": "surveyor_id",
+            "physical_name": "surveyor_id",
+            "type": "string",
+            "description": "Surveyor."
+          },
+          {
+            "name": "surveyor_name",
+            "physical_name": "surveyor_name",
+            "type": "string",
+            "description": "Surveyor name."
+          },
+          {
+            "name": "visited_on",
+            "physical_name": "visited_on",
+            "type": "date",
+            "description": "Site visit date."
+          },
+          {
+            "name": "assessed_amount",
+            "physical_name": "assessed_amount",
+            "type": "number",
+            "description": "Assessed loss, INR."
+          },
+          {
+            "name": "findings",
+            "physical_name": "findings",
+            "type": "string",
+            "description": "Narrative findings."
+          },
+          {
+            "name": "photos_url",
+            "physical_name": "photos_url",
+            "type": "string",
+            "description": "Survey photographs."
+          },
+          {
+            "name": "recommendation",
+            "physical_name": "recommendation",
+            "type": "string",
+            "description": "settle | partial | repudiate | investigate."
+          }
+        ]
+      }
+    ],
+    "query_timeout_seconds": 30,
+    "created_at": {
+      "$date": "2026-08-07T15:43:44.953889+00:00"
+    }
+  },
+  {
+    "source_id": "sales_crm",
+    "dept_id": "sales_distribution",
+    "org_id": "acme-bank",
+    "type": "structured",
+    "is_active": true,
+    "is_demo": true,
+    "name": "Sales & Distribution",
+    "description": "Branch and agency network, lead pipeline and booked business. Backs the Sales & Distribution dashboard pages — what we sold, by product, branch and channel.",
+    "tags": [
+      "sales",
+      "distribution",
+      "crm",
+      "leads",
+      "pipeline"
+    ],
+    "organization": {
+      "name": "Acme Bank & Insurance Ltd",
+      "short_name": "Acme Bank",
+      "brand_color": "#0F766E"
+    },
+    "domain": {
+      "vertical": "banking",
+      "sub_vertical": "loan_origination",
+      "country": "IN"
+    },
+    "visibility": {
+      "roles_allowed": [
+        "user",
+        "dept_admin",
+        "org_admin",
+        "super_admin"
+      ],
+      "cross_org_ids": [],
+      "public_within_org": false
+    },
+    "connection": {
+      "type": "postgres",
+      "env_prefix": "ACME_BANK_SQL"
+    },
+    "datasets": [
+      {
+        "id": "sales_crm.branches",
+        "physical_name": "branches",
+        "name": "Branches",
+        "kind": "sql",
+        "description": "Branch network across 10 cities and 4 regions.",
+        "read_via": {
+          "kind": "sql",
+          "target": "branches"
+        },
+        "columns": [
+          {
+            "name": "branch_code",
+            "physical_name": "branch_code",
+            "type": "string",
+            "description": "Branch code — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "name",
+            "physical_name": "name",
+            "type": "string",
+            "description": "Branch name."
+          },
+          {
+            "name": "city",
+            "physical_name": "city",
+            "type": "string",
+            "description": "City."
+          },
+          {
+            "name": "state",
+            "physical_name": "state",
+            "type": "string",
+            "description": "State."
+          },
+          {
+            "name": "region",
+            "physical_name": "region",
+            "type": "string",
+            "description": "west | south | north | east."
+          },
+          {
+            "name": "ifsc",
+            "physical_name": "ifsc",
+            "type": "string",
+            "description": "Branch IFSC."
+          },
+          {
+            "name": "cluster_head",
+            "physical_name": "cluster_head",
+            "type": "string",
+            "description": "Cluster head."
+          }
+        ]
+      },
+      {
+        "id": "sales_crm.agents",
+        "physical_name": "agents",
+        "name": "Agents",
+        "kind": "sql",
+        "description": "Sellers across branch, DSA, bancassurance and agency channels. Insurance-selling channels carry an IRDAI licence number.",
+        "read_via": {
+          "kind": "sql",
+          "target": "agents"
+        },
+        "columns": [
+          {
+            "name": "agent_id",
+            "physical_name": "agent_id",
+            "type": "string",
+            "description": "Agent id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "name",
+            "physical_name": "name",
+            "type": "string",
+            "description": "Agent name."
+          },
+          {
+            "name": "branch_code",
+            "physical_name": "branch_code",
+            "type": "string",
+            "description": "→ branches.branch_code."
+          },
+          {
+            "name": "channel",
+            "physical_name": "channel",
+            "type": "string",
+            "description": "branch | dsa | bancassurance | agency."
+          },
+          {
+            "name": "licence_no",
+            "physical_name": "licence_no",
+            "type": "string",
+            "description": "IRDAI licence, for insurance sellers."
+          },
+          {
+            "name": "active",
+            "physical_name": "active",
+            "type": "boolean",
+            "description": "Whether the agent is active."
+          }
+        ]
+      },
+      {
+        "id": "sales_crm.leads",
+        "physical_name": "leads",
+        "name": "Leads",
+        "kind": "sql",
+        "description": "Inbound and sourced leads. status='new' with no assigned agent is an unworked lead — the ageing ones are what the sales dashboard surfaces.",
+        "read_via": {
+          "kind": "sql",
+          "target": "leads"
+        },
+        "columns": [
+          {
+            "name": "lead_id",
+            "physical_name": "lead_id",
+            "type": "string",
+            "description": "Lead id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "name_full",
+            "physical_name": "name_full",
+            "type": "string",
+            "description": "Prospect name."
+          },
+          {
+            "name": "mobile_masked",
+            "physical_name": "mobile_masked",
+            "type": "string",
+            "description": "Mobile, last four digits only."
+          },
+          {
+            "name": "city",
+            "physical_name": "city",
+            "type": "string",
+            "description": "City."
+          },
+          {
+            "name": "product_interest",
+            "physical_name": "product_interest",
+            "type": "string",
+            "description": "home_loan | personal_loan | auto_loan | motor_insurance | health_insurance."
+          },
+          {
+            "name": "source",
+            "physical_name": "source",
+            "type": "string",
+            "description": "walk_in | digital | referral | campaign | telecalling."
+          },
+          {
+            "name": "created_at",
+            "physical_name": "created_at",
+            "type": "datetime",
+            "description": "When the lead arrived."
+          },
+          {
+            "name": "status",
+            "physical_name": "status",
+            "type": "string",
+            "description": "new | contacted | qualified | converted | lost."
+          },
+          {
+            "name": "assigned_agent_id",
+            "physical_name": "assigned_agent_id",
+            "type": "string",
+            "description": "Owning agent. NULL means unassigned."
+          },
+          {
+            "name": "branch_code",
+            "physical_name": "branch_code",
+            "type": "string",
+            "description": "Owning branch."
+          },
+          {
+            "name": "expected_value",
+            "physical_name": "expected_value",
+            "type": "number",
+            "description": "Expected business value, INR."
+          }
+        ],
+        "write_actions": [
+          {
+            "id": "assign_lead",
+            "verb": "update",
+            "description": "Assign a lead to an agent and branch, moving it out of the unworked queue.",
+            "sql_template": "UPDATE leads SET assigned_agent_id=:assigned_agent_id, branch_code=:branch_code, status='contacted' WHERE lead_id=:lead_id",
+            "key_fields": [
+              "lead_id"
+            ],
+            "roles_allowed_write": [
+              "dept_admin",
+              "org_admin",
+              "super_admin"
+            ],
+            "input_schema": {
+              "type": "object",
+              "required": [
+                "lead_id",
+                "assigned_agent_id"
+              ],
+              "properties": {
+                "lead_id": {
+                  "type": "string",
+                  "description": "Target lead."
+                },
+                "assigned_agent_id": {
+                  "type": "string",
+                  "description": "Agent to assign."
+                },
+                "branch_code": {
+                  "type": "string",
+                  "description": "Owning branch."
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "sales_crm.opportunities",
+        "physical_name": "opportunities",
+        "name": "Opportunities",
+        "kind": "sql",
+        "description": "Pipeline and closed business. booked_value on stage='won' is what we actually sold — the number the sales dashboard reports.",
+        "read_via": {
+          "kind": "sql",
+          "target": "opportunities"
+        },
+        "columns": [
+          {
+            "name": "opportunity_id",
+            "physical_name": "opportunity_id",
+            "type": "string",
+            "description": "Opportunity id — primary key.",
+            "is_primary_key": true
+          },
+          {
+            "name": "lead_id",
+            "physical_name": "lead_id",
+            "type": "string",
+            "description": "→ leads.lead_id."
+          },
+          {
+            "name": "product",
+            "physical_name": "product",
+            "type": "string",
+            "description": "Product sold or proposed."
+          },
+          {
+            "name": "expected_value",
+            "physical_name": "expected_value",
+            "type": "number",
+            "description": "Expected value, INR."
+          },
+          {
+            "name": "stage",
+            "physical_name": "stage",
+            "type": "string",
+            "description": "prospect | proposal | negotiation | won | lost."
+          },
+          {
+            "name": "probability",
+            "physical_name": "probability",
+            "type": "number",
+            "description": "Win probability %."
+          },
+          {
+            "name": "expected_close",
+            "physical_name": "expected_close",
+            "type": "date",
+            "description": "Expected close date."
+          },
+          {
+            "name": "closed_on",
+            "physical_name": "closed_on",
+            "type": "date",
+            "description": "Actual close date."
+          },
+          {
+            "name": "booked_value",
+            "physical_name": "booked_value",
+            "type": "number",
+            "description": "Value actually booked on a win, INR."
+          }
+        ]
+      }
+    ],
+    "query_timeout_seconds": 30,
+    "created_at": {
+      "$date": "2026-08-07T15:43:44.953889+00:00"
+    }
+  },
+  {
+    "source_id": "acme_bank_policy_library",
+    "dept_id": "central_ops",
+    "org_id": "acme-bank",
+    "type": "semantic",
+    "is_active": true,
+    "is_demo": true,
+    "name": "Central Ops — Acme Bank Policy Library",
+    "description": "Cross-department RAG corpus of Acme Bank's credit policy, KYC/AML and fair-practices SOPs, collections and NPA circulars, motor and health claim settlement SOPs, fraud indicators, grievance redressal, sales conduct and data-protection standards (12 docs). Shared by every Decision App as the grounding knowledge source — every cited answer carries a doc_path + page reference. This is the RULES layer: the SOP is supreme, and anything the app learns from officers sits underneath it.",
+    "tags": [
+      "central",
+      "policy",
+      "sop",
+      "circular",
+      "compliance",
+      "rag"
+    ],
+    "organization": {
+      "name": "Acme Bank & Insurance Ltd",
+      "short_name": "Acme Bank",
+      "brand_color": "#0F766E"
+    },
+    "visibility": {
+      "roles_allowed": [
+        "user",
+        "dept_admin",
+        "org_admin",
+        "super_admin"
+      ],
+      "cross_org_ids": [],
+      "public_within_org": true
+    },
+    "rag": {
+      "milvus_collection": "mcp_dept_libraries",
+      "s3_prefix": "bfsi/acme-bank/policy/"
+    },
+    "taxonomy": {
+      "doc_types": [
+        {
+          "id": "policy",
+          "label": "Policy"
+        },
+        {
+          "id": "sop",
+          "label": "SOP"
+        },
+        {
+          "id": "circular",
+          "label": "Circular"
+        },
+        {
+          "id": "code",
+          "label": "Code of Conduct"
+        },
+        {
+          "id": "guideline",
+          "label": "Guideline"
+        }
+      ],
+      "classification_levels": [
+        "public",
+        "internal"
+      ]
+    },
+    "query_timeout_seconds": 30,
+    "created_at": {
+      "$date": "2026-08-07T15:43:44.953889+00:00"
+    }
+  }
+]

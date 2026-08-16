@@ -1,0 +1,23 @@
+# docker-compose.yml for citra-app-builder (EPHEMERAL build pod)
+#
+# NOT started by `docker compose up` (profile-gated). action-sandbox-host
+# spawns container instances on demand per build job.
+#
+# This file exists only to:
+#   1. Pin the image tag in one place (matches CI tag from deploy.yml)
+#   2. Let `docker compose --profile builder pull` warm the registry cache
+#
+# Do not `up -d` this service. To test the image:
+#   docker compose --profile builder run --rm citra-app-builder bash
+
+services:
+  citra-app-builder:
+    image: ghcr.io/trustedwear-tech/citra-ai/citra-app-builder:${IMAGE_TAG:-prod-latest}
+    profiles: ["builder"]
+    networks:
+      - citra-ai-net
+
+networks:
+  citra-ai-net:
+    external: true
+    name: citra-ai-net

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<!-- saved from url=(0253)https://fe74c355-bc81-4d80-8c36-2a1d734e9d9e.frame.claudeusercontent.com/_f/1786126994-f187/?__frame_t=emStp70bbU_wxPqmuOKqIoB3.60887a8c-ece3-4960-8e87-cf5550061313.efc24184-bee9-4856-8d2f-79c1143ed1a4.1786131081&__frame_v=manifest.af44b97a3d9a95da.json -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><!-- frame-runtime --><!--<base href="/_f/1786126994-f187/">--><base href="."><script>window.__FRAME_PREAMBLE={"capabilities":{"comments":"comments.BaoaqR_K.js","db":"db.CeV_J5G-.js","downloads":"downloads.BXsoAvg9.js","mcp":"mcp.CYSdpjo0.js","permissions":"permissions.DdITF2Mk.js","sample":"sample.DpdXn9di.js","self":"self.DtZoNC4q.js","user":"user.Cr_h1ETf.js"},"transforms":"_transforms.VaITkagF.js","comments":"_comments.7Aq01jJf.js","translate":"_translate.BOzFH2D9.js"}</script><script>(function(){"use strict";var ne=["light","dark","system"];function oe(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_init;return t!==null&&typeof t=="object"}function Y(e){return e!==null&&typeof e=="object"&&e.__frame_size_poke===!0}function se(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_theme;if(t===null||typeof t!="object")return!1;const n=t.theme;return typeof n=="string"&&ne.includes(n)}function ie(e){try{typeof reportError=="function"?reportError(e):setTimeout(()=>{throw e},0)}catch{}}var K=Object.freeze(Object.assign(Object.create(null),{user:Object.freeze(Object.assign(Object.create(null),{id:null,isOwner:!1,canEdit:!1,name:null,avatarUrl:null,email:null}))})),ae={sample:"sample"};function x(){const e=new Uint8Array(20);try{crypto.getRandomValues(e)}catch{for(let n=0;n<e.length;n++)e[n]=Math.floor(Math.random()*256)}let t="";for(const n of e)t+=(n%36).toString(36);return t}function ce(e,t){const n=r=>{const o={path:r},i=r.split("/");return{id:i[i.length-1],path:r,get:()=>t("get",[o]),set:g=>t("set",[o,g]),update:g=>t("update",[o,g]),delete:()=>t("delete",[o]),acquire:g=>t("acquire",[o,g]),onSnapshot:(g,y)=>t("subscribe",[o,g,y]),collection:g=>a(r+"/"+String(g))}},u=r=>({where:(o,i,g)=>u({...r,where:[...r.where??[],{f:String(o),op:String(i),v:g}]}),orderBy:(o,i)=>u({...r,orderBy:{f:String(o),dir:i===void 0?"asc":String(i)}}),limit:o=>u({...r,limit:Number(o)}),get:()=>t("query",[r]),onSnapshot:(o,i)=>t("subscribe",[r,o,i])}),a=r=>({...u({collection:r}),path:r,doc:o=>n(r+"/"+(o===void 0?x():String(o))),add:o=>{const i=n(r+"/"+x());return Promise.resolve(i.set(o)).then(()=>i)}});e.doc=r=>n(String(r)),e.collection=r=>a(String(r))}function J(e){if(window===top||e.type==="auxclick"&&e.button!==1)return;const t=e.composedPath?e.composedPath():[e.target];let n=null;for(let o=0;o<t.length;o++){const i=t[o];if(i&&i.matches&&i.matches("a[href],area[href]")){n=i;break}}if(!n&&e.target&&e.target.closest&&(n=e.target.closest("a[href],area[href]")),!n)return;const u=n.getAttribute("href");if(!u)return;let a,r;try{a=new URL(u,document.baseURI),r=new URL(document.baseURI).origin}catch{return}(a.protocol==="http:"||a.protocol==="https:")&&a.origin!==r&&(e.preventDefault(),parent.postMessage({__frame_nav:!0,url:a.href},"*"))}var G={};function I(e){if(window===top)return;const t=Date.now();t-(G[e]||0)<500||(G[e]=t,parent.postMessage({__frame_engaged:!0,kind:e},"*"))}var le=2e3,V=["wheel","touchstart","touchmove","keydown","pointerdown"],X=0;function ue(e){e.isTrusted&&(X=Date.now())}function fe(){addEventListener("click",J,!0),addEventListener("auxclick",J,!0)}function de(){for(let e=0;e<V.length;e++)addEventListener(V[e],ue,{capture:!0,passive:!0});addEventListener("scroll",e=>{e.isTrusted&&Date.now()-X<le&&I("scroll")},{capture:!0,passive:!0}),addEventListener("pointermove",e=>{e.isTrusted&&I("pointer")},{capture:!0,passive:!0}),addEventListener("click",e=>{e.isTrusted&&I("click")},{capture:!0,passive:!0})}var q="__frame_scroll",me=150,pe=310,ge=160,he=3e4;function ve(){let e=0,t=!1,n=!1,u=!1,a=0,r=null;const o=d=>{try{sessionStorage.setItem(q,JSON.stringify({y:d}))}catch{}},i=()=>{if(clearTimeout(e),r===null)return;const d=r;r=null,o(d)},g=()=>{if(t){t=!1;return}n=!0,r=scrollY,clearTimeout(e),e=setTimeout(i,me)};try{addEventListener("scroll",g,{passive:!0}),addEventListener("pagehide",i)}catch{}const y=()=>{let d;try{d=sessionStorage.getItem(q)}catch{return null}if(d===null)return null;let l;try{l=JSON.parse(d)}catch{l=null}const p=l?.y;if(!(typeof p=="number"&&Number.isFinite(p)&&p>=0)){try{sessionStorage.removeItem(q)}catch{}return null}return p};let c=!1;const f=d=>{try{const l=scrollY;scrollTo({top:d,left:0,behavior:"instant"}),a=d,u=!0,clearTimeout(e),r=null,o(d);const p=scrollY;p!==l&&(t=!0),p!==d&&!c&&(c=!0,addEventListener("load",()=>{try{if(scrollY===p){const v=y();f(v!==null?v:a)}}catch{}},{once:!0}))}catch{}},m=()=>{try{return!!location.hash}catch{return!0}};let h=!1;const _=()=>{try{if(h||innerWidth>pe||innerHeight>ge)return;h=!0;const d=Date.now(),l=()=>{try{removeEventListener("resize",l)}catch{}if(Date.now()-d>he||n||m())return;const p=y();f(p!==null?p:a)};addEventListener("resize",l)}catch{}};let w=!1,S=!1;return{restore(){if(w||(w=!0,m()))return;const d=y();d!==null&&(f(d),_())},promoted(){if(S||(S=!0,m()))return;const d=y();d!==null?(f(d),_()):u&&f(a)}}}function _e(e,t,n){const u=[...t.values()].filter(a=>a.targets.some(r=>r.startsWith(e+".")));return{wrap(a,r){const o=`${e}.${a}`,i=u.filter(g=>g.targets.includes(o));return i.length===0?(...g)=>{try{return r(...g)}catch(y){return Promise.reject(y)}}:(...g)=>{let y=g;for(const f of i){const m=f.module.parameters;if(m)try{y=m(y)}catch{return Promise.reject({code:"transform_error",id:f.id,scope:e,message:"parameters transform failed"})}}let c;try{c=r(...y)}catch(f){c=Promise.reject(f)}return c.then(f=>{for(let m=i.length-1;m>=0;m--){const h=i[m],_=h.module.returns;if(_)try{f=_(f)}catch{return n({id:h.id,scope:e,leg:"returns"}),f}}return f},f=>{for(let m=i.length-1;m>=0;m--){const h=i[m],_=h.module.throws;if(_)try{f=_(f)}catch{return n({id:h.id,scope:e,leg:"throws"}),Promise.reject(f)}}return Promise.reject(f)})}}}}function ye(e,t,n,u=()=>{}){const a=new Set(e.changes??[]),r=new Map;for(const o of a){const i=t[o];i&&r.set(o,i)}return{contract:e.contract,changes:a,flags:new Set(e.flags??[]),capabilities:e.capabilities??{},capBudgets:e.capBudgets??{},transforms:r,shellOrigin:n.shellOrigin,mount:n.mount,pipe:o=>_e(o,r,u)}}var Ae="modulepreload",Re=function(e){return"/"+e},je={},be=function(t,n,u){let a=Promise.resolve();function r(o){const i=new Event("vite:preloadError",{cancelable:!0});if(i.payload=o,window.dispatchEvent(i),!i.defaultPrevented)throw o}return a.then(o=>{for(const i of o||[])i.status==="rejected"&&r(i.reason);return t().catch(r)})};(function(){const e=Object.defineProperty,t=globalThis,n=["RTCPeerConnection","webkitRTCPeerConnection","RTCDataChannel","RTCIceCandidate","RTCSessionDescription","RTCRtpSender","RTCRtpReceiver"];let u=0;for(let a=0;a<n.length;a++){const r=n[a];try{e(t,r,{value:void 0,writable:!1,configurable:!1})}catch{try{delete t[r]}catch{}try{e(t,r,{value:void 0,writable:!1,configurable:!0})}catch{}}typeof t[r]=="function"&&u++}if(u&&window!==top)try{parent.postMessage({__frame_rtc_lockdown_failed:u},"*")}catch{}})();var Ee=1e4,we=Object.freeze([...window.__FRAME_PREAMBLE?.origins??["https://claude.ai","https://preview.claude.ai"]]);function Q(e){for(const t of we)if(t.endsWith(":*"))try{const n=new URL(e);if(`${n.protocol}//${n.hostname}:*`===t)return!0}catch{}else if(e===t)return!0;return!1}var k=Object.freeze({...window.__FRAME_PREAMBLE?.capabilities}),D=window.__FRAME_PREAMBLE?.transforms,z=window.__FRAME_PREAMBLE?.comments,B=window.__FRAME_PREAMBLE?.translate,N=/^[\w.-]+\.js$/,Se=/^[a-z][a-z0-9_-]{0,63}$/,Z=null,M=null;function $(e,t,n){try{Object.defineProperty(e,t,{value:n,writable:!1,configurable:!1,enumerable:!0})}catch{try{Object.defineProperty(e,t,{value:n,writable:!1,configurable:!0,enumerable:!0})}catch{}}}var F=!1;function ee(e){const t=document.documentElement;e==="light"||e==="dark"?(t.dataset.theme=e,t.style.colorScheme=e,F=!0):F&&(delete t.dataset.theme,t.style.colorScheme="",F=!1)}var te=256,P=Object.assign(Object.create(null),{mcp:Object.assign(Object.create(null),{watchTool:{handlerArg:3}}),db:Object.assign(Object.create(null),{subscribe:{handlerArg:1,errArg:2}})}),L=new Map;function re(e,t){const n=L.get(e);if(!n)return;const u=Object.assign(Object.create(null),t);Object.assign(n.impl,u),n.impl.__settled=()=>Promise.reject({code:"capability_removed",message:`${e}: method not in this runtime`});const a=n.queue;n.queue=[];for(const r of a){const o=u[r.method];if(o)if(P[e]?.[r.method])try{r.resolve(o(...r.args))}catch{T(r,P[e][r.method],{code:"transform_error",message:`${e}.${r.method} rejected its arguments`})}else o(...r.args).then(r.resolve,r.reject);else{const i={code:"capability_removed",message:`${e}.${r.method} is not in this runtime`},g=P[e]?.[r.method];if(g){T(r,g,i);continue}r.reject(i)}}}function Oe(e,t){const n=L.get(e);if(!n)return;n.impl.__settled=()=>Promise.reject(t);const u=n.queue;n.queue=[];for(const a of u){const r=P[e]?.[a.method];if(r){T(a,r,t);continue}a.reject(t)}}function C(e,t){const n=K[e];if(!n){Oe(e,t);return}re(e,Object.fromEntries(Object.entries(n).map(([u,a])=>[u,()=>Promise.resolve(a)])))}function T(e,t,n){if(e.syncState?.dead)return;const u=t.errArg===void 0?void 0:e.args[t.errArg],a=t.errArg===void 0?e.args[t.handlerArg]:u;typeof a=="function"&&queueMicrotask(()=>{if(!e.syncState?.dead)try{a(t.errArg===void 0?{type:"error",error:n}:n)}catch(r){ie(r)}})}var H=Object.getOwnPropertyDescriptor(window,"claude");if(window!==top&&!(H&&H.writable===!1)){fe(),de();let e=null;try{e=ve()}catch{}const t=H?.value??{};$(window,"claude",t);const n=c=>{const f={impl:Object.create(null),queue:[]};L.set(c,f);const m=f.impl,h=d=>({code:"queue_overflow",message:`${c}.${d}: pre-init call queue is full`}),_=(d,l)=>{if(f.queue.length>=te){const p=K[c];return p&&d in p?Promise.resolve(p[d]):Promise.reject(h(d))}return new Promise((p,v)=>{f.queue.push({method:d,args:l,resolve:p,reject:v})})},w=ae[c],S=new Proxy(w===void 0?m:(()=>{}),{apply:(d,l,p)=>{const v=w,E=m[v]??m.__settled;return E?E(...p):_(v,p)},get:(d,l)=>{if(typeof l!="string"||l==="then"||l==="toJSON"||l==="valueOf")return;if(l==="toString")return Object.prototype.toString;if(w!==void 0&&(l==="call"||l==="apply"||l==="bind"))return Function.prototype[l];const p=P[c]?.[l];return p?(...v)=>{if(typeof v[p.handlerArg]!="function")throw new TypeError(`${c}.${l} requires a handler function`);const E=m[l];if(E)return E(...v);if(m.__settled){const b={dead:!1},U={args:[...v],syncState:b};return m.__settled().catch(s=>T(U,p,s)),()=>{b.dead=!0}}if(f.queue.length>=te){const b={dead:!1};return T({args:[...v],syncState:b},p,h(l)),()=>{b.dead=!0}}let A=null;const R={dead:!1};return f.queue.push({method:l,args:v,resolve:b=>{A=typeof b=="function"?b:null,R.dead&&A?.()},reject:()=>{},syncState:R}),()=>{R.dead=!0,A?.()}}:(...v)=>{const E=m[l]??m.__settled;return E?E(...v):_(l,v)}},set:()=>!1});c==="db"&&ce(m,(d,l)=>S[d](...l)),$(t,c,S)};for(const c of Object.keys(k)){if(t[c]!==void 0){$(t,c,t[c]);continue}n(c)}let u=null,a=null,r=0;const o=c=>{c.source!==parent||!Q(c.origin)||oe(c.data)&&(u=c.data.__frame_init,M=c.origin,removeEventListener("message",o),clearTimeout(r),a?.())};addEventListener("message",o),parent.postMessage({__frame_connect:!0},"*");const i=new Promise(c=>{a=c,r=setTimeout(()=>{removeEventListener("message",o),c()},Ee)}),g=document.readyState==="loading"?new Promise(c=>document.addEventListener("DOMContentLoaded",()=>c(),{once:!0})):Promise.resolve();g.then(()=>{try{e?.restore()}catch{}});const y=c=>{if(!(c.source!==parent||!Q(c.origin))&&Y(c.data)){removeEventListener("message",y);try{e?.promoted()}catch{}}};addEventListener("message",y),i.then(async()=>{if(!u||!M){for(const s of L.keys())C(s,{code:"not_granted",message:"frame initialization did not arrive - capability unavailable"});return}ee(u.theme);const c=M;let f=!1,m=!1;addEventListener("message",s=>{if(s.source!==parent||s.origin!==c)return;se(s.data)&&ee(s.data.__frame_theme.theme);const O=s.data?.__fc_mode;O&&typeof O=="object"&&!f&&z&&N.test(z)&&(f=!0,h(z).then(W=>W.install?.(c,O.on===!0)).catch(()=>{}));const j=s.data?.__ft_cmd;j&&typeof j=="object"&&!m&&B&&N.test(B)&&(m=!0,h(B).then(W=>W.install?.(c,j)).catch(()=>{}))});const h=s=>be(()=>import("/_runtime/"+s),void 0),_=Object.keys(u.capabilities??{});for(const s of _)Object.hasOwn(k,s)||Se.test(s)&&t[s]===void 0&&(n(s),C(s,{code:"capability_disabled",message:"capability not in this runtime generation"}));const w=_.filter(s=>Object.hasOwn(k,s)).map(s=>[s,k[s]]).filter(s=>typeof s[1]=="string"&&N.test(s[1])),[S,...d]=await Promise.allSettled([D&&N.test(D)?h(D):Promise.resolve({}),...w.map(([,s])=>h(s))]),l=M;Z=ye(u,S.status==="fulfilled"&&S.value?.TRANSFORMS||{},{shellOrigin:l,mount:re},s=>parent.postMessage({__frame_cap_telemetry:s},l));const p=s=>parent.postMessage({__frame_cap_telemetry:{kind:"cap-load-error",cap:s}},l),v=Z;d.forEach((s,O)=>{const j=w[O][0];if(s.status!=="fulfilled"){p(j);return}try{s.value?.install?.(v)}catch{p(j)}});for(const[s,O]of L)if(!(O.queue.length===0&&Object.keys(O.impl).length>0)){if(_.includes(s)){C(s,{code:"capability_disabled",message:"capability not available in this session"});continue}C(s,{code:"not_granted",message:"capability not available in this session"})}await g,parent.postMessage({__frame_ready:!0},M);let E=-1,A=0;const R=()=>{A=0;const s=Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);s!==E&&(E=s,parent.postMessage({__frame_size:!0,h:s},l))},b=()=>{A||(A=setTimeout(R,200))},U=new ResizeObserver(b);U.observe(document.documentElement),document.body&&U.observe(document.body),document.addEventListener("load",b,!0),document.fonts?.ready.then(b,()=>{}),addEventListener("beforeprint",()=>{E=-1,R()}),b(),addEventListener("message",s=>{if(!(s.source!==parent||s.origin!==l)&&Y(s.data)){try{e?.promoted()}catch{}E=-1,b()}})})}})();</script><!-- /frame-runtime --><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Where decision memory makes money — Citra AI</title>
+<style>
+:root{
+  --paper:#F5F6F3; --raise:#FFFFFF; --ink:#15181A; --ink-2:#4A5154; --ink-3:#767C7E;
+  --rule:#DCDDD7; --rule-2:#C6C8C1;
+  --gap:#A86D14; --gap-bg:#F7EFDD;
+  --proof:#1E6A53; --proof-bg:#E6EFEA;
+  --loss:#98301F; --loss-bg:#F6E7E3;
+  --serif:Georgia,"Iowan Old Style","Source Serif 4",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --col:68ch;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#111413; --raise:#191D1C; --ink:#E8EAE6; --ink-2:#A6ADA9; --ink-3:#7C8481;
+    --rule:#2A2F2D; --rule-2:#3A403D;
+    --gap:#D9A44E; --gap-bg:#2A2214;
+    --proof:#63C0A0; --proof-bg:#14241E;
+    --loss:#E08471; --loss-bg:#2A1713;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111413; --raise:#191D1C; --ink:#E8EAE6; --ink-2:#A6ADA9; --ink-3:#7C8481;
+  --rule:#2A2F2D; --rule-2:#3A403D;
+  --gap:#D9A44E; --gap-bg:#2A2214;
+  --proof:#63C0A0; --proof-bg:#14241E;
+  --loss:#E08471; --loss-bg:#2A1713;
+}
+:root[data-theme="light"]{
+  --paper:#F5F6F3; --raise:#FFFFFF; --ink:#15181A; --ink-2:#4A5154; --ink-3:#767C7E;
+  --rule:#DCDDD7; --rule-2:#C6C8C1;
+  --gap:#A86D14; --gap-bg:#F7EFDD;
+  --proof:#1E6A53; --proof-bg:#E6EFEA;
+  --loss:#98301F; --loss-bg:#F6E7E3;
+}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16.5px;line-height:1.65;margin:0;-webkit-font-smoothing:antialiased}
+.page{max-width:var(--col);margin:0 auto;padding:0 24px 96px}
+.wide{max-width:960px;margin-left:auto;margin-right:auto}
+h1,h2,h3{font-family:var(--serif);font-weight:400;text-wrap:balance;margin:0}
+h1{font-size:2.45rem;line-height:1.15;letter-spacing:-.012em}
+h2{font-size:1.55rem;line-height:1.25;margin-bottom:.35rem}
+h3{font-size:1.08rem;line-height:1.35;margin-bottom:.2rem}
+p{margin:0 0 1.05rem}
+a{color:var(--proof)}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:0 0 .5rem}
+section{margin-top:3.4rem}
+section>p:first-of-type{margin-top:.9rem}
+.lede{font-family:var(--serif);font-size:1.22rem;line-height:1.55;color:var(--ink-2)}
+code,.f{font-family:var(--mono);font-size:.87em;background:var(--raise);border:1px solid var(--rule);border-radius:3px;padding:.08em .34em}
+.chip{display:inline-block;font-family:var(--mono);font-size:.63rem;letter-spacing:.11em;text-transform:uppercase;padding:.2em .55em;border-radius:3px;vertical-align:.18em;white-space:nowrap}
+.chip.m{background:var(--proof-bg);color:var(--proof);border:1px solid var(--proof)}
+.chip.e{background:transparent;color:var(--ink-3);border:1px solid var(--rule-2)}
+hr{border:0;border-top:1px solid var(--rule);margin:0}
+.masthead{border-bottom:1px solid var(--rule-2);padding:56px 0 22px;margin-bottom:8px}
+.brand{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2.4rem}
+.key{display:flex;flex-wrap:wrap;gap:1.1rem;margin:1.6rem 0 0;font-size:.85rem;color:var(--ink-2)}
+.key span{display:flex;gap:.5rem;align-items:baseline}
+.scroll{overflow-x:auto;margin:1.5rem 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px}
+th,td{text-align:left;padding:.62rem .8rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:400;border-bottom:1px solid var(--rule-2)}
+td.n{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.84rem;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.panel{background:var(--raise);border:1px solid var(--rule);border-radius:6px;padding:1.35rem 1.5rem;margin:1.6rem 0}
+.panel h3{margin-bottom:.45rem}
+.panel p:last-child{margin-bottom:0}
+.pull{border-left:2px solid var(--gap);background:var(--gap-bg);padding:1.1rem 1.4rem;border-radius:0 4px 4px 0;margin:1.6rem 0;font-family:var(--serif);font-size:1.1rem;line-height:1.5}
+.pull p:last-child{margin-bottom:0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:1.7rem 0}
+.stat{background:var(--raise);padding:1.05rem 1.15rem}
+.stat b{display:block;font-family:var(--mono);font-size:1.5rem;font-weight:400;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--proof)}
+.stat small{display:block;color:var(--ink-2);font-size:.79rem;line-height:1.4;margin-top:.4rem}
+figure{margin:2rem 0}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:.82rem;color:var(--ink-3);line-height:1.5;margin-top:.85rem;text-align:left}
+.calc{font-family:var(--mono);font-size:.85rem;line-height:1.9;background:var(--raise);border:1px solid var(--rule);border-radius:6px;padding:1.1rem 1.3rem;margin:1.5rem 0;overflow-x:auto;white-space:pre}
+.obj{border-top:1px solid var(--rule);padding-top:1.3rem;margin-top:1.7rem}
+.obj q{font-family:var(--serif);font-size:1.12rem;color:var(--ink);display:block;margin-bottom:.7rem}
+ul{padding-left:1.15rem;margin:0 0 1.05rem}
+li{margin-bottom:.45rem}
+li::marker{color:var(--ink-3)}
+.foot{margin-top:4rem;padding-top:1.4rem;border-top:1px solid var(--rule-2);font-size:.82rem;color:var(--ink-3);line-height:1.6}
+@media (max-width:640px){h1{font-size:1.95rem}body{font-size:16px}.page{padding:0 18px 64px}}
+</style>
+
+<div class="page">
+<header class="masthead">
+  <div class="brand"><span>Citra AI</span><span>Credit risk · note 01</span></div>
+  <h1>Your credit policy is complete. It is also silent — and that is where the money leaves.</h1>
+  <p class="lede">A worked example from retail underwriting, the experiment we ran to test it, and the null result we found alongside it.</p>
+  <div class="key">
+    <span><span class="chip m">Measured</span> observed in a controlled run</span>
+    <span><span class="chip e">Modelled</span> arithmetic, not yet observed</span>
+  </div>
+</header>
+
+<section>
+  <p class="eyebrow">§1 — The claim</p>
+  <h2>An AI that reads your rulebook is table stakes. The judgement your rulebook never wrote down is not.</h2>
+  <p>Retrieval over policy documents is a solved problem. Ask any competent system what your credit policy says about a 640 bureau score and it will tell you correctly, with a citation. If that is the problem you are solving, buy a copilot — it works.</p>
+  <p>The cases that cost money are the other ones. A file where every documented rule is satisfied, every threshold cleared, every required document collected — and an experienced officer still says <em>hold on</em>. That officer is applying something no document contains. When she retires, it goes with her.</p>
+  <p>Citra records that judgement as it is exercised, attributes it to the officer who exercised it, and applies it to the next matching case. This note shows exactly where it pays, using a real underwriting policy and a controlled experiment against it.</p>
+</section>
+
+<section>
+  <p class="eyebrow">§2 — The gap</p>
+  <h2>A worked example: the DSA-sourced personal loan</h2>
+  <p>In Indian retail lending, most personal loan volume arrives through Direct Selling Agents. A DSA is paid a commission on <strong>disbursal</strong>, not on repayment. Experienced credit officers know what that incentive produces and apply extra scrutiny to DSA files.</p>
+  <p>No credit policy we have seen says so. Take a representative one — five products, four sourcing channels, version 4.2. Run a file through its gates:</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Gate</th><th>What the policy requires</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td class="n">§4</td><td>Bureau band. Below 650 declines unless fully secured</td><td>Clears at 726</td></tr>
+      <tr><td class="n">§2.2</td><td>Income floor. ₹40,000/month net, self-employed personal loan</td><td>Clears</td></tr>
+      <tr><td class="n">§3.1</td><td>FOIR cap by income band, 45% to 60%</td><td>Clears at 58%</td></tr>
+      <tr><td class="n">§5</td><td>Documents. ITR two years, bank statement twelve months</td><td>Complete</td></tr>
+      <tr><td class="n">§1</td><td>Scope. Applies to branch, DSA, digital and bancassurance alike</td><td>No channel-specific rule</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>Every gate passes. The system recommends approval, and it is right to — under the policy as written, this file is clean.</p>
+
+  <div class="pull">
+    <p>§5 is a <strong>collection</strong> requirement, not a <strong>corroboration</strong> requirement. It says get the ITR. It does not say phone the employer.</p>
+  </div>
+
+  <h3>The agent cannot see what nobody recorded</h3>
+  <p>Look at what an underwriting system actually receives on each case:</p>
+  <p><span class="f">application_id · customer_id · product · amount_requested · tenure_months · sourcing_channel · income_proof_type · itr_declared_income · ltv_percent · foir_percent · status</span></p>
+  <p>There is no field for <em>employment verified</em>. The closest is <span class="f">income_proof_type</span>, which records only that a document of a given type sits on file. Nothing in the record distinguishes <em>the documents are present</em> from <em>the documents are true</em> — and a coached file is built precisely to be the first without being the second.</p>
+  <p>This is why the gap cannot be closed by better modelling. The signal is not in the columns. It is in a column nobody thought to create.</p>
+</section>
+
+<section class="wide">
+  <p class="eyebrow" style="max-width:var(--col);margin-left:auto;margin-right:auto">§3 — Where the money is</p>
+  <h2 style="max-width:var(--col);margin:0 auto .35rem">Two branches, one of which has no money in it</h2>
+  <figure>
+    <svg viewBox="0 0 860 600" role="img" aria-label="Decision tree: DSA-sourced loan files split at the policy gates. Files declined on hard rules cannot be improved by memory. Files that clear every gate reach a point where policy is silent, and there the path with clause C-002 diverts to employment verification and catches fabricated files before disbursal.">
+      <defs>
+        <marker id="ai" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></marker>
+        <marker id="al" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="var(--loss)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></marker>
+        <marker id="ap" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="var(--proof)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></marker>
+      </defs>
+      <g fill="none" stroke="currentColor" stroke-width="1" opacity=".55">
+        <path d="M430 70 V96" marker-end="url(#ai)"></path>
+        <path d="M430 144 V164 H180 V186" marker-end="url(#ai)"></path>
+        <path d="M430 144 V164 H680 V186" marker-end="url(#ai)"></path>
+        <path d="M180 234 V258" marker-end="url(#ai)"></path>
+        <path d="M680 234 V258" marker-end="url(#ai)"></path>
+        <path d="M680 310 V332 H230 V354" marker-end="url(#ai)"></path>
+        <path d="M680 310 V354" marker-end="url(#ai)"></path>
+      </g>
+      <g fill="none" stroke-width="1.2">
+        <path d="M230 400 V424" stroke="var(--loss)" marker-end="url(#al)"></path>
+        <path d="M230 472 V506" stroke="var(--loss)" marker-end="url(#al)"></path>
+        <path d="M630 400 V416 H540 V424" stroke="var(--proof)" marker-end="url(#ap)"></path>
+        <path d="M630 400 V416 H720 V424" stroke="var(--proof)" marker-end="url(#ap)"></path>
+        <path d="M720 478 V506" stroke="var(--proof)" marker-end="url(#ap)"></path>
+      </g>
+      <g stroke="currentColor" stroke-width="1" fill="var(--raise)" opacity=".92">
+        <rect x="310" y="24" width="240" height="46" rx="4"></rect>
+        <rect x="310" y="98" width="240" height="46" rx="4"></rect>
+        <rect x="60" y="188" width="240" height="46" rx="4"></rect>
+        <rect x="560" y="188" width="240" height="46" rx="4"></rect>
+        <rect x="60" y="260" width="240" height="50" rx="4"></rect>
+        <rect x="60" y="356" width="340" height="44" rx="4"></rect>
+      </g>
+      <rect x="560" y="260" width="240" height="50" rx="4" fill="var(--gap-bg)" stroke="var(--gap)" stroke-width="1.2"></rect>
+      <rect x="460" y="356" width="340" height="44" rx="4" fill="var(--proof-bg)" stroke="var(--proof)" stroke-width="1.2"></rect>
+      <rect x="60" y="426" width="340" height="46" rx="4" fill="var(--loss-bg)" stroke="var(--loss)" stroke-width="1"></rect>
+      <rect x="460" y="426" width="160" height="52" rx="4" fill="var(--raise)" stroke="var(--proof)" stroke-width="1"></rect>
+      <rect x="640" y="426" width="160" height="52" rx="4" fill="var(--raise)" stroke="var(--proof)" stroke-width="1"></rect>
+      <rect x="60" y="508" width="340" height="52" rx="4" fill="var(--loss-bg)" stroke="var(--loss)" stroke-width="1.2"></rect>
+      <rect x="460" y="508" width="340" height="52" rx="4" fill="var(--proof-bg)" stroke="var(--proof)" stroke-width="1.2"></rect>
+      <g font-family="var(--sans)" text-anchor="middle" fill="currentColor">
+        <text x="430" y="46" font-size="13">100 DSA-sourced files</text>
+        <text x="430" y="63" font-size="11.5" fill="var(--ink-3)">personal loan applications</text>
+        <text x="430" y="120" font-size="13">Policy gates apply</text>
+        <text x="430" y="137" font-size="11.5" fill="var(--ink-3)">§4 bureau · §2.2 income · §3.1 FOIR</text>
+        <text x="180" y="210" font-size="13">~70 declined</text>
+        <text x="180" y="227" font-size="11.5" fill="var(--ink-3)">dead on a hard rule</text>
+        <text x="680" y="210" font-size="13">~30 clear every gate</text>
+        <text x="680" y="227" font-size="11.5" fill="var(--ink-3)">recommended for approval</text>
+        <text x="180" y="284" font-size="13">Memory changes nothing</text>
+        <text x="180" y="301" font-size="11.5" fill="var(--ink-3)">14 of 19 tested cases sat here</text>
+        <text x="680" y="284" font-size="13" fill="var(--gap)">§5 asks for documents</text>
+        <text x="680" y="301" font-size="11.5" fill="var(--gap)">not for a phone call</text>
+        <text x="230" y="378" font-size="13">Without memory</text>
+        <text x="230" y="394" font-size="11.5" fill="var(--ink-3)">approve as submitted</text>
+        <text x="630" y="378" font-size="13" fill="var(--proof)">With clause C-002</text>
+        <text x="630" y="394" font-size="11.5" fill="var(--proof)">divert to verify employment</text>
+        <text x="230" y="448" font-size="13" fill="var(--loss)">30 disburse</text>
+        <text x="230" y="465" font-size="11.5" fill="var(--loss)">employer never contacted</text>
+        <text x="540" y="451" font-size="13">27 confirmed</text>
+        <text x="540" y="468" font-size="11.5" fill="var(--ink-3)">cleared in a day</text>
+        <text x="720" y="451" font-size="13">3 fabricated</text>
+        <text x="720" y="468" font-size="11.5" fill="var(--ink-3)">caught before payout</text>
+        <text x="230" y="532" font-size="13" fill="var(--loss)">Loss lands 6–18 months later</text>
+        <text x="230" y="549" font-size="11.5" fill="var(--loss)">principal, provisioning, collection cost</text>
+        <text x="630" y="532" font-size="13" fill="var(--proof)">₹15 lakh never leaves the bank</text>
+        <text x="630" y="549" font-size="11.5" fill="var(--proof)">3 files at a ₹5 lakh ticket</text>
+      </g>
+    </svg>
+    <figcaption style="max-width:var(--col);margin-left:auto;margin-right:auto"><span class="chip e">Modelled</span> &nbsp;Funnel proportions and catch counts are illustrative arithmetic on a 100-file cohort. The one figure carried over from the controlled run is the 14 of 19 marker on the left branch, which is measured. Policy references are to a retail credit policy v4.2.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <p class="eyebrow">§4 — What we measured</p>
+  <h2>A controlled run, and the null result we found next to it</h2>
+  <p>We seeded four learned judgements into a live loan triage application, formed from corrections recorded by named credit officers. Three of them restate the written SOP almost verbatim. The fourth — clause <span class="f">C-002</span> — does not exist in any document:</p>
+
+  <div class="panel">
+    <h3>Clause C-002</h3>
+    <p style="margin-bottom:.6rem">“DSA-sourced files get employment verified with the employer directly — the submitted document set is not enough.”</p>
+    <p style="font-size:.85rem;color:var(--ink-2);margin-bottom:.4rem">Formed from corrections by three distinct officers. Their recorded override: decision from <span class="f">approve</span> to <span class="f">verify_employment</span>.</p>
+    <p style="font-size:.85rem;color:var(--ink-2);margin-bottom:0">Scope: <span class="f">sourcing_channel:dsa</span> — one facet, derived rather than authored. See §5.</p>
+  </div>
+
+  <p>C-002 was chosen deliberately. The policy states in §1 that it applies to every sourcing channel and then prescribes nothing channel-specific — so no document the system can read tells it to treat a DSA file differently. If behaviour changes, it cannot have come from the document corpus.</p>
+  <p>Nineteen distinct DSA-sourced applications were each run <strong>twice</strong>, with identical inputs. The only difference between the two runs was whether C-002 was active or retired. A control arm of non-DSA files tested the opposite property: that the judgement stays silent where it does not apply.</p>
+
+  <div class="stats">
+    <div class="stat"><b>14 vs 1</b><small>cases where the judgement was used with memory on, versus off</small></div>
+    <div class="stat"><b>p = 0.0005</b><small>sign test over 15 discordant pairs</small></div>
+    <div class="stat"><b>19 / 19</b><small>correctly targeted on DSA files</small></div>
+    <div class="stat"><b>0 / 2</b><small>wrongly fired on control files</small></div>
+  </div>
+
+  <h3>What it does not show</h3>
+  <p>Not one final decision changed. Fourteen of the nineteen were policy declines either way — bureau 617, FOIR 95%, income below floor. On a file already dead on a hard rule, nothing can change the verdict. What changed was the reasoning: with C-002 active, the system additionally raised <em>verify employment directly with the employer</em>.</p>
+  <p>That is the honest shape of the benefit here — <strong>not a different verdict, an extra step nobody wrote down</strong>. And it means this run measured a population where a verdict change was structurally impossible. The money sits in the right-hand branch of the diagram, which this run did not sample.</p>
+
+  <h3>The null result, which is the part worth trusting</h3>
+  <p>The three judgements that restate the SOP changed <strong>nothing</strong> when retired. The system reached the same conclusion without them, because it can simply read the rule. They fired, they were cited, they added no value.</p>
+
+  <div class="pull">
+    <p>The rulebook is followed by the model already. Memory is how the judgement calls the rulebook does not cover get picked up — and how you see whose judgement was used.</p>
+  </div>
+
+  <p>We publish the null result because it is what makes the rest credible. Any vendor can tell you their system learns. Fewer will tell you which of their own features measurably does nothing.</p>
+</section>
+
+<section>
+  <p class="eyebrow">§5 — The economics</p>
+  <h2>What it costs to be right</h2>
+  <p>Verification is not free. It costs a call and a day of turnaround on <em>every</em> diverted file, including the ones that turn out fine. So the real question a credit committee should ask is: how often must this catch something to pay for itself?</p>
+
+  <div class="calc">break-even catch rate  =  cost per verification  ÷  (ticket × loss given default)</div>
+
+  <p>On a ₹5 lakh personal loan at 70% LGD, a caught file avoids roughly ₹3.5 lakh of loss.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Cost assumption</th><th>Per file</th><th>Break-even catch rate</th></tr></thead>
+    <tbody>
+      <tr><td>Direct cost of the call only</td><td class="n">₹300</td><td class="n">0.09%</td></tr>
+      <tr><td>All-in, loading customer drop-off from the extra day</td><td class="n">₹5,000</td><td class="n">1.4%</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><span class="chip e">Modelled</span> Employment misstatement on DSA-sourced files in Indian personal lending runs in the low single-digit percent. On the pessimistic cost assumption you are ahead; on the realistic one you are ahead by two orders of magnitude. Substitute your own numbers — the arithmetic is three inputs and you hold all three.</p>
+
+  <h3>Why this is not simply a new policy rule</h3>
+  <p>A credit head can always write <em>verify every DSA file</em> into the policy — and if C-002 holds up on your book, they should. Promoting a learned judgement into written policy is the intended destination, not a failure of the system. The question is what you have <em>before</em> that promotion is possible, and what you keep afterwards.</p>
+
+  <p>Start with what C-002 actually covers. It is stored against exactly one case facet:</p>
+  <p><span class="f">sourcing_channel:dsa</span></p>
+  <p>That is not a design choice — it is what the evidence supports. A judgement's scope is the <strong>intersection</strong> of the case labels carried by every correction that formed it. The three officers who taught C-002 corrected DSA files spanning different products, ticket sizes and FOIR bands, so the channel is the only thing all three cases had in common, and the channel is therefore the entire scope. The system did not narrow the rule using details that merely happened to appear in the cases that taught it — which is exactly the over-fitting you would want it to avoid.</p>
+
+  <p>So C-002 reaches the same population a blanket policy line would reach. What it adds is not tighter targeting. It is everything around the rule:</p>
+  <ul>
+    <li><strong>It exists at all.</strong> You can only write the clause once you know it exists, and knowing required capturing what your officers were already doing about it.</li>
+    <li><strong>It is attributed.</strong> Three named officers, with the corrections and the cases behind it one click away — which is what makes it reviewable rather than merely asserted.</li>
+    <li><strong>It is measured from its first outing.</strong> How often it fired, and how often an officer overruled the system on a case where it fired. A policy clause is unmeasured from the day it ships.</li>
+    <li><strong>It is reversible.</strong> If the divert rate proves the economics wrong on your book, retire it in a click. A policy revision takes another committee.</li>
+  </ul>
+
+  <p>The break-even arithmetic above is per diverted file and does not depend on how the judgement is scoped. What scope determines is the <em>volume</em> diverted — and that is precisely the quantity a pilot measures on your portfolio rather than one we should assert here.</p>
+</section>
+
+<section>
+  <p class="eyebrow">§6 — Objections</p>
+  <h2>Three things you should push back with</h2>
+
+  <div class="obj">
+    <q>“We already have an LLM with RAG over our policies, and copilots for our officers.”</q>
+    <p>Then for “what does the policy say”, you are done, and we would not try to displace it. Three things that setup structurally cannot do: it leaves no asset behind — after two years of copilot usage you own nothing; it has no outcome loop, because nobody tells a copilot the loan went NPA fourteen months later; and it produces no record a regulator accepts, because a suggestion in a chat window is not a decision with a rule, a rationale and an owner attached.</p>
+  </div>
+
+  <div class="obj">
+    <q>“We'll train a model on our own decision history instead.”</q>
+    <p>A model trained over those eleven columns can learn that DSA files in this band correlate with default. Its output is a risk score nudged down a few points — which prices the uncertainty rather than resolving it, and leaves the officer with a file that still looks compliant on every field the system holds. C-002 outputs a step: phone the employer. The difference is that no model can recommend acquiring data that exists in no column of its training set.</p>
+  </div>
+
+  <div class="obj">
+    <q>“If your system finds gaps in our policy, we'll just fix the policy.”</q>
+    <p>You should, and we will hand you the list. But a policy revision takes a committee and two to three quarters, and you can only write the clause once you know it exists — which requires the capture apparatus first. Fixing the policy is the output of having decision memory, not a substitute for it. Our learning report is designed to be read as exactly that: here are the judgements your officers apply consistently that your written policy does not contain. Promote any of them into policy, or leave them as learned judgement.</p>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">§7 — Proving it on your book</p>
+  <h2>A 90-day pilot, and what it has to return</h2>
+  <p>The right-hand branch of that diagram is arithmetic until it runs against a real portfolio. A pilot exists to convert it into a measured number, and it needs one input we cannot supply: your own DSA misstatement rate, which your credit risk team already knows from NPA post-mortems.</p>
+  <ul>
+    <li><strong>Divert rate.</strong> Of the files the system would approve without memory, how many flip to <span class="f">verify_employment</span> with it. Measured directly.</li>
+    <li><strong>Catch rate.</strong> Of those diverted, how many fail verification. This is the number the ROI turns on, and it becomes yours, not ours.</li>
+    <li><strong>Consistency.</strong> Decision variance across officers and branches on matched case profiles, before and after. Measurable in week one and valuable to audit on its own.</li>
+    <li><strong>Time to first application.</strong> Built by your business team in plain English, in days rather than a two-quarter IT build. Provable on day one, with no pilot data required.</li>
+  </ul>
+  <p>We would rather land on the last two and prove the first two inside the pilot than lead with a loss-prevention number we have not yet observed on a live book.</p>
+</section>
+
+<section>
+  <p class="eyebrow">§8 — Limits</p>
+  <h2>What this note does not claim</h2>
+  <p>The controlled result covers one clause, one application, nineteen cases, one tenant. It is evidence that a learned judgement changes system behaviour where the written policy is silent, and that it stays quiet where the policy is not. It is not evidence that memory helps in general, and we would not present it as such.</p>
+  <p>The run tested one facet — the sourcing channel — because that is C-002's entire scope. It is not evidence about how well multi-facet scopes discriminate, which we have not measured.</p>
+  <p>Every rupee figure in §3 and §5 is arithmetic on stated assumptions, marked <span class="chip e">Modelled</span> throughout. The break-even model assumes a single ticket size and a flat loss-given-default; a real book has a distribution for both.</p>
+  <p>Stating the boundary is the point. A credit head who cannot find the limits of a vendor claim in the vendor's own document assumes they were hidden.</p>
+</section>
+
+<div class="foot">
+  <p style="margin-bottom:.35rem">Citra AI is a product of Trustedwear Tech Private Limited · citra-ai.com</p>
+  <p style="margin-bottom:0">Policy references are to a synthetic retail credit policy used for demonstration, modelled on how Indian retail lenders write credit policy. It is not a reproduction of any bank's document or of regulatory text.</p>
+</div>
+</div>
+
+</body></html>

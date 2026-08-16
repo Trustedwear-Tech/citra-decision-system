@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Citra AI</title>
+    <meta name="description" content="Privacy Policy for Citra AI - Learn how we protect and handle your data">
+    <link rel="canonical" href="https://citra-ai.com/privacy-policy">
+    <meta property="og:url" content="https://citra-ai.com/privacy-policy">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #ffffff;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: rgba(26, 31, 46, 0.95);
+            border-bottom: 1px solid rgba(79, 70, 229, 0.2);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4f46e5;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .back-button:hover {
+            background-color: #6366f1;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 60px 0 40px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #9ca3af;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Content Section */
+        .content {
+            background-color: #1a1f2e;
+            border-radius: 16px;
+            padding: 40px;
+            margin: 40px auto;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .content h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+
+        .content h2:first-child {
+            margin-top: 0;
+        }
+
+        .content h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: #e5e7eb;
+        }
+
+        .content p {
+            margin-bottom: 16px;
+            color: #d1d5db;
+            font-size: 16px;
+        }
+
+        .content ul, .content ol {
+            margin-bottom: 16px;
+            margin-left: 24px;
+            color: #d1d5db;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+        }
+
+        .content strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .last-updated {
+            background-color: rgba(79, 70, 229, 0.1);
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .last-updated p {
+            margin: 0;
+            color: #e5e7eb;
+            font-size: 14px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1f2e;
+            border-top: 1px solid rgba(79, 70, 229, 0.2);
+            padding: 32px 0;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .footer-text {
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .footer-link:hover {
+            color: #6366f1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .content {
+                padding: 24px;
+            }
+
+            .content h2 {
+                font-size: 24px;
+            }
+
+            .content h3 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                    </svg>
+                    Citra AI
+                </a>
+                <a href="/" class="back-button">Back to Home</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Privacy Policy</h1>
+            <p>Your privacy is important to us. This policy outlines how Citra AI collects, uses, and protects your personal information.</p>
+        </div>
+
+        <div class="content">
+            <div class="last-updated">
+                <p><strong>Last Updated:</strong> December 23, 2025</p>
+            </div>
+
+            <h2>1. Introduction</h2>
+            <p>Welcome to Citra AI. We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our application and services.</p>
+
+            <h2>2. Information We Collect</h2>
+            
+            <h3>2.1 Personal Information</h3>
+            <p>We collect personal information that you voluntarily provide to us when you:</p>
+            <ul>
+                <li>Register for an account</li>
+                <li>Use our services</li>
+                <li>Contact us for support</li>
+                <li>Subscribe to our newsletter</li>
+            </ul>
+            <p>This information may include:</p>
+            <ul>
+                <li>Name and email address</li>
+                <li>Mobile phone number</li>
+                <li>Account credentials</li>
+                <li>Profile information</li>
+                <li>Payment information (processed securely through third-party payment processors)</li>
+            </ul>
+
+            <h3>2.2 Google User Data We Access</h3>
+            <p>When you choose to sign in with Google, we access the following Google user data:</p>
+            <ul>
+                <li><strong>Email Address:</strong> To create and identify your account</li>
+                <li><strong>Profile Information:</strong> Your name and profile picture to personalize your experience</li>
+                <li><strong>User ID:</strong> A unique identifier from Google to securely link your Google account with Citra AI</li>
+            </ul>
+            <p><strong>Important:</strong> We only request the minimum permissions necessary to provide authentication services. We do not access your Google Drive, Gmail, Calendar, or any other Google services beyond the basic profile information required for account creation and sign-in.</p>
+
+            <h3>2.3 Usage Data</h3>
+            <p>We automatically collect certain information when you use our services, including:</p>
+            <ul>
+                <li>Device information (type, operating system, browser)</li>
+                <li>IP address and location data</li>
+                <li>Usage patterns and preferences</li>
+                <li>Application performance data</li>
+                <li>Error logs and diagnostic information</li>
+            </ul>
+
+            <h3>2.4 Documents and Content</h3>
+            <p>When you upload documents or create content using Citra AI:</p>
+            <ul>
+                <li>We store and process your documents to provide our services</li>
+                <li>We do not use your data for AI training or building AI knowledge bases</li>
+                <li>Your documents are encrypted and securely stored</li>
+                <li>You retain full ownership of your content</li>
+            </ul>
+
+            <h2>3. How We Use Your Information</h2>
+            <p>We use your information for the following purposes:</p>
+            
+            <h3>3.1 How We Use Google User Data</h3>
+            <p>The Google user data we collect (email, name, profile picture) is used exclusively for:</p>
+            <ul>
+                <li><strong>Account Creation:</strong> Creating your Citra AI account using your Google credentials</li>
+                <li><strong>Authentication:</strong> Verifying your identity when you sign in</li>
+                <li><strong>Personalization:</strong> Displaying your name and profile picture in the application</li>
+                <li><strong>Communication:</strong> Sending you service-related emails (password resets, account notifications, important updates)</li>
+            </ul>
+            <p><strong>We do NOT:</strong></p>
+            <ul>
+                <li>Use your Google data to train AI models</li>
+                <li>Share your Google data with third parties for advertising or marketing purposes</li>
+                <li>Access any Google services beyond the basic profile information you authorize</li>
+                <li>Store or process your Google account password (authentication is handled securely by Google OAuth)</li>
+            </ul>
+
+            <h3>3.2 General Data Usage</h3>
+            <p>Beyond Google authentication data, we use your information for:</p>
+            <ul>
+                <li><strong>Service Delivery:</strong> To provide, maintain, and improve our services</li>
+                <li><strong>Account Management:</strong> To manage your account and provide customer support</li>
+                <li><strong>Communication:</strong> To send you updates, security alerts, and support messages</li>
+                <li><strong>Personalization:</strong> To customize your experience and provide relevant content</li>
+                <li><strong>Analytics:</strong> To understand how users interact with our services and improve functionality</li>
+                <li><strong>Security:</strong> To detect, prevent, and address technical issues and fraudulent activity</li>
+                <li><strong>Legal Compliance:</strong> To comply with legal obligations and protect our rights</li>
+            </ul>
+
+            <h2>4. Data Storage and Security</h2>
+            
+            <h3>4.1 Security Measures</h3>
+            <p>We implement industry-standard security measures to protect your information:</p>
+            <ul>
+                <li>End-to-end encryption for data in transit</li>
+                <li>Encryption at rest for stored data</li>
+                <li>Regular security audits and penetration testing</li>
+                <li>Access controls and authentication mechanisms</li>
+                <li>Secure cloud infrastructure (Microsoft Azure, AWS)</li>
+                <li>Regular backups and disaster recovery procedures</li>
+            </ul>
+
+            <h3>4.2 Data Retention</h3>
+            <p>We retain your information for as long as necessary to:</p>
+            <ul>
+                <li>Provide our services to you</li>
+                <li>Comply with legal obligations</li>
+                <li>Resolve disputes and enforce our agreements</li>
+            </ul>
+            <p>You can request deletion of your account and data at any time through your account settings or by contacting us.</p>
+
+            <h3>4.3 Google User Data Retention and Deletion</h3>
+            <p><strong>Retention Period:</strong> We retain your Google user data (email, name, profile picture) only for as long as:</p>
+            <ul>
+                <li>Your account remains active</li>
+                <li>Required to provide our authentication services</li>
+                <li>Legally required to maintain records</li>
+            </ul>
+            <p><strong>Data Deletion:</strong> You can request deletion of your Google user data at any time by:</p>
+            <ul>
+                <li><strong>Deleting Your Account:</strong> Go to Account Settings → Delete Account. This will permanently delete all your data, including Google authentication information.</li>
+                <li><strong>Unlinking Google Account:</strong> Go to Account Settings → Connected Accounts → Disconnect Google. This removes the Google authentication link but preserves your Citra AI account.</li>
+                <li><strong>Email Request:</strong> Contact us at contact@citra-ai.com to request immediate data deletion.</li>
+            </ul>
+            <p>Upon account deletion, we will:</p>
+            <ul>
+                <li>Permanently delete your Google user data within 30 days</li>
+                <li>Remove all associations between your Citra AI account and Google account</li>
+                <li>Retain only anonymized usage statistics as required by law</li>
+            </ul>
+
+            <h2>5. Information Sharing and Disclosure</h2>
+            <p><strong>We do not sell your personal information or Google user data to anyone.</strong></p>
+            
+            <h3>5.1 Google User Data Sharing</h3>
+            <p>Your Google user data (email, name, profile picture) is:</p>
+            <ul>
+                <li><strong>Never shared with third parties</strong> for advertising, marketing, or any commercial purposes</li>
+                <li><strong>Never used to train AI models</strong> or build knowledge bases</li>
+                <li><strong>Only used internally</strong> for the authentication and personalization purposes described in Section 3</li>
+                <li><strong>Stored securely</strong> with industry-standard encryption and access controls</li>
+            </ul>
+            <p>We comply with the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" style="color: #4f46e5; text-decoration: underline;">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+            <h3>5.2 General Information Sharing</h3>
+            <p>We may share non-Google information in the following limited circumstances:</p>
+            
+            <h3>5.3 Service Providers</h3>
+            <p>We may share information with trusted third-party service providers who assist us in:</p>
+            <ul>
+                <li>Cloud hosting and data storage (Microsoft Azure, AWS)</li>
+                <li>Payment processing (Stripe, PayPal)</li>
+                <li>Analytics and performance monitoring</li>
+                <li>Customer support services</li>
+                <li>Email and communication services</li>
+            </ul>
+            <p>These service providers are contractually obligated to protect your data and use it only for the purposes we specify. They do not have permission to use your Google user data for their own purposes.</p>
+
+            <h3>5.4 Legal Requirements</h3>
+            <p>We may disclose your information if required to do so by law or in response to:</p>
+            <ul>
+                <li>Valid legal requests by public authorities</li>
+                <li>Court orders or subpoenas</li>
+                <li>Protection of our rights and safety</li>
+                <li>Investigation of fraud or security issues</li>
+            </ul>
+
+            <h3>5.5 Business Transfers</h3>
+            <p>In the event of a merger, acquisition, or sale of assets, your information may be transferred as part of that transaction. We will notify you of any such change.</p>
+
+            <h2>6. Your Privacy Rights</h2>
+            <p>Depending on your location, you may have the following rights:</p>
+            <ul>
+                <li><strong>Access:</strong> Request access to your personal information</li>
+                <li><strong>Correction:</strong> Request correction of inaccurate or incomplete data</li>
+                <li><strong>Deletion:</strong> Request deletion of your personal information</li>
+                <li><strong>Portability:</strong> Request a copy of your data in a portable format</li>
+                <li><strong>Objection:</strong> Object to processing of your personal information</li>
+                <li><strong>Restriction:</strong> Request restriction of processing in certain circumstances</li>
+                <li><strong>Withdrawal:</strong> Withdraw consent where processing is based on consent</li>
+            </ul>
+            <p>To exercise these rights, please contact us at contact@citra-ai.com</p>
+
+            <h2>7. Cookies and Tracking Technologies</h2>
+            <p>We use cookies and similar tracking technologies to:</p>
+            <ul>
+                <li>Remember your preferences and settings</li>
+                <li>Understand how you use our services</li>
+                <li>Improve user experience and functionality</li>
+                <li>Provide personalized content and recommendations</li>
+            </ul>
+            <p>You can control cookie preferences through your browser settings. Note that disabling cookies may affect the functionality of our services.</p>
+
+            <h2>8. Third-Party Services</h2>
+            <p>Our services may contain links to third-party websites and services. We are not responsible for the privacy practices of these third parties. We encourage you to review their privacy policies before providing any personal information.</p>
+
+            <h3>8.1 Third-Party AI Services</h3>
+            <p>We use advanced AI technologies from reputable third-party providers to deliver AI-powered features. Your data is processed in accordance with our security standards and industry-standard privacy practices.</p>
+
+            <h2>9. Children's Privacy</h2>
+            <p>Our services are not intended for users under the age of 13 (or 16 in the European Union). We do not knowingly collect personal information from children. If we become aware that we have collected information from a child, we will take steps to delete such information promptly.</p>
+
+            <h2>10. International Data Transfers</h2>
+            <p>Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. We ensure appropriate safeguards are in place to protect your information in accordance with this Privacy Policy.</p>
+
+            <h2>11. California Privacy Rights (CCPA)</h2>
+            <p>If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):</p>
+            <ul>
+                <li>Right to know what personal information is collected</li>
+                <li>Right to know whether personal information is sold or disclosed</li>
+                <li>Right to say no to the sale of personal information</li>
+                <li>Right to access your personal information</li>
+                <li>Right to equal service and price</li>
+            </ul>
+
+            <h2>12. GDPR Compliance (European Users)</h2>
+            <p>If you are located in the European Economic Area (EEA), we process your personal information based on the following legal grounds:</p>
+            <ul>
+                <li>Contract performance: To provide our services to you</li>
+                <li>Consent: Where you have provided explicit consent</li>
+                <li>Legitimate interests: To improve our services and ensure security</li>
+                <li>Legal obligations: To comply with applicable laws</li>
+            </ul>
+
+            <h2>13. Changes to This Privacy Policy</h2>
+            <p>We may update this Privacy Policy from time to time. We will notify you of any material changes by:</p>
+            <ul>
+                <li>Posting the updated policy on our website</li>
+                <li>Sending you an email notification</li>
+                <li>Displaying a prominent notice in our application</li>
+            </ul>
+            <p>Your continued use of our services after any changes indicates your acceptance of the updated Privacy Policy.</p>
+
+            <h2>14. Contact Us</h2>
+            <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices, please contact us:</p>
+            <ul>
+                <li><strong>Email:</strong> contact@citra-ai.com</li>
+                <li><strong>Phone:</strong> +91-8496977722</li>
+                <li><strong>Address:</strong> Citra AI (A product of Trustedwear Tech Private Limited), #42, Maitri, Balaji Lake View Garden, Sampigehalli, Jakkur (Behind Cars24), Bengaluru 560064, Karnataka, India</li>
+                <li><strong>Website:</strong> <a href="https://citra-ai.com" rel="noopener">https://citra-ai.com</a></li>
+            </ul>
+
+            <h2>15. Data Protection Officer</h2>
+            <p>For questions specifically related to data protection and privacy compliance, you can contact our Data Protection Officer at: contact@citra-ai.com</p>
+
+            <h2>16. Your Consent</h2>
+            <p>By using Citra AI, you consent to our Privacy Policy and agree to its terms. If you do not agree with this policy, please discontinue use of our services.</p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p class="footer-text">© 2025 Citra AI. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="/privacy-policy" class="footer-link">Privacy Policy</a>
+                <a href="/terms-of-service" class="footer-link">Terms of Service</a>
+                <a href="/contactus" class="footer-link">Contact Us</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

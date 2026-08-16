@@ -1,0 +1,54 @@
+{
+  "spec_version": "v0",
+  "agent_id": "agent_claims_xyz",
+  "name": "Bajaj Claims Examiner",
+  "description": "Triage, classify, and approve motor insurance claims.",
+  "model_tier": "tier_b",
+  "system_prompt": "You are a senior motor claims examiner...",
+  "input_schema": {
+    "type": "object",
+    "required": ["claim_id", "amount"],
+    "properties": {
+      "claim_id": { "type": "string" },
+      "amount": { "type": "number" },
+      "insured": { "type": "string" },
+      "incident_date": { "type": "string", "format": "date" }
+    }
+  },
+  "tools": ["mcp.insurance.search", "mcp.insurance.lookup"],
+  "mcps": ["dept-mcp/insurance"],
+  "rag": [
+    { "ref": "dept-mcp/insurance", "doc_types": ["policy", "sop"] }
+  ],
+  "memory_namespace": "claims_bajaj",
+  "sub_agents": [
+    {
+      "id": "compliance",
+      "role": "compliance_audit",
+      "system_prompt": "Audit the claim against IRDAI rules and the policy SOP."
+    },
+    {
+      "id": "fraud_check",
+      "role": "fraud_screen",
+      "system_prompt": "Score the claim for fraud likelihood using prior cases."
+    },
+    {
+      "id": "report",
+      "role": "report_writer",
+      "system_prompt": "Write a one-page approval recommendation."
+    }
+  ],
+  "actions": [
+    {
+      "name": "intake_claim",
+      "delegates_to": ["compliance", "fraud_check"],
+      "approval_required": true
+    },
+    {
+      "name": "issue_payout",
+      "delegates_to": ["report"],
+      "approval_required": true
+    }
+  ],
+  "hitl_policy": { "approve_above_amount": 100000 }
+}

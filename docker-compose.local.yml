@@ -1,0 +1,141 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.local.yml
+#
+# Single-command spin-up of the smart-app stack for local dev:
+#
+#   docker compose -f docker-compose.local.yml up --build
+#
+# Brings up:
+#   * mongo            : 27017  -- shared store
+#   * smart-app-service: 9100   -- AppSpec/AgentSpec store + /smart-app/internal/* proxy
+#   * citra-app-runtime: 3100   -- Next.js runtime that serves published apps
+#   * citra-app-builder: built locally so smart-app-service can spawn pods
+#
+# Optional services (left out by default to keep the local stack lean —
+# add when you need them):
+#   * citra-service    : 8085   -- workflow engine (for kind=workflow tools)
+#   * discovery-service: 9000   -- MCP / RAG source registry
+#   * inference-service: 8086   -- LLM gateway
+#
+# To enable a workflow / mcp / rag flow against real backends, set the
+# corresponding *_SERVICE_URL env vars in your .env.local file. The
+# bring-up will pick them up via the ${...} fall-throughs below.
+#
+# All services share the citra-local-net bridge network so they can
+# reach each other by service name (DNS).
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: citra-local-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-citradev}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - citra-local-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  smart-app-service:
+    build:
+      context: ./smart-app-service
+    image: citra/smart-app-service:local
+    container_name: citra-local-smart-app
+    ports:
+      - "9100:9100"
+    environment:
+      # 2 uvicorn workers so a long Decision-App /run can't starve concurrent
+      # requests (multi-worker is leader-elected safe — see smart-app-service/Dockerfile).
+      WEB_CONCURRENCY: "${SMART_APP_WEB_CONCURRENCY:-2}"
+      # Shared per-env database with smartapp_* collection prefix
+      # (see smart-app-service/config.py).
+      MONGO_URI: mongodb://root:${MONGODB_PASSWORD:-citradev}@mongo:27017/dev?authSource=admin
+      MONGO_DB: dev
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-Citra-AI}
+      ENVIRONMENT: dev
+      # HMAC signing key for /smart-app/internal/* bearers. Builder pods
+      # and the runtime engine both need this — keep them in sync.
+      SMART_APP_INTERNAL_SIGNING_KEY: ${SMART_APP_INTERNAL_SIGNING_KEY:-local-internal-signing-key}
+      SMART_APP_INTERNAL_BEARER_TTL_SECONDS: 3600
+      SMART_APP_SERVICE_CALLBACK_URL: http://smart-app-service:9100/
+      # ----- LLM (set in .env.local; left blank by default so the
+      # runtime / builder pods fail loudly instead of silently calling
+      # an unintended endpoint).
+      LLM_LARGE_BASE_URL: ${LLM_LARGE_BASE_URL:-}
+      LLM_LARGE_API_KEY: ${LLM_LARGE_API_KEY:-}
+      LLM_LARGE_MODEL: ${LLM_LARGE_MODEL:-}
+      INFERENCE_SERVICE_URL: ${INFERENCE_SERVICE_URL:-}
+      # ----- Vision / OCR (proxied via /smart-app/internal/ocr).
+      VISION_BASE_URL: ${VISION_BASE_URL:-}
+      VISION_API_KEY: ${VISION_API_KEY:-}
+      VISION_MODEL: ${VISION_MODEL:-qwen/qwen3-vl-32b-instruct}
+      # ----- Optional upstreams. Leave unset to disable that proxy
+      # kind; the dispatcher will return a kind-disabled error if a
+      # tool of that kind is invoked.
+      DISCOVERY_SERVICE_URL: ${DISCOVERY_SERVICE_URL:-}
+      WORKFLOW_SERVICE_URL: ${WORKFLOW_SERVICE_URL:-}
+      MCP_SERVICE_API_KEY: ${MCP_SERVICE_API_KEY:-}
+      # ----- Builder pod settings -----
+      CITRA_APP_BUILDER_IMAGE: citra/citra-app-builder:local
+      # When the builder pod calls back, it does so over the docker
+      # network using the smart-app-service container hostname.
+      SMART_APP_PROXY_BASE_URL: http://smart-app-service:9100/smart-app/internal
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - citra-local-net
+
+  citra-app-runtime:
+    build:
+      context: ./citra-app-runtime
+    image: citra/citra-app-runtime:local
+    container_name: citra-local-runtime
+    ports:
+      - "3100:3100"
+    environment:
+      NODE_ENV: development
+      PORT: "3100"
+      # The runtime calls smart-app-service for AppSpec, panel data,
+      # /run, /tool/{name}, etc. Use the docker-network DNS name.
+      SMART_APP_SERVICE_URL: http://smart-app-service:9100
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-me}
+    depends_on:
+      - smart-app-service
+    networks:
+      - citra-local-net
+
+  # The builder pod is short-lived and spawned by smart-app-service per
+  # build session. We *build* the image here so it's available locally;
+  # we don't run it as a long-lived service.
+  citra-app-builder:
+    build:
+      context: ./smart-app-service
+      dockerfile: builder-sandbox/Dockerfile
+    image: citra/citra-app-builder:local
+    profiles:
+      - build-only
+    networks:
+      - citra-local-net
+
+volumes:
+  mongo-data:
+
+networks:
+  citra-local-net:
+    driver: bridge

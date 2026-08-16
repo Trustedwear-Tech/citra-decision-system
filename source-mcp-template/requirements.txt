@@ -1,0 +1,80 @@
+# =============================================================================
+# Dept MCP Server — Python Dependencies (query plane only)
+# =============================================================================
+# Ingestion deps removed: APScheduler, boto3, duckdb, pandas, openpyxl,
+# pdfminer.six, pypdf, python-docx — all owned by the Citra Workflow Engine.
+# =============================================================================
+
+# Core
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+# NL→SQL plan cache + few-shot store (plan_cache.py). Fail-open: absent/down
+# Redis just disables caching, never breaks a query.
+redis>=4.5.0
+httpx>=0.27.0
+prometheus-client>=0.20.0
+sentry-sdk[fastapi]>=2.14.0
+PyJWT[crypto]>=2.8.0                 # HS256 X-User-JWT verification (shared secret)
+cryptography>=49.0.0
+
+# AWS S3 / S3-compatible object storage — used by /document_url to sign
+# short-lived URLs back to the original source artifact for chunks
+# returned by /query. Optional at process start: the endpoint returns
+# 503 when BUCKET_NAME/keys aren't set, so deployments that don't surface
+# original artifacts can skip the env vars entirely.
+boto3>=1.34.0
+
+# Milvus (read-only at query time)
+pymilvus>=2.4.0
+
+# MongoDB (load dept_sources registry from Citra central DB + MongoDB hybrid sources)
+motor>=3.3.0
+pymongo>=4.6.0
+
+# SQL connectors — install only what your dept's structured sources use at query time
+sqlalchemy>=2.0.0
+sqlglot>=25.0.0                      # AST parsing for SELECT-only enforcement + LIMIT wrapping
+psycopg2-binary>=2.9.9               # Postgres
+pymysql>=1.1.0                       # MySQL
+# pyodbc>=5.0.0                      # SQL Server (requires system ODBC driver)
+
+# DuckDB-over-files — for catalogued datasets with kind=duckdb (Excel / CSV /
+# Parquet sitting on a file server or object store). The engine treats these
+# identically to SQL backends; install only if your deployment exposes such
+# datasets. The `excel` and `httpfs` extensions auto-load on first use.
+# DuckDB's httpfs supports s3:// AND gs:// — for gs:// set
+# GCS_HMAC_ACCESS_KEY_ID and GCS_HMAC_SECRET in the dept-MCP env.
+duckdb>=1.0.0
+
+# ── Cloud / SAP connectors ─────────────────────────────────────────────────
+#
+# Google BigQuery — DatasetKind.bigquery (connectors/bigquery_connector.py).
+# Auth: ACME_BQ_CREDENTIALS_FILE (SA JSON path) OR
+#       ACME_BQ_CREDENTIALS_JSON (raw JSON string) OR
+#       Application Default Credentials OR
+#       BIGQUERY_EMULATOR_HOST (for the demo).
+# Lazy import in the connector — never required at process start, so
+# dept-MCPs that don't use BigQuery still pay only the wheel install.
+google-cloud-bigquery>=3.21.0
+#
+# Google Cloud Storage — helpers for DatasetKind.duckdb over gs:// URIs
+# (connectors/gcs_connector.py). Provides list_objects, extract_schema,
+# presigned_url. The duckdb dispatcher reads gs:// natively via httpfs
+# once GCS_HMAC_* env vars are set; this package gives the catalogue-
+# building + presigned-URL helpers.
+google-cloud-storage>=2.16.0
+#
+# SAP NetWeaver RFC / BAPI — DatasetKind.sap_rfc
+# (connectors/sap_rfc_connector.py).
+# OPTIONAL — requires the proprietary SAP NW RFC SDK installed on the
+# host (LD_LIBRARY_PATH=/opt/sap/nwrfcsdk/lib, SAPNWRFC_HOME=/opt/sap/nwrfcsdk).
+# Prefer odata_connector.py when the customer can expose OData services
+# — that path needs zero extra binaries. For the cement demo, a pyrfc
+# stub is mounted into the container via volume + PYTHONPATH (see
+# demo-data/mcp-config/docker-compose.cement.yml).
+# pyrfc==3.3.1
+
+# Shared service utils (distributed tracing — OTel spans → Tempo).
+-e ../citra-common/citra-service-utils

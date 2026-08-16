@@ -1,0 +1,76 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml for playwright-render-service (port 3001)
+# Server-side page render / screenshot / PDF.
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/playwright-render-service:${IMAGE_TAG}
+# Config from Vault (no .env in prod).
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/playwright-render-service:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  ports:
+    - 3001
+  shm_size: '1gb'
+  volumes:
+    - ~/citra-ai/logs/playwright-render-service:/logs
+  networks:
+    - citra-network
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+  deploy:
+    resources:
+      limits:
+        cpus: '2'
+        memory: 2G
+      reservations:
+        cpus: '0.5'
+        memory: 512M
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://localhost:3001/health || exit 1"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+
+services:
+  playwright-render-service-prod:
+    <<: *common
+    profiles: [prod]
+    container_name: playwright-render-service-prod
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      HOST: "0.0.0.0"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "7dcce2f4-9682-b947-d334-6d94815b68d5"
+      VAULT_SECRET_PATH: "prod/playwright-render-service"
+
+  playwright-render-service-test:
+    <<: *common
+    profiles: [test]
+    container_name: playwright-render-service-test
+    environment:
+      TZ: "America/New_York"
+      ENVIRONMENT: "test"
+      HOST: "0.0.0.0"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: "test/playwright-render-service"
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network

@@ -1,0 +1,79 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml for Monitoring-Service (Alertmanager webhook, port 8400)
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/monitoring-service:${IMAGE_TAG}
+# Config from Vault (no .env in prod).
+
+services:
+  monitoring-service:
+    image: ghcr.io/trustedwear-tech/citra-ai/monitoring-service:${IMAGE_TAG:-prod-latest}
+    container_name: monitoring-service
+    restart: unless-stopped
+
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "db232f91-7724-8f85-2353-2226bba33382"
+      VAULT_SECRET_PATH: "prod/monitoring-service"
+      MONITORING_WEBHOOK_HOST: "0.0.0.0"
+      MONITORING_WEBHOOK_PORT: "8400"
+      # Alert routing (override the Dockerfile-baked ENVs).
+      # Real AWS credentials come from Vault (AWS_ACCESS_KEY_ID +
+      # AWS_SECRET_ACCESS_KEY in prod/monitoring-service). These are
+      # non-secret config knobs.
+      ALERT_TRANSPORT: "ses"
+      AWS_REGION: "ap-south-1"
+      EMAIL_DEFAULT_SENDER: "alerts@citra-ai.com"
+      # EMAIL_DEFAULT_TO comes from Vault path prod/monitoring-service.
+      # Do not set it here; compose env wins over Vault bootstrap values.
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Mount the ENTIRE host log tree read-only so Monitoring-Service watches
+      # EVERY service log folder under ~/citra-ai/logs, not a hand-picked list.
+      # The log monitor watches the parent of each LOG_DIRECTORIES entry
+      # recursively (all entries are /logs/* -> watch root /logs), so every
+      # current and future <service>/<name>.log under /logs is picked up
+      # automatically. Rotated files (*.log.N, *.gz) and non-*.log files are
+      # ignored by the monitor; its own monitoring-service.log is hard-skipped
+      # in code, so exposing it here read-only cannot create an alert loop.
+      - ~/citra-ai/logs:/logs:ro
+
+      # Monitoring-Service's own logs (writable — where it writes its own log).
+      - ~/citra-ai/logs/Monitoring-Service:/monitoring-service/logs
+
+    # Alertmanager webhook receiver - posts from citra-alertmanager reach the
+    # FastAPI app on port 8400 (see app/webhook.py).
+    ports:
+      - "8400:8400"
+
+    networks:
+      - citra-network
+
+    healthcheck:
+      # python:slim has no curl — use urllib one-liner (always shipped with python)
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8400/health',timeout=3).status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network

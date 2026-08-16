@@ -1,0 +1,14 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+motor>=3.3.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+python-jose[cryptography]>=3.3.0
+httpx>=0.27.0
+passlib[bcrypt]>=1.7.4
+
+# Error tracking (GlitchTip / Sentry-compatible)
+sentry-sdk[fastapi]>=2.14.0
+
+# Shared service utils (distributed tracing — OTel spans → Tempo).
+-e ../citra-common/citra-service-utils

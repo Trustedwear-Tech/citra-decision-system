@@ -1,0 +1,167 @@
+{
+  "$schema": "../schema/sources.schema.json",
+  "sources": [
+    {
+      "source_id": "collections",
+      "type": "structured",
+      "dept_id": "REPLACE_dept_id",
+      "org_id": "REPLACE_org_id",
+      "name": "Collections — Disputes / Payments ledger",
+      "description": "Loan-recovery collections system: customer dispute cases ('I already paid') with their submitted proof documents, plus the settled-payments ledger that verifies them. TEMPLATE — replace connection details, table/column names and REPLACE_* ids, keep the fraud annotations.",
+      "tags": ["collections", "recovery", "disputes", "payments"],
+      "domain": {
+        "vertical": "banking",
+        "sub_vertical": "loan_recovery",
+        "country": "IN",
+        "notes": "Starter template — banking loan recovery, India (INR / DMY / PAN-Aadhaar-IFSC validators derive from country)"
+      },
+      "connection": { "type": "postgres", "env_prefix": "COLLECTIONS_SQL" },
+      "datasets": [
+        {
+          "id": "collections.disputes",
+          "physical_name": "disputes",
+          "name": "Payment disputes",
+          "description": "Open dispute cases: the borrower claims a payment the system shows outstanding. The submitted receipt (receipt_url) is screened against collections.payments automatically. FULLY SCREENED dataset — applies:true + every artifact_role demonstrated.",
+          "columns": [
+            { "name": "dispute_id", "type": "text", "is_primary_key": true },
+            { "name": "loan_account", "type": "text", "description": "Loan account under dispute" },
+            { "name": "borrower_phone", "type": "text", "pii": true },
+            { "name": "borrower_pan", "type": "text", "pii": true, "description": "PAN — checksum-validated automatically under the IN locale pack" },
+            { "name": "claimed_amount", "type": "numeric" },
+            { "name": "claimed_payment_date", "type": "date" },
+            { "name": "dispute_opened_date", "type": "date" },
+            { "name": "receipt_url", "type": "text", "column_kind": "document_url", "artifact_role": "payment_proof", "description": "The submitted proof-of-payment document (receipt / UTR slip). ROLE payment_proof = pinned: ONLY this document feeds the ledger check, and the same receipt reused on another case is a fraud signal." },
+            { "name": "id_scan_url", "type": "text", "column_kind": "document_url", "artifact_role": "identity", "description": "Borrower's ID scan. ROLE identity = a resubmitted ID from the same person is VERIFICATION, never a duplicate-fraud flag — the false-alarm killer." },
+            { "name": "supporting_doc_url", "type": "text", "column_kind": "document_url", "artifact_role": "evidence", "description": "Any other submitted document. ROLE evidence = screened for cross-case reuse, never matched against the ledger." },
+            { "name": "tnc_ack_url", "type": "text", "column_kind": "document_url", "artifact_role": "supporting", "description": "Signed T&C acknowledgment. ROLE supporting = never fingerprinted at all (its reuse is meaningless)." },
+            { "name": "status", "type": "text", "description": "open | resolved_customer_favor | recovered | written_off" },
+            { "name": "decided_at", "type": "date" },
+            { "name": "decision_note", "type": "text" }
+          ],
+          "fraud_screening": {
+            "applies": true,
+            "identity_fields": ["loan_account", "borrower_phone"],
+            "payment_proof": {
+              "ledger_dataset": "collections.payments",
+              "match_field": "transaction_ref",
+              "amount_field": "amount",
+              "date_field": "payment_date",
+              "party_field": "loan_account",
+              "doc_ref_field": "transaction_ref",
+              "doc_amount_field": "amount",
+              "doc_date_field": "payment_date",
+              "doc_party_field": "loan_account"
+            },
+            "date_rules": [
+              {
+                "name": "receipt_not_older_than_a_year",
+                "earlier_field": "claimed_payment_date",
+                "later_field": "dispute_opened_date",
+                "max_days_between": 365
+              }
+            ]
+          },
+          "decision_history": {
+            "declared": true,
+            "key_field": "dispute_id",
+            "outcome_field": "status",
+            "good_values": ["resolved_customer_favor", "recovered"],
+            "bad_values": ["written_off"],
+            "decided_at_field": "decided_at",
+            "rationale_field": "decision_note",
+            "settling_window_days": 14
+          },
+          "value_semantics": {
+            "value_kind": "recovered",
+            "exposure_field": "claimed_amount",
+            "realization": {
+              "dataset": "collections.payments",
+              "match_field": "loan_account",
+              "amount_field": "amount",
+              "date_field": "payment_date",
+              "window_days": 90
+            },
+            "attribution": "approved_recommendation"
+          }
+        },
+        {
+          "id": "collections.payments",
+          "physical_name": "payments",
+          "name": "Settled payments ledger",
+          "description": "Settled customer payments, UTR-keyed — the system of record every submitted payment proof verifies against. This description is shown to the recommending AI; keep it specific. NOTE: no fraud_screening block at all — silence means the ledger itself is never screened; it is the verification TARGET.",
+          "columns": [
+            { "name": "transaction_ref", "type": "text", "is_primary_key": true, "description": "UTR / transaction reference" },
+            { "name": "loan_account", "type": "text" },
+            { "name": "amount", "type": "numeric" },
+            { "name": "payment_date", "type": "date" },
+            { "name": "channel", "type": "text" }
+          ]
+        },
+        {
+          "id": "collections.branch_master",
+          "physical_name": "branch_master",
+          "name": "Branch master",
+          "description": "Reference table of branches. EXPLICIT OPT-OUT example — applies:false is a hard off: even if someone later adds artifact columns here, no screen is ever created and autowire CLEARS any hand-wired one.",
+          "columns": [
+            { "name": "branch_code", "type": "text", "is_primary_key": true },
+            { "name": "branch_name", "type": "text" },
+            { "name": "ifsc", "type": "text" }
+          ],
+          "fraud_screening": { "applies": false }
+        }
+      ]
+    },
+    {
+      "source_id": "bureau",
+      "type": "rest_api",
+      "dept_id": "REPLACE_dept_id",
+      "org_id": "REPLACE_org_id",
+      "name": "Credit bureau — score lookup (API-as-dataset)",
+      "description": "Live credit-bureau passthrough (CIBIL-style), exposed as a parameterised dataset: the app's agent reads it like any table, the MCP holds the corporate credentials and the audit trail. TEMPLATE — replace base_url/path/field mapping with the real bureau contract.",
+      "tags": ["bureau", "credit", "api"],
+      "domain": {
+        "vertical": "banking",
+        "sub_vertical": "loan_recovery",
+        "country": "IN"
+      },
+      "connection": {
+        "env_prefix": "BUREAU_API",
+        "base_url": "https://REPLACE-bureau.example.com"
+      },
+      "datasets": [
+        {
+          "id": "bureau.credit_score",
+          "physical_name": "credit_score",
+          "kind": "rest",
+          "name": "Credit score by PAN",
+          "description": "Bureau credit report looked up by PAN. mandatory_when_used:true = the read-before-write gate REFUSES to stage a decision unless this lookup actually ran for the case. NOTE: a rest dataset is an agent-read lookup and registry-evidence source — it can NOT be a payment_proof/verify_against ledger target (the structured read-by-key plane covers sql/odata/soql/mongodb only).",
+          "input_schema": {
+            "required": ["pan"],
+            "properties": { "pan": { "type": "string", "description": "Borrower PAN" } }
+          },
+          "read_via": {
+            "kind": "rest",
+            "target": "credit_score",
+            "extra": {
+              "request": {
+                "method": "GET",
+                "path": "/v2/credit/{{pan}}"
+              },
+              "response": {
+                "path": "data",
+                "row_mode": "object",
+                "columns": {
+                  "credit_score": "score",
+                  "score_band": "band",
+                  "open_accounts": "summary.openAccounts",
+                  "overdue_amount": "summary.overdueAmount"
+                }
+              }
+            }
+          },
+          "mandatory_when_used": true
+        }
+      ]
+    }
+  ]
+}

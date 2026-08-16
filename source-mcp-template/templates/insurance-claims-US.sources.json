@@ -1,0 +1,342 @@
+{
+  "$schema": "../schema/sources.schema.json",
+  "sources": [
+    {
+      "source_id": "claims_core",
+      "type": "structured",
+      "dept_id": "REPLACE_dept_id",
+      "org_id": "REPLACE_org_id",
+      "name": "Claims Core — Claims / Policies",
+      "description": "Motor/property claims register with damage-photo evidence, plus the policy master. TEMPLATE — replace connection details, table/column names and REPLACE_* ids, keep the fraud annotations. US variant — the IN twin differs only in domain.country.",
+      "tags": [
+        "claims",
+        "insurance",
+        "policies"
+      ],
+      "domain": {
+        "vertical": "insurance",
+        "sub_vertical": "claims",
+        "country": "US",
+        "notes": "Starter template — insurance claims, US (USD / MDY / SSN-EIN-routing-ZIP validators derive from country)"
+      },
+      "connection": {
+        "type": "postgres",
+        "env_prefix": "CLAIMS_SQL"
+      },
+      "datasets": [
+        {
+          "id": "claims_core.claims",
+          "physical_name": "claims",
+          "name": "Claims register",
+          "description": "One row per claim: claimed incident date/site, damage photos, repair invoice. Photo capture time + GPS are screened against the claimed incident automatically (EXIF-vs-claim).",
+          "columns": [
+            {
+              "name": "claim_id",
+              "type": "text",
+              "is_primary_key": true
+            },
+            {
+              "name": "policy_no",
+              "type": "text"
+            },
+            {
+              "name": "vehicle_vin",
+              "type": "text",
+              "description": "VIN — checksum-validated and cross-case linked"
+            },
+            {
+              "name": "claimant_phone",
+              "type": "text",
+              "pii": true
+            },
+            {
+              "name": "payout_account",
+              "type": "text",
+              "pii": true,
+              "description": "Payout bank account — the ring/double-dip key"
+            },
+            {
+              "name": "payout_routing",
+              "type": "text",
+              "pii": true,
+              "description": "Payout ABA routing number — checksum-validated automatically under the US locale pack"
+            },
+            {
+              "name": "incident_date",
+              "type": "date",
+              "description": "Claimed incident date — photos captured BEFORE this cannot show the incident"
+            },
+            {
+              "name": "incident_lat",
+              "type": "numeric",
+              "description": "Claimed accident-site latitude (decimal degrees)"
+            },
+            {
+              "name": "incident_lon",
+              "type": "numeric"
+            },
+            {
+              "name": "policy_start",
+              "type": "date",
+              "description": "Policy start (denormalized onto the claim) — claim-within-days-of-policy-start is the classic opportunistic-fraud date rule"
+            },
+            {
+              "name": "claim_amount",
+              "type": "numeric"
+            },
+            {
+              "name": "damage_photo_url",
+              "type": "text",
+              "column_kind": "image_url",
+              "artifact_role": "evidence",
+              "description": "Damage photo — reuse across claims is a double-dip signal; EXIF screened vs the claim"
+            },
+            {
+              "name": "claimant_id_url",
+              "type": "text",
+              "column_kind": "image_url",
+              "artifact_role": "identity",
+              "description": "ID scan — ROLE identity: reuse by the SAME claimant is verification, never a flag"
+            },
+            {
+              "name": "repair_invoice_url",
+              "type": "text",
+              "column_kind": "document_url",
+              "artifact_role": "evidence",
+              "description": "Repair invoice — line items are arithmetic-checked; content near-dups caught across claims; the estimate reference on it verifies against surveyor_estimates (verify_against below)"
+            },
+            {
+              "name": "policy_tnc_url",
+              "type": "text",
+              "column_kind": "document_url",
+              "artifact_role": "supporting",
+              "description": "Policy T&C copy. ROLE supporting = never fingerprinted (its reuse is meaningless)."
+            },
+            {
+              "name": "status",
+              "type": "text",
+              "description": "open | approved | paid | rejected"
+            },
+            {
+              "name": "decided_at",
+              "type": "date"
+            },
+            {
+              "name": "decision_note",
+              "type": "text"
+            }
+          ],
+          "fraud_screening": {
+            "applies": true,
+            "value_fields": [
+              "claim_amount"
+            ],
+            "identity_fields": [
+              "policy_no",
+              "vehicle_vin",
+              "claimant_phone",
+              "payout_account"
+            ],
+            "incident_date_field": "incident_date",
+            "location_lat_field": "incident_lat",
+            "location_lon_field": "incident_lon",
+            "gps_radius_km": 10,
+            "date_rules": [
+              {
+                "name": "claim_after_policy_start",
+                "earlier_field": "policy_start",
+                "later_field": "incident_date",
+                "min_days_between": 15
+              }
+            ],
+            "verify_against": [
+              {
+                "name": "invoice_vs_surveyor_estimate",
+                "target_dataset": "claims_core.surveyor_estimates",
+                "match_field": "estimate_no",
+                "doc_column": "repair_invoice_url",
+                "doc_ref_field": "estimate_no",
+                "compare": [
+                  {
+                    "doc_field": "total",
+                    "target_field": "approved_amount",
+                    "type": "amount"
+                  }
+                ],
+                "description": "the repair invoice cites the surveyor estimate it bills against — a missing estimate or an inflated total vs the approved amount is the repair-bill-divergence tell (claims-pack tolerances apply)"
+              }
+            ]
+          },
+          "decision_history": {
+            "declared": true,
+            "key_field": "claim_id",
+            "outcome_field": "status",
+            "good_values": [
+              "approved",
+              "paid"
+            ],
+            "bad_values": [
+              "rejected"
+            ],
+            "decided_at_field": "decided_at",
+            "rationale_field": "decision_note",
+            "settling_window_days": 14
+          },
+          "value_semantics": {
+            "value_kind": "prevented_loss",
+            "exposure_field": "claim_amount",
+            "prevented_when": [
+              "rejected"
+            ],
+            "attribution": "approved_recommendation"
+          }
+        },
+        {
+          "id": "claims_core.surveyor_estimates",
+          "physical_name": "surveyor_estimates",
+          "name": "Surveyor estimates",
+          "description": "Approved surveyor damage estimates, estimate-number-keyed — the system of record repair invoices verify against. No fraud_screening block: silence means this dataset is never screened itself; it is a verification TARGET.",
+          "columns": [
+            {
+              "name": "estimate_no",
+              "type": "text",
+              "is_primary_key": true
+            },
+            {
+              "name": "claim_id",
+              "type": "text"
+            },
+            {
+              "name": "approved_amount",
+              "type": "numeric"
+            },
+            {
+              "name": "surveyor_id",
+              "type": "text"
+            },
+            {
+              "name": "estimate_date",
+              "type": "date"
+            }
+          ]
+        },
+        {
+          "id": "claims_core.garages_master",
+          "physical_name": "garages_master",
+          "name": "Empanelled garages",
+          "description": "Reference list of empanelled garages. EXPLICIT OPT-OUT example (applies:false) — but note: declaring garage identifiers in the CLAIMS dataset's identity_fields is what catches garage rings; the master itself needs no screening.",
+          "columns": [
+            {
+              "name": "garage_code",
+              "type": "text",
+              "is_primary_key": true
+            },
+            {
+              "name": "garage_name",
+              "type": "text"
+            },
+            {
+              "name": "city",
+              "type": "text"
+            }
+          ],
+          "fraud_screening": {
+            "applies": false
+          }
+        },
+        {
+          "id": "claims_core.policies",
+          "physical_name": "policies",
+          "name": "Policy master",
+          "description": "Active policies with start dates — claim-within-days-of-policy-start is the classic opportunistic-fraud date rule (E6, declarative date rules).",
+          "columns": [
+            {
+              "name": "policy_no",
+              "type": "text",
+              "is_primary_key": true
+            },
+            {
+              "name": "holder_name",
+              "type": "text",
+              "pii": true
+            },
+            {
+              "name": "policy_start",
+              "type": "date"
+            },
+            {
+              "name": "coverage_end",
+              "type": "date"
+            },
+            {
+              "name": "vehicle_vin",
+              "type": "text"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source_id": "fraud_registry",
+      "type": "rest_api",
+      "dept_id": "REPLACE_dept_id",
+      "org_id": "REPLACE_org_id",
+      "name": "Industry fraud registry — VIN/claim lookup (API-as-dataset)",
+      "description": "Live industry fraud-registry passthrough (IIB/ClaimSearch-style), exposed as a parameterised dataset: the agent queries it with the case's identifiers and nests raw matches under external_registry_matches in the fraud signals (scored as the highest-precision signal). The MCP holds the corporate credentials + FCRA-grade audit. TEMPLATE — replace base_url/path/mapping with the real registry contract.",
+      "tags": [
+        "registry",
+        "fraud",
+        "api"
+      ],
+      "domain": {
+        "vertical": "insurance",
+        "sub_vertical": "claims",
+        "country": "US"
+      },
+      "connection": {
+        "env_prefix": "FRAUD_REGISTRY_API",
+        "base_url": "https://REPLACE-registry.example.com"
+      },
+      "datasets": [
+        {
+          "id": "fraud_registry.vin_history",
+          "physical_name": "vin_history",
+          "kind": "rest",
+          "name": "Prior claims by VIN",
+          "description": "Industry-wide prior claims for a VIN. NOTE: a rest dataset is an agent-read lookup and registry-evidence source — it can NOT be a payment_proof/verify_against target (the structured read-by-key plane covers sql/odata/soql/mongodb only).",
+          "input_schema": {
+            "required": [
+              "vin"
+            ],
+            "properties": {
+              "vin": {
+                "type": "string",
+                "description": "Vehicle VIN"
+              }
+            }
+          },
+          "read_via": {
+            "kind": "rest",
+            "target": "vin_history",
+            "extra": {
+              "request": {
+                "method": "GET",
+                "path": "/v1/claims/vin/{{vin}}"
+              },
+              "response": {
+                "path": "claims",
+                "row_mode": "list",
+                "columns": {
+                  "insurer": "insurerName",
+                  "claim_date": "lossDate",
+                  "claim_amount": "claimedAmount",
+                  "outcome": "status"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

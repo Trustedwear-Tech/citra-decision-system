@@ -1,0 +1,56 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# Guard: every tracked source file carries the BUSL-1.1 notice.
+#
+# This lives in its own workflow rather than inside ci.yml, for one reason: the
+# check has to actually run. ci.yml is `workflow_dispatch` only, so its License
+# Headers job had never executed once in this repository's history -- which is
+# how ~1,300 files drifted past a check that exits 1 on the first one. The other
+# guards here are `pull_request` only, and work lands by direct push to main, so
+# they never fire either.
+#
+# It is also independent of ci.yml's unrelated red jobs (a Node lint failure, a
+# Docker build failure, and a matrix entry pointing at a directory that does not
+# exist in this tree). Licence enforcement should not wait on those being fixed.
+#
+# Mirrors the shape of lint-bare-except.yml: one rule, enforceable today,
+# because the tree is currently at zero violations.
+
+name: license headers
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  headers:
+    name: BUSL-1.1 header on every tracked source file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # The scope comes from `git ls-files`, so this never reaches vendored or
+      # third-party code. Exits 1 and names the files if any are missing.
+      - name: Check licence headers
+        run: python scripts/license_headers.py --check
+
+      - name: Unit tests for the licence tooling
+        run: |
+          pip install pytest pyyaml
+          python -m pytest scripts/test_license_headers.py \
+                           scripts/test_set_license_change_date.py -q

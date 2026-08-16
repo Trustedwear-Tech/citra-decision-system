@@ -1,0 +1,355 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.dev.yml
+# Local development services for Citra-AI.
+# Hot reload / file watching is intentionally DISABLED (it pegged CPU on
+# Windows bind mounts). Python services run plain uvicorn (no --reload) with
+# their source bind-mounted -> `docker compose restart <svc>` picks up code
+# changes with no rebuild. The two frontends (citra-ui, citra-app-runtime) are
+# built-and-served (no watcher); rebuild them via dev-docker.ps1 (Re-deploy).
+
+services:
+  # 1. Citra-Service
+  citra-service:
+    build:
+      context: .
+      dockerfile: Citra-Service/Dockerfile.dev
+    container_name: citra-service-dev
+    # env_file:
+    #   - ./Citra-Service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8085 --timeout-graceful-shutdown 3
+    ports:
+      - "8085:8085"
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:8085/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    environment:
+      - APP_ENV=dev
+      - AI_PROVIDER=self-hosted
+      - RERANKER_URL=http://reranker-service:7302
+      - DATA_DISCOVERY_SERVICE_URL=http://data-discovery-service:8095
+      - REDIS_HOST=citra-redis
+      - REDIS_PORT=6379
+      - REDIS_USERNAME=
+      - REDIS_PASSWORD=
+      - QUEUE_REDIS_HOST=queue-redis
+      - QUEUE_REDIS_PORT=6379
+      - QUEUE_REDIS_USERNAME=
+      - QUEUE_REDIS_PASSWORD=
+      - CITRA_ACTION_CHAT_ENABLED=true
+      - CITRA_ACTION_LLM_BASE_URL=https://openrouter.ai/api/v1
+      - CITRA_ACTION_MODEL=deepseek/deepseek-chat-v3.1
+      - CITRA_ACTION_SANDBOX_HOSTS=127.0.0.1:7090
+      - CITRA_ACTION_SANDBOX_HOST_SECRET=test-sandbox-host-secret-e2e-2025
+      - CITRA_SERVICE_INTERNAL_URL=https://api.citra-ai.com/citra-ai
+      - DUCKDB_SERVICE_URL=http://duckdb-query-service-prod:7301
+      - MILVUS_SAAS_COLLECTION=saas
+      - CITRA_ACTION_SANDBOX_HOST_SCHEDULE_STRATEGY=least-loaded
+    volumes:
+      # Bind mounts for immediate code updates
+      - ./Citra-Service:/app/Citra-Service
+      - ./citra-service-utils:/app/citra-service-utils
+      - ./citra-queue:/app/citra-queue
+      - ./citra-auth:/app/citra-auth
+      - ./citra-mongo:/app/citra-mongo
+      - ./citra-cache:/app/citra-cache
+      - ./citra-llm:/app/citra-llm
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 2. Citra-UI
+  citra-ui:
+    build:
+      context: ./Citra-UI
+      dockerfile: Dockerfile.dev
+    container_name: citra-ui-dev
+    # env_file:
+    #   - ./Citra-UI/.env
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - NODE_ENV=production
+      # - CITRA_API_URL=http://localhost:8085
+    # No bind mounts: this service is built-and-served (no watcher). After code
+    # changes, run .\dev-docker.ps1 -> Re-deploy -> One service -> citra-ui.
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 3. Citra-User-Service
+  citra-user-service:
+    build:
+      context: ./Citra-User-Service
+      dockerfile: Dockerfile.dev
+    container_name: citra-user-service-dev
+    # env_file:
+    #   - ./Citra-User-Service/.env
+    restart: unless-stopped
+    ports:
+      - "7004:7004"
+    environment:
+      - REDIS_HOST=citra-redis
+      - REDIS_PORT=6379
+      - REDIS_USERNAME=
+      - REDIS_PASSWORD=
+      - QUEUE_REDIS_HOST=queue-redis
+      - QUEUE_REDIS_PORT=6379
+      - QUEUE_REDIS_USERNAME=
+      - QUEUE_REDIS_PASSWORD=
+    volumes:
+      - ./Citra-User-Service:/app
+      - user_node_modules:/app/node_modules
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 4. duckdb-query-service
+  duckdb-query-service:
+    build:
+      context: .
+      dockerfile: duckdb-query-service/Dockerfile.dev
+    container_name: duckdb-query-service-dev
+    # env_file:
+    #   - ./duckdb-query-service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 7301
+    ports:
+      - "7301:7301"
+      # environment:
+      #   - PORT=7301
+      # - MONGODB_URI=mongodb://root:citradev@mongodb:27017/?authSource=admin&replicaSet=rs0
+    volumes:
+      - ./duckdb-query-service:/app/duckdb-query-service
+      - ./citra-service-utils:/app/citra-service-utils
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 5. reranker-service
+  reranker-service:
+    build:
+      context: .
+      dockerfile: reranker-service/Dockerfile.dev
+    container_name: reranker-service-dev
+    # env_file:
+    #   - ./reranker-service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 7302
+    ports:
+      - "7302:7302"
+    volumes:
+      - ./reranker-service:/app/reranker-service
+      - ./citra-service-utils:/app/citra-service-utils
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 6. discovery-service
+  discovery-service:
+    build:
+      context: .
+      dockerfile: discovery-service/Dockerfile.dev
+    container_name: discovery-service-dev
+    # env_file:
+    #   - ./discovery-service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 9000
+    # Host port 9010, not 9000: 9000 is the private Citra-AI platform's own
+    # discovery-service port, and this repo is a full clone of the same
+    # service set - running both stacks on one host would otherwise collide
+    # on every shared port. Container-internal port stays 9000 (unaffected;
+    # in-network callers still reach it at discovery-service:9000).
+    ports:
+      - "9010:9000"
+    volumes:
+      - ./discovery-service:/app/discovery-service
+      - ./citra-service-utils:/app/citra-service-utils
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 7. action-sandbox-host
+  action-sandbox-host:
+    build:
+      context: ./action-sandbox-host
+      dockerfile: Dockerfile.dev
+    container_name: action-sandbox-host-dev
+    user: root
+    # env_file:
+    #   - ./action-sandbox-host/.env
+    restart: unless-stopped
+    ports:
+      - "7090:7090"
+    volumes:
+      - ./action-sandbox-host:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - SANDBOX_HOST_SECRET=dev-actionchat-host-secret-change-me
+      - SANDBOX_HOST_PUBLIC_HOST=host.docker.internal
+      - SANDBOX_HOST_LISTEN_HOST=0.0.0.0
+      - SANDBOX_HOST_LISTEN_PORT=7090
+      - SANDBOX_HOST_SANDBOX_NETWORK=citra-network
+      - SANDBOX_HOST_APPROVED_EGRESS_NETWORK=citra-network
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 8. action-chat-service — REMOVED 2026-08-08 (Phase 0 OSS split).
+
+  # 9. smart-app-service
+  smart-app-service:
+    build:
+      context: .
+      dockerfile: smart-app-service/Dockerfile.dev
+    container_name: smart-app-service-dev
+    # env_file:
+    #   - ./smart-app-service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 9100
+    ports:
+      - "9100:9100"
+    environment:
+      # 2 uvicorn workers so a long Decision-App /run can't starve concurrent
+      # requests (multi-worker is leader-elected safe — see smart-app-service/Dockerfile).
+      - WEB_CONCURRENCY=${SMART_APP_WEB_CONCURRENCY:-2}
+      - SMART_APP_PROXY_BASE_URL=http://smart-app-service-dev:9100/smart-app/internal
+      - CITRA_APP_BUILDER_IMAGE=citra-app-builder:latest
+      - SANDBOX_HOST_URL=http://action-sandbox-host:7090
+      - SANDBOX_HOST_SECRET=dev-actionchat-host-secret-change-me
+      - DISCOVERY_SERVICE_URL=http://discovery-service:9000
+      - TEST_DISCOVERY_SERVICE_URL=http://discovery-service:9000
+      - DATA_DISCOVERY_SERVICE_URL=http://data-discovery-service:8095
+      - CITRA_SERVICE_URL=http://citra-service:8085
+      - RERANKER_SERVICE_URL=http://reranker-service:7302
+      - REDIS_HOST=citra-redis
+      - REDIS_PORT=6379
+      - REDIS_USERNAME=
+      - REDIS_PASSWORD=
+      - QUEUE_REDIS_HOST=queue-redis
+      - QUEUE_REDIS_PORT=6379
+      - QUEUE_REDIS_USERNAME=
+      - QUEUE_REDIS_PASSWORD=
+    volumes:
+      - ./smart-app-service:/app/smart-app-service
+      - ./citra-service-utils:/app/citra-service-utils
+      - ./citra-auth:/app/citra-auth
+      - ./citra-cache:/app/citra-cache
+      - ./citra-queue:/app/citra-queue
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 10. citra-app-runtime
+  citra-app-runtime:
+    build:
+      context: ./citra-app-runtime
+      dockerfile: Dockerfile.dev
+    container_name: citra-app-runtime-dev
+    # env_file:
+    #   - ./citra-app-runtime/.env
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    environment:
+      - NODE_ENV=production
+    # No bind mounts: built-and-served (no watcher). After code changes, run
+    # .\dev-docker.ps1 -> Re-deploy -> One service -> citra-app-runtime.
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 11. data-discovery-service
+  data-discovery-service:
+    build:
+      context: .
+      dockerfile: data-discovery-service/Dockerfile.dev
+    container_name: data-discovery-service-dev
+    # env_file:
+    #   - ./data-discovery-service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8095
+    ports:
+      - "8095:8095"
+    # environment:
+    #   - DISCOVERY_SERVICE_URL=http://discovery-service:9000
+    volumes:
+      - ./data-discovery-service:/app/data-discovery-service
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 15. citra-mcp-service
+  citra-mcp-service:
+    build:
+      context: ./citra-mcp-service
+      dockerfile: Dockerfile.dev
+    container_name: citra-mcp-service-dev
+    # env_file:
+    #   - ./citra-mcp-service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 9090
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./citra-mcp-service:/app
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # 16. playwright-render-service
+  playwright-render-service:
+    build:
+      context: .
+      dockerfile: playwright-render-service/Dockerfile.dev
+    container_name: playwright-render-service-dev
+    # env_file:
+    #   - ./playwright-render-service/.env
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 3001 --workers 1 --loop uvloop --http httptools
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:3001/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    volumes:
+      # Bind mounts for immediate code updates
+      - ./playwright-render-service:/app/playwright-render-service
+      - ./citra-service-utils:/app/citra-service-utils
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  user_node_modules:
+
+networks:
+  citra-network:
+    name: citra-network
+    driver: bridge

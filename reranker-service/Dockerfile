@@ -1,0 +1,88 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+FROM python:3.11-slim
+
+# Build context = monorepo root. requirements.txt has `-e ../citra-common/citra-service-utils`.
+
+# Torch / model variant for this image:
+#   cpu  (default) -> CPU-only torch wheel + pre-download the lightweight CPU model
+#   gpu            -> CUDA torch wheel     + pre-download the heavy GPU model
+# Build a GPU image with:  --build-arg TORCH_VARIANT=gpu
+# This keeps CUDA torch and the 2.3GB heavy model OUT of the CPU production image.
+ARG TORCH_VARIANT=cpu
+ARG RERANKER_MODEL_CPU=cross-encoder/ms-marco-MiniLM-L-6-v2
+ARG RERANKER_MODEL_GPU=BAAI/bge-reranker-v2-m3
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY citra-common/citra-service-utils /app/citra-service-utils
+
+COPY reranker-service/requirements.txt /app/reranker-service/requirements.txt
+WORKDIR /app/reranker-service
+
+# Install torch FIRST (variant-selected) so sentence-transformers reuses it
+# instead of pulling the default CUDA wheel from PyPI.
+RUN if [ "$TORCH_VARIANT" = "gpu" ]; then \
+        pip install --no-cache-dir torch; \
+    else \
+        pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu; \
+    fi
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Pre-download ONLY the model this image's hardware will use at runtime — never
+# both. (At runtime the host may also bind-mount ~/.cache/huggingface.)
+RUN if [ "$TORCH_VARIANT" = "gpu" ]; then \
+        python -c "from sentence_transformers import CrossEncoder; CrossEncoder('$RERANKER_MODEL_GPU')"; \
+    else \
+        python -c "from sentence_transformers import CrossEncoder; CrossEncoder('$RERANKER_MODEL_CPU')"; \
+    fi
+
+COPY reranker-service /app/reranker-service
+
+EXPOSE 7302
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -fsS http://localhost:7302/health || exit 1
+
+# Persist the build variant so the CMD can pick the right serving mode:
+#   cpu -> --preload (model loads once in the master, COW-shared across
+#          workers) + 2 workers by default so /rerank bursts don't starve
+#          each other or /health.
+#   gpu -> NO --preload (a CUDA context initialised in the master does not
+#          survive fork) + 1 worker by default (each extra worker holds its
+#          own ~2GB copy of the model in VRAM).
+# GUNICORN_WORKERS env overrides the default either way.
+#
+# HF_HUB_OFFLINE: the CPU image has its model baked in, so it defaults to
+# offline mode — no HuggingFace Hub metadata calls at boot, works without
+# internet egress. Override with HF_HUB_OFFLINE=0 if a cache mount masks
+# /root/.cache/huggingface on a fresh host (bind mounts don't copy-up the
+# baked model; named volumes do) or if RERANKER_MODEL points at a model not
+# in the cache — otherwise the load fails loud at startup. The GPU variant
+# stays online-capable: its CPU-fallback model is NOT baked into the image.
+ENV TORCH_VARIANT=${TORCH_VARIANT}
+
+CMD if [ "$TORCH_VARIANT" = "gpu" ]; then PRELOAD=""; DEFAULT_WORKERS=1; \
+    else PRELOAD="--preload"; DEFAULT_WORKERS=2; export HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-1}; fi; \
+    exec gunicorn main:app \
+    $PRELOAD \
+    --workers ${GUNICORN_WORKERS:-$DEFAULT_WORKERS} \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 0.0.0.0:7302 \
+    --timeout 120 \
+    --graceful-timeout 10 \
+    --access-logfile - \
+    --error-logfile - \
+    --capture-output \
+    --log-level info

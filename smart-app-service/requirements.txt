@@ -1,0 +1,38 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+motor>=3.3.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+python-jose[cryptography]>=3.3.0
+pyjwt>=2.13.0
+httpx>=0.27.0
+openai>=1.50.0
+jsonschema>=4.22.0
+# pymilvus — required by NeighborSamplesTool runtime (tools_v2_dispatch._query_neighbor_samples)
+# for Smart App "few-shot from history" canonical/neighbors retrieval.
+pymilvus>=2.4.0
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+
+# Error tracking (GlitchTip / Sentry-compatible)
+sentry-sdk[fastapi]>=2.14.0
+
+# Shared service utils (tracing, circuit breaker, request-id propagation).
+-e ../citra-common/citra-service-utils
+
+# Shared auth (canonical mint_system_workflow_token — replaces the local copy).
+-e ../citra-common/citra-auth
+
+# Shared platform Redis cache (grounding-refresh job state).
+-e ../citra-common/citra-cache
+
+# Shared durable job queue (Redis Streams) — webhook/Run-now trigger jobs.
+-e ../citra-common/citra-queue
+
+# Real cron evaluation for scheduled app triggers.
+croniter>=2.0
+Pillow>=10.0
+pypdf>=6.15.0
+
+# S3 client for memory export (memory_export._s3_writer → customer-owned bucket)
+boto3>=1.34

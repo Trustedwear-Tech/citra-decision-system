@@ -1,0 +1,94 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# sources.json Contract — protects the dept-MCP source registry.
+#
+# sources.json is the form IT writes to describe a backend: which tables, what
+# each column means, which are media, which need a mandatory check, who may read.
+# It had NO model and NO validation — the loader kept raw dicts — so a typo'd key
+# was simply never read: `artifact_roles` instead of `artifact_role` disabled
+# fraud screening on that column and nothing said a word.
+#
+# Three gates, all cheap:
+#   1. The schema file is GENERATED from registry_models.py. If it drifts,
+#      editors validate against a lie — worse than no schema, because people
+#      trust it.
+#   2. Every real tenant file must still validate. If a change to the model
+#      rejects a WORKING file, the model is wrong, not the file.
+#   3. The model's own tests (traps that used to be silent: `type` required,
+#      unknown keys, bad enums, fraud without a primary key).
+#
+# Why a contract workflow and not ci.yml: ci.yml runs lint/build/CodeQL and no
+# pytest, so source-mcp-template's suite runs nowhere today. This follows the
+# established path-triggered pattern (queue-contract, fleet-authz-contract).
+# =============================================================================
+name: sources.json Contract
+
+on:
+  pull_request:
+    paths:
+      - 'source-mcp-template/registry_models.py'
+      - 'source-mcp-template/schema/**'
+      - 'source-mcp-template/gen_sources_schema.py'
+      - 'source-mcp-template/validate_sources.py'
+      - 'source-mcp-template/models.py'
+      - 'source-mcp-template/router.py'
+      # SOURCES_STRICT lives here: flipping the default to false would disable
+      # the boot gate, and without this path the workflow would not even run.
+      - 'source-mcp-template/config.py'
+      - 'source-mcp-template/tests/test_registry_models.py'
+      - 'source-mcp-template/tests/test_schema_and_validator.py'
+      - 'source-mcp-template/tests/test_boot_strictness.py'
+      - 'demo-data/tenants/**/sources.json'
+      - '.github/workflows/sources-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sources-contract:
+    name: schema is current + every real file validates
+    runs-on: ubuntu-latest
+    env:
+      # The MCP refuses to construct Settings without a registry; the tests only
+      # need the models, so hand it an empty one.
+      SOURCES_JSON: '{"sources":[]}'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: |
+          pip install -r source-mcp-template/requirements.txt
+          pip install pytest pytest-asyncio jsonschema
+
+      # Gate 1 — the generated schema must match the model. Someone editing
+      # registry_models.py without regenerating would ship a schema that lies.
+      - name: Schema file is not stale
+        working-directory: source-mcp-template
+        run: python gen_sources_schema.py --check
+
+      # Gate 2 — the ground truth. A model that rejects a working tenant file is
+      # a broken model. Runs the real CLI, exactly as an author would.
+      - name: Every real tenant sources.json validates
+        working-directory: source-mcp-template
+        run: python validate_sources.py '../demo-data/tenants/*/mcp/sources.json'
+
+      # Gate 3 — the traps that used to be silent stay loud, and the boot gate
+      # still refuses an invalid registry (incl. that SOURCES_STRICT defaults to
+      # true — the whole gate is one env var away from being off).
+      - name: Model + schema + validator + boot-gate tests
+        working-directory: source-mcp-template
+        run: |
+          pytest tests/test_registry_models.py \
+                 tests/test_schema_and_validator.py \
+                 tests/test_boot_strictness.py -q

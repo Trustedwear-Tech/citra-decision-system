@@ -1,0 +1,121 @@
+# =============================================================================
+# Citra AI — Build & Deploy Web Frontend (Docker)
+# =============================================================================
+# Manual trigger — builds Dockerfile.web and deploys to the target server.
+# The image uses a placeholder URL; set CITRA_API_URL at container runtime.
+# For Firebase deployments, use deploy-simple.ps1 instead.
+# =============================================================================
+
+name: Build & Deploy Citra-UI
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: 'Target environment'
+        options:
+          - prod
+          - test
+        required: true
+        default: 'test'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+  IMAGE_NAME: citra-ui
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push image
+        run: |
+          IMAGE=${{ env.IMAGE_PREFIX }}/${{ env.IMAGE_NAME }}
+
+          docker build \
+            -f Dockerfile.web \
+            -t ${IMAGE}:${{ inputs.environment }}-${{ github.sha }} \
+            -t ${IMAGE}:${{ inputs.environment }}-latest \
+            .
+
+          docker push ${IMAGE}:${{ inputs.environment }}-${{ github.sha }}
+          docker push ${IMAGE}:${{ inputs.environment }}-latest
+
+  deploy:
+    name: Deploy to Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          CITRA_API_URL: ${{ secrets.CITRA_API_URL }}
+          CITRA_USER_SERVICE_URL: ${{ secrets.CITRA_USER_SERVICE_URL }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: IMAGE_PREFIX,IMAGE_NAME,ENVIRONMENT,GHCR_PAT,CITRA_API_URL,CITRA_USER_SERVICE_URL
+          command_timeout: 5m
+          script: |
+            set -e
+
+            IMAGE="${IMAGE_PREFIX}/${IMAGE_NAME}"
+            ENV="${ENVIRONMENT}"
+            CONTAINER="citra-ui-${ENV}"
+
+            echo "=== Deploying Citra-UI ($ENV) ==="
+
+            # Login to GHCR
+            echo "${GHCR_PAT}" | docker login ghcr.io -u github --password-stdin
+
+            # Pull new image
+            docker pull ${IMAGE}:${ENV}-latest
+
+            # Stop and remove old container (if running)
+            docker stop ${CONTAINER} 2>/dev/null || true
+            docker rm ${CONTAINER} 2>/dev/null || true
+
+            # Run new container — runtime config injected by entrypoint
+            if [ "${ENV}" = "prod" ]; then
+              PORT="80"
+            else
+              PORT="8080"
+            fi
+
+            docker run -d \
+              --name ${CONTAINER} \
+              --restart unless-stopped \
+              --network citra-ai-network \
+              -e CITRA_API_URL=${CITRA_API_URL} \
+              -e CITRA_USER_SERVICE_URL=${CITRA_USER_SERVICE_URL} \
+              -p ${PORT}:80 \
+              ${IMAGE}:${ENV}-latest
+
+            # Health check
+            sleep 5
+            curl -fsS http://127.0.0.1:${PORT}/healthz || echo "WARNING: health check failed"
+
+            # Cleanup
+            docker image prune -f
+
+            echo "=== Deploy complete ==="

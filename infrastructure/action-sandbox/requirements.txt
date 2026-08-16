@@ -1,0 +1,82 @@
+# Action Sandbox adapter dependencies
+# -----------------------------------
+# Minimal — the heavy lifting (LLM, tools, memory, sessions) runs inside
+# OpenClaw (Node.js) not Python. This set powers only the Citra Control
+# Adapter on :8090.
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+# Required by FastAPI for multipart uploads (UploadFile / Form).
+python-multipart==0.0.31
+
+# Used by adapter to reach Citra-Service callbacks (history, milvus proxy
+# when we wire tools). Also the base for any future HTTP-to-OpenClaw path.
+httpx==0.27.2
+
+# Native WebSocket client used by runner/gateway_client.py to speak
+# OpenClaw's gateway protocol (chat.send / chat.abort / chat.history /
+# sessions.messages.subscribe). The HTTP /v1/responses shim is no longer
+# used — we are a channel, not a request/response wrapper.
+websockets==13.1
+# Ed25519 key generation + signing for the gateway connect handshake.
+# OpenClaw's gateway requires a device-pairing signature on every WS
+# connect (per src/gateway/device-auth.ts buildDeviceAuthPayloadV3).
+cryptography==49.0.0
+
+# Future: JWT verification of the scoped token Citra-Service mints.
+pyjwt==2.13.0
+
+# ---- citra_toolkit (in-sandbox helpers used by the agent) ---------------
+# Report generation: HTML→PDF, Excel, charts, dataframes.
+# NOTE: weasyprint 62.x calls `super().transform(...)` on pydyf's Stream,
+# which only exists on pydyf <0.11. pydyf 0.11+ removed that method and
+# the call breaks with AttributeError. Pin pydyf to keep PDF rendering
+# working until we can move to weasyprint 63+.
+weasyprint==68.0
+pydyf==0.10.0
+openpyxl==3.1.5
+matplotlib==3.9.2
+pandas==2.2.3
+# SVG rasterisation for PPTX export. python-pptx can't insert raw SVG.
+# cairosvg uses libcairo (already installed via apt for WeasyPrint) and
+# returns PNG bytes directly — no extra reportlab/PIL backend wiring.
+cairosvg==2.9.0
+
+# ---- Deep Research toolkit ---------------------------------------------
+# Vector DB (ephemeral per-job sqlite-vec) + BM25 hybrid.
+# Embeddings come from the proxy — no torch/sentence-transformers here.
+sqlite-vec==0.1.6
+rank-bm25==0.2.2
+
+# Document extraction (PDF / DOCX / PPTX / XLSX / HTML).
+# OCR for scanned PDFs is delegated to the vision proxy (Qwen3-VL-32B).
+pdfminer.six==20231228
+pypdf==6.15.0
+pdfplumber==0.11.4
+python-docx==1.1.2
+python-pptx==1.0.2
+trafilatura==1.12.2
+readability-lxml==0.8.1
+beautifulsoup4==4.12.3
+lxml==6.1.0
+pysbd==0.3.4
+
+# Misc helpers
+tldextract==5.1.2
+python-magic==0.4.27
+
+# ---- Agent-side scripting libs (used directly inside the sandbox via
+# OpenClaw's exec / code_execution tool) -------------------------------
+# In-process DuckDB so the agent can run SELECTs against arbitrary
+# DataFrames it has built up locally. The /actionchat/internal/duckdb
+# server endpoint also exists for blob-bound queries; both are useful.
+duckdb==1.1.3
+# Legacy .xls reader (xlrd 2.x is read-only; pandas autoselects).
+xlrd==2.0.1
+# PDF generation (procedural: tables, paragraphs, drawings). Complements
+# weasyprint (HTML→PDF).
+reportlab==4.2.5
+# JSON Schema validation — used by skills and the report builder for
+# structured-output gating before publishing.
+jsonschema==4.23.0

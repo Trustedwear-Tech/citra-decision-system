@@ -1,0 +1,22 @@
+FROM python:3.11-slim
+
+# Build context = monorepo root. requirements.txt has editable local deps;
+# copy each sibling package before pip install so `-e ../...` resolves.
+
+WORKDIR /app
+
+COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-auth /app/citra-auth
+COPY citra-common/citra-cache /app/citra-cache
+COPY citra-common/citra-queue /app/citra-queue
+
+COPY smart-app-service/requirements.txt /app/smart-app-service/requirements.txt
+WORKDIR /app/smart-app-service
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
+
+COPY smart-app-service /app/smart-app-service
+
+EXPOSE 9100
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9100"]

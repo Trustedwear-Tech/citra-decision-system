@@ -1,0 +1,133 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# Action Sandbox overlay
+# ======================
+# Creates the networks Citra-Service uses to launch per-user Action sandboxes,
+# and builds the sandbox image locally.
+#
+# Two networks:
+#   citra-action-egress           — internal:true. Sandbox's PRIMARY network.
+#                                   No gateway, no internet.
+#   citra-action-approved-egress  — internal:false (REQUIRED). Carries the
+#                                   sandbox's approved reach: the dual-homed
+#                                   services it may call (action-chat-service
+#                                   [tool + internal LLM proxies],
+#                                   citra-mcp-service, discovery-service) AND
+#                                   the route to the host gateway
+#                                   (host.docker.internal) that
+#                                   action-sandbox-host needs to MANAGE/reach
+#                                   sandbox instances. An all-internal setup
+#                                   removes that host-gateway route and BROKE
+#                                   sandbox instance management, so this net
+#                                   must be non-internal. Raw public egress is
+#                                   constrained by other layers (DNS disabled
+#                                   in the sandbox image, host pinning), not by
+#                                   this flag.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# SANDBOX-HOST RUNTIME CONTRACT (per spawned per-user container)
+# ─────────────────────────────────────────────────────────────────────────────
+# This compose file ONLY builds the image and declares the networks. The
+# per-user sandbox containers themselves are spawned dynamically by the
+# `action-sandbox-host` service (out of this repo) in response to /spawn
+# HTTP calls from Citra-Service. That service MUST apply the following
+# Docker create flags on every spawned container — the security guarantees
+# documented in the Dockerfile header depend on them:
+#
+#   image:          citra-agent-sandbox-base:latest
+#   user:           "1500:1500"
+#   read_only:      true                # rootfs is immutable; agent install
+#                                       # attempts fail loudly via shims +
+#                                       # rootfs r/o
+#   tmpfs:
+#     /tmp:              size=128m,mode=1777,nosuid,nodev
+#     /home/citra:       size=64m,mode=0700,uid=1500,gid=1500
+#                         # Hosts ${OPENCLAW_HOME}=/home/citra/.openclaw-home
+#                         # (sessions, plugins, logs, credentials, recovery).
+#                         # Bumped from 16m -> 64m so OpenClaw home fits.
+#     /run:              size=4m
+#     /workspace:        size=512m,mode=0700,uid=1500,gid=1500,nosuid,nodev
+#                         # Ephemeral scratch + report staging. Dies with
+#                         # the container by design — every artifact the
+#                         # user must keep is uploaded to Citra-Service
+#                         # storage by citra_toolkit.publish before the
+#                         # container is reaped. Cross-conversation continuity
+#                         # comes from CITRA_ACTION_SEED_HISTORY (last-N turns
+#                         # injected by Citra-Service at cold spawn), NOT from
+#                         # this directory.
+#     /session-uploads:  size=512m,mode=0700,uid=1500,gid=1500,nosuid,nodev
+#                         # Per-session user uploads land here under
+#                         # /session-uploads/<session_id>/. Wiped automatically
+#                         # when the container is reclaimed (RAM-backed).
+#                         # Adapter enforces 256 MB / session, 50 MB / file.
+#   volumes:               (none — sandbox is fully ephemeral)
+#   cap_drop:       [ALL]
+#   security_opt:   [no-new-privileges:true]
+#   networks:       [citra-action-egress, citra-action-approved-egress]
+#   pids_limit:     <reasonable cap, e.g. 256>
+#   mem_limit:      <per-tier; e.g. 2g>
+#
+# Per-user isolation guarantees:
+#   - One container per user_id (Citra-Service guards with a Redis lease).
+#   - One OPENCLAW_GATEWAY_TOKEN per spawn (rotated; see entrypoint.sh).
+#   - DNS is disabled inside the container (replacement /etc/resolv.conf
+#     in the image); inter-container reachability is determined entirely
+#     by approved-egress network membership.
+#
+# Usage (build only — actual sandbox spawns are done by action-sandbox-host):
+#   docker compose -f infrastructure/action-sandbox/docker-compose.action.yml \
+#                  up --build
+services:
+  # One-shot builder — produces the neutral base image (empty workspace-seed,
+  # no persona). action-sandbox-host does NOT spawn this directly; it spawns
+  # one of the consumer overlays below (citra-action-chat-sandbox by default).
+  citra-agent-sandbox-base-builder:
+    image: citra-agent-sandbox-base:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-c", "print('citra-agent-sandbox-base image built')"]
+    restart: "no"
+
+  # One-shot builder — action-chat consumer overlay. FROM citra-agent-sandbox-base
+  # and COPY the deep-research persona (SOUL, IDENTITY, AGENTS, USER, MEMORY,
+  # TOOLS + 16 SKILL_*.md + agents/) into /srv/citra/workspace-seed/, which
+  # seed-persona.sh injects into /workspace/.openclaw/workspace/ at every
+  # container start. This is the tag action-sandbox-host's SANDBOX_HOST_IMAGE
+  # defaults to; without this build step the scheduler has no persona-bearing
+  # image to spawn and the agent boots with no skills/SOUL.
+  citra-action-chat-sandbox-builder:
+    image: citra-action-chat-sandbox:latest
+    build:
+      context: ../../action-chat-service/sandbox
+      dockerfile: Dockerfile
+    command: ["python", "-c", "print('citra-action-chat-sandbox image built')"]
+    restart: "no"
+    depends_on:
+      citra-agent-sandbox-base-builder:
+        condition: service_completed_successfully
+
+networks:
+  citra-action-egress:
+    name: citra-action-egress
+    driver: bridge
+    internal: true           # 🔒 no default gateway — hard block for internet
+  citra-action-approved-egress:
+    name: citra-action-approved-egress
+    driver: bridge
+    internal: false          # MUST be non-internal: action-sandbox-host needs
+                             # the host-gateway route on this net to manage
+                             # sandbox instances. internal:true removed that
+                             # route and broke instance management.
+    # Upstream services the sandbox is allowed to reach must ALSO be attached
+    # to this network (in each service's own compose). They are additionally
+    # on citra-network:
+    #   - action-chat-service  (tool proxies + the internal LLM proxy)
+    #   - citra-mcp-service     (web / vault / files / ocr / discovery tools)
+    #   - discovery-service

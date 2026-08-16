@@ -1,0 +1,24 @@
+Citra Decision System
+Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+
+This product is licensed under the Business Source License 1.1 (BUSL-1.1).
+It is SOURCE-AVAILABLE, not open source: production use requires a commercial
+licence until the Change Date, after which each version converts to the Apache
+License 2.0.
+
+Commercial licensing: contact@citra-ai.com
+
+--------------------------------------------------------------------------------
+THIRD-PARTY COMPONENTS
+--------------------------------------------------------------------------------
+
+This distribution bundles the Citra Common packages, which are NOT covered by
+the Business Source License above. They are licensed under the Apache License,
+Version 2.0, and remain so:
+
+    citra-auth/           citra-cache/          citra-llm/
+    citra-mongo/          citra-queue/          citra-service-utils/
+
+Each directory carries its own LICENSE (Apache-2.0) and NOTICE. Nothing in the
+Business Source License grant above restricts your rights to those directories
+under Apache-2.0.

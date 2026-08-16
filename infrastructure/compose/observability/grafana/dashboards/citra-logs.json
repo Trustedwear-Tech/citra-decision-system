@@ -1,0 +1,59 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"calculate": false, "cellGap": 1, "color": {"exponent": 0.5, "fill": "dark-orange", "mode": "scheme", "scale": "exponential", "scheme": "Oranges", "steps": 64}, "filterValues": {"le": 1e-9}, "legend": {"show": true}, "tooltip": {"show": true, "yHistogram": false}, "yAxis": {"axisPlacement": "left", "reverse": false}},
+      "title": "Log volume per service",
+      "type": "heatmap",
+      "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "sum by (service) (count_over_time({service=~\"$service\"}[$__interval]))", "legendFormat": "{{service}}", "refId": "A"}]
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 22, "w": 24, "x": 0, "y": 6},
+      "id": 2,
+      "options": {"showTime": true, "sortOrder": "Descending", "wrapLogMessage": true, "dedupStrategy": "none", "enableLogDetails": true},
+      "title": "Logs",
+      "type": "logs",
+      "targets": [{"datasource": {"type": "loki", "uid": "loki"}, "expr": "{service=~\"$service\"} |~ \"$search\"", "refId": "A", "maxLines": 1000}]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["citra", "logs"],
+  "templating": {
+    "list": [
+      {
+        "current": {"selected": false, "text": "All", "value": "$__all"},
+        "datasource": {"type": "loki", "uid": "loki"},
+        "definition": "label_values(service)",
+        "includeAll": true,
+        "label": "service",
+        "multi": true,
+        "name": "service",
+        "query": {"label": "service", "stream": "", "type": 1},
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {"selected": false, "text": "", "value": ""},
+        "label": "search (regex)",
+        "name": "search",
+        "options": [{"selected": true, "text": "", "value": ""}],
+        "query": "",
+        "type": "textbox"
+      }
+    ]
+  },
+  "time": {"from": "now-15m", "to": "now"},
+  "title": "Citra — Logs Explorer",
+  "uid": "citra-logs",
+  "version": 1
+}

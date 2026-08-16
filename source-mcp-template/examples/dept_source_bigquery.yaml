@@ -1,0 +1,80 @@
+# =============================================================================
+# Dept Source — Google BigQuery
+# =============================================================================
+# Backs DatasetKind.bigquery via connectors/bigquery_connector.py.
+#
+# Prerequisites on the dept-MCP host:
+#   pip install google-cloud-bigquery>=3.21.0
+#
+# Then drop this document into the central ``dept_sources`` Mongo collection,
+# replacing the TODO markers. The dept-MCP picks it up on the next poll and
+# re-registers with discovery-service so the agent can find it via
+# citra_discovery_search.
+# =============================================================================
+
+source_id: acme-sales-bq                 # stable slug, used in tool name
+dept_id:   sales                          # matches this dept-mcp's DEPT_IDS
+org_id:    acme-corp
+type:      structured                     # SourceType — query-plane uses datasets below
+is_active: true
+
+name: ACME Sales — BigQuery Warehouse
+description: |
+  Sales analytics warehouse in BigQuery (project acme-analytics-prod,
+  dataset sales). Contains fact_orders (10y, ~480M rows), dim_customer,
+  dim_product, dim_region, and the monthly_revenue_mv materialised view.
+  Refreshed nightly from the Dynamics CRM landing zone. Use for
+  revenue / pipeline / churn questions — NOT for in-flight order status
+  (those live in the SAP S/4HANA Sales OData service).
+
+tags: [sales, warehouse, bigquery, revenue, pipeline]
+
+# ── Visibility (PDP) ────────────────────────────────────────────────────────
+visibility:
+  roles_allowed: [user, dept_admin, org_admin, super_admin]
+  cross_org_ids: []
+  public_within_org: false
+
+# ── Connection ──────────────────────────────────────────────────────────────
+# Credentials live ONLY in env vars. Set on the dept-mcp container:
+#   ACME_SALES_BQ_PROJECT          = acme-analytics-prod
+#   ACME_SALES_BQ_CREDENTIALS_FILE = /run/secrets/sales-bq-sa.json
+# OR for Workload Identity:
+#   (leave CREDENTIALS_* unset; the SDK picks up the GCE metadata token)
+connection:
+  type: bigquery
+  env_prefix: ACME_SALES_BQ
+  project_id: acme-analytics-prod        # optional override (env wins if set)
+  location: US                            # match the dataset's location
+  default_dataset: sales                  # so the agent can write `fact_orders`
+                                          # instead of `acme-analytics-prod.sales.fact_orders`
+  max_bytes_billed: 21474836480           # 20 GB per query — protects budget
+
+# ── Catalogue datasets ──────────────────────────────────────────────────────
+# Each entry becomes one DatasetSchema served by /datasets/{id}. The
+# data-discovery-service crawler hits /datasets to populate the tool
+# catalogue; the agent picks one via citra_discovery_search.
+datasets:
+  - id: acme-sales-bq.fact_orders
+    physical_name: fact_orders
+    name: Order facts
+    kind: bigquery
+    description: One row per order line. Partitioned by order_date, clustered by region_code.
+    read_via:
+      kind: bigquery
+      target: acme-analytics-prod.sales.fact_orders
+    # column shapes are auto-extracted by the catalogue crawler
+
+  - id: acme-sales-bq.monthly_revenue_mv
+    physical_name: monthly_revenue_mv
+    name: Monthly revenue (materialised)
+    kind: bigquery
+    description: |
+      Pre-aggregated revenue by month × region × product_line. Use this
+      instead of fact_orders for headline trend questions — 10000× cheaper.
+    read_via:
+      kind: bigquery
+      target: acme-analytics-prod.sales.monthly_revenue_mv
+
+options:
+  query_timeout_seconds: 60

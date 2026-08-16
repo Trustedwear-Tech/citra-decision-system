@@ -1,0 +1,809 @@
+{
+  "_doc": "Acme Bank — Insurance Claim Triage. Hand-authored PublishRequest. The multimodal app: claim documents and photos get per-item review, so the platform's duplicate-artifact screen applies (CLM-NEEDLE-003's repair estimate is byte-identical to an earlier claim's). Identifiers must match SPEC.md §7.",
+  "session_id": "demo_seed_acme_bank_claim_triage_v1",
+  "skills": [],
+  "app_spec": {
+    "spec_version": "v0",
+    "slug": "acme-bank-claim-triage",
+    "title": "Insurance Claim Triage",
+    "description": "Triages open motor, health and property claims — settle, survey or investigate — reading the claim, its policy and every filed document, grounded in the claim settlement SOPs and the fraud-indicators circular.",
+    "headless": false,
+    "previous_owners": [],
+    "tenant_id": "acme-bank",
+    "org_id": "acme-bank",
+    "dept_ids": [
+      "claims"
+    ],
+    "audience": "dept:claims",
+    "inheritance_policy": "archive",
+    "inheritance_target": null,
+    "inheritance_grace_days": 30,
+    "kind": "app",
+    "agent_id": "agent_acme_bank_claim_triage_v1",
+    "theme": null,
+    "data_sources": [
+      {
+        "id": "ds_claims",
+        "type": "mcp",
+        "ref": "insurance_claims.claims",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_policies",
+        "type": "mcp",
+        "ref": "insurance_claims.policies",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_documents",
+        "type": "mcp",
+        "ref": "insurance_claims.claim_documents",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_surveys",
+        "type": "mcp",
+        "ref": "insurance_claims.surveyor_reports",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_policy",
+        "type": "rag",
+        "ref": "acme_bank_policy_library",
+        "doc_types": [],
+        "filters": {},
+        "mode": "merge"
+      },
+      {
+        "id": "ds_open_claims",
+        "type": "mcp",
+        "ref": "insurance_claims.claims",
+        "doc_types": [],
+        "filters": {
+          "status": [
+            "intimated",
+            "under_survey"
+          ]
+        },
+        "mode": "merge"
+      },
+      {
+        "id": "ds_claim_docs",
+        "type": "mcp",
+        "ref": "insurance_claims.claim_documents",
+        "doc_types": [],
+        "filters": {
+          "claim_id": "{param.id}"
+        },
+        "mode": "merge"
+      },
+      {
+        "id": "ds_document",
+        "type": "mcp",
+        "ref": "insurance_claims.claim_documents",
+        "doc_types": [],
+        "filters": {
+          "document_id": "{param.id}"
+        },
+        "mode": "merge"
+      }
+    ],
+    "dataset_directory": [],
+    "case_signature": {
+      "version": 1,
+      "facets": [
+        {
+          "family": "claim_type",
+          "kind": "enum",
+          "from_column": "claim_type",
+          "values": [
+            "own_damage",
+            "third_party",
+            "theft",
+            "hospitalisation",
+            "fire",
+            "burglary"
+          ]
+        },
+        {
+          "family": "claimed_band",
+          "kind": "band",
+          "from_column": "claimed_amount",
+          "edges": [
+            50000,
+            250000,
+            1000000
+          ]
+        },
+        {
+          "family": "fir",
+          "kind": "presence",
+          "from_column": "fir_number"
+        },
+        {
+          "family": "intimation_delay",
+          "kind": "band",
+          "from_column": "intimation_delay_days",
+          "edges": [
+            7,
+            30
+          ]
+        },
+        {
+          "family": "surveyor",
+          "kind": "presence",
+          "from_column": "surveyor_id"
+        }
+      ],
+      "reason_codes": [
+        {
+          "code": "evidence_insufficient",
+          "label": "Evidence insufficient"
+        },
+        {
+          "code": "exclusion_applies",
+          "label": "Policy exclusion applies"
+        },
+        {
+          "code": "amount_incorrect",
+          "label": "Amount incorrect"
+        },
+        {
+          "code": "fraud_false_positive",
+          "label": "Fraud flag was wrong"
+        },
+        {
+          "code": "document_mismatch",
+          "label": "Documents disagree with the claim"
+        },
+        {
+          "code": "late_intimation",
+          "label": "Intimated outside the policy window"
+        },
+        {
+          "code": "other",
+          "label": "Something else"
+        }
+      ],
+      "learning": {
+        "promotion_min_officers": 3,
+        "clause_budget_words": 1000
+      }
+    },
+    "pages": [
+      {
+        "id": "queue",
+        "kind": "standard",
+        "title": "Open claims",
+        "panels": [
+          {
+            "id": "open_claims",
+            "title": "Claims awaiting triage",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_open_claims",
+            "query": {},
+            "columns": [
+              "claim_id",
+              "claim_type",
+              "claimed_amount",
+              "intimation_delay_days",
+              "fir_number",
+              "surveyor_id",
+              "status"
+            ],
+            "actions": [
+              {
+                "label": "Open claim",
+                "agent_action": null,
+                "navigate": {
+                  "page": "claim_detail",
+                  "params": {
+                    "id": "{row.claim_id}"
+                  }
+                },
+                "args": {},
+                "is_row_click": true
+              },
+              {
+                "label": "Triage this claim",
+                "agent_action": "triage_claim",
+                "navigate": null,
+                "args": {},
+                "is_row_click": false
+              }
+            ],
+            "view": "cards",
+            "page_size": 25,
+            "searchable_columns": [
+              "claim_id"
+            ],
+            "filters": [],
+            "badge_column": "status",
+            "title_column": "claim_id",
+            "default_sort": {
+              "column": "intimation_delay_days",
+              "dir": "desc"
+            },
+            "group_by": null
+          },
+          {
+            "id": "claims_by_type",
+            "title": "Open claims by type",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "chart",
+            "chart_type": "bar",
+            "data_source": "ds_claims",
+            "query": {},
+            "x": "claim_type",
+            "y": "count",
+            "group_by": null,
+            "limit": null,
+            "stacked": false,
+            "time_grain": null,
+            "aggregation": "count"
+          }
+        ]
+      },
+      {
+        "id": "claim_detail",
+        "kind": "standard",
+        "title": "Claim",
+        "panels": [
+          {
+            "id": "claim_view",
+            "title": "Claim, policy and filed documents",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "detail",
+            "linked_to": "open_claims",
+            "id_field": "claim_id",
+            "sections": [
+              {
+                "type": "fields",
+                "title": "Claim",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "markdown",
+                "title": "What to check",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": "Check the policy was in force on the date of loss and the premium was paid. Compare `intimation_delay_days` against the policy's `intimation_window_days` — a late intimation is NOT an automatic repudiation: up to 7 days the officer may condone with a recorded reason, 8-30 days needs the Claims Manager, beyond 30 requires a compelling documented reason. Theft and burglary claims need an FIR. Read every filed document: a document that is byte-identical to one on another claim is a fraud INDICATOR, not a finding — establish which claim it legitimately belongs to before concluding anything. Cite the SOP clause you relied on.",
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "agent_timeline",
+                "title": "Triage history",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "documents",
+                "title": "Claim settlement SOPs and fraud circular",
+                "agent_role": null,
+                "data_source": "ds_policy",
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "agent_chat",
+                "title": "Ask the claims co-pilot",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              }
+            ]
+          },
+          {
+            "id": "claim_documents",
+            "title": "Documents filed against this claim",
+            "icon": null,
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_claim_docs",
+            "query": {},
+            "columns": [
+              "document_id",
+              "doc_type",
+              "uploaded_at",
+              "verified",
+              "content_sha256"
+            ],
+            "actions": [
+              {
+                "label": "Open document",
+                "icon": null,
+                "agent_action": null,
+                "navigate": {
+                  "page": "document_detail",
+                  "params": {
+                    "id": "{row.document_id}"
+                  }
+                },
+                "args": {},
+                "is_row_click": true
+              }
+            ],
+            "view": "table",
+            "page_size": 10,
+            "searchable_columns": [],
+            "filters": [],
+            "badge_column": "doc_type",
+            "badge_colors": {},
+            "secondary_columns": [],
+            "column_formats": {},
+            "title_column": "document_id",
+            "default_sort": {
+              "column": "uploaded_at",
+              "dir": "desc"
+            },
+            "group_by": null
+          }
+        ]
+      },
+      {
+        "id": "policy",
+        "kind": "standard",
+        "title": "Policy",
+        "panels": [
+          {
+            "id": "policy_library",
+            "title": "Motor and health settlement SOPs, fraud indicators, grievance policy",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "document_view",
+            "data_source": "ds_policy",
+            "doc_types": [
+              "sop",
+              "circular",
+              "policy"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "assistant",
+        "kind": "standard",
+        "title": "Assistant",
+        "panels": [
+          {
+            "id": "claims_chat",
+            "title": "Ask the claims co-pilot",
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "agent_chat",
+            "agent_role": null,
+            "starter_prompts": [
+              "Triage claim CLM-NEEDLE-003 and tell me what the documents show.",
+              "Which open claims were intimated outside the policy window?",
+              "What does the SOP say about a theft claim with no FIR?"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "document_detail",
+        "kind": "standard",
+        "title": "Document",
+        "panels": [
+          {
+            "id": "document_row",
+            "title": "This document",
+            "icon": null,
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "queue",
+            "data_source": "ds_document",
+            "query": {},
+            "columns": [
+              "document_id",
+              "claim_id",
+              "doc_type",
+              "uploaded_at",
+              "verified",
+              "content_sha256"
+            ],
+            "actions": [],
+            "view": "table",
+            "page_size": 5,
+            "searchable_columns": [],
+            "filters": [],
+            "badge_column": "doc_type",
+            "badge_colors": {},
+            "secondary_columns": [],
+            "column_formats": {},
+            "title_column": "document_id",
+            "default_sort": null,
+            "group_by": null
+          },
+          {
+            "id": "document_view",
+            "title": "Document",
+            "icon": null,
+            "permissions": [],
+            "tool_buttons": [],
+            "type": "detail",
+            "linked_to": "document_row",
+            "id_field": "document_id",
+            "sections": [
+              {
+                "type": "fields",
+                "title": "Document record",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "attachment",
+                "title": "Open the document",
+                "agent_role": null,
+                "data_source": "ds_document",
+                "key_field": "document_id",
+                "fields": [
+                  "file_url"
+                ],
+                "roles": null,
+                "content": null,
+                "collapsible": false,
+                "collapsed": false
+              },
+              {
+                "type": "markdown",
+                "title": "How to read this",
+                "agent_role": null,
+                "data_source": null,
+                "fields": null,
+                "roles": null,
+                "collapsible": false,
+                "collapsed": false,
+                "content": "`content_sha256` is the hash of the file's bytes. Two documents with the SAME hash are the same file. That is a fraud **indicator**, not a finding — open both, establish which claim the document legitimately belongs to, and record what you concluded."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "navigation": {
+      "style": "sidebar",
+      "default_page": "queue",
+      "show_chat_globally": false
+    },
+    "permissions": {},
+    "triggers": [],
+    "requirements_unmet": [],
+    "preview_mode": false,
+    "preview_until": null,
+    "status": "published"
+  },
+  "agent_spec": {
+    "spec_version": "v0",
+    "agent_id": "agent_acme_bank_claim_triage_v1",
+    "name": "Claim Triage Agent (Acme Bank)",
+    "description": "Triages open general-insurance claims — settle, survey or investigate — reading the claim, its policy and every filed document.",
+    "model_tier": "tier_b",
+    "system_prompt": "You are the Claim Triage co-pilot for Acme Bank's general-insurance claims desk (motor, health, property). You recommend one of: SETTLE, assign a SURVEYOR, or refer to INVESTIGATION. A claims officer decides; you never settle or repudiate anything yourself.\n\nYour RULES are the SOP — the Motor and Health Claim Settlement SOPs, the Claims Fraud Indicators circular and the Grievance Redressal Policy, retrieved through `ds_policy`. They are supreme. Cite the clause you relied on.\n\nFor every claim: (1) confirm the policy was in force on the date of loss and the premium paid; (2) compare `intimation_delay_days` against that policy's `intimation_window_days` — late intimation is graded, NOT an automatic repudiation: within 7 days of the window the officer may condone with a recorded reason, 8-30 days needs Claims Manager approval, beyond 30 needs a compelling documented reason such as hospitalisation of the insured or the vehicle being in police custody; (3) check the mandatory documents for the claim type — theft and burglary need an FIR; (4) apply the survey thresholds: up to ₹50,000 may be settled on photographs and estimate, ₹50,001-₹5,00,000 needs an empanelled surveyor, above ₹5,00,000 adds Claims Manager review, and ANY claim with a fraud indicator gets a survey plus investigation regardless of amount.\n\nOn fraud indicators, be careful and be fair. An indicator is a reason to look harder — it is NEVER by itself a ground for repudiation, and you must not accuse the customer. A document that is byte-identical to one already on file against a DIFFERENT claim is the strongest documentary indicator; genuine duplication happens (a workshop reissuing the same estimate), so establish which claim the file legitimately belongs to. Route to investigation when two or more indicators fire, or when any documentary indicator fires alone. Recording that an investigation CLEARED a claim is as important as recording that it did not.\n\nA repudiation recommendation must name the specific policy clause and the facts found. 'Documents insufficient' alone is not acceptable — say what was insufficient and what should be sought.\n\nWhen the officer decides, call `record_claim_decision`; when a survey is needed, call `assign_surveyor`. [[write-back]]",
+    "actions": [
+      {
+        "name": "triage_claim",
+        "description": "Assess one claim against its policy, its documents and the settlement SOPs, and recommend settle / survey / investigate.",
+        "model_tier": null,
+        "delegates_to": [],
+        "approval_required": true,
+        "input_schema": {
+          "type": "object",
+          "required": [
+            "claim_id"
+          ],
+          "properties": {
+            "claim_id": {
+              "type": "string"
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "recommendation",
+            "rationale",
+            "sop_clause_cited"
+          ],
+          "properties": {
+            "recommendation": {
+              "type": "string",
+              "enum": [
+                "settle",
+                "survey",
+                "investigate",
+                "repudiate"
+              ]
+            },
+            "approved_amount": {
+              "type": "number"
+            },
+            "fraud_indicators": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "rationale": {
+              "type": "string"
+            },
+            "sop_clause_cited": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "record_claim_decision",
+        "description": "Record the officer's claim decision with the approved amount or the repudiation reason.",
+        "model_tier": null,
+        "delegates_to": [],
+        "approval_required": true,
+        "input_schema": {
+          "type": "object",
+          "required": [
+            "claim_id",
+            "status"
+          ],
+          "properties": {
+            "claim_id": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "rejected",
+                "settled"
+              ]
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "rationale"
+          ],
+          "properties": {
+            "approved_amount": {
+              "type": "number"
+            },
+            "rejection_reason": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "assign_surveyor",
+        "description": "Assign an empanelled surveyor and move the claim into survey.",
+        "model_tier": null,
+        "delegates_to": [],
+        "approval_required": true,
+        "input_schema": {
+          "type": "object",
+          "required": [
+            "claim_id",
+            "surveyor_id"
+          ],
+          "properties": {
+            "claim_id": {
+              "type": "string"
+            },
+            "surveyor_id": {
+              "type": "string"
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "rationale"
+          ],
+          "properties": {
+            "rationale": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "hitl_policy": null,
+    "rag": [],
+    "mcps": [],
+    "grounding": {
+      "source_id": "insurance_claims",
+      "dataset_id": "insurance_claims.claims",
+      "source_kind": "sql",
+      "query": null,
+      "filters": {
+        "status": "settled"
+      },
+      "max_results": 5000,
+      "source_id_field": "claim_id",
+      "input_fields": [
+        "line",
+        "claim_type",
+        "claimed_amount",
+        "intimation_delay_days"
+      ],
+      "output_fields": [
+        "status",
+        "approved_amount"
+      ],
+      "decision_field": "status",
+      "terminal_states": [
+        "settled",
+        "rejected"
+      ],
+      "severity_field": null,
+      "reasoning_field": "rejection_reason",
+      "target_count": 6,
+      "per_decision_min": 1,
+      "min_samples": 4,
+      "min_canonical": 0,
+      "shrink_floor": 0.5,
+      "required_decision_classes": [],
+      "min_decision_fill_rate": 0.3,
+      "source_profile_baseline": {
+        "signals": {
+          "note": "demo seed grounding — acme-bank claims"
+        }
+      },
+      "evaluation_verdict": "Demo (Acme Bank): settled and rejected claims carry the decision plus the claim's own shape (line, type, amount, intimation delay), so grounding on past decisions is meaningful."
+    },
+    "outcome_poll": {
+      "enabled": true,
+      "auto_refresh": false,
+      "window_days": 30.0,
+      "kind": "sql",
+      "table": "claims",
+      "key_field": "claim_id",
+      "payload_key_field": "claim_id",
+      "status_field": "status",
+      "good_values": [
+        "settled",
+        "approved"
+      ],
+      "bad_values": [
+        "rejected"
+      ],
+      "neutral_values": [
+        "intimated",
+        "under_survey"
+      ],
+      "hold_field": "surveyor_id"
+    },
+    "learning_log": [],
+    "input_schema": null,
+    "memory_namespace": null,
+    "sub_agents": [],
+    "tools_v2": [
+      {
+        "name": "lookup_policy",
+        "description": "The policy behind this claim — cover, sum insured, inception/expiry dates and exclusions. Columns: policy_no, customer_id, line, product_name, sum_insured, premium_annual, start_date, end_date, status, nominee_name, intimation_window_days.",
+        "kind": "mcp",
+        "source_id": "insurance_claims",
+        "tool_name": "General Insurance — Claims",
+        "input_schema_ref": null,
+        "dataset_id": "insurance_claims.policies",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_claim_documents",
+        "description": "Documents filed against this claim, with the content hash used to spot an estimate reused across claims. Columns: document_id, claim_id, doc_type, file_url, uploaded_at, verified, content_sha256.",
+        "kind": "mcp",
+        "source_id": "insurance_claims",
+        "tool_name": "General Insurance — Claims",
+        "input_schema_ref": null,
+        "dataset_id": "insurance_claims.claim_documents",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "lookup_surveyor_report",
+        "description": "The surveyor's assessed loss and remarks, where a survey has been done. Columns: report_id, claim_id, surveyor_id, surveyor_name, visited_on, assessed_amount, findings, photos_url, recommendation.",
+        "kind": "mcp",
+        "source_id": "insurance_claims",
+        "tool_name": "General Insurance — Claims",
+        "input_schema_ref": null,
+        "dataset_id": "insurance_claims.surveyor_reports",
+        "dataset_kind": "sql",
+        "required": false
+      },
+      {
+        "name": "search_policy_library",
+        "description": "Search the motor and health claim settlement SOPs, the claims fraud-indicators circular and the grievance policy for settlement rules, exclusions and intimation windows.",
+        "kind": "rag",
+        "source_id": "acme_bank_policy_library",
+        "top_k": 8,
+        "classification_max": null
+      },
+      {
+        "name": "record_claim_decision",
+        "description": "Record the claim decision — approved amount or the repudiation reason, with the deciding officer.",
+        "kind": "mcp_action",
+        "source_id": "insurance_claims",
+        "dataset_id": "insurance_claims.claims",
+        "action_id": "record_claim_decision",
+        "input_schema": {
+          "type": "object",
+          "required": [
+            "claim_id",
+            "status"
+          ],
+          "properties": {
+            "claim_id": {
+              "type": "string",
+              "description": "Target claim."
+            },
+            "status": {
+              "type": "string",
+              "description": "approved | rejected | settled."
+            },
+            "approved_amount": {
+              "type": "number",
+              "description": "Approved amount, INR."
+            },
+            "rejection_reason": {
+              "type": "string",
+              "description": "Reason, when repudiating."
+            },
+            "decided_by": {
+              "type": "string",
+              "description": "Deciding officer."
+            },
+            "decided_at": {
+              "type": "string",
+              "description": "ISO timestamp."
+            }
+          }
+        },
+        "editable_fields": []
+      }
+    ]
+  }
+}

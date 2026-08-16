@@ -1,0 +1,96 @@
+[
+  {
+    "application_id": "LAN-2026-008536",
+    "arm": "treatment",
+    "product": "auto",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 89.4,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Rejected \u2014 FOIR above cap with sub-700 bureau score; application also out of policy scope (NRI)",
+      "reasoning": "FOIR of 95% exceeds the 45% cap for the \u2264\u20b950,000 income tier. Bureau score 664 is below 700. Per Retail Credit Policy \u00a73.1, this combination is an express decline with no deviation permitted. Additionally, the applicant is classified NRI (\u00a72.1 excludes NRIs from this policy), income documentation doesn't match the salaried occupation per SOP \u00a72, and \u20b971,300 is overdue at other lenders.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 78.7,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 FOIR 95% exceeds 45% cap with bureau score 664; non-deviable decline under Retail Credit Policy \u00a73.1",
+      "reasoning": "Primary: FOIR of 95% breaches the 45% cap for income \u2264\u20b950,000 (\u00a73.1, FOIR table). With bureau score 664 (<700), the policy states this combination 'is a decline, not a deviation' \u2014 no Credit Manager override available. Secondary grounds: applicant is NRI segment (outside policy scope per \u00a72.1), salaried applicant submitted ITR instead of mandatory payslips/bank statement/Form 16 (Income Verification SOP \u00a72 \u2014 incomplete document set), and bureau shows \u20b971,300 overdue across 5 active loans (\u00a74).",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-004179",
+    "arm": "treatment",
+    "product": "home",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 72.1,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [],
+      "decision": "Rejected \u2014 income below floor",
+      "reasoning": "Declared monthly income of \u20b918,000 is below the \u20b940,000 minimum for self-employed home-loan applicants (Retail Credit Policy \u00a72.2). FOIR at 94.21% independently exceeds the 45% cap. Document set is wrong: payslip submitted for a self-employed applicant (Income Verification SOP \u00a72).",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 91.7,
+      "injected": [],
+      "cited": [],
+      "decision": "Rejected \u2014 income below floor and FOIR above cap",
+      "reasoning": "Declared monthly income \u20b918,000 falls below the \u20b940,000 self-employed floor for home loans (\u00a72.2). FOIR at 94.21% is more than double the 45% cap for the \u2264\u20b950k income band (\u00a73.1). Income document set is also mismatched \u2014 'payslip' on file for a self-employed applicant requiring ITR + bank statements (Income Verification SOP \u00a72). Each breach is independently fatal.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": true
+    }
+  },
+  {
+    "application_id": "LAN-2026-004186",
+    "arm": "treatment",
+    "product": "personal",
+    "channel": "dsa",
+    "with_memory": {
+      "http": 200,
+      "secs": 88.1,
+      "injected": [
+        "C-002"
+      ],
+      "cited": [
+        "C-002"
+      ],
+      "decision": "Under Review \u2014 escalate to Credit Manager for document deficiency and bureau thresholds",
+      "reasoning": "Salaried applicant submitted ITR instead of the mandatory payslips + bank statements + Form 16 per SOP \u00a72 \u2014 this blocks sanction. Additionally, bureau score 692 mandates Credit Manager review per Policy \u00a74, 7 enquiries in 6 months exceeds the 6-cap requiring written explanation, and \u20b992,000 overdue must be cleared before disbursement. FOIR at 40.14% is within the 55% cap for this income bracket, and no write-off exists, so the file is resolvable but not approvable as-is.",
+      "used_judgement": true,
+      "raised_employment_check": true,
+      "hard_decline": false
+    },
+    "without_memory": {
+      "http": 200,
+      "secs": 103.7,
+      "injected": [],
+      "cited": [],
+      "decision": "Under Review \u2014 escalate to Credit Manager; incomplete income documents for salaried applicant plus bureau triggers",
+      "reasoning": "Four independent issues prevent a straight-line approval, none is an automatic decline, so escalation to Credit Manager is the correct path: (a) bureau score 692 mandates Credit Manager review per Policy \u00a74 650\u2013699 band; (b) salaried applicant submitted ITR instead of the mandatory payslips+bank+Form16 set under SOP \u00a72 \u2014 application must not proceed with incomplete documents; (c) \u20b992,000 overdue at other lenders must be cleared before disbursement; (d) 7 bureau enquiries in 6 months exceeds the 6-enquiry threshold requiring written explanation.",
+      "used_judgement": false,
+      "raised_employment_check": false,
+      "hard_decline": false
+    }
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "citra-ai-6b291"
+  },
+  "targets": {
+    "citra-ai-6b291": {
+      "hosting": {
+        "prod": [
+          "citra-ai-6b291"
+        ],
+        "test": [
+          "citra-ai-test-6b291"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

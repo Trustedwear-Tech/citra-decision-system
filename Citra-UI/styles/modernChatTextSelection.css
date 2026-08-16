@@ -1,0 +1,108 @@
+/* Modern Chat UI Text Selection Fix */
+
+/* Enable text selection for all chat content */
+.modern-chat-container * {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Specific selectors for chat input */
+.modern-chat-input,
+.modern-chat-input input,
+.modern-chat-input textarea,
+[data-testid="modern-chat-input"],
+[data-testid="modern-chat-input"] * {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  cursor: text !important;
+}
+
+/* Chat messages */
+.modern-chat-message,
+.modern-message-content,
+.message-bubble,
+.message-text,
+[data-testid="message-content"],
+[data-testid="message-content"] * {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  cursor: text !important;
+}
+
+/* Code blocks in messages */
+.modern-chat-message pre,
+.modern-chat-message code,
+.message-content pre,
+.message-content code {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Keep buttons and UI controls non-selectable */
+.modern-chat-button,
+.modern-chat-icon,
+button,
+[role="button"] {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  cursor: pointer !important;
+}
+
+/* Selection styling - Enhanced visibility with maximum specificity */
+.modern-chat-container ::selection,
+.modern-chat-container * ::selection {
+  background-color: #3B82F6 !important;
+  color: #ffffff !important;
+}
+
+.modern-chat-container ::-moz-selection,
+.modern-chat-container * ::-moz-selection {
+  background-color: #3B82F6 !important;
+  color: #ffffff !important;
+}
+
+/* Dark mode selection with better contrast - maximum specificity */
+[data-theme="dark"] .modern-chat-container ::selection,
+[data-theme="dark"] .modern-chat-container * ::selection,
+.dark-mode .modern-chat-container ::selection,
+.dark-mode .modern-chat-container * ::selection {
+  background-color: #60A5FA !important;
+  color: #000000 !important;
+}
+
+[data-theme="dark"] .modern-chat-container ::-moz-selection,
+[data-theme="dark"] .modern-chat-container * ::-moz-selection,
+.dark-mode .modern-chat-container ::-moz-selection,
+.dark-mode .modern-chat-container * ::-moz-selection {
+  background-color: #60A5FA !important;
+  color: #000000 !important;
+}
+
+/* Fix for React Native Web components */
+div[dir="auto"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Ensure text inputs are selectable */
+input[type="text"],
+input[type="search"],
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}

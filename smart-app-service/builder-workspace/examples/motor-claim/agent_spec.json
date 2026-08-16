@@ -1,0 +1,77 @@
+{
+  "spec_version": "v0",
+  "agent_id": "motor_claim_agent",
+  "name": "Motor Claim Decision Agent",
+  "description": "Triage motor insurance claims with mandatory form validation, OCR of accident photos, policy lookup, and SOP-driven decisioning.",
+  "model_tier": "tier_a",
+  "system_prompt": "You are a claims decision agent for a motor-insurance product. The user has submitted a motor claim form and may have uploaded photos of the accident damage.\n\nTooling rules — follow strictly, in order:\n\n1. ALWAYS call validate_form FIRST with the user's submitted form data and schema_ref='motor_claim_form'. If it returns ok=false, respond with a friendly rejection that lists the missing/invalid fields and STOP. Do NOT call vision_ocr, mcp.*, rag.*, or any other tool. We save the user time and we save token cost.\n\n2. Only after validate_form returns ok=true, call vision_ocr on each uploaded image (max 3) to extract a damage description.\n\n3. Then call mcp.insurance.lookup_policy with the policy number from the form to confirm the policy is active and the vehicle on the policy matches the form.\n\n4. Then call mcp.insurance.fetch_claim_history with the customer id to surface anything suspicious in the last 24 months.\n\n5. Then call rag.insurance.policy_search with a query like '<damage_type> <claim_amount> coverage rules' to find the SOP rules that apply.\n\n6. Emit a final structured decision: {action: 'approve' | 'decline' | 'refer', confidence: 0..1, reasoning: 'short paragraph'}. Refer to a human whenever fraud signals are present or claim amount exceeds the SOP threshold.",
+  "input_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": ["policy_number", "incident_date", "damage_type", "claim_amount", "customer_id"],
+    "properties": {
+      "policy_number": {"type": "string", "minLength": 6},
+      "customer_id": {"type": "string", "minLength": 1},
+      "incident_date": {"type": "string", "format": "date"},
+      "damage_type": {"type": "string", "enum": ["collision", "theft", "vandalism", "weather", "other"]},
+      "claim_amount": {"type": "number", "minimum": 0},
+      "description": {"type": "string", "maxLength": 2000}
+    }
+  },
+  "tools_v2": [
+    {
+      "kind": "validate_form",
+      "name": "validate_form",
+      "description": "Deterministic local check that all required claim form fields are present and well-formed. Run this FIRST before any paid tool.",
+      "schema_ref": "motor_claim_form"
+    },
+    {
+      "kind": "vision_ocr",
+      "name": "vision_ocr",
+      "description": "OCR / vision read of the customer's uploaded accident photos. Returns extracted text/structure describing the visible damage."
+    },
+    {
+      "kind": "mcp",
+      "name": "lookup_policy",
+      "description": "Fetch the customer's active motor policy by policy_number. Returns coverage limits, deductibles, vehicle, effective dates.",
+      "source_id": "insurance",
+      "tool_name": "lookup_policy"
+    },
+    {
+      "kind": "mcp",
+      "name": "fetch_claim_history",
+      "description": "Fetch the customer's motor claim history for the last 24 months. Used for fraud / pattern detection.",
+      "source_id": "insurance",
+      "tool_name": "fetch_claim_history"
+    },
+    {
+      "kind": "rag",
+      "name": "policy_search",
+      "description": "Vector search over internal motor-insurance SOP and policy handbook. Used to find the rules that apply to a given damage type + amount.",
+      "source_id": "insurance",
+      "top_k": 6
+    }
+  ],
+  "mcps": ["insurance"],
+  "rag": [],
+  "actions": [
+    {
+      "name": "process_claim",
+      "description": "Triage a freshly submitted motor claim end-to-end and return a decision.",
+      "input_schema": {"$ref": "#/input_schema"}
+    },
+    {
+      "name": "show_claim_detail",
+      "description": "Show details of a previously submitted claim from the queue.",
+      "input_schema": {
+        "type": "object",
+        "required": ["claim_id"],
+        "properties": {"claim_id": {"type": "string"}}
+      }
+    }
+  ],
+  "hitl_policy": {
+    "approve_above_amount": 5000,
+    "auto_refer_on_fraud_signal": true
+  }
+}

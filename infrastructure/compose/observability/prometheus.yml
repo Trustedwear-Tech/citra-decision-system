@@ -1,0 +1,130 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# =============================================================================
+# Prometheus - Central (control plane on Citra-AI-1)
+# =============================================================================
+# Scrapes all -prod containers on citra-network. Test-profile (-test)
+# containers are intentionally NOT scraped - no obs in test environment.
+#
+# ⚠️ SINGLE-BOX ASSUMPTION — read before adding a second box.
+# Every target below is a docker container NAME on the citra-network bridge.
+# That is correct and preferred for demo-prod (one box): names survive box
+# replacement and private-IP changes, which is exactly the failure that took
+# the mcp-demo-acme-power scrape down in 2026-07.
+# Docker bridge names do NOT resolve off-host. In the customer topology
+# (Common box + N scale boxes, or Kubernetes) these must go back to private
+# IPs + security-group rules, or move to real service discovery — and that
+# has to happen BEFORE any service moves off this box, not after.
+# See docs/deployment-topology.md.
+# =============================================================================
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    cluster: citra-central
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # ----- infra self -----
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # ----- Citra-Service: 4 prod shards. -----
+  # The box compose (services/Citra-Service/docker-compose.yml) runs shards
+  # 1..4; shards 5..8 are commented out to fit the box's memory budget
+  # (7.6Gi total, already into swap with 4). Keep this list in sync with the
+  # live shard count or PrometheusTargetDown fires for the missing shards.
+  - job_name: citra-service
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "citra-ai-prod-1:7001"
+        labels: {component: citra-service}
+
+  - job_name: citra-worker
+    static_configs:
+      - targets: ["citra-worker:8080"]
+        labels: {component: citra-worker}
+
+  - job_name: citra-workflow
+    static_configs:
+      - targets: ["citra-workflow:9200"]
+        labels: {component: citra-workflow}
+
+  - job_name: reranker-service
+    static_configs:
+      - targets: ["reranker-service:7302"]
+        labels: {component: reranker-service}
+
+  - job_name: duckdb-query-service
+    static_configs:
+      - targets: ["duckdb-query-service-prod:7301"]
+        labels: {component: duckdb-query-service}
+
+  - job_name: monitoring-service
+    static_configs:
+      - targets: ["monitoring-service:8400"]
+        labels: {component: monitoring-service}
+
+  # ----- Host metrics (node-exporter) -----
+  # Demo-prod is ONE box (Citra-AI-1): node-exporter shares citra-network and is
+  # reachable by compose name. The Citra-AI-Common box was decommissioned
+  # 2026-07 and every service it hosted (Vault, the demo MCP) moved here.
+  # In the customer topology each additional box runs the obs-agent
+  # (infrastructure/compose/docker-compose.obs-agent.yml) and gets its own
+  # node target here, addressed by private IP.
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels: {component: node-exporter, host: citra-app}
+
+  # ----- Vault -----
+  # Requires unauthenticated_metrics_access on the Vault listener telemetry
+  # stanza (see deploy-obs-agent.ps1 / Vault config). Prometheus-format metrics.
+  # On citra-network since the Common-box move, so scrape by container name
+  # rather than a private IP that changes when the box is replaced.
+  - job_name: vault
+    metrics_path: /v1/sys/metrics
+    params:
+      format: ["prometheus"]
+    scheme: http
+    static_configs:
+      - targets: ["vault:8200"]
+        labels: {component: vault, host: citra-app}
+
+  # ----- Demo MCP (source-mcp-template) -----
+  # Joined to BOTH acme-power-demo and citra-network, so Prometheus reaches it
+  # by container name on the container port (8090); the host publishes it as
+  # 8503, but that mapping is irrelevant from inside citra-network. The MCP
+  # exposes an unauthenticated /metrics (source-mcp-template/metrics.py:
+  # mcp_query_duration_seconds, mcp_query_total).
+  - job_name: mcp-demo-acme-power
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["mcp-demo-acme-power:8090"]
+        labels: {component: mcp-demo, host: citra-app, tenant: acme-power}
+
+  # Services intentionally not scraped because they expose NO /metrics endpoint:
+  # citra-user-service, discovery-service, action-chat-service, smart-app-service,
+  # citra-app-runtime, citra-mcp-service, data-discovery-service,
+  # playwright-render-service.
+  # (source-mcp-template now DOES expose /metrics and is scraped above.)
+  #
+  # action-sandbox-host runs with network_mode=host so it's not on citra-network.
+  # Skip for now - can scrape via Promtail host or via a docker_sd_config if
+  # needed later.

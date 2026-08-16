@@ -1,0 +1,112 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# ─────────────────────────────────────────────────────────────────────────
+# Citra Decision System — single-command local stack.
+#
+#   cp .env.example .env       # safe local defaults; set LLM_API_KEY
+#   make install                    # data stores → services → acme-bank demo
+#
+# This file `include`s the tested infra + application composes and layers on
+# the bits that make the whole platform run from one command:
+#   - env_file: .env on every app service (per-service .env files are NOT
+#     shipped in the public tree — everything comes from the single root .env)
+#   - a shared Postgres backing the acme-bank system-of-record
+#   - MinIO published to the host
+#
+# Ported from the June 2026 draft (citra-ai-oss). Differences, all deliberate:
+#   - action-chat-service and skill-service are GONE (removed from the product
+#     in the 2026-08-08 Phase 0 split) — do not re-add them
+#   - the seeded demo is acme-bank, not acme-power
+#   - collaboration-server is GONE (removed 2026-08-09 — unused, never wired
+#     into any live Citra-UI feature; see docs/open-source-release-plan.md)
+#
+# Each service is still its own container/image — scale/restart/debug them
+# individually (e.g. `docker compose restart smart-app-service`).
+# ─────────────────────────────────────────────────────────────────────────
+include:
+  - docker-compose.infra.yml      # mongodb · redis · queue-redis · milvus(+etcd+minio) · minio
+  - docker-compose.dev.yml        # the 12 application services (build from source)
+
+services:
+  # ── Inject the single root .env into every application service ──────────
+  citra-service:
+    env_file: [.env]
+    environment:
+      - DUCKDB_SERVICE_URL=http://duckdb-query-service:7301
+  citra-ui:
+    env_file: [.env]
+  citra-user-service:
+    env_file: [.env]
+  duckdb-query-service:
+    env_file: [.env]
+  reranker-service:
+    env_file: [.env]
+  discovery-service:
+    env_file: [.env]
+  action-sandbox-host:
+    env_file: [.env]
+  smart-app-service:
+    env_file: [.env]
+  citra-app-runtime:
+    env_file: [.env]
+  data-discovery-service:
+    env_file: [.env]
+    environment:
+      # The catalogue crawler forwards this as `Authorization: Bearer` to each
+      # dept-MCP's /datasets (the service-to-service guard) and mints its own
+      # X-User-JWT. Without it the crawler sends the CALLER's user token as the
+      # service guard → the MCP returns 401 and the catalogue stays silently
+      # empty. This was one of the four blockers that closed the June draft's
+      # custom-MCP loop; do not remove it.
+      - SERVICE_API_KEY=${MCP_SERVICE_API_KEY:-${MCP_API_KEY:-}}
+  citra-mcp-service:
+    env_file: [.env]
+  playwright-render-service:
+    env_file: [.env]
+
+  # ── Publish MinIO's console on the host as :9001 ─────────────────────────
+  # The API is ALREADY published by docker-compose.infra.yml, as "9002:9000"
+  # (host 9002 -> MinIO's real listening port, 9000). `include` MERGES ports
+  # lists rather than replacing them, so adding "9002:9002" here does not
+  # override that mapping -- it claims host port 9002 a SECOND time, for a
+  # container port MinIO never listens on. The two bindings then race on
+  # every recreate and one loses with "port is already allocated".
+  minio:
+    ports:
+      - "9001:9001"
+
+  # ── Shared Postgres — backs the acme-bank system-of-record. Databases and
+  #    users are created by the init script; the demo MCP container and the
+  #    seed scripts connect here. ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: citra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: citra
+      POSTGRES_USER: ${POSTGRES_USER:-citra}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-citra-local-dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/init-scripts/postgres-init.sql:/docker-entrypoint-initdb.d/01-demo-dbs.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-citra}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - citra-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:

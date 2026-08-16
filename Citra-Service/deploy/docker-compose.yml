@@ -1,0 +1,184 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# docker-compose.yml file for Citra AI Service - Combined Prod and Test Environments
+
+x-env-common: &env-common
+  HOSTNAME: ${HOSTNAME}
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/citra-service:${IMAGE_TAG}
+  restart: unless-stopped
+  stop_grace_period: 5s
+  healthcheck:
+    test: ["CMD-SHELL", "curl -fsS http://localhost:7001/health || exit 1"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 60s
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ~/citra-ai/logs/Citra-Service:/app/logs
+  networks:
+    - citra-network
+  ports:
+    - 7001
+  environment:
+    <<: *env-common
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+x-prod-common: &prod-common
+  <<: *common
+  profiles: [prod]
+  env_file:
+    - .env.prod
+
+x-test-common: &test-common
+  <<: *common
+  profiles: [test]
+  env_file:
+    - .env.test
+
+x-gunicorn-cmd: &gunicorn-cmd >
+    sh -lc '
+      gunicorn main:app \
+        -k uvicorn.workers.UvicornWorker \
+        -w ${WEB_CONCURRENCY:-1} \
+        -b 0.0.0.0:7001 \
+        --timeout 1200 \
+        --graceful-timeout 30 \
+        --access-logfile - \
+        --error-logfile - \
+        --capture-output \
+        --log-level info \
+        --access-logformat "{\"time\":\"%(t)s\",\"pid\":\"%(p)s\",\"status\":%(s)s,\"method\":\"%(m)s\",\"path\":\"%(U)s\"}" \
+      2>&1 | tee -a /app/logs/$${CONTAINER_NAME}.log
+    '
+
+x-prod-api-base: &prod-api-base
+  <<: *prod-common
+  command: *gunicorn-cmd
+  environment:
+    <<: *env-common
+    # SCHEDULER_ENABLED defaults to true — all instances join the leader election.
+    # The elected leader (Redis key scheduler:leader) runs APScheduler.
+    # Failover is automatic: key expires in WF_SCHEDULER_LEADER_TTL seconds (default 30).
+    # Set SCHEDULER_ENABLED=false here only to permanently exclude a node from election.
+
+x-test-api-base: &test-api-base
+  <<: *test-common
+  command: *gunicorn-cmd
+  environment:
+    <<: *env-common
+
+# Scheduler-only services: identical image but SCHEDULER_ENABLED=true
+# and no host port mapping (no API traffic via load balancer).
+x-prod-scheduler-base: &prod-scheduler-base
+  <<: *prod-common
+  command: *gunicorn-cmd
+  ports: []                          # not behind load balancer
+  expose:
+    - "7001"                         # health-check only (internal)
+
+x-test-scheduler-base: &test-scheduler-base
+  <<: *test-common
+  command: *gunicorn-cmd
+  ports: []                          # not behind load balancer
+  expose:
+    - "7001"                         # health-check only (internal)
+
+networks:
+  citra-network:
+    external: true
+    name: citra-network
+    driver: bridge
+
+services:
+
+  # =========================
+  # Production API
+  # Leader election: first instance to acquire Redis key runs APScheduler.
+  # =========================
+
+  citra-ai-prod-1:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-1
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-1
+
+  citra-ai-prod-2:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-2
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-2
+
+  citra-ai-prod-3:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-3
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-3
+
+  citra-ai-prod-4:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-4
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-4
+
+  citra-ai-prod-5:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-5
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-5
+
+  citra-ai-prod-6:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-6
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-6
+
+  citra-ai-prod-7:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-7
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-7
+
+  citra-ai-prod-8:
+    <<: *prod-api-base
+    container_name: citra-ai-prod-8
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-prod-8
+
+  # =========================
+  # Test API
+  # =========================
+
+  citra-ai-test-1:
+    <<: *test-api-base
+    container_name: citra-ai-test-1
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-test-1
+
+  citra-ai-test-2:
+    <<: *test-api-base
+    container_name: citra-ai-test-2
+    environment:
+      <<: *env-common
+      CONTAINER_NAME: citra-ai-test-2

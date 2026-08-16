@@ -1,0 +1,20 @@
+﻿# Large public datasets â€” fetched locally, never committed
+raw/**
+
+# ...but hand-authored policy / SOP markdown is SOURCE, not a fetched dataset.
+# It cannot be re-downloaded, and without it a fresh clone cannot rebuild a
+# tenant's RAG corpus — the demo comes up with an empty policy library and
+# every grounded answer silently loses its citations.
+!raw/policy/
+!raw/policy/*.md
+
+# Local Python env
+.venv/
+__pycache__/
+*.pyc
+
+# Credentials (always set via env, never committed)
+*.secret.json
+
+# Workflow exports we haven't promoted yet
+workflows/_draft/

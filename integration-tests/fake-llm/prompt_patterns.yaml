@@ -1,0 +1,88 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# Pattern table for the fake LLM.
+#
+# Each pattern is matched in order — first hit wins. Patterns are case-
+# insensitive regex with DOTALL.
+#
+# Response forms:
+#   content          plain string assistant content
+#   content_template same, with {{$1}} = first regex capture group
+#   tool_call        emit an assistant message with a tool_calls array
+
+patterns:
+
+  # ─── Motor claims triage ─────────────────────────────────────────────
+  # Order matters — first hit wins. The over-50k pattern is checked FIRST
+  # because the under-50k pattern's looser \d{1,4} clause would otherwise
+  # consume the first four digits of e.g. 75000 and fire incorrectly.
+
+  # Anything ≥ $50k → escalate. Matches 5 digits starting with 5-9, or 6+ digits.
+  - id: claim_amount_over_50k
+    match: "claim_amount.{0,30}?[\"']?\\s*[:=]\\s*([5-9]\\d{4}|\\d{6,})"
+    content: |
+      {"decision": "ESCALATE", "recommended_decision": "APPROVE_WITH_REVIEW",
+       "cited_policy": "policy_7.1",
+       "reasoning": "Above $50k threshold; senior reviewer required per policy 7.1."}
+
+  # Auto-approve under $50k when policy is active.
+  - id: claim_amount_under_50k
+    match: "(claim_amount.{0,30}?[\"']?\\s*[:=]\\s*([0-4]?\\d{1,4}|[1-4]?\\d{4}))|amount.{0,30}?(\\$\\s*\\d{1,5}\\b)"
+    content: |
+      {"decision": "APPROVE", "amount_paid": 0, "reason_code": "STD_THRESHOLD",
+       "cited_policy": "policy_4.2.1",
+       "reasoning": "Within auto-approve threshold; matches representative past decisions."}
+
+  # ─── Dashboard narrator: Brief me ────────────────────────────────────
+  - id: narrator_brief
+    match: "brief.{0,40}?(this\\s+period|the dashboard|me|sales|revenue)"
+    content: |
+      Sales are up 15% MoM driven primarily by the South region (+34%).
+      SKU XYZ is an outlier — 3× normal volume in Q3 [salesforce_opportunities].
+      Recommended action: pause the auto-discount on Q4 South campaigns.
+
+  # ─── Dashboard narrator: Why ──────────────────────────────────────────
+  - id: narrator_why
+    match: "why\\s+(did|is|has).{0,80}?(drop|down|spike|increase)"
+    content: |
+      The drop is driven by region East (-22% MoM). Drilling into the
+      orders dataset shows two products account for 84% of the decline.
+      Confidence: medium. To raise confidence, check returns and
+      marketing_spend datasets for the same window.
+
+  # ─── Dashboard narrator: NL filter ───────────────────────────────────
+  - id: narrator_nl_filter
+    match: "(show|filter).{0,40}?(only|just).{0,40}?(escalate|risk|high|reject)"
+    content: |
+      Translating to filter: {"sf_opportunities_2024": {"StageName": "Negotiation"}}.
+      Will apply across all panels. Confirm to proceed.
+
+  # ─── Dashboard narrator: Anomaly ─────────────────────────────────────
+  - id: narrator_anomaly
+    match: "(flag\\s+anomal|find\\s+anomal|anomalies)"
+    content: |
+      [{"panel_id": "monthly_revenue", "x_value": "2024-08",
+        "severity": "high",
+        "one_line_reason": "Region South 3.2σ above prior 11-month mean — driven by SKU XYZ"}]
+
+  # ─── Builder phase clarifying questions ──────────────────────────────
+  - id: builder_clarification
+    match: "(clarif|confirm).{0,50}?(BA|business analyst|goal)"
+    content: |
+      Got it. I'll build a motor-claims auto-triage app that auto-approves
+      claims under $500, escalates higher amounts to your queue with a
+      recommended decision, and shows a dashboard of SLA breach risk and
+      monthly payout. Anything to add or remove?
+
+  # ─── Default catch-all (helps debugging when nothing matches) ────────
+  - id: catchall
+    match: ".*"
+    content: |
+      OK.  (fake-llm catchall — no specific pattern matched. Add one
+      to prompt_patterns.yaml if this is a new test scenario.)

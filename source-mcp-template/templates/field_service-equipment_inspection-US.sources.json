@@ -1,0 +1,81 @@
+{
+  "$schema": "../schema/sources.schema.json",
+  "sources": [
+    {
+      "source_id": "inspections",
+      "type": "structured",
+      "dept_id": "REPLACE_dept_id",
+      "org_id": "REPLACE_org_id",
+      "name": "Field Inspections — Inspections / Asset master",
+      "description": "Field-technician equipment inspections with photo evidence, plus the asset master they verify against. TEMPLATE — replace connection details, table/column names and REPLACE_* ids, keep the fraud annotations. For India, change domain.country to IN.",
+      "tags": ["inspections", "field", "assets"],
+      "domain": {
+        "vertical": "field_service",
+        "sub_vertical": "equipment_inspection",
+        "country": "US",
+        "notes": "Starter template — equipment inspection, United States"
+      },
+      "connection": { "type": "postgres", "env_prefix": "INSPECTIONS_SQL" },
+      "datasets": [
+        {
+          "id": "inspections.records",
+          "physical_name": "inspections",
+          "name": "Inspection records",
+          "description": "One row per site inspection: claimed inspection date, asset site coordinates, photo evidence. Photo capture time + GPS are screened against the record automatically — the pack default radius for this vertical is 1 km (premise-bound), override with gps_radius_km if needed.",
+          "columns": [
+            { "name": "inspection_id", "type": "text", "is_primary_key": true },
+            { "name": "asset_id", "type": "text", "description": "Inspected asset — cross-case linked; serial-in-photo verifies against the asset master (verify_against, when OCR extraction is wired)" },
+            { "name": "inspector_id", "type": "text" },
+            { "name": "inspection_date", "type": "date", "description": "Claimed inspection date — a photo captured before it cannot show this inspection" },
+            { "name": "site_lat", "type": "numeric", "description": "Asset site latitude (decimal degrees)" },
+            { "name": "site_lon", "type": "numeric" },
+            { "name": "work_order_date", "type": "date", "description": "Work-order issue date — an inspection dated before it is an impossible ordering (date rule below)" },
+            { "name": "condition_photo_url", "type": "text", "column_kind": "image_url", "artifact_role": "evidence", "description": "Condition/defect photo — reuse across inspections is the recycled-report signal" },
+            { "name": "report_doc_url", "type": "text", "column_kind": "document_url", "artifact_role": "evidence" },
+            { "name": "equipment_manual_url", "type": "text", "column_kind": "document_url", "artifact_role": "supporting", "description": "Attached equipment manual/datasheet. ROLE supporting = never fingerprinted (the same manual on every inspection is expected, not fraud)." },
+            { "name": "result", "type": "text" }
+          ],
+          "fraud_screening": {
+            "applies": true,
+            "identity_fields": ["asset_id", "inspector_id"],
+            "incident_date_field": "inspection_date",
+            "location_lat_field": "site_lat",
+            "location_lon_field": "site_lon",
+            "date_rules": [
+              {
+                "name": "inspection_after_work_order",
+                "earlier_field": "work_order_date",
+                "later_field": "inspection_date"
+              }
+            ],
+            "verify_against": [
+              {
+                "name": "serial_vs_asset_master",
+                "target_dataset": "inspections.assets",
+                "match_field": "serial_no",
+                "doc_column": "condition_photo_url",
+                "doc_ref_field": "serial_no",
+                "compare": [],
+                "description": "the serial number read off the equipment photo must exist in the asset master — a wrong-asset photo cites a serial the register doesn't know (or a different site's unit)"
+              }
+            ]
+          }
+        },
+        {
+          "id": "inspections.assets",
+          "physical_name": "assets",
+          "name": "Asset master",
+          "description": "Asset register with serials and locations — the system of record a serial number read off an inspection photo verifies against. No fraud_screening block: silence means the master is never screened itself; it is a verification TARGET.",
+          "columns": [
+            { "name": "asset_id", "type": "text", "is_primary_key": true },
+            { "name": "serial_no", "type": "text" },
+            { "name": "asset_type", "type": "text" },
+            { "name": "site_lat", "type": "numeric" },
+            { "name": "site_lon", "type": "numeric" },
+            { "name": "commissioned_on", "type": "date" }
+          ]
+        }
+      ]
+    }
+  ]
+}

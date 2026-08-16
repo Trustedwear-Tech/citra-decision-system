@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Citation System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-title { font-weight: bold; margin-bottom: 10px; color: #333; }
+        .original { background: #ffe6e6; padding: 10px; margin: 10px 0; white-space: pre-line; }
+        .fixed { background: #e6ffe6; padding: 10px; margin: 10px 0; }
+        .citation-link { color: #0066cc; text-decoration: underline; cursor: pointer; font-weight: 500; }
+        .sources-section { margin-top: 1em; margin-bottom: 1em; }
+        .sources-header { font-weight: bold; color: #333; margin-bottom: 0.5em; }
+        .source-item { margin-left: 1em; margin-bottom: 0.2em; }
+    </style>
+</head>
+<body>
+    <h1>✅ Fixed Citation System</h1>
+    <p><strong>Issue:</strong> Inline citation processing was corrupting the main response text</p>
+    <p><strong>Solution:</strong> Process only SOURCES section at the end, leave main text completely clean</p>
+
+    <div class="test-section">
+        <div class="test-title">User's Example - Before Fix (Corrupted)</div>
+        <div class="original">The text would get corrupted with inline citation processing, making the response unreadable with placeholders and broken formatting.</div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">User's Example - After Fix (Clean Text + Clickable SOURCES)</div>
+        <div class="fixed">
+            <div>Citra AI Software Private Limited offers a suite of innovative products designed to enhance professional productivity and personal safety, primarily centered around its Citra AI platform and a 7-Camera Smartwatch.</div>
+            
+            <div>Here's an explanation of their key offerings:</div>
+            
+            <div><strong>1. Citra AI: Your Trusted Research Assistant</strong></div>
+            <div>Citra AI is an advanced AI platform specifically developed for professionals, such as healthcare professionals, lawyers, and public policy makers. It addresses the challenges of information overload, poor recall, and the need for highly relevant, private-content-based research.</div>
+            
+            <div class="sources-section">
+                <div class="sources-header">SOURCES:</div>
+                <div class="source-item">• <a href="#" class="citation-link" onclick="handleDownload('fcac1108-471a-4613-bb59-0de434968ad', 'TW-presentation-new (1)'); return false;">TW-presentation-new (1)</a></div>
+                <div class="source-item">• <a href="#" class="citation-link" onclick="handleDownload('5e8023ed-c391-4916-b49b-e8b0972b803d', 'TW-presentation-new (1)'); return false;">TW-presentation-new (1)</a></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">Key Improvements</div>
+        <ul>
+            <li>✅ <strong>Clean Response Text:</strong> No inline citation processing or corruption</li>
+            <li>✅ <strong>SOURCES Section Only:</strong> Citations appear only at the end</li>
+            <li>✅ <strong>Clickable Downloads:</strong> Document references with IDs become download links</li>
+            <li>✅ <strong>Preserved Formatting:</strong> Markdown, bold, lists, etc. work perfectly</li>
+            <li>✅ <strong>No Text Corruption:</strong> Main content remains untouched</li>
+        </ul>
+    </div>
+
+    <script>
+        function handleDownload(documentId, filename) {
+            alert(`Download triggered!\n\nDocument: ${filename}\nID: ${documentId}\n\nIn the real app, this would download the file.`);
+        }
+    </script>
+</body>
+</html>

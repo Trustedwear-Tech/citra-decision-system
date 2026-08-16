@@ -1,0 +1,95 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
+# Docker Compose for the integration-test environment.
+#
+# Brings up Mongo + Redis + Milvus + the three stubs.
+# Real Citra services (smart-app-service, etc.) are run
+# locally outside compose during tests so they can be stepped through
+# in a debugger. Set RUN_CITRA_IN_COMPOSE=1 if you'd rather run them
+# inside the compose stack.
+#
+# Usage:
+#   docker-compose -f docker-compose.test.yml up -d
+#   pytest scenarios/
+#   docker-compose -f docker-compose.test.yml down -v
+
+# Own compose project so this cannot adopt Citra-AI's identically
+# named integration stack.
+name: citra-ds-integration-tests
+
+services:
+
+  mongo:
+    image: mongo:7
+    container_name: citra-ds-itest-mongo
+    ports: ["27018:27017"]            # off-band port to avoid clashing with dev mongo
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ping:1})"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: citra-ds-itest-redis
+    ports: ["6380:6379"]              # off-band port
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  milvus:
+    image: milvusdb/milvus:v2.5.4
+    container_name: citra-ds-itest-milvus
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/embedEtcd.yaml
+      COMMON_STORAGETYPE: local
+    security_opt:
+      - seccomp:unconfined
+    ports: ["19531:19530"]            # off-band gRPC port
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9091/healthz"]
+      interval: 10s
+      retries: 20
+
+  fake-mcp-server:
+    build:
+      context: ./fake-mcp-server
+      dockerfile: Dockerfile
+    container_name: citra-ds-itest-fake-mcp
+    ports: ["8500:8500"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8500/health || exit 1"]
+      interval: 5s
+      retries: 10
+
+  fake-llm:
+    build:
+      context: ./fake-llm
+      dockerfile: Dockerfile
+    container_name: citra-ds-itest-fake-llm
+    ports: ["8600:8600"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8600/health || exit 1"]
+      interval: 5s
+      retries: 10
+
+  fake-customer-notify:
+    build:
+      context: ./fake-customer-notify
+      dockerfile: Dockerfile
+    container_name: citra-ds-itest-fake-notify
+    ports: ["8700:8700"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8700/health || exit 1"]
+      interval: 5s
+      retries: 10
