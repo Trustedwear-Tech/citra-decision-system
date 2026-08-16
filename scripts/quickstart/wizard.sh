@@ -39,15 +39,24 @@ ask_secret() { local q="$1" ans; printf '%s: ' "$q" >&2; read -rs ans || true; p
 yes_no() { local q="$1" def="${2:-y}" a; a="$(ask "$q (y/n)" "$def")"; case "$a" in y|Y|yes|YES) return 0;; *) return 1;; esac; }
 
 rand()  { openssl rand -hex "$1" 2>/dev/null || head -c "$((${1}*2))" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
-getkv() { grep -E "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- ; }
-setkv() {
-  local k="$1" v="$2"
-  if grep -qE "^$k=" "$ENV_FILE" 2>/dev/null; then
-    awk -v k="$k" -v v="$v" 'BEGIN{FS="="} $1==k{print k"="v; next} {print}' "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
-  else
-    printf '%s=%s\n' "$k" "$v" >> "$ENV_FILE"
-  fi
-}
+  # .env has two zones split by the FINE-TUNING marker. Everything below it has a
+  # code default and may have been hand-tuned, so the wizard must not write
+  # there: getkv/setkv both stop at the marker, and a key that does not yet
+  # exist is inserted just above it rather than appended to the file end.
+  FT_MARK='^# =+ FINE-TUNING =+$'
+  getkv() {
+    awk -v k="$1" -v m="$FT_MARK" '$0 ~ m {exit} index($0, k"=")==1 {sub("^" k "=",""); print; exit}' "$ENV_FILE" 2>/dev/null
+  }
+  setkv() {
+    local k="$1" v="$2"
+    awk -v k="$k" -v v="$v" -v m="$FT_MARK" '
+      BEGIN { done=0; intune=0 }
+      $0 ~ m { if (!done) { print k "=" v; done=1 } intune=1 }
+      !intune && index($0, k "=")==1 { if (!done) { print k "=" v; done=1 } next }
+      { print }
+      END { if (!done) print k "=" v }
+    ' "$ENV_FILE" > "$ENV_FILE.tmp" && mv "$ENV_FILE.tmp" "$ENV_FILE"
+  }
 
 clear 2>/dev/null || true
 echo "$(b "Citra Decision System - setup wizard")"
