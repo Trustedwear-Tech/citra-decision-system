@@ -108,7 +108,9 @@ def run_step(h: Harness, num: int, name: str, core: bool, fn) -> None:
 
 
 def _secret() -> str:
-    env = REPO / "demo-data/tenants/acme-power/mcp/.env"
+    # The root .env is the single source for the dev stack (see its header), so
+    # this no longer reaches into another tenant's folder for a shared secret.
+    env = REPO / ".env"
     for line in env.read_text(encoding="utf-8").splitlines():
         if line.startswith("JWT_SECRET="):
             return line.split("=", 1)[1].strip()
