@@ -135,3 +135,11 @@ Citra-UI/deploy-simple.ps1
 **/debug.keystore
 Citra-UI/keystore-info.txt
 Citra-UI/sha1.txt
+
+# AWS deployment. These publish to OUR EC2 estate via SSM and name the
+# instances (Citra-AI-1, citra-ai-test-1, ...). Deployment to our infrastructure
+# is not something a self-hoster runs; local deployment is shared and stays.
+**/deploy.sh
+**/deploy.yml
+**/DEPLOY-CHECKLIST.md
+**/docker-compose.aws.yml
