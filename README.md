@@ -732,30 +732,118 @@ database, in a schema you can read.
 
 ## What we have measured -- and what we have not
 
-One controlled run, reported in full because the limits matter as much as
-the result. Nineteen DSA-sourced applications, each run twice, everything
-identical except whether a single learned judgement was switched on.
+Full write-up, with the worked policy example and the arithmetic:
+**[Citra Decision Memory -- Credit Note 01](docs/Citra-Decision-Memory-Credit-Note.pdf)**
+(PDF, 10pp).
 
-- **It was used on 14 cases with memory on, and 1 with it off.** The chance
-  of a swing that size by luck alone is about 1 in 2,000 (p = 0.0005).
-- **It fired on 19 of 19 files it was built for, and 0 of 2 it was not.** It
-  did what it was scoped to do, and stayed quiet elsewhere.
-- **No approve-or-decline verdict changed in the run.** Fourteen of the
-  nineteen cases already failed a hard policy rule, so a verdict change was
-  structurally impossible. What changed was the *reasoning* -- an extra step
-  nobody had written down.
-- **The null result.** Four learned judgements were seeded. Three of them
-  merely restated the written SOP. Retired, they changed nothing: the system
-  reached the same conclusion without them, because it can simply read the
-  rule. They fired, they were cited, and they added no value. **Decision
-  memory pays off where the written policy is silent, and nowhere else.**
+Two labels are used throughout, and they are not decoration:
 
-What this does not claim: it covers one judgement, one application, nineteen
-cases, one environment. It is evidence that a learned judgement changes how
-the system reasons where policy is silent, and stays quiet where it is not.
-It is **not** evidence that decision memory helps in general, and we would
-not present it as such. The run tested a single-facet scope; it says nothing
+| | |
+|---|---|
+| **MEASURED** | observed in a controlled run |
+| **MODELLED** | arithmetic on stated assumptions, not yet observed |
+
+### The experiment · MEASURED
+
+Nineteen DSA-sourced applications, each run twice, everything identical
+except whether a single learned judgement was switched on.
+
+That judgement -- **clause C-002** -- was chosen because it appears in no
+document:
+
+> *"DSA-sourced files get employment verified with the employer directly --
+> the submitted document set is not enough."*
+
+It was formed from corrections by three named credit officers, each changing
+the decision from `approve` to `verify_employment`. The written policy says
+in §1 that it applies to every sourcing channel and then prescribes nothing
+channel-specific -- so if behaviour changes, it cannot have come from the
+document corpus.
+
+| Result | |
+|---|---|
+| **14 vs 1** | cases where the judgement was used, memory on versus off (**p = 0.0005**, sign test over 15 discordant pairs) |
+| **19 / 19** | correctly targeted on DSA files |
+| **0 / 2** | wrongly fired on control files |
+
+**No approve-or-decline verdict changed.** Fourteen of the nineteen already
+failed a hard policy rule -- bureau 617, FOIR 95%, income below floor -- so
+a verdict change was structurally impossible. What changed was the
+*reasoning*: an extra step nobody had written down.
+
+### Where the money actually is
+
+That matters, because the run sampled the branch where money *cannot* move:
+
+```mermaid
+flowchart TD
+    A["100 DSA-sourced files"] --> B{"Policy gates<br/>§4 bureau · §2.2 income · §3.1 FOIR"}
+    B -->|"~70 declined"| C["Dead on a hard rule<br/>Memory changes nothing<br/>14 of 19 tested cases sat here"]
+    B -->|"~30 clear every gate"| D["Recommended for approval<br/>§5 asks for documents,<br/>not for a phone call"]
+    D --> E["Without memory<br/>approve as submitted<br/>30 disburse<br/>employer never contacted"]
+    D --> F["With clause C-002<br/>divert to verify employment"]
+    F --> G["27 confirmed<br/>cleared in a day"]
+    F --> H["3 fabricated<br/>caught before payout"]
+    style C stroke-dasharray: 4 4
+    style E stroke-width:2px
+    style H stroke-width:2px
+```
+
+The controlled run lives in the **left** branch. The money lives in the
+**right** one, which that run did not sample -- so the figures below are
+arithmetic, and labelled as such.
+
+### What it costs to be right · MODELLED
+
+Verification is not free: a call and a day of turnaround on **every**
+diverted file, including the ones that turn out fine. So the question a
+credit committee should ask is how often this must catch something to pay
+for itself.
+
+```
+break-even catch rate = cost per verification / (ticket x loss given default)
+```
+
+On a ₹5 lakh personal loan at 70% LGD, a caught file avoids roughly
+**₹3.5 lakh** of loss:
+
+| Cost assumption | Per file | Break-even catch rate |
+|---|---:|---:|
+| Direct cost of the call only | ₹300 | **0.09%** |
+| All-in, loading customer drop-off from the extra day | ₹5,000 | **1.4%** |
+
+Employment misstatement on DSA-sourced files in Indian personal lending runs
+in the **low single-digit percent**. On the pessimistic cost assumption you
+are ahead; on the realistic one, ahead by two orders of magnitude.
+
+Substitute your own numbers -- the arithmetic is three inputs and you hold
+all three.
+
+### The null result, which is the part worth trusting
+
+Four learned judgements were seeded. Three merely restated the written SOP.
+Retired, they changed nothing: the system reached the same conclusion
+without them, because it can simply read the rule. They fired, they were
+cited, and they added no value.
+
+**The rulebook is followed by the model already. Memory is how the judgement
+calls the rulebook does not cover get picked up -- and how you see whose
+judgement was used.**
+
+We publish that because it is what makes the rest credible. Any vendor can
+tell you their system learns; fewer will tell you which of their own
+features measurably does nothing.
+
+### Limits
+
+One judgement, one application, nineteen cases, one tenant. It is evidence
+that a learned judgement changes how the system reasons where policy is
+silent, and stays quiet where it is not. It is **not** evidence that
+decision memory helps in general, and we would not present it as such. The
+run tested a single-facet scope (`sourcing_channel:dsa`); it says nothing
 about how well multi-facet scopes discriminate, which we have not measured.
+Every rupee figure above is MODELLED on a single ticket size and a flat
+loss-given-default -- a real book has a distribution for both.
 
 ## Quickstart
 
