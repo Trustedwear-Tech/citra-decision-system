@@ -317,6 +317,67 @@ def _compact(messages: List[Dict]) -> List[Dict]:
     return messages
 
 
+# Connector family -> the dataset `kind` the MCP dispatches reads on. Mirrors
+# source-mcp-template/catalogue._source_kind; keep them in step.
+_KIND_BY_CONN = {
+    "postgres": "sql", "postgresql": "sql", "mysql": "sql", "mariadb": "sql",
+    "mssql": "sql", "sqlserver": "sql", "oracle": "sql", "snowflake": "sql",
+    "duckdb": "duckdb", "bigquery": "bigquery", "mongodb": "mongodb",
+    "rest_api": "rest", "rest": "rest", "odata": "odata", "sap_odata": "odata",
+    "salesforce": "soql", "sfdc": "soql", "soql": "soql",
+}
+
+
+def _fill_read_via(srcs: list) -> int:
+    """Give every dataset an explicit ``kind`` and ``read_via``.
+
+    Derived, not asked for: the target is the physical table/collection name,
+    which introspection already knows exactly. Prompting a model for it invites
+    it to echo the display label instead.
+
+    Without these the registry still VALIDATES — both fields are optional in the
+    schema — and the MCP boots, registers with discovery and gets crawled. Only
+    an actual read fails, with a 404 naming a dataset that /datasets happily
+    lists. That is a bad failure to hand someone on their first build, so the
+    generated file states the mapping rather than leaning on a default.
+    """
+    filled = 0
+    for s in srcs:
+        # visibility, or the source is readable by role "user" ONLY. That is the
+        # default in source-mcp-template/auth.is_visible when the key is absent,
+        # and it excludes org_admin — the identity the Decision App builder runs
+        # as. The result is a 404 that says the DATASET does not exist, because
+        # visibility failures are deliberately non-disclosing, so it reads as a
+        # missing table on a source that /health and the crawler both report as
+        # fine. Hand-authored registries all set this; a generated one must too.
+        if not s.get("visibility"):
+            s["visibility"] = {
+                "roles_allowed": ["user", "dept_admin", "org_admin", "super_admin"],
+            }
+            filled += 1
+        if s.get("is_active") is None:
+            s["is_active"] = True
+            filled += 1
+        conn = ((s.get("connection") or {}).get("type") or "").lower()
+        kind = _KIND_BY_CONN.get(conn)
+        if not kind:
+            print(f"  [!] connection type {conn!r} has no known dataset kind — "
+                  f"leaving read_via unset on source {s.get('source_id')!r}. "
+                  f"Fill it by hand before the MCP can read from it.", file=sys.stderr)
+            continue
+        for d in s.get("datasets") or []:
+            target = d.get("physical_name") or (d.get("id") or "").split(".")[-1]
+            if not target:
+                continue
+            if not d.get("kind"):
+                d["kind"] = kind
+                filled += 1
+            if not d.get("read_via"):
+                d["read_via"] = {"kind": kind, "target": target}
+                filled += 1
+    return filled
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -473,7 +534,11 @@ def main() -> int:
         print("  Not written.")
         return 1
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(tools.saved, encoding="utf-8")
+    n_filled = _fill_read_via(srcs)
+    if n_filled:
+        print(f"  [ok] derived kind/read_via for {n_filled} dataset field(s)")
+    payload = doc if isinstance(doc, dict) else srcs
+    out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + chr(10), encoding="utf-8")
     print(f"  wrote {out}")
 
     # Validate what LANDED, not what we intended to write. Everything before

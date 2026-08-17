@@ -428,7 +428,16 @@ def describe_dataset(
         Relationship(**r) for r in relationships_raw if isinstance(r, dict)
     ]
 
-    read_via_raw = ds.get("read_via") or {"kind": kind.value, "target": ds.get("name") or ds["id"]}
+    # physical_name FIRST. `name` is a human label — "Maintenance orders" — and
+    # using it as a read target produces a 404 on every sample for a dataset
+    # that is otherwise correctly registered: the MCP boots, /health lists the
+    # source, the crawler catalogues it, and only an actual read fails. Hand-
+    # authored registries all set read_via explicitly, so the fallback was
+    # never exercised until a generated one relied on it.
+    read_via_raw = ds.get("read_via") or {
+        "kind": kind.value,
+        "target": ds.get("physical_name") or ds.get("name") or ds["id"],
+    }
     # ReadVia only preserves ``kind``/``target``/``extra`` (extra fields ignored),
     # so a REST mapping authored at the read_via TOP LEVEL would be dropped from
     # the catalogued schema the builder reads. Fold request/response into ``extra``
