@@ -111,3 +111,27 @@ _jwt.txt
 logs/
 *.jsonl
 *.log
+
+# ---------------------------------------------------------------------------
+# Private overlay.
+#
+# Everything that is ours-only lives under private/ and is backed up to the
+# Citra-AI repo. One directory rather than a curated pattern list, because
+# patterns are what kept going wrong: `*.ps1` and `.env*` both match files this
+# repo legitimately ships (.env.example, Citra-UI/install-and-run.ps1,
+# Citra-Service/scripts/update_milvus_schema.ps1 — 22 of them), so a glob-based
+# rule silently removes needed files. A single directory cannot.
+private/
+
+# Firebase hosting publishes citra-ai.com. That is OUR deployment, not
+# something a self-hoster runs, and .firebaserc names the live projects. These
+# three were tracked here until 2026-08-17; they now live in private/Citra-UI/.
+Citra-UI/.firebaserc
+Citra-UI/firebase.json
+Citra-UI/deploy-simple.ps1
+
+# Android signing material. Stays at these paths because gradle reads them
+# there, so it cannot move under private/.
+**/debug.keystore
+Citra-UI/keystore-info.txt
+Citra-UI/sha1.txt

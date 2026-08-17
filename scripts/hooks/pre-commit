@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Refuse to commit private material into the public repo.
+#
+# The single-repo migration traded one failure mode for another. Before it, the
+# risk was "a private value gets synced into public" — loud, and GitHub push
+# protection caught it twice. After it, private files sit INSIDE the public
+# checkout, so the risk is "a new private file was never added to .gitignore
+# and gets committed". That one is quiet: no tool complains, and push
+# protection only recognises secrets, not Firebase project ids, AWS topology or
+# commercial documents.
+#
+# So the check is mechanical rather than careful. It looks at what is actually
+# staged, not at what is on disk.
+#
+# Install: scripts/hooks/install.sh
+# Override, when you genuinely mean it:  SKIP_PRIVATE_CHECK=1 git commit
+set -uo pipefail
+
+[ "${SKIP_PRIVATE_CHECK:-0}" = "1" ] && exit 0
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -n "$staged" ] || exit 0
+
+bad=""
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  case "$f" in
+    private/*)                        bad="$bad$f  (private/ is the overlay — never commit it here)"$'\n' ;;
+    Citra-UI/.firebaserc|Citra-UI/firebase.json|Citra-UI/deploy-simple.ps1)
+                                      bad="$bad$f  (Firebase hosting is ours — lives in private/Citra-UI/)"$'\n' ;;
+    *.ps1)
+      # Most .ps1 in this tree are deployment. A few are legitimately public
+      # (install-and-run.ps1, update_milvus_schema.ps1), so this warns on new
+      # ones rather than blocking every one.
+      case "$f" in
+        Citra-UI/install-and-run.ps1|Citra-Service/scripts/update_milvus_schema.ps1) ;;
+        *) echo "[pre-commit] NOTE: $f is a .ps1 — is it deployment? If so it belongs in private/." ;;
+      esac ;;
+    infrastructure/aws/*)             bad="$bad$f  (AWS topology — belongs in private/)"$'\n' ;;
+  esac
+done <<< "$staged"
+
+# The marketing landing page must never be committed here: the public tree's
+# IntroScreen.js is the LandingScreen shim, and a staged 5,000-line version
+# means private/scripts/overlay.sh was applied and not reverted.
+for f in Citra-UI/IntroScreen.js Citra-UI/MobileIntroScreen.js; do
+  if printf '%s\n' "$staged" | grep -qx "$f"; then
+    lines="$(git show ":$f" 2>/dev/null | wc -l)"
+    if [ "${lines:-0}" -gt 200 ]; then
+      bad="$bad$f  ($lines lines — that is the marketing page, not the shim. Run: private/scripts/overlay.sh --revert)"$'\n'
+    fi
+  fi
+done
+
+if [ -n "$bad" ]; then
+  echo ""
+  echo "[pre-commit] BLOCKED — private material is staged for the public repo:"
+  printf '%s' "$bad" | sed 's/^/    /'
+  echo ""
+  echo "    Unstage it, or move it under private/ (which is gitignored)."
+  echo "    Deliberate override:  SKIP_PRIVATE_CHECK=1 git commit"
+  echo ""
+  exit 1
+fi
+
+exit 0
