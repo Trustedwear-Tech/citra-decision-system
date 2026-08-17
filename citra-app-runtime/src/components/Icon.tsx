@@ -1,3 +1,11 @@
+// Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+// Author: Rohit Kumar Chandan
+// SPDX-License-Identifier: BUSL-1.1
+//
+// Licensed under the Business Source License 1.1. Non-production use is granted;
+// production use requires a commercial licence until the Change Date, after
+// which this file converts to Apache-2.0. See LICENSE at the repository root.
+
 // GENERATED from models.ICON_NAMES (smart-app-service/models.py) — keep the
 // two lists in sync; publish rule I-01 rejects names outside that set, and
 // tsc fails here on a name lucide does not export. Static named imports keep

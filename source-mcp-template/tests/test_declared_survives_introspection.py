@@ -1,3 +1,11 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
 """Declared sources.json intent must survive a REACHABLE backend.
 
 The 2026-07 ontology fix rescued the semantic layer (descriptions, enums,

@@ -1,3 +1,11 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
 """LIVE auto-process commit E2E — drives the REAL commit path against the running
 bsphcl MCP + Postgres. Replicates only the DB globals (NOT the scheduler — no prod
 trigger firing). Binds TEST env (audit → test_auto_process_decisions; discovery

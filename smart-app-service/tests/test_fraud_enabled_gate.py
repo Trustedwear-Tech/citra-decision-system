@@ -1,3 +1,11 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
 """Phase 0 gate: fraud_active_for_agent — the single ontology-derived signal
 that decides whether ANY fraud surface (L2 learning, L3 calibration, the fraud
 UI) exists for an app. True iff the autowire wired a consistency_check tool with

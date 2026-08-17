@@ -1,3 +1,11 @@
+// Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+// Author: Rohit Kumar Chandan
+// SPDX-License-Identifier: BUSL-1.1
+//
+// Licensed under the Business Source License 1.1. Non-production use is granted;
+// production use requires a commercial licence until the Change Date, after
+// which this file converts to Apache-2.0. See LICENSE at the repository root.
+
 /**
  * AppSpec / AgentSpec types — mirrors smart-app-service/schemas/*.schema.json (v0).
  * Keep in sync manually for now; later we can codegen from the JSON Schemas.

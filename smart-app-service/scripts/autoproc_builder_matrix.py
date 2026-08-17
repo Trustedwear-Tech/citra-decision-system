@@ -1,3 +1,11 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Licensed under the Business Source License 1.1. Non-production use is granted;
+# production use requires a commercial licence until the Change Date, after
+# which this file converts to Apache-2.0. See LICENSE at the repository root.
+
 """L2 — Auto-process BUILDER matrix. Drive ONE focused prompt per scenario, then
 inspect the GENERATED app_spec (triggers/policy) OR the builder's clarifying
 question. LLM + builder-pod dependent. See docs/auto-process-test-plan.md.
