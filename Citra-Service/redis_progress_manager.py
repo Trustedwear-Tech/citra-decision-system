@@ -7,7 +7,6 @@
 # production use requires a commercial licence until the Change Date, after
 # which this file converts to Apache-2.0. See LICENSE at the repository root.
 
-#!/usr/bin/env python3
 """
 Redis Progress Manager for Citra AI Service
 Handles distributed progress tracking with automatic fallback to local cache
