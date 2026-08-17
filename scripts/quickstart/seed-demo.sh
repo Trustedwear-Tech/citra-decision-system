@@ -115,7 +115,29 @@ echo "-> [1/6] seeding org + users ($TENANT)"
     --admin-token "$ADMIN_JWT" --user-service-url http://localhost:7004
 
 # -- 2. Postgres system-of-record data ----------------------------------------
-echo "-> [2/6] seeding Postgres ($PG_CONN)"
+# The tenant's Postgres is defined in the MCP compose file, which step 3 brings
+# up -- so it has to be started HERE, before anything tries to write to it.
+# Previously this step pointed at the SHARED citra-postgres, which setup.sh has
+# already started, so the ordering was never exercised; correcting the target to
+# the tenant's own database exposed it as "connection refused on 15444".
+echo "-> [2/6] starting $TENANT's Postgres, then seeding it"
+PG_SVC="citra-ds-$TENANT-postgres"
+docker compose --env-file "$REPO_ROOT/.env" -f "$TENANT_DIR/mcp/docker-compose.yml" up -d "$PG_SVC"
+
+PG_READY=false
+for _ in $(seq 1 30); do
+  if docker compose --env-file "$REPO_ROOT/.env" -f "$TENANT_DIR/mcp/docker-compose.yml"        exec -T "$PG_SVC" pg_isready -U acme_bank -d acme_bank >/dev/null 2>&1; then
+    PG_READY=true; break
+  fi
+  sleep 2
+done
+[ "$PG_READY" = true ] || {
+  echo "   [FAIL] $PG_SVC did not accept connections within 60s." >&2
+  echo "          Check: docker compose -f $TENANT_DIR/mcp/docker-compose.yml logs $PG_SVC" >&2
+  exit 1
+}
+
+echo "   seeding ($PG_CONN)"
 env "$PG_ENV=$PG_CONN" "$PY" "$TENANT_DIR/scripts/seed_postgres.py" --conn "$PG_CONN"
 
 # -- 3. Demo MCP container (registers itself with discovery-service) ----------
