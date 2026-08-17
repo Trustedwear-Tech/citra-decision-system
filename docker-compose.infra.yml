@@ -325,7 +325,14 @@ volumes:
   minio_data:
 
 networks:
-  # External, not created here. See the header: it currently belongs to the
-  # citra-ai-oss project. `docker network create citra-network` if missing.
+  # Created HERE, not external. It used to be `external: true` on the reasoning
+  # that the network belonged to the citra-ai-oss project — true when several
+  # stacks shared one host, and wrong for a self-contained install, where
+  # nothing created it and the first `docker compose up` died with
+  #   network citra-network declared as external, but could not be found
+  # `name:` pins the actual network name so compose does not prefix it with the
+  # project name — separately-managed stacks (the per-tenant MCPs) join it by
+  # that exact name.
   citra-network:
-    external: true
+    name: citra-network
+    driver: bridge

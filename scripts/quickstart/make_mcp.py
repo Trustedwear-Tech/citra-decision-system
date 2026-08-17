@@ -202,7 +202,10 @@ services:
 
       # ── Object storage (signed document hand-offs) ───────────────────
       BUCKET_NAME: ${{BUCKET_NAME:-citra-documents}}
-      BUCKET_ENDPOINT_URL: ${{BUCKET_ENDPOINT_URL:-http://citra-minio:9002}}
+      # Port 9000, not 9002: this resolves INSIDE citra-network, so it is MinIO's
+      # own listening port. 9002 is what the compose file publishes to the HOST,
+      # and using it here fails with connection refused.
+      BUCKET_ENDPOINT_URL: ${{BUCKET_ENDPOINT_URL:-http://citra-minio:9000}}
       BUCKET_ACCESS_KEY: ${{BUCKET_ACCESS_KEY:-minioadmin}}
       BUCKET_SECRET_KEY: ${{BUCKET_SECRET_KEY:-minioadmin}}
 

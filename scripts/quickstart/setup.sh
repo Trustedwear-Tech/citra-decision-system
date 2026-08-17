@@ -22,15 +22,9 @@ cd "$REPO_ROOT"
 ENV_FILE="$REPO_ROOT/.env"
 COMPOSE="docker compose -f docker-compose.quickstart.yml"
 
-# citra-network is declared `external` by docker-compose.infra.yml, which means
-# compose expects it to already exist and refuses to create it. On a clean host
-# it does not, so the very first `docker compose up` dies with
-#   network citra-network declared as external, but could not be found
-# infra's own header says as much and tells you to run this by hand — but the
-# quickstart is the one path where nobody has read that file yet. Creating it
-# here is idempotent and costs nothing; leaving it out makes the published
-# quickstart fail on the first command a new user runs.
-docker network create citra-network >/dev/null 2>&1 || true
+# citra-network is created by docker-compose.infra.yml (name: pinned, not
+# external), so nothing needs to pre-create it here. It used to be declared
+# external and created by hand at this point — see the infra networks block.
 
 rand() { openssl rand -hex "$1" 2>/dev/null || head -c "$((${1}*2))" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
 setkv() { # key value file - replace KEY=... line in place (value may contain anything)
