@@ -90,7 +90,7 @@ public tree rather than relocating something already private.
 
 | file | why |
 |---|---|
-| `Citra-UI/.firebaserc` | names the live projects — `citra-ai-6b291` and `citra-ai-test-6b291` |
+| `Citra-UI/.firebaserc` | names the live Firebase project ids (prod and test) |
 | `Citra-UI/firebase.json` | hosting targets, redirects, rewrite rules for those sites |
 | `Citra-UI/deploy-simple.ps1` | the deploy script itself |
 
