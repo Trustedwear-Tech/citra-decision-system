@@ -7,10 +7,6 @@
 # production use requires a commercial licence until the Change Date, after
 # which this file converts to Apache-2.0. See LICENSE at the repository root.
 
-#!/usr/bin/env python3
-# Copyright (c) 2024-2026 Trustedwear Tech Private Limited (https://citra-ai.com)
-# PROPRIETARY - all rights reserved. See LICENSE.md. NOT an open-source grant.
-# SPDX-License-Identifier: LicenseRef-Citra-AI-Proprietary
 """
 Trigger a one-shot data-discovery crawl so the searchable `data_catalogue` (used by
 the Decision-App BUILDER to find datasets) is built from the registered MCPs.

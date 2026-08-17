@@ -7,10 +7,6 @@
 # production use requires a commercial licence until the Change Date, after
 # which this file converts to Apache-2.0. See LICENSE at the repository root.
 
-#!/usr/bin/env python3
-# Copyright (c) 2024-2026 Trustedwear Tech Private Limited (https://citra-ai.com)
-# PROPRIETARY - all rights reserved. See LICENSE.md. NOT an open-source grant.
-# SPDX-License-Identifier: LicenseRef-Citra-AI-Proprietary
 """
 introspect_source.py — scan a live data source → a sources.json registry entry.
 
