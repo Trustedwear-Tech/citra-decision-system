@@ -108,6 +108,15 @@ fi
 setkv LLM_BASE_URL "https://openrouter.ai/api/v1"
 setkv LLM_MODEL    "deepseek/deepseek-chat-v3.1"
 setkv LLM_API_KEY  "$key"
+# The tiered clients are NOT optional overrides of LLM_API_KEY — each tier
+# resolves its own key, and an empty one is sent as no auth header at all.
+# Agents declare model_tier in their spec (the acme-bank loan-triage agent is
+# "large"), so leaving these blank meant every real decision died with
+#   LLM endpoint returned 401: Missing Authentication header
+# All three tiers already point at OpenRouter, so the one key covers them.
+setkv LLM_LARGE_API_KEY  "$key"
+setkv LLM_MEDIUM_API_KEY "$key"
+setkv LLM_SMALL_API_KEY  "$key"
 # bge-m3 is open-weights, and the client sends `dimensions` on every call so it
 # returns 768 rather than its native 1024 — matching the Milvus collection.
 setkv EMBEDDING_BASE_URL  "https://openrouter.ai/api/v1"

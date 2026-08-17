@@ -33,9 +33,17 @@ cd "$REPO_ROOT"
 TENANT="${1:-acme-bank}"
 COMPOSE="docker compose -f docker-compose.quickstart.yml"
 
-# -- Per-tenant Postgres wiring (database lives in the shared citra-postgres) --
+# -- Per-tenant Postgres wiring -----------------------------------------------
+# The system of record is the tenant's OWN Postgres, brought up by
+# demo-data/tenants/<tenant>/mcp/docker-compose.yml — NOT the shared
+# citra-postgres on 5432. The MCP connector reads ACME_BANK_SQL_HOST from that
+# compose file and resolves it to citra-ds-acme-bank-postgres, so seeding 5432
+# put the 16 tables somewhere nothing ever reads: every tool call came back
+#   (psycopg2.errors.UndefinedTable) relation "customers" does not exist
+# and the agent correctly refused to decide rather than invent an answer.
+# 15444 is the host port that same compose file publishes for it.
 case "$TENANT" in
-  acme-bank) PG_ENV="ACME_BANK_PG_CONN"; PG_CONN="postgresql://acme_bank:acme_bank_demo_pw@localhost:5432/acme_bank" ;;
+  acme-bank) PG_ENV="ACME_BANK_PG_CONN"; PG_CONN="postgresql://acme_bank:acme_bank_demo_pw@localhost:15444/acme_bank" ;;
   *) echo "Unknown tenant '$TENANT' (this tree ships: acme-bank)" >&2; exit 1 ;;
 esac
 
