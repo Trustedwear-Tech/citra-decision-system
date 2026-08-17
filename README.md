@@ -352,11 +352,12 @@ directly from the code in `smart-app-service/clause_store.py`:
 Three worked examples, in the shape the system stores them -- from three
 different sectors, all the same object:
 
-> *"DSA-sourced files get employment verified with the employer directly --
-> the submitted document set is not enough."*
+> *"Files sourced through an agent get employment verified with the employer
+> directly -- the submitted document set is not enough."*
 >
-> scope: `sourcing_channel:dsa` · formed from corrections by three named
-> credit officers · appears in no policy document
+> scope: `sourcing_channel:dsa` (DSA = Direct Selling Agent, the channel's
+> name in the source system) · formed from corrections by three named credit
+> officers · appears in no policy document
 
 > *"Feeders with two or more transient faults in a monsoon month get a
 > physical line inspection before re-energising, whatever the load reading
