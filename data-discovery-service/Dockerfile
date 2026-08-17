@@ -10,12 +10,12 @@ FROM python:3.11-slim
 
 # Build context = monorepo root. requirements.txt has `-e ../citra-common/citra-service-utils`
 # (shared PII/semantic-type classifier + utils) which only resolves if the
-# sibling is at /app/citra-service-utils relative to WORKDIR
+# sibling is at /app/citra-common/citra-service-utils relative to WORKDIR
 # /app/data-discovery-service. Mirrors discovery-service/Dockerfile.
 
 WORKDIR /app
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY data-discovery-service/requirements.txt /app/data-discovery-service/requirements.txt
 WORKDIR /app/data-discovery-service

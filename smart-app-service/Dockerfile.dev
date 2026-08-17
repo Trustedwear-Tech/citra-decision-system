@@ -5,10 +5,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
-COPY citra-common/citra-auth /app/citra-auth
-COPY citra-common/citra-cache /app/citra-cache
-COPY citra-common/citra-queue /app/citra-queue
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
+COPY citra-common/citra-auth /app/citra-common/citra-auth
+COPY citra-common/citra-cache /app/citra-common/citra-cache
+COPY citra-common/citra-queue /app/citra-common/citra-queue
 
 COPY smart-app-service/requirements.txt /app/smart-app-service/requirements.txt
 WORKDIR /app/smart-app-service

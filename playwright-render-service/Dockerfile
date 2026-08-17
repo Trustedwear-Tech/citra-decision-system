@@ -20,7 +20,7 @@ RUN apt-get update && \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY playwright-render-service/requirements.txt /app/playwright-render-service/requirements.txt
 WORKDIR /app/playwright-render-service

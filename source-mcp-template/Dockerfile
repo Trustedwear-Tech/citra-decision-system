@@ -8,7 +8,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY source-mcp-template/requirements.txt /app/source-mcp-template/requirements.txt
 WORKDIR /app/source-mcp-template

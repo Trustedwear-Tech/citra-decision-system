@@ -9,12 +9,12 @@
 FROM python:3.11-slim
 
 # Build context = monorepo root. requirements.txt has `-e ../citra-common/citra-service-utils`
-# which only resolves if the sibling is at /app/citra-service-utils relative
+# which only resolves if the sibling is at /app/citra-common/citra-service-utils relative
 # to WORKDIR /app/discovery-service.
 
 WORKDIR /app
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY discovery-service/requirements.txt /app/discovery-service/requirements.txt
 WORKDIR /app/discovery-service

@@ -38,12 +38,12 @@ COPY Citra-Service/requirements.txt /app/Citra-Service/requirements.txt
 
 # Copy editable dependency packages (must match `-e ../citra-X` in requirements.txt:
 #   citra-service-utils, citra-queue, citra-auth, citra-mongo, citra-cache)
-COPY citra-common/citra-service-utils /app/citra-service-utils
-COPY citra-common/citra-queue /app/citra-queue
-COPY citra-common/citra-auth /app/citra-auth
-COPY citra-common/citra-mongo /app/citra-mongo
-COPY citra-common/citra-cache /app/citra-cache
-COPY citra-common/citra-llm /app/citra-llm
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
+COPY citra-common/citra-queue /app/citra-common/citra-queue
+COPY citra-common/citra-auth /app/citra-common/citra-auth
+COPY citra-common/citra-mongo /app/citra-common/citra-mongo
+COPY citra-common/citra-cache /app/citra-common/citra-cache
+COPY citra-common/citra-llm /app/citra-common/citra-llm
 
 # Switch into service dir
 WORKDIR /app/Citra-Service

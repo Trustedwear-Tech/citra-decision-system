@@ -23,7 +23,7 @@ RUN apt-get update && \
 # Copy requirements first
 COPY playwright-render-service/requirements.txt /app/playwright-render-service/requirements.txt
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 # Switch into service dir
 WORKDIR /app/playwright-render-service

@@ -58,12 +58,12 @@ services:
     volumes:
       # Bind mounts for immediate code updates
       - ./Citra-Service:/app/Citra-Service
-      - ./citra-service-utils:/app/citra-service-utils
-      - ./citra-queue:/app/citra-queue
-      - ./citra-auth:/app/citra-auth
-      - ./citra-mongo:/app/citra-mongo
-      - ./citra-cache:/app/citra-cache
-      - ./citra-llm:/app/citra-llm
+      - ./citra-common/citra-service-utils:/app/citra-common/citra-service-utils
+      - ./citra-common/citra-queue:/app/citra-common/citra-queue
+      - ./citra-common/citra-auth:/app/citra-common/citra-auth
+      - ./citra-common/citra-mongo:/app/citra-common/citra-mongo
+      - ./citra-common/citra-cache:/app/citra-common/citra-cache
+      - ./citra-common/citra-llm:/app/citra-common/citra-llm
     networks:
       - citra-network
     extra_hosts:
@@ -135,7 +135,7 @@ services:
       # - MONGODB_URI=mongodb://root:citradev@mongodb:27017/?authSource=admin&replicaSet=rs0
     volumes:
       - ./duckdb-query-service:/app/duckdb-query-service
-      - ./citra-service-utils:/app/citra-service-utils
+      - ./citra-common/citra-service-utils:/app/citra-common/citra-service-utils
     networks:
       - citra-network
     extra_hosts:
@@ -155,7 +155,7 @@ services:
       - "7302:7302"
     volumes:
       - ./reranker-service:/app/reranker-service
-      - ./citra-service-utils:/app/citra-service-utils
+      - ./citra-common/citra-service-utils:/app/citra-common/citra-service-utils
     networks:
       - citra-network
     extra_hosts:
@@ -180,7 +180,7 @@ services:
       - "9010:9000"
     volumes:
       - ./discovery-service:/app/discovery-service
-      - ./citra-service-utils:/app/citra-service-utils
+      - ./citra-common/citra-service-utils:/app/citra-common/citra-service-utils
     networks:
       - citra-network
     extra_hosts:
@@ -250,10 +250,10 @@ services:
       - QUEUE_REDIS_PASSWORD=
     volumes:
       - ./smart-app-service:/app/smart-app-service
-      - ./citra-service-utils:/app/citra-service-utils
-      - ./citra-auth:/app/citra-auth
-      - ./citra-cache:/app/citra-cache
-      - ./citra-queue:/app/citra-queue
+      - ./citra-common/citra-service-utils:/app/citra-common/citra-service-utils
+      - ./citra-common/citra-auth:/app/citra-common/citra-auth
+      - ./citra-common/citra-cache:/app/citra-common/citra-cache
+      - ./citra-common/citra-queue:/app/citra-common/citra-queue
     networks:
       - citra-network
     extra_hosts:
@@ -340,7 +340,7 @@ services:
     volumes:
       # Bind mounts for immediate code updates
       - ./playwright-render-service:/app/playwright-render-service
-      - ./citra-service-utils:/app/citra-service-utils
+      - ./citra-common/citra-service-utils:/app/citra-common/citra-service-utils
     networks:
       - citra-network
     extra_hosts:

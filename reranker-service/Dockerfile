@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY reranker-service/requirements.txt /app/reranker-service/requirements.txt
 WORKDIR /app/reranker-service

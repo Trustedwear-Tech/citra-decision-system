@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dumb-init \
     && rm -rf /var/lib/apt/lists/*
 
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY duckdb-query-service/requirements.txt /app/duckdb-query-service/requirements.txt
 WORKDIR /app/duckdb-query-service

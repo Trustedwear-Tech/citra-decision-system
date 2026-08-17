@@ -11,7 +11,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Build context = monorepo root so editable shared libs can be copied.
-COPY citra-common/citra-service-utils /app/citra-service-utils
+COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 COPY data-discovery-service/requirements.txt /app/data-discovery-service/requirements.txt
 WORKDIR /app/data-discovery-service
 RUN --mount=type=cache,target=/root/.cache/pip \
