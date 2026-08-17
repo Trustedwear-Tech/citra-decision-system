@@ -93,19 +93,47 @@ media. Confirmed by reading it: it imports `Video` from `expo-av` and embeds a
 `youtube-nocookie.com` iframe (`YouTubePlayer`, around line 1835). On a
 self-hosted or air-gapped install that fetch fails and the hero is empty.
 
-Approach: keep the one page and handle the hero defensively. If the video does
-not load — `onError`, or a readiness timeout for the iframe, which does not
-reliably fire `onError` cross-origin — collapse the hero and promote the next
-section into its place, so the page reads as designed rather than as broken.
-The rest of the page is unchanged either way.
+### Decision: the FILE is the switch, not an env var
 
-Open questions this plan does NOT settle, because they are content decisions:
+An env flag selecting the landing page at runtime was considered and rejected
+on a hard constraint: **a bundler resolves imports at build time, an env var is
+read at runtime.** With the marketing page under a gitignored `private/`, the
+public build dies at
 
-- IntroScreen carries third-party endorsement names and usage counters. On a
-  fresh install those counters are false. Publishing the page means publishing
-  them, or making them conditional.
-- `components/intro/` (StoryCarousel, ProvenImpact, WhyCitra, GetStarted) is
-  currently private-only. One landing page means these become public.
+    Unable to resolve module ./IntroScreen from /app/MainApp.js
+
+before the flag is ever read — the exact failure fixed on 2026-08-17. Metro
+will not resolve a variable import path either, so a guarded dynamic require
+does not rescue it.
+
+Chosen instead: `Citra-UI/IntroScreen.js` and `MobileIntroScreen.js` in the
+public tree are thin shims that render `components/LandingScreen`. They already
+exist. The private build overlays those two files from
+`private/Citra-UI/` before bundling. `MainApp.js` is untouched and identical in
+both, both trees build standalone, and the overlay copy IS the toggle — no new
+mechanism, no env var.
+
+That also preserves the property the clean-room test exists to protect: the
+public tree builds on its own, with no private file present.
+
+Consequences, both good:
+
+- The marketing page stays private, so the third-party endorsement names and
+  the usage counters (false on a fresh install) are not published.
+- `components/intro/` (StoryCarousel, ProvenImpact, WhyCitra, GetStarted) stays
+  private too — it is imported only by the real IntroScreen.
+
+### The video hero — do this regardless of which page ships
+
+`IntroScreen.js` imports `Video` from `expo-av` AND embeds a
+`youtube-nocookie.com` iframe (`YouTubePlayer`, around line 1835). On an
+air-gapped or firewalled install that fetch fails and the hero renders empty.
+
+Handle it defensively: on failure, collapse the hero and promote the next
+section into its place, so the page reads as designed rather than broken.
+A cross-origin iframe does not reliably fire `onError`, so this needs BOTH an
+error handler and a readiness timeout — an error handler alone will not fire on
+the most common failure, which is a request that simply never returns.
 
 ## Deletions
 
