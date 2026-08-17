@@ -119,7 +119,12 @@ setkv VISION_MODEL    "qwen/qwen3-vl-32b-instruct"
 setkv VISION_API_KEY  "$key"
 setkv SEARCH_BASE_URL "https://openrouter.ai/api/v1"
 setkv SEARCH_API_KEY  "$key"
-echo "  [ok] one key configured for reasoning, embeddings, vision and search"
+# RERANK too. reranker-service ships with RERANKER_PROVIDER=remote and refuses
+# to boot without this key — it crash-looped on every clean install because the
+# key sat in the FINE-TUNING zone, which the wizard deliberately never writes.
+# RERANK_API_URL already points at OpenRouter, so the same key covers it.
+setkv RERANK_API_KEY  "$key"
+echo "  [ok] one key configured for reasoning, embeddings, vision, search and rerank"
 
 # -- 3. Super-admin -----------------------------------------------------------
 hr; echo "$(b "Step 3/4 - super-admin")"
