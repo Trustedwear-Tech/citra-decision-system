@@ -52,6 +52,12 @@ jobs:
           - Monitoring-Service
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Required: every requirements.txt has `-e ../citra-common/<pkg>`,
+          # and citra-common is a submodule. Without this the checkout leaves
+          # it empty and pip fails with
+          #   ../citra-common/citra-service-utils is not a valid editable requirement
+          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

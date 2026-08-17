@@ -14,7 +14,7 @@
 # from the Mongo `dept_sources` collection to a local sources.json file and the
 # old mode was REMOVED, not deprecated. See docs/change-the-demo.md.
 .DEFAULT_GOAL := help
-.PHONY: help wizard setup start install seed-demo down logs ps validate-sources
+.PHONY: help wizard setup start install seed-demo down logs ps validate-sources ontology
 
 COMPOSE := docker compose -f docker-compose.quickstart.yml
 
@@ -35,6 +35,9 @@ install: ## Phase 1 + Phase 2 (full bring-up from scratch)
 
 seed-demo: ## Re-seed the demo tenant (TENANT=acme-bank by default)
 	./scripts/quickstart/seed-demo.sh $(or $(TENANT),acme-bank)
+
+ontology: ## Build a sources.json from a live database, by interview (ARGS='--org x --dept y ...')
+	bash scripts/quickstart/make-ontology.sh $(ARGS)
 
 validate-sources: ## Check a sources.json against the MCP registry schema
 	python source-mcp-template/validate_sources.py \
