@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
-# Author: Rohit Kumar Chandan
-# SPDX-License-Identifier: BUSL-1.1
-#
-# Licensed under the Business Source License 1.1. Non-production use is granted;
-# production use requires a commercial licence until the Change Date, after
-# which this file converts to Apache-2.0. See LICENSE at the repository root.
-
-#!/usr/bin/env python3
 # Copyright (c) 2024-2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 # PROPRIETARY - all rights reserved. See LICENSE.md. NOT an open-source grant.
 # SPDX-License-Identifier: LicenseRef-Citra-AI-Proprietary
@@ -103,9 +94,36 @@ def _free_port(start: int = 8510) -> int:
     return start
 
 
+def _docker_network() -> str:
+    """The docker network a generated MCP joins — from the root .env.
+
+    NOT hardcoded, and deliberately without a default. This repo runs on
+    citra-ai-net and the public citra-decision-system quickstart runs on
+    citra-network, so any literal here is wrong in one of the two trees. Baking
+    one in meant a fix made against one repo's compose silently broke the
+    other's, which is exactly what happened on 2026-08-17. Keeping the code
+    identical and moving the deployment value into .env is what makes the two
+    trees mirror-able at all.
+
+    Fails loud rather than guessing: a wrong network produces
+    `network X declared as external, but could not be found` at `up` time,
+    far from the cause.
+    """
+    net = (os.getenv("CITRA_DOCKER_NETWORK") or "").strip()
+    if not net:
+        raise SystemExit(
+            "CITRA_DOCKER_NETWORK is not set.\n"
+            "  It names the docker network the generated MCP joins, and it differs\n"
+            "  per deployment, so there is no safe default. Set it in the root .env\n"
+            "  to the network your stack actually runs on — check with:\n"
+            "      docker network ls | grep citra")
+    return net
+
+
 def _render(org: str, depts: List[str], port: int,
             prefixes: Dict[str, Tuple[str, str]]) -> str:
     safe = org.lower().replace("_", "-")
+    network = _docker_network()
     conn_lines: List[str] = []
     for pfx, (kind, src) in sorted(prefixes.items()):
         conn_lines.append(f"      # source '{src}' ({kind}) — fill in real credentials:")
@@ -193,19 +211,14 @@ services:
       retries: 5
       start_period: 20s
     networks:
-      - citra-network
+      - {network}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-# citra-network, NOT citra-ai-net: the generated MCP has to land on the same
-# network as discovery-service, or `docker compose up` fails outright with
-#   network citra-ai-net declared as external, but could not be found
-# and the MCP never registers. citra-network is what setup.sh creates and what
-# every quickstart service joins.
 networks:
-  citra-network:
+  {network}:
     external: true
-    name: citra-network
+    name: {network}
 """
 
 
