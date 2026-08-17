@@ -64,6 +64,31 @@ The 46 path-locked files contain **no shared code and no docs**. They are
 config, editor settings and signing material, so there is nothing left for two
 trees to disagree about. That is what makes this work rather than merely tidy.
 
+### Firebase hosting — a REMOVAL, not a move
+
+Three more files go to `private/`, and these are different in kind from the 135
+above: they are tracked in **both** repos today, so this deletes them from the
+public tree rather than relocating something already private.
+
+| file | why |
+|---|---|
+| `Citra-UI/.firebaserc` | names the live projects — `citra-ai-6b291` and `citra-ai-test-6b291` |
+| `Citra-UI/firebase.json` | hosting targets, redirects, rewrite rules for those sites |
+| `Citra-UI/deploy-simple.ps1` | the deploy script itself |
+
+Firebase hosting is how citra-ai.com is published. It is our deployment, not
+something a self-hoster runs, and `.firebaserc` is live topology: the project
+ids identify real Firebase projects and belong with the AWS material, not in a
+source-available repo.
+
+Nothing in the public tree imports these — they are invoked by hand — so
+removal does not affect the build. Check `Citra-UI/package.json` scripts for a
+`deploy` entry referencing them before deleting; if one exists it should go too.
+
+This also means the public `.gitignore` needs the three paths listed
+explicitly, not just `private/`: they are currently tracked, so `git rm
+--cached` plus an ignore rule, or they come straight back on the next `git add`.
+
 `.gitignore` ends up about five conventional lines:
 
 ```
