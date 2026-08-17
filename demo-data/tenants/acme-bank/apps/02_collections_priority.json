@@ -149,7 +149,13 @@
       "learning": {
         "promotion_min_officers": 3,
         "clause_budget_words": 1000
-      }
+      },
+      "confirmed_families": [
+        "bucket",
+        "last_payment",
+        "overdue_band",
+        "risk_flag"
+      ]
     },
     "pages": [
       {

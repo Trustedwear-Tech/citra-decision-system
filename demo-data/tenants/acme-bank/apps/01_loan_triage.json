@@ -151,7 +151,14 @@
       "learning": {
         "promotion_min_officers": 3,
         "clause_budget_words": 1000
-      }
+      },
+      "confirmed_families": [
+        "amount_band",
+        "foir_band",
+        "income_proof",
+        "product",
+        "sourcing_channel"
+      ]
     },
     "owner_type": "service_account",
     "owner_id": "svc:work-rohit-trustedweartech-com@acme-bank.citra.ai",

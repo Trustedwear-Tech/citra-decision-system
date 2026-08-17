@@ -40,6 +40,15 @@ def _mint(secret: str, *, tenant_id: str, user_id: str = "demo-publisher") -> st
     now = int(time.time())
     payload = {
         "sub": user_id,
+        # user_id and email are NOT redundant with sub. The auth middleware
+        # falls back sub -> user_id when populating request.state, but
+        # require_publish_scope hands the publish path the RAW payload, and
+        # _publisher_own_work_sa reads publisher["user_id"] off it. A token
+        # carrying only `sub` therefore resolves to no Work SA and publish
+        # rejects with work_sa_id_missing — which is what a real login JWT
+        # from Citra-User-Service never does, because it carries both.
+        "user_id": user_id,
+        "email": user_id,
         "tenant_id": tenant_id,
         "org_id": tenant_id,
         "dept_ids": ["plant_ops", "quality", "sales_dispatch"],
@@ -63,6 +72,13 @@ def main() -> int:
                     help="Tenant id; apps are read from tenants/<tenant-id>/apps/ unless --apps-dir overrides")
     ap.add_argument("--apps-dir", default=None,
                     help="Override path to apps folder (defaults to tenants/<tenant-id>/apps/)")
+    # The published apps are owned by whoever the token says minted them, so the
+    # caller needs to name the real super-admin rather than take the placeholder
+    # default. seed-demo.sh has always passed --user-id; the option was simply
+    # never declared here, so the whole publish step died on argparse and the
+    # demo seeded everything EXCEPT its Decision Apps.
+    ap.add_argument("--user-id", default="demo-publisher",
+                    help="Subject claim for the publish token (the app's owner)")
     args = ap.parse_args()
 
     base = args.smart_app_url.rstrip("/")
@@ -74,7 +90,7 @@ def main() -> int:
         log.error("smart-app-service unreachable at %s: %s", base, exc)
         return 3
 
-    token = _mint(args.jwt_secret, tenant_id=args.tenant_id)
+    token = _mint(args.jwt_secret, tenant_id=args.tenant_id, user_id=args.user_id)
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
