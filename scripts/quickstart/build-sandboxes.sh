@@ -29,7 +29,14 @@
 # by — no local build.
 #
 set -uo pipefail
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# ../.. — this script lives in scripts/quickstart/, so one ".." lands in
+# scripts/ and every build context below resolves against the wrong directory:
+#   ERROR: failed to build: unable to prepare context:
+#          path "infrastructure/action-sandbox" not found
+# Both paths exist; the cd was just short. start.sh invokes this by absolute
+# path, so the caller's cwd never masked it. Every other quickstart script
+# already uses ../.. — this one was the outlier.
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 MODE="build"; [ "${1:-}" = "--pull" ] && MODE="pull"

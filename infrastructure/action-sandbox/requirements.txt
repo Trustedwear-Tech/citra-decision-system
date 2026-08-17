@@ -29,12 +29,18 @@ pyjwt==2.13.0
 
 # ---- citra_toolkit (in-sandbox helpers used by the agent) ---------------
 # Report generation: HTML→PDF, Excel, charts, dataframes.
-# NOTE: weasyprint 62.x calls `super().transform(...)` on pydyf's Stream,
-# which only exists on pydyf <0.11. pydyf 0.11+ removed that method and
-# the call breaks with AttributeError. Pin pydyf to keep PDF rendering
-# working until we can move to weasyprint 63+.
+# The pydyf pin used to read `==0.10.0`, guarding weasyprint 62.x, which called
+# `super().transform(...)` on pydyf's Stream — a method pydyf 0.11 removed.
+# weasyprint was later moved to 68.0 and the pin was left behind, so the two
+# lines contradicted each other and the image stopped building outright:
+#     Cannot install -r requirements.txt (line 36) and pydyf==0.10.0
+#     The user requested pydyf==0.10.0
+#     weasyprint 68.0 depends on pydyf>=0.11.0
+# We are well past 63, so the original reason is gone. Pinned to the version
+# weasyprint 68 actually wants, rather than unpinned, to keep the image
+# reproducible.
 weasyprint==68.0
-pydyf==0.10.0
+pydyf==0.11.0
 openpyxl==3.1.5
 matplotlib==3.9.2
 pandas==2.2.3
