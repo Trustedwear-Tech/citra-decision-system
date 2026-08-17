@@ -193,14 +193,19 @@ services:
       retries: 5
       start_period: 20s
     networks:
-      - citra-ai-net
+      - citra-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+# citra-network, NOT citra-ai-net: the generated MCP has to land on the same
+# network as discovery-service, or `docker compose up` fails outright with
+#   network citra-ai-net declared as external, but could not be found
+# and the MCP never registers. citra-network is what setup.sh creates and what
+# every quickstart service joins.
 networks:
-  citra-ai-net:
+  citra-network:
     external: true
-    name: citra-ai-net
+    name: citra-network
 """
 
 
