@@ -41,6 +41,7 @@ data never leaves.*
 
 - [The problem it addresses](#the-problem-it-addresses) — and why a better model does not close it
 - [Why the obvious answers don't close it](#why-the-obvious-answers-dont-close-it) — copilots, agents, fine-tunes
+- [What we measured](#what-we-measured) — the experiment, the money, and the null result
 - [How it works](#how-it-works) · [What a "learned judgement" actually is](#what-a-learned-judgement-actually-is)
 - [Three surfaces, one intelligence](#three-surfaces-one-intelligence) — app, API, embeddable UI
 - **[The core concepts, in plain terms](#the-core-concepts-in-plain-terms)**
@@ -48,7 +49,6 @@ data never leaves.*
   - [Governed writes](#2-governed-writes----why-the-ai-cannot-go-off-script) — why the AI cannot go off-script
   - [The data catalogue](#3-the-data-catalogue----the-menu-the-builder-orders-from) · [Fraud screening](#4-fraud-screening----making-we-have-seen-this-before-mean-something) · [Country and vertical packs](#5-country-and-vertical-packs----same-code-local-rules)
 - [How it is built](#how-it-is-built) — the five moving parts, in code
-- [What we have measured -- and what we have not](#what-we-have-measured----and-what-we-have-not)
 - [Quickstart](#quickstart) · [Configuration](#configuration) · [Requirements](#requirements)
 
 </details>
@@ -165,6 +165,137 @@ matching case afterwards, in whatever sector the queue happens to be.
 
 The missing layer in all three is the same: **a decision memory you own,
 independent of any model.**
+
+## What we measured
+
+**Can a system learn something from a person that exists in no document -- and
+then apply it to exactly the right cases?**
+
+That is what this experiment answers, and you can reproduce it.
+
+Full write-up, with the worked policy example and the arithmetic:
+**[Citra Decision Memory -- Credit Note 01](docs/Citra-Decision-Memory-Credit-Note.pdf)**
+(PDF, 10pp).
+
+### Why it is hard to test
+
+Teach a system a rule already written in the policy, and correct behaviour
+proves nothing -- it may simply have read the rule. **The test has to use
+knowledge that appears in no document the system can see.**
+
+### What we taught it
+
+In Indian retail lending, sourcing agents are paid when a loan is disbursed,
+not when it is repaid. Experienced officers know what that incentive
+produces, so on agent-sourced files they ring the employer directly and
+confirm the borrower's job is real.
+
+We took that judgement from **three different credit officers** and gave it
+to the system as one instruction:
+
+> On files sourced through an agent, verify employment with the employer
+> directly. The submitted document set is not enough.
+
+It is in no credit policy. The policy says it applies to every sourcing
+channel, then prescribes nothing channel-specific -- so **nothing the system
+can read tells it to treat these files differently.** If behaviour changes,
+reading is not the explanation.
+
+The case record has a field for whether an income document is *present*.
+None for whether it is *true*.
+
+### The run
+
+**Nineteen agent-sourced applications, each run twice.** Identical inputs.
+One difference: the judgement on, then off. Then the opposite test --
+**control files from other channels**, where the right behaviour is to do
+nothing.
+
+| Result | |
+|---|---|
+| **14 vs 1** | check raised on 14 files with memory on, 1 with it off |
+| **19 of 19** | applied on every file it was meant for |
+| **0 of 2** | never fired on a control file |
+| **p = 0.0005** | odds of this being luck: about 1 in 2,000 |
+
+It fires where it belongs, stays silent where it does not, and the effect is
+not the underlying model.
+
+### Where the money is
+
+Take 100 agent-sourced files through the policy gates.
+
+```mermaid
+flowchart TD
+    A["100 agent-sourced files"] --> B{"Policy gates<br/>bureau · income · FOIR"}
+    B -->|"~70 declined"| C["Dead on a hard rule<br/>Memory changes nothing<br/>the branch our run sampled"]
+    B -->|"~30 clear every gate"| D["Approved<br/>policy asked for documents,<br/>never for a phone call"]
+    D --> E["Without memory<br/>30 disburse<br/>employer never contacted<br/>loss lands 6-18 months later"]
+    D --> F["With the judgement on<br/>divert to a verification call"]
+    F --> G["27 come back clean<br/>cleared within a day"]
+    F --> H["3 fabricated<br/>stopped before payout"]
+    style C stroke-dasharray: 4 4
+    style E stroke-width:2px
+    style H stroke-width:2px
+```
+
+**About 70 fail a hard rule and are declined** -- bureau 617, FOIR 95%,
+income below floor. Memory changes nothing here. A file already dead on a
+hard rule cannot be saved by better reasoning. **This is the branch our run
+sampled**, which is exactly why no verdict moved in it.
+
+**About 30 clear every gate and get approved.** The policy asked for
+documents. It never asked anyone to pick up the phone. So they disburse, the
+employer is never contacted, and the losses surface six to eighteen months
+later as principal, provisioning and collection cost.
+
+**With the judgement switched on, those 30 get diverted to a verification
+call.** 27 come back clean and clear within a day. **3 are fabricated and
+stop before payout.**
+
+On a ₹5 lakh ticket that is **₹15 lakh that never leaves the bank -- for the
+cost of 30 phone calls.**
+
+*Catch counts are arithmetic on a 100-file cohort. The 14-of-19 marker is
+measured.*
+
+### The null result
+
+We seeded **four** judgements. Three restated the written policy. **Retired,
+they changed nothing** -- the system reached the same conclusion without
+them, because it could read the rule.
+
+That is published deliberately. It is what makes the fourth believable, and
+it draws the line exactly: **this is not a rulebook engine. It is the layer
+for what the rulebook never covered.**
+
+### Run it on your own data
+
+1. Point it at decided cases, with documents and outcomes.
+2. Write **one** judgement your officers apply and your policy does not
+   contain.
+3. Run them twice -- memory on, memory off.
+4. Add control cases it should not touch.
+5. Read the reasoning, not only the verdicts.
+
+Clauses are seeded, inspected and retired through the endpoints in
+[The memory](#5-the-memory----what-makes-the-next-recommendation-better);
+the stack itself comes up with [Quickstart](#quickstart) below.
+**If it does not reproduce, [open an issue](https://github.com/Trustedwear-Tech/citra-decision-system/issues)**
+-- a result that only works in our hands is not a result.
+
+### Limits
+
+One judgement, one application, nineteen cases, one tenant. It is evidence
+that a learned judgement changes how the system reasons where policy is
+silent, and stays quiet where it is not. It is **not** evidence that decision
+memory helps in general, and we would not present it as such. The run tested
+a single-facet scope (the sourcing channel); it says nothing about how well
+multi-facet scopes discriminate, which we have not measured. Every rupee
+figure above is arithmetic on a single ticket size and a flat
+loss-given-default -- a real book has a distribution for both.
+
+---
 
 ## How it works
 
@@ -729,121 +860,6 @@ resolved against the SOP, or exported wholesale -- the ledger is yours, in your
 database, in a schema you can read.
 
 ---
-
-## What we have measured -- and what we have not
-
-Full write-up, with the worked policy example and the arithmetic:
-**[Citra Decision Memory -- Credit Note 01](docs/Citra-Decision-Memory-Credit-Note.pdf)**
-(PDF, 10pp).
-
-Two labels are used throughout, and they are not decoration:
-
-| | |
-|---|---|
-| **MEASURED** | observed in a controlled run |
-| **MODELLED** | arithmetic on stated assumptions, not yet observed |
-
-### The experiment · MEASURED
-
-Nineteen DSA-sourced applications, each run twice, everything identical
-except whether a single learned judgement was switched on.
-
-That judgement -- **clause C-002** -- was chosen because it appears in no
-document:
-
-> *"DSA-sourced files get employment verified with the employer directly --
-> the submitted document set is not enough."*
-
-It was formed from corrections by three named credit officers, each changing
-the decision from `approve` to `verify_employment`. The written policy says
-in §1 that it applies to every sourcing channel and then prescribes nothing
-channel-specific -- so if behaviour changes, it cannot have come from the
-document corpus.
-
-| Result | |
-|---|---|
-| **14 vs 1** | cases where the judgement was used, memory on versus off (**p = 0.0005**, sign test over 15 discordant pairs) |
-| **19 / 19** | correctly targeted on DSA files |
-| **0 / 2** | wrongly fired on control files |
-
-**No approve-or-decline verdict changed.** Fourteen of the nineteen already
-failed a hard policy rule -- bureau 617, FOIR 95%, income below floor -- so
-a verdict change was structurally impossible. What changed was the
-*reasoning*: an extra step nobody had written down.
-
-### Where the money actually is
-
-That matters, because the run sampled the branch where money *cannot* move:
-
-```mermaid
-flowchart TD
-    A["100 DSA-sourced files"] --> B{"Policy gates<br/>§4 bureau · §2.2 income · §3.1 FOIR"}
-    B -->|"~70 declined"| C["Dead on a hard rule<br/>Memory changes nothing<br/>14 of 19 tested cases sat here"]
-    B -->|"~30 clear every gate"| D["Recommended for approval<br/>§5 asks for documents,<br/>not for a phone call"]
-    D --> E["Without memory<br/>approve as submitted<br/>30 disburse<br/>employer never contacted"]
-    D --> F["With clause C-002<br/>divert to verify employment"]
-    F --> G["27 confirmed<br/>cleared in a day"]
-    F --> H["3 fabricated<br/>caught before payout"]
-    style C stroke-dasharray: 4 4
-    style E stroke-width:2px
-    style H stroke-width:2px
-```
-
-The controlled run lives in the **left** branch. The money lives in the
-**right** one, which that run did not sample -- so the figures below are
-arithmetic, and labelled as such.
-
-### What it costs to be right · MODELLED
-
-Verification is not free: a call and a day of turnaround on **every**
-diverted file, including the ones that turn out fine. So the question a
-credit committee should ask is how often this must catch something to pay
-for itself.
-
-```
-break-even catch rate = cost per verification / (ticket x loss given default)
-```
-
-On a ₹5 lakh personal loan at 70% LGD, a caught file avoids roughly
-**₹3.5 lakh** of loss:
-
-| Cost assumption | Per file | Break-even catch rate |
-|---|---:|---:|
-| Direct cost of the call only | ₹300 | **0.09%** |
-| All-in, loading customer drop-off from the extra day | ₹5,000 | **1.4%** |
-
-Employment misstatement on DSA-sourced files in Indian personal lending runs
-in the **low single-digit percent**. On the pessimistic cost assumption you
-are ahead; on the realistic one, ahead by two orders of magnitude.
-
-Substitute your own numbers -- the arithmetic is three inputs and you hold
-all three.
-
-### The null result, which is the part worth trusting
-
-Four learned judgements were seeded. Three merely restated the written SOP.
-Retired, they changed nothing: the system reached the same conclusion
-without them, because it can simply read the rule. They fired, they were
-cited, and they added no value.
-
-**The rulebook is followed by the model already. Memory is how the judgement
-calls the rulebook does not cover get picked up -- and how you see whose
-judgement was used.**
-
-We publish that because it is what makes the rest credible. Any vendor can
-tell you their system learns; fewer will tell you which of their own
-features measurably does nothing.
-
-### Limits
-
-One judgement, one application, nineteen cases, one tenant. It is evidence
-that a learned judgement changes how the system reasons where policy is
-silent, and stays quiet where it is not. It is **not** evidence that
-decision memory helps in general, and we would not present it as such. The
-run tested a single-facet scope (`sourcing_channel:dsa`); it says nothing
-about how well multi-facet scopes discriminate, which we have not measured.
-Every rupee figure above is MODELLED on a single ticket size and a flat
-loss-given-default -- a real book has a distribution for both.
 
 ## Quickstart
 
