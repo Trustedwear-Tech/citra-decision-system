@@ -1158,8 +1158,11 @@ Business Source License 1.1 (BUSL-1.1) -- source-available, not open source.
 Free to use, copy, and modify for any non-production purpose: development,
 testing, security review, internal evaluation, and pilots of up to 90 days on
 your own data. Production use requires a commercial licence. Each released
-version converts to Apache License 2.0 four years after its release date. See
-`LICENSE` and `NOTICE`.
+version converts to Apache License 2.0 four years after its release date --
+automatically, with no action required from us and no way for us to withdraw
+it. For v0.1.0 the Change Date is **2030-08-09**, four years from the day this
+repository was first published (2026-08-09), which is the maximum BSL 1.1
+permits. See `LICENSE` and `NOTICE`.
 
 Commercial licensing and support contracts: contact@citra-ai.com
 
