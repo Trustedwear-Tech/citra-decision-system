@@ -113,7 +113,14 @@ def _docker_network() -> str:
     `network X declared as external, but could not be found` at `up` time,
     far from the cause.
     """
+    # Environment first, then .env. os.getenv alone reads only the ENVIRONMENT,
+    # and nothing exports .env before this runs — e2e-onboarding-test.sh calls
+    # this script directly. A value sitting correctly in .env would have read as
+    # unset and aborted, pointing at the file that already had it. seed-demo.sh
+    # hit exactly that with ACME_BANK_PG_PORT.
     net = (os.getenv("CITRA_DOCKER_NETWORK") or "").strip()
+    if not net:
+        net = _envfile_get(".env", "CITRA_DOCKER_NETWORK").strip()
     if not net:
         raise SystemExit(
             "CITRA_DOCKER_NETWORK is not set.\n"

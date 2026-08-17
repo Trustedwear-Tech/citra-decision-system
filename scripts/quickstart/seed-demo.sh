@@ -48,7 +48,7 @@ COMPOSE="docker compose -f docker-compose.quickstart.yml"
 # them. This script stays byte-identical across both repos; the deployment
 # value lives in .env, which is where the trees are allowed to differ.
 case "$TENANT" in
-  acme-bank) PG_ENV="ACME_BANK_PG_CONN"; PG_CONN="postgresql://acme_bank:acme_bank_demo_pw@localhost:${ACME_BANK_PG_PORT:?set ACME_BANK_PG_PORT in .env — the host port of the acme-bank Postgres}/acme_bank" ;;
+  acme-bank) PG_ENV="ACME_BANK_PG_CONN" ;;
   *) echo "Unknown tenant '$TENANT' (this tree ships: acme-bank)" >&2; exit 1 ;;
 esac
 
@@ -64,6 +64,20 @@ getenv() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
 JWT_SECRET="$(getenv JWT_SECRET)"
 ADMIN_EMAIL="$(getenv ADMIN_EMAIL)"; ADMIN_EMAIL="${ADMIN_EMAIL:-admin@citra-ai.com}"
 [ -n "$JWT_SECRET" ] || { echo "JWT_SECRET missing from .env" >&2; exit 1; }
+
+# Read the Postgres port through getenv, NOT as a shell variable. ${VAR:?...}
+# expands a variable in the ENVIRONMENT, and this script never sources .env —
+# so a value sitting correctly in .env still read as unset and the seed aborted
+# with "ACME_BANK_PG_PORT: set ACME_BANK_PG_PORT in .env", pointing at the file
+# that already had it. Fails loud, but on the real condition.
+PG_PORT="$(getenv ACME_BANK_PG_PORT)"
+[ -n "$PG_PORT" ] || {
+  echo "ACME_BANK_PG_PORT missing from .env - it is the host port that" >&2
+  echo "demo-data/tenants/$TENANT/mcp/docker-compose.yml publishes for the" >&2
+  echo "tenant's Postgres. Add it (15444 in this tree) and re-run." >&2
+  exit 1
+}
+PG_CONN="postgresql://acme_bank:acme_bank_demo_pw@localhost:${PG_PORT}/acme_bank"
 
 # -- Python venv with the seed-script deps (cross-platform) -------------------
 PYBIN="$(command -v python3 || command -v python || true)"
