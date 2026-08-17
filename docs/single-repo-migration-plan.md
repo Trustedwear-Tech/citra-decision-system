@@ -1,6 +1,24 @@
-# Plan: work in one repo, keep private material in `private/`
+# Working in one repo, with private material in `private/`
 
-Status: plan. Nothing moved yet. Written 2026-08-17.
+Status: **DONE, 2026-08-17.** Written as a plan and executed the same day; kept
+as the record of what changed and why. What actually shipped:
+
+- 140 files moved into `private/` (135 private-only, the marketing landing page
+  and its section components, and the 3 Firebase hosting files)
+- `.gitignore` gained `private/` plus explicit rules for the Firebase files and
+  the Android signing material
+- `private/scripts/overlay.sh` swaps the landing page for a marketing build;
+  verified by round-trip (apply → 5,766 lines, revert → 35, no leftovers)
+- `private/scripts/backup.sh` mirrors `private/` to Citra-AI, one direction
+- `scripts/hooks/pre-commit` blocks private material being staged here;
+  verified it blocks a staged marketing page and passes a normal commit
+- `sync_public.py` retired, pre-push sync hook removed, Citra-AI marked
+  `BACKUP-ONLY.md`
+- verified: the `citra-ui` image builds from this tree with `private/` absent
+
+Still open, deliberately: rotating the GCP service-account key, confirming the
+deletion list for the investor collateral, and whether to strip Citra-AI down
+to only the private overlay.
 
 Goal: stop maintaining two trees. Work only in `citra-decision-system`, keep
 the private material in a single gitignored `private/` folder, and back that
