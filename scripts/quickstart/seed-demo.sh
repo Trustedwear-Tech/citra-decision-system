@@ -55,7 +55,12 @@ esac
 TENANT_DIR="demo-data/tenants/$TENANT"
 [ -d "$TENANT_DIR" ] || { echo "Tenant dir not found: $TENANT_DIR" >&2; exit 1; }
 
-getenv() { grep -E "^$1=" .env | head -1 | cut -d= -f2-; }
+# `|| true` is load-bearing: these scripts run `set -euo pipefail`, so a grep
+# that matches nothing returns 1 and kills the script at the assignment —
+# before any ${VAR:-default} can apply. Every key read here happens to exist
+# in .env.example today; the first one that does not would fail silently.
+# setup.sh hit exactly that on MONGODB_USER.
+getenv() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
 JWT_SECRET="$(getenv JWT_SECRET)"
 ADMIN_EMAIL="$(getenv ADMIN_EMAIL)"; ADMIN_EMAIL="${ADMIN_EMAIL:-admin@citra-ai.com}"
 [ -n "$JWT_SECRET" ] || { echo "JWT_SECRET missing from .env" >&2; exit 1; }

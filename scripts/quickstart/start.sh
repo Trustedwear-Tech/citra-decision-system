@@ -32,7 +32,12 @@ case "${1:-}" in
   --demo)    DEMO="${2:-acme-bank}" ;;
 esac
 
-getenv() { grep -E "^$1=" .env | head -1 | cut -d= -f2-; }
+# `|| true` is load-bearing: these scripts run `set -euo pipefail`, so a grep
+# that matches nothing returns 1 and kills the script at the assignment —
+# before any ${VAR:-default} can apply. Every key read here happens to exist
+# in .env.example today; the first one that does not would fail silently.
+# setup.sh hit exactly that on MONGODB_USER.
+getenv() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
 ADMIN_EMAIL="$(getenv ADMIN_EMAIL)";       ADMIN_EMAIL="${ADMIN_EMAIL:-admin@citra-ai.com}"
 ADMIN_PASSWORD="$(getenv ADMIN_PASSWORD)"; ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe!123}"
 

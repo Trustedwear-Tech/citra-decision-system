@@ -26,6 +26,17 @@ COMPOSE="docker compose -f docker-compose.quickstart.yml"
 # external), so nothing needs to pre-create it here. It used to be declared
 # external and created by hand at this point — see the infra networks block.
 
+# Read one key from .env, tolerating absence.
+#
+# NOT `VAR="$(grep ... | cut ...)"`. Under `set -euo pipefail` a grep that
+# matches nothing returns 1, the assignment inherits that status, and the script
+# exits — BEFORE the ${VAR:-default} on the next line can supply the fallback.
+# The whole point of those defaults is that the key may be missing, so the
+# pattern defeated itself. MONGODB_USER is in neither .env nor .env.example, so
+# every clean install died silently right after "waiting for Mongo", with no
+# message and exit 1.
+envget() { grep -E "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- || true; }
+
 rand() { openssl rand -hex "$1" 2>/dev/null || head -c "$((${1}*2))" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
 setkv() { # key value file - replace KEY=... line in place (value may contain anything)
   local k="$1" v="$2" f="$3"
@@ -88,8 +99,8 @@ done
 
 # -- 3. Wait for the stateful stores, then create resources -------------------
 echo "-> waiting for Mongo (replica set) + Postgres"
-MONGO_PW="$(grep -E '^MONGODB_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)"; MONGO_PW="${MONGO_PW:-citradev}"
-MONGO_USER="$(grep -E '^MONGODB_USER=' "$ENV_FILE" | cut -d= -f2-)"; MONGO_USER="${MONGO_USER:-root}"
+MONGO_PW="$(envget MONGODB_PASSWORD)"; MONGO_PW="${MONGO_PW:-citradev}"
+MONGO_USER="$(envget MONGODB_USER)"; MONGO_USER="${MONGO_USER:-root}"
 MONGO_OK=false
 for _ in $(seq 1 60); do
   # rs.status() requires auth once the root user exists - authenticate, or this
@@ -127,7 +138,7 @@ if [ "$MONGO_OK" != true ]; then
   exit 1
 fi
 
-PG_USER="$(grep -E '^POSTGRES_USER=' "$ENV_FILE" | cut -d= -f2-)"; PG_USER="${PG_USER:-citra}"
+PG_USER="$(envget POSTGRES_USER)"; PG_USER="${PG_USER:-citra}"
 PG_OK=false
 for _ in $(seq 1 40); do
   if $COMPOSE exec -T postgres pg_isready -U "$PG_USER" >/dev/null 2>&1; then
@@ -141,7 +152,7 @@ if [ "$PG_OK" != true ]; then
   exit 1
 fi
 
-BUCKET_NAME="$(grep -E '^BUCKET_NAME=' "$ENV_FILE" | cut -d= -f2-)"; BUCKET_NAME="${BUCKET_NAME:-citra-documents}"
+BUCKET_NAME="$(envget BUCKET_NAME)"; BUCKET_NAME="${BUCKET_NAME:-citra-documents}"
 echo "-> creating MinIO bucket '$BUCKET_NAME'"
 # Port 9000, not 9002. This runs INSIDE citra-network, so it must use the
 # container's own listening port -- MinIO serves its API on 9000 and the
