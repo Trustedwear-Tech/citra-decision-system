@@ -36,8 +36,6 @@
 *Sovereign by design -- run it in your own infrastructure, on open models. Your
 data never leaves.*
 
-## The short version
-
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/story/1-why-dark.svg">
@@ -75,7 +73,7 @@ Two things come out of that loop, and they are worth separating: the
 saved by not re-deciding the routine ones. Most tools chase the second.
 This is built for the first, and gets the second on the way.
 
-Everything below is the detail — [the problem](#the-problem-it-addresses),
+The rest of this page is the detail: [the problem](#the-problem-it-addresses),
 [what we measured](#what-we-measured), [how it works](#how-it-works), and
 [how to run it](#quickstart).
 
