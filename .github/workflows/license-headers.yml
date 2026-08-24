@@ -53,4 +53,4 @@ jobs:
         run: |
           pip install pytest pyyaml
           python -m pytest scripts/test_license_headers.py \
-                           scripts/test_set_license_change_date.py -q
+                           -q

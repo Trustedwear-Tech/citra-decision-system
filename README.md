@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="https://github.com/Trustedwear-Tech/citra-decision-system/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Trustedwear-Tech/citra-decision-system/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="License: BSL 1.1" src="https://img.shields.io/badge/license-BSL%201.1-2563EB"></a>
+  <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-2563EB"></a>
   <img alt="Self-hosted" src="https://img.shields.io/badge/deploy-docker%20compose-1E3A8A">
   <img alt="Open models" src="https://img.shields.io/badge/models-open%20weights-4B5563">
   <a href="https://discordapp.com/channels/1519703038724669551/1535992242433433700"><img alt="Discord" src="https://img.shields.io/badge/discord-join-5865F2"></a>

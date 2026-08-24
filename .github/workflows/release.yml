@@ -68,21 +68,6 @@ jobs:
             exit 1
           fi
 
-      # The BUSL Change Date steps were removed when this repo relicensed to
-      # Apache-2.0. Apache has no Change Date and no per-release licence bump —
-      # LICENSE is the same text for every version, so there is nothing to set
-      # or commit before tagging.
-      - name: Refuse to tag a stale LICENSE
-        run: |
-          python3 scripts/set_license_change_date.py \
-            --version "${{ inputs.version }}" --check
-
-      # A signed tag is cryptographic proof of what was released, when, and by
-      # whom -- evidence a file header cannot provide, and the cheapest item on
-      # the provenance list. It needs a key, so it is conditional; what it is
-      # NOT is silent. An unsigned release says so in the log and in the job
-      # summary, because a release everyone assumes is signed and isn't is worse
-      # than one openly known to be unsigned.
       - name: Import the signing key
         id: signing
         if: ${{ !inputs.dry_run }}

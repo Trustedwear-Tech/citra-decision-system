@@ -15,7 +15,7 @@
 // citra-ai.com marketing site: 5,766 LOC of commercial content — third-party
 // endorsement names, usage counters that would read as false on a fresh
 // install, externally-hosted assets — none of which belongs in a
-// source-available release, so it is deny-listed from the sync (see
+// open-source release, so it is deny-listed from the sync (see
 // scripts/oss-release/sync_public.py and docs/open-source-release-plan.md
 // §7.4).
 //

@@ -239,7 +239,7 @@ def test_legacy_header_is_replaced_not_duplicated(tmp_path):
     assert "PROPRIETARY" not in out
     assert "LicenseRef" not in out
     assert out.count("SPDX-License-Identifier") == 1
-    assert "BUSL-1.1" in out
+    assert "Apache-2.0" in out
     assert out.rstrip().endswith("x = 1")
 
 
@@ -392,10 +392,10 @@ def test_rewrite_handles_a_block_comment_header(tmp_path):
     assert out.count("<!--") == 1 and out.count("-->") == 1
 
 
-def test_header_states_busl_not_proprietary():
+def test_header_states_apache_not_proprietary():
     """The defect this rewrite exists to fix."""
     text = "\n".join(lh.HEADER)
-    assert "BUSL-1.1" in text
+    assert "Apache-2.0" in text
     assert "Trustedwear Tech Private Limited" in text
     assert "Rohit Kumar Chandan" in text
     assert "PROPRIETARY" not in text.upper()
