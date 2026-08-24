@@ -1,0 +1,408 @@
+<!--
+  Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+  Author: Rohit Kumar Chandan
+  SPDX-License-Identifier: Apache-2.0
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Source — Apache-2.0 Decision, Deck and Workflow Engines | Citra AI</title>
+  <meta name="description"
+    content="Citra AI publishes three Apache-2.0 projects you can self-host forever: citra-decision-system (decision engine and Decision Apps runtime), citra-decks (document-grounded presentations and reports) and citra-flows (AI-authored workflow automation). Run them on your own infrastructure and models, sponsor their maintenance, or buy a hosted single-tenant deployment.">
+  <meta name="keywords"
+    content="Citra AI open source, Apache 2.0, self-hosted AI, citra-decision-system, citra-decks, citra-flows, sovereign AI, open weights, decision engine, workflow automation, sponsor open source">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="author" content="Citra AI Team">
+  <meta name="publisher" content="Trustedwear Tech Private Limited">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="canonical" href="https://citra-ai.com/open-source">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://citra-ai.com/open-source">
+  <meta property="og:title" content="Open Source — Apache-2.0 Decision, Deck and Workflow Engines | Citra AI">
+  <meta property="og:description"
+    content="Three Apache-2.0 projects you can self-host forever, on your own infrastructure and your own models. Sponsor their maintenance, or buy a hosted single-tenant deployment.">
+  <meta property="og:site_name" content="Citra AI">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Open Source — Apache-2.0 Decision, Deck and Workflow Engines | Citra AI">
+  <meta name="twitter:description"
+    content="Three Apache-2.0 projects you can self-host forever, on your own infrastructure and your own models.">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f8fafc;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    header {
+      background: #1e293b;
+      color: white;
+      padding: 1rem 0;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 2rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+    }
+
+    nav a:hover {
+      color: #6366f1;
+    }
+
+    main {
+      padding: 2rem 0;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1e293b 0%, #312e81 100%);
+      color: white;
+      padding: 4rem 0;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      margin-bottom: 0;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+      color: #cbd5e1;
+    }
+
+    .section {
+      margin: 3rem 0;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-heading {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: white;
+      padding: 1.75rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e2e8f0;
+      margin-bottom: 1.25rem;
+    }
+
+    .card h2 {
+      color: #1e293b;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+
+    .card p {
+      color: #374151;
+      line-height: 1.7;
+      font-size: 1rem;
+    }
+
+    .card.featured {
+      border: 2px solid #6366f1;
+      background: #f8f7ff;
+    }
+
+    .card.dark {
+      border: 2px solid #0B1120;
+      background: #0F172A;
+      color: #F1F5F9;
+    }
+
+    .card.dark h2 {
+      color: #F8FAFC;
+    }
+
+    .card.dark p {
+      color: #94A3B8;
+    }
+
+    .price-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      border-top: 4px solid #6366f1;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .price-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 0.4rem;
+    }
+
+    .price-amount {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 0.25rem;
+    }
+
+    .price-note {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    .cta-banner {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      padding: 3rem;
+      border-radius: 16px;
+      margin: 3rem 0;
+      text-align: center;
+    }
+
+    .cta-banner h2 {
+      margin-bottom: 1rem;
+      font-size: 1.75rem;
+    }
+
+    .cta-banner p {
+      margin-bottom: 2rem;
+      font-size: 1.05rem;
+      opacity: 0.9;
+    }
+
+    .cta-white {
+      display: inline-block;
+      background: white;
+      color: #6366f1;
+      padding: 0.9rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    footer {
+      background: #1e293b;
+      color: #94a3b8;
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    footer a {
+      color: #94a3b8;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: #6366f1;
+    }
+
+    footer nav {
+      margin-top: 0.75rem;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 1.75rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">Citra AI</div>
+        <nav aria-label="Main navigation">
+          <ul>
+            <li><a href="/static-seo/">Home</a></li>
+            <li><a href="/blog/">Blog</a></li>
+            <li><a href="/static-seo/faq.html">FAQ</a></li>
+            <li><a href="/app" rel="nofollow">Sign In</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Open Source</h1>
+        <p>Three of the engines behind Citra are published under Apache-2.0. Clone them, read them, run
+          them on your own infrastructure against your own models — free, permanently, with no seat count
+          and no call with us first.</p>
+      </div>
+    </section>
+
+    <!-- THE REPOSITORIES -->
+    <section class="section">
+      <div class="container">
+        <span class="section-label">The repositories</span>
+        <h2 class="section-heading">What is published</h2>
+
+        <div class="card">
+          <h2>citra-decision-system</h2>
+          <p>The decision engine and the Decision Apps runtime. Describe a decision in plain English and it
+            produces an app that recommends the call, acts only inside the policy gate you set, and records
+            the reasoning behind every approve and reject so the next recommendation is better. Includes the
+            MCP tool gateway, the discovery service and the sandboxed builder.</p>
+          <p><a href="https://github.com/Trustedwear-Tech/citra-decision-system">github.com/Trustedwear-Tech/citra-decision-system</a></p>
+        </div>
+
+        <div class="card">
+          <h2>citra-decks</h2>
+          <p>Presentations, visual reports and long-form documents written from your own material — the spec,
+            the spreadsheets, last quarter's report. Figures are computed by running code against your actual
+            files rather than written by a model, so every number traces back to a source.</p>
+          <p><a href="https://github.com/Trustedwear-Tech/citra-decks">github.com/Trustedwear-Tech/citra-decks</a></p>
+        </div>
+
+        <div class="card">
+          <h2>citra-flows</h2>
+          <p>AI-authored workflow automation. Describe a pipeline in plain English; the builder assembles it
+            from typed nodes you can open, inspect and edit on a canvas — it cannot invent a node. Run it,
+            watch every input and output, then deploy it behind a webhook or a cron schedule.</p>
+          <p><a href="https://github.com/Trustedwear-Tech/citra-flows">github.com/Trustedwear-Tech/citra-flows</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SELF-HOST -->
+    <section class="section">
+      <div class="container">
+        <span class="section-label">Run it yourself</span>
+        <h2 class="section-heading">Nothing is held back</h2>
+        <div class="card">
+          <p>Each repository ships a quickstart wizard that writes its own <code>.env</code> with fresh
+            secrets and brings the stack up with Docker Compose. Point it at an OpenRouter key or at a vLLM
+            endpoint you run, and no data leaves your network. The models are open-weight by default.</p>
+          <p>There is no feature-gated core, no licence key, and no telemetry back to us. Apache-2.0 means
+            you may run it in production, modify it, and never speak to us at all.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- THREE PATHS -->
+    <section class="section">
+      <div class="container">
+        <span class="section-label">How to get it</span>
+        <h2 class="section-heading">Three ways, and only one of them costs money</h2>
+
+        <div class="card">
+          <h2>Self-host — free, forever</h2>
+          <p>Clone the repository and run it on your own infrastructure. Apache-2.0. This is the whole
+            product, not a trial of it.</p>
+        </div>
+
+        <div class="card" id="support">
+          <h2>Sponsor — for people who rely on it</h2>
+          <p>If one of these projects saves your team time, you can fund its upkeep: maintenance, the
+            documentation, and the hosted demo people try before they self-host. Any amount, one-off.</p>
+          <p><strong><a href="https://rzp.io/rzp/Yp92GE2l">Support Citra AI →</a></strong></p>
+          <p class="price-note">Contributions go to Trustedwear Tech Private Limited, the company that
+            maintains these projects. They are <strong>not</strong> tax-exempt donations, no 80G certificate
+            is issued, and they buy no licence, warranty, support entitlement or influence over the roadmap.
+            The projects stay Apache-2.0 either way.</p>
+        </div>
+
+        <div class="card featured">
+          <h2>Enterprise — hosted or in your own cloud</h2>
+          <p>For regulated deployments: single-tenant and audit-ready, hosted by us or fully sovereign in
+            your own cloud with BYOC, with support, an SLA, and help getting the first Decision App live.
+            This is what pays for the open source.</p>
+          <p><strong><a href="/contactus">Talk to us →</a></strong></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY -->
+    <section class="section">
+      <div class="container">
+        <span class="section-label">Why we publish it</span>
+        <h2 class="section-heading">Sovereignty you can verify</h2>
+        <div class="card">
+          <p>Citra is sold to government, PSU and BFSI teams on the claim that their data stays inside their
+            estate. That claim is worth more when the code can be read. Publishing the engines means a
+            security reviewer can check what leaves the network instead of taking a vendor's word, and a
+            customer is never locked to us by the software itself — only by whether the hosting and support
+            are worth paying for.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 Citra AI. All rights reserved.</p>
+      <nav aria-label="Footer navigation">
+        <a href="/static-seo/">Home</a> |
+        <a href="/blog/">Blog</a> |
+        <a href="/static-seo/faq.html">FAQ</a> |
+        <a href="/open-source">Open Source</a> |
+        <a href="/privacy-policy">Privacy Policy</a> |
+        <a href="/terms-of-service">Terms of Service</a> |
+        <a href="/contactus">Contact Us</a> |
+        <a href="/sitemap.xml">Sitemap</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+
+</html>
