@@ -75,12 +75,14 @@ jobs:
     strategy:
       matrix:
         service:
-          - Citra-User-Service
-          # citra-agent was in the matrix but is not in this tree -- it was not
-          # carried over in the OSS split. The job could only ever fail with
-          # "No such file or directory", and it took the whole matrix down with
-          # it. Nobody noticed because this workflow is workflow_dispatch only
-          # and had never run.
+          # The Node projects that are actually in this tree. Citra-User-Service
+          # and citra-agent were both listed here and neither was carried over in
+          # the OSS split, so the job could only fail with "No such file or
+          # directory" -- and it took the whole matrix down with it. Nobody
+          # noticed because this workflow is workflow_dispatch only.
+          - Citra-UI
+          - citra-app-runtime
+          - bank-demo
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -103,8 +105,6 @@ jobs:
       matrix:
         include:
           - service: Citra-Service
-            dockerfile: Dockerfile
-          - service: Citra-User-Service
             dockerfile: Dockerfile
           - service: duckdb-query-service
             dockerfile: Dockerfile
@@ -147,7 +147,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # The gitleaks BINARY is free; gitleaks-action@v2 refuses to run for an
+      # organisation without a paid licence key ("[org] is an organization.
+      # License key is required."), which failed this job on every run and had
+      # nothing to do with whether a secret was found. Running the CLI keeps
+      # the scan and drops the licence wall.
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=8.28.0
+          curl -sSL -o /tmp/gitleaks.tar.gz             "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          # --redact so a finding never prints the secret into a public log.
+          /tmp/gitleaks detect --source . --redact --no-banner --exit-code 1
