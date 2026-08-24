@@ -104,8 +104,21 @@ fi
 
 # -- 5. Super-admin -----------------------------------------------------------
 echo "-> creating super-admin $ADMIN_EMAIL"
+# --org matters. Without it the super-admin belongs to no organisation, so their
+# Work Service Account is minted for the wrong org and the seeded Decision Apps
+# -- owned by the publisher's Work SA in the DEMO org -- are invisible. Someone
+# installing this signs in, sees "Nothing published to you", and has to discover
+# impersonation to find the demo they just seeded.
+#
+# Impersonation still exists and is still right for an operator entering a
+# customer's org. It should not be the first thing a self-hoster has to learn in
+# order to see their own data.
+ADMIN_ORG="$DEMO"
+[ "$ADMIN_ORG" = "none" ] && ADMIN_ORG="$(getenv ORG_ID)"
+ADMIN_ORG="${ADMIN_ORG:-citra-ai}"
 $COMPOSE exec -T citra-user-service \
-  node src/scripts/create-admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD" "Citra Admin" --role=super_admin
+  node src/scripts/create-admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD" "Citra Admin" \
+       --role=super_admin --org="$ADMIN_ORG"
 
 # -- 6. Demo tenant -----------------------------------------------------------
 if [ "$DEMO" != "none" ]; then

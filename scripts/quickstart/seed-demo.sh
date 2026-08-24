@@ -208,13 +208,52 @@ JWT_SECRET="$JWT_SECRET" "$PY" scripts/quickstart/build_catalogue.py --org "$TEN
   || echo "   [!] catalogue crawl failed - the Builder's dataset palette will be empty. Re-run: JWT_SECRET=... python scripts/quickstart/build_catalogue.py --org $TENANT"
 
 # -- 6. Publish the Decision Apps ---------------------------------------------
-echo "-> [6/6] publishing Decision Apps"
+echo "-> [6/7] publishing Decision Apps"
 "$PY" demo-data/scripts/publish_apps.py \
     --smart-app-url http://localhost:9100 \
     --jwt-secret "$JWT_SECRET" \
     --tenant-id "$TENANT" \
     --apps-dir "$TENANT_DIR/apps" \
     --user-id "$ADMIN_EMAIL"
+
+# -- 7. Promote them to prod --------------------------------------------------
+# publish_apps.py lands apps in the TEST environment, which is right for the
+# builder (it always runs in test). The UI's default lenses read PROD, so
+# without this the seed reports "published=4 / 4" and the user signs in to
+# "Nothing published to you" -- and has to discover impersonation or the test
+# lens to find the demo they just installed.
+#
+# Promotion can legitimately refuse: an app that learns from historical
+# decisions answers grounding_refresh_required until its grounding is rebuilt.
+# That is a real state, not a seed failure, so it is reported and skipped.
+echo "-> [7/7] promoting the Decision Apps to prod"
+PROMOTE_JWT="$("$PY" - "$JWT_SECRET" "$ADMIN_EMAIL" "$TENANT" <<'PYEOF'
+import sys, time, jwt
+secret, email, tenant = sys.argv[1], sys.argv[2], sys.argv[3]
+now = int(time.time())
+print(jwt.encode({
+    "sub": email, "user_id": email, "email": email,
+    "org_id": tenant, "tenant_id": tenant,
+    "roles": ["super_admin", "org_admin"], "scope": "smart-app-builder",
+    "iss": "Citra-AI", "iat": now, "exp": now + 3600,
+}, secret, algorithm="HS256"))
+PYEOF
+)"
+for slug in $("$PY" - "$TENANT_DIR/apps" <<'PYEOF'
+import json, pathlib, sys
+for f in sorted(pathlib.Path(sys.argv[1]).glob("*.json")):
+    print(json.loads(f.read_text(encoding="utf-8"))["app_spec"]["slug"])
+PYEOF
+); do
+  body="$(curl -s -m 60 -X POST -H "Authorization: Bearer $PROMOTE_JWT" \
+       -H "Content-Type: application/json" -d '{}' \
+       "http://localhost:9100/apps/$slug/promote-to-prod" || true)"
+  case "$body" in
+    *'"prod_url"'*)                     echo "   [ok] $slug" ;;
+    *grounding_refresh_required*)       echo "   [--] $slug needs a grounding refresh before it can be promoted" ;;
+    *)                                  echo "   [!!] $slug did not promote: $(printf '%s' "$body" | head -c 120)" ;;
+  esac
+done
 
 echo ""
 echo "Demo '$TENANT' seeded. Sign in at http://localhost:8081 as $ADMIN_EMAIL,"

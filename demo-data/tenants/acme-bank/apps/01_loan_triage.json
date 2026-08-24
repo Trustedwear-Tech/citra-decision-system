@@ -160,8 +160,6 @@
         "sourcing_channel"
       ]
     },
-    "owner_type": "service_account",
-    "owner_id": "svc:work-rohit-trustedweartech-com@acme-bank.citra.ai",
     "tenant_id": "acme-bank",
     "org_id": "acme-bank",
     "dept_ids": [],
