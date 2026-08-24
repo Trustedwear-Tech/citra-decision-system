@@ -48,7 +48,6 @@ jobs:
           - duckdb-query-service
           - reranker-service
           - playwright-render-service
-          - citra-mcp-server
           - Monitoring-Service
     steps:
       - uses: actions/checkout@v4
@@ -112,8 +111,6 @@ jobs:
           - service: reranker-service
             dockerfile: Dockerfile
           - service: playwright-render-service
-            dockerfile: Dockerfile
-          - service: citra-mcp-server
             dockerfile: Dockerfile
           - service: Monitoring-Service
             dockerfile: Dockerfile
