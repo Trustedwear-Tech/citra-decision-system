@@ -118,9 +118,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: |
+          # Context is the REPO ROOT, not the service directory. Four of
+          # these five Dockerfiles copy from paths that only exist at the
+          # root (citra-common/citra-service-utils, Citra-Service/...), so a
+          # service-scoped context failed with "/reranker-service: not
+          # found" on a directory that is plainly there.
+          # docker-compose.dev.yml builds all of them with `context: .`;
+          # this now matches, and was checked by building one locally.
           docker build -t citra-${{ matrix.service }}:test \
             -f ${{ matrix.service }}/${{ matrix.dockerfile }} \
-            ${{ matrix.service }}/
+            .
 
   # ---------------------------------------------------------------------------
   # Security Scanning

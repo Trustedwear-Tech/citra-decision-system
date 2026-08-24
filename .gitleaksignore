@@ -1,0 +1,11 @@
+# Findings reviewed by hand and confirmed NOT to be credentials.
+# Each line is one gitleaks fingerprint (commit:file:rule:line), so this
+# silences exactly these three and nothing else -- a new leak anywhere still
+# fails the build.
+#
+#  .env.example                            SANDBOX_HOST_BUILDER_IMAGE, a docker image name
+#  docs/components/milvus.md               MILVUS_TOKEN with an empty value
+#  docs/multi-environment-test-prod-plan.md  prose mentioning "own service key"
+2ca9250c3b895be46dcdf321f0a7d3a805c3e56e:.env.example:generic-api-key:83
+2ca9250c3b895be46dcdf321f0a7d3a805c3e56e:docs/components/milvus.md:generic-api-key:50
+2ca9250c3b895be46dcdf321f0a7d3a805c3e56e:docs/multi-environment-test-prod-plan.md:generic-api-key:242
