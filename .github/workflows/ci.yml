@@ -15,7 +15,21 @@ name: CI
 # Manual-only: this pipeline does NOT run automatically on push/PR.
 # Trigger it from the Actions tab ("Run workflow") or `gh workflow run CI`.
 on:
+  # The README badge renders THIS workflow's last run. With only
+  # workflow_dispatch it rendered whenever somebody last clicked, so a commit
+  # that broke the build left a green badge up until the next manual run --
+  # the badge asserted something it had not checked.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+# A push that lands while an earlier run is still going supersedes it; the
+# older run's result is about code that is no longer main.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
