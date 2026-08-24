@@ -36,6 +36,19 @@
 *Sovereign by design -- run it in your own infrastructure, on open models. Your
 data never leaves.*
 
+## Support this project
+
+Citra Decision System is Apache-2.0 and free to run on your own
+infrastructure, forever. Sponsorship funds maintenance, the documentation, and
+the demo tenant people try before they self-host.
+
+**[→ Support this project](https://rzp.io/rzp/Yp92GE2l)**
+
+<sub>Contributions go to Trustedwear Tech Private Limited, which maintains this
+project. They are not tax-exempt donations, and they buy no licence, warranty,
+support entitlement or influence over the roadmap — the project stays
+Apache-2.0 either way.</sub>
+
 <details>
 <summary><b>Contents</b></summary>
 
