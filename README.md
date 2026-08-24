@@ -1085,7 +1085,7 @@ The wizard asks for **one OpenRouter key** and wires it to everything:
 
 | Role | Default | Why |
 |---|---|---|
-| Reasoning / NL->SQL | `deepseek/deepseek-chat-v3.1` | open weights |
+| Reasoning / NL->SQL | `deepseek/deepseek-v4-pro:nitro` | open weights |
 | Embeddings | `baai/bge-m3` at 768 | open weights; the client requests `dimensions` so it returns 768 rather than its native 1024, matching the Milvus collection |
 | Vision | `qwen/qwen3-vl-32b-instruct` | open weights |
 | Image generation | *off* -- Runware if you want it | not served by OpenRouter |

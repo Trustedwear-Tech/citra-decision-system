@@ -190,7 +190,7 @@ services:
 
       # ── LLM for NL->query planning (OpenRouter) ──────────────────────
       LLM_BASE_URL: ${{LLM_BASE_URL:-https://openrouter.ai/api/v1}}
-      LLM_MODEL: ${{LLM_MODEL:-deepseek/deepseek-chat-v3.1}}
+      LLM_MODEL: ${{LLM_MODEL:-deepseek/deepseek-v4-pro:nitro}}
       LLM_API_KEY: ${{LLM_API_KEY:-}}
       PLANNER_ENABLED: ${{PLANNER_ENABLED:-true}}
       LLM_EXTRA_BODY: '{{"reasoning":{{"exclude":true}}}}'

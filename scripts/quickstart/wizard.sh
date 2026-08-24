@@ -106,7 +106,7 @@ if [ -z "$key" ]; then
 fi
 
 setkv LLM_BASE_URL "https://openrouter.ai/api/v1"
-setkv LLM_MODEL    "deepseek/deepseek-chat-v3.1"
+setkv LLM_MODEL    "deepseek/deepseek-v4-pro:nitro"
 setkv LLM_API_KEY  "$key"
 # The tiered clients are NOT optional overrides of LLM_API_KEY — each tier
 # resolves its own key, and an empty one is sent as no auth header at all.

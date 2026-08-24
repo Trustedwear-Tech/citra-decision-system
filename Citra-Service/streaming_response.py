@@ -1241,7 +1241,7 @@ Document ID: {document_id}
             # set `reasoning.exclude=false` so thinking tokens stream on
             # `delta.reasoning*` and we surface them as REASONING events
             # (Action-Chat-style panel). When off, `exclude=true` keeps hybrid
-            # reasoning models (deepseek-chat-v3.1 via OpenRouter) from starving
+            # reasoning models (deepseek-v4-pro via OpenRouter) from starving
             # `content` by dumping the answer onto `reasoning_details`. Either
             # way `enabled`/`effort` come from env so the model still thinks.
             _expose_reasoning = reasoning_exposed()

@@ -135,7 +135,7 @@ def _spawn(user_id: str, session_id: str, scoped_token: str) -> dict:
             ),
             "CITRA_ACTION_MODEL": (
                 os.environ.get("CITRA_ACTION_MODEL")
-                or "deepseek/deepseek-chat-v3.1"
+                or "deepseek/deepseek-v4-pro:nitro"
             ),
         },
         "labels": {"citra.test": "l4-memory"},

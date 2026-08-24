@@ -48,7 +48,7 @@ services:
       - QUEUE_REDIS_PASSWORD=
       - CITRA_ACTION_CHAT_ENABLED=true
       - CITRA_ACTION_LLM_BASE_URL=https://openrouter.ai/api/v1
-      - CITRA_ACTION_MODEL=deepseek/deepseek-chat-v3.1
+      - CITRA_ACTION_MODEL=deepseek/deepseek-v4-pro:nitro
       - CITRA_ACTION_SANDBOX_HOSTS=127.0.0.1:7090
       - CITRA_ACTION_SANDBOX_HOST_SECRET=test-sandbox-host-secret-e2e-2025
       - CITRA_SERVICE_INTERNAL_URL=https://api.citra-ai.com/citra-ai

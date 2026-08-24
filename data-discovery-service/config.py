@@ -101,7 +101,7 @@ class Settings(BaseSettings):
     llm_enrichment_enabled: bool = True
     llm_base_url: str = "https://openrouter.ai/api/v1"
     llm_api_key: str = ""
-    llm_model: str = "deepseek/deepseek-chat-v3.1"
+    llm_model: str = "deepseek/deepseek-v4-pro:nitro"
     llm_request_timeout_seconds: float = 60.0
     llm_sample_rows_for_naming: int = 5       # rows sent to LLM (PII-redacted)
     llm_min_cryptic_score: float = 0.5        # only enrich names scoring above this
