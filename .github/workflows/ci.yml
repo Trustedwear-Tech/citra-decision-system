@@ -114,6 +114,10 @@ jobs:
             dockerfile: Dockerfile
           - service: Monitoring-Service
             dockerfile: Dockerfile
+            # The only one whose Dockerfile copies relative to ITSELF
+            # (COPY requirements.txt . / COPY . .), so the repo root is the
+            # wrong context for it and right for every other entry.
+            context: Monitoring-Service
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker image
@@ -127,7 +131,7 @@ jobs:
           # this now matches, and was checked by building one locally.
           docker build -t citra-${{ matrix.service }}:test \
             -f ${{ matrix.service }}/${{ matrix.dockerfile }} \
-            .
+            ${{ matrix.context || '.' }}
 
   # ---------------------------------------------------------------------------
   # Security Scanning
