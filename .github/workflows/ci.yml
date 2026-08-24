@@ -42,6 +42,10 @@ jobs:
     name: Python Lint
     runs-on: ubuntu-latest
     strategy:
+      # One failing entry must not cancel the rest: fail-fast hides their
+      # real state behind 'cancelled', which reads as unknown and costs an
+      # extra round trip per entry to uncover.
+      fail-fast: false
       matrix:
         service:
           - Citra-Service
@@ -73,6 +77,10 @@ jobs:
     name: Node.js Lint
     runs-on: ubuntu-latest
     strategy:
+      # One failing entry must not cancel the rest: fail-fast hides their
+      # real state behind 'cancelled', which reads as unknown and costs an
+      # extra round trip per entry to uncover.
+      fail-fast: false
       matrix:
         service:
           # The Node projects that are actually in this tree. Citra-User-Service
@@ -102,6 +110,10 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     strategy:
+      # One failing entry must not cancel the rest: fail-fast hides their
+      # real state behind 'cancelled', which reads as unknown and costs an
+      # extra round trip per entry to uncover.
+      fail-fast: false
       matrix:
         include:
           - service: Citra-Service
@@ -136,7 +148,12 @@ jobs:
           # found" on a directory that is plainly there.
           # docker-compose.dev.yml builds all of them with `context: .`;
           # this now matches, and was checked by building one locally.
-          docker build -t citra-${{ matrix.service }}:test \
+          # Docker repository names must be lowercase, and two of the five
+          # service DIRECTORIES are capitalised (Citra-Service,
+          # Monitoring-Service), so the tag cannot just interpolate the
+          # matrix value -- it is lowercased here.
+          tag="citra-$(echo '${{ matrix.service }}' | tr '[:upper:]' '[:lower:]'):test"
+          docker build -t "$tag" \
             -f ${{ matrix.service }}/${{ matrix.dockerfile }} \
             ${{ matrix.context || '.' }}
 
