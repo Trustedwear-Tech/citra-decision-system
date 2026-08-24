@@ -1,0 +1,9 @@
+# Renders the "Sponsor" button at the top of this repository.
+#
+# Razorpay payment page owned by Trustedwear Tech Private Limited, with a
+# customer-decided amount. Contributions fund maintenance, documentation and
+# the hosted demo for the Apache-2.0 repositories.
+#
+# They are NOT tax-exempt donations (no 80G), and confer no licence, warranty,
+# support entitlement, or influence over the roadmap.
+custom: ["https://rzp.io/rzp/Yp92GE2l"]
