@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 // Author: Rohit Kumar Chandan
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0
 //
-// Licensed under the Business Source License 1.1. Non-production use is granted;
-// production use requires a commercial licence until the Change Date, after
-// which this file converts to Apache-2.0. See LICENSE at the repository root.
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
 
 // KPI value computation shared by the dashboard tiles, the stat_strip band
 // and the hero headline metric. Extracted from PanelRenderer (U2/U3).

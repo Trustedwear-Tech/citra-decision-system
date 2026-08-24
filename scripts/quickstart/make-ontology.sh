@@ -1,20 +1,11 @@
 #!/usr/bin/env bash
 # Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 # Author: Rohit Kumar Chandan
-# SPDX-License-Identifier: BUSL-1.1
+# SPDX-License-Identifier: Apache-2.0
 #
-# Licensed under the Business Source License 1.1. Non-production use is granted;
-# production use requires a commercial licence until the Change Date, after
-# which this file converts to Apache-2.0. See LICENSE at the repository root.
-#
-# Friendly front door to scripts/quickstart/build_ontology.py.
-#
-# It exists to do the three things the raw tool does not: ask for what it needs
-# in plain English, check everything BEFORE the first paid model call, and print
-# the exact command it runs so you learn the tool instead of depending on this.
-#
-# Run with no arguments for an interactive walkthrough, or pass flags to script
-# it. --help explains every option.
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
 
 set -euo pipefail
 

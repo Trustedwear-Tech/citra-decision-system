@@ -1,11 +1,11 @@
 <!--
   Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
   Author: Rohit Kumar Chandan
-  SPDX-License-Identifier: BUSL-1.1
+  SPDX-License-Identifier: Apache-2.0
 
-  Licensed under the Business Source License 1.1. Non-production use is granted;
-  production use requires a commercial licence until the Change Date, after
-  which this file converts to Apache-2.0. See LICENSE at the repository root.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0
 -->
 
 <p align="center">
@@ -1259,15 +1259,15 @@ itself to.
 
 ## License
 
-Business Source License 1.1 (BUSL-1.1) -- source-available, not open source.
-Free to use, copy, and modify for any non-production purpose: development,
-testing, security review, internal evaluation, and pilots of up to 90 days on
-your own data. Production use requires a commercial licence. Each released
-version converts to Apache License 2.0 four years after its release date --
-automatically, with no action required from us and no way for us to withdraw
-it. For v0.1.0 the Change Date is **2030-08-09**, four years from the day this
-repository was first published (2026-08-09), which is the maximum BSL 1.1
-permits. See `LICENSE` and `NOTICE`.
+**Apache License 2.0** -- open source, no strings.
+
+Use it, modify it, run it in production, offer it as a service, fold it into a
+commercial product. No non-production restriction, no Change Date, no licence to
+buy. See `LICENSE` and `NOTICE`.
+
+This was previously Business Source License 1.1, which reserved production use.
+That restriction is gone and does not come back: an Apache grant is
+irrevocable, so every version from v0.1.1 onward is permanently open source.
 
 Commercial licensing and support contracts: contact@citra-ai.com
 

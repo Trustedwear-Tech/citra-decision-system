@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 // Author: Rohit Kumar Chandan
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: Apache-2.0
 //
-// Licensed under the Business Source License 1.1. Non-production use is granted;
-// production use requires a commercial licence until the Change Date, after
-// which this file converts to Apache-2.0. See LICENSE at the repository root.
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
 
 // LandingScreen.js
 //
@@ -118,11 +118,9 @@ const LandingScreen = ({ onAction, isAuthenticated }) => {
       )}
 
       <Text style={{ color: '#5a6178', fontSize: 12, lineHeight: 18 }}>
-        Licensed under the Business Source License 1.1 (BUSL-1.1), converting
-        to Apache-2.0 four years after release. Free for development and
-        testing; production use requires a commercial license —
-        contact@citra-ai.com · https://citra-ai.com. © Trustedwear
-        Tech Private Limited.
+        Open source under the Apache License 2.0. Free to use, modify and
+        run in production — contact@citra-ai.com · https://citra-ai.com.
+        © Trustedwear Tech Private Limited.
       </Text>
     </ScrollView>
   );

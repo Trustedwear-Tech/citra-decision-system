@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 # Author: Rohit Kumar Chandan
-# SPDX-License-Identifier: BUSL-1.1
+# SPDX-License-Identifier: Apache-2.0
 #
-# Licensed under the Business Source License 1.1. Non-production use is granted;
-# production use requires a commercial licence until the Change Date, after
-# which this file converts to Apache-2.0. See LICENSE at the repository root.
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
 
-"""Stamp every file WE wrote with the BUSL-1.1 notice -- and nothing else.
+"""Stamp every file WE wrote with the Apache-2.0 notice -- and nothing else.
 
 The tool this replaces walked the filesystem with `find`. Run in this tree it
 reported 6,079 files missing headers when only 979 were tracked by git: the
@@ -22,7 +22,7 @@ So the file list comes from `git ls-files`. If it is not tracked, it is not
 ours, and we do not touch it. That single decision is the point of this script.
 
 The old header was also wrong on its face: it said PROPRIETARY / all rights
-reserved / NOT an open-source grant, in a repository licensed BUSL-1.1 with an
+reserved / NOT an open-source grant, in a repository licensed Apache-2.0 with an
 explicit non-production grant. Two contradictory statements of terms invite an
 ambiguity argument, and ambiguity is construed against its author. The header
 below states the actual licence, with the registered SPDX id that scanners
@@ -58,11 +58,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 HEADER = [
     "Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)",
     "Author: Rohit Kumar Chandan",
-    "SPDX-License-Identifier: BUSL-1.1",
+    "SPDX-License-Identifier: Apache-2.0",
     "",
-    "Licensed under the Business Source License 1.1. Non-production use is granted;",
-    "production use requires a commercial licence until the Change Date, after",
-    "which this file converts to Apache-2.0. See LICENSE at the repository root.",
+    "Licensed under the Apache License, Version 2.0 (the \"License\"); you may not",
+    "use this file except in compliance with the License. You may obtain a copy of",
+    "the License at http://www.apache.org/licenses/LICENSE-2.0",
 ]
 
 # Detection is by SPDX tag alone, so the script is idempotent across header
@@ -145,7 +145,7 @@ LEGACY_SCAN_LINES = 12
 # reworded grant) requires. Gated on our own SPDX values, so a third party's
 # header in a file we happen to track is never rewritten.
 OURS_RE = re.compile(r"Trustedwear Tech Private Limited|Citra AI \(https://github\.com/Citra-AI\)")
-OUR_SPDX_RE = re.compile(r"SPDX-License-Identifier:\s*(BUSL-1\.1|LicenseRef-Citra-AI)")
+OUR_SPDX_RE = re.compile(r"SPDX-License-Identifier:\s*(Apache-2\.0|BUSL-1\.1|LicenseRef-Citra-AI)")
 HEADER_LAST_LINE = "See LICENSE at the repository root"
 
 
@@ -359,7 +359,7 @@ def main() -> int:
     ap.add_argument("--list", action="store_true",
                     help="print every file that would be stamped, then exit")
     ap.add_argument("--replace-legacy", action="store_true",
-                    help="rewrite the old PROPRIETARY / LicenseRef header to BUSL-1.1")
+                    help="rewrite an older PROPRIETARY / LicenseRef / BUSL header to Apache-2.0")
     ap.add_argument("--rewrite", action="store_true",
                     help="replace an existing header with the current one "
                          "(use when the header TEXT changes, e.g. the year)")

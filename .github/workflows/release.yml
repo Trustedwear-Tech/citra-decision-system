@@ -1,10 +1,10 @@
 # Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 # Author: Rohit Kumar Chandan
-# SPDX-License-Identifier: BUSL-1.1
+# SPDX-License-Identifier: Apache-2.0
 #
-# Licensed under the Business Source License 1.1. Non-production use is granted;
-# production use requires a commercial licence until the Change Date, after
-# which this file converts to Apache-2.0. See LICENSE at the repository root.
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
 
 # =============================================================================
 # Citra AI Platform — Release & Publish Pipeline
@@ -68,38 +68,10 @@ jobs:
             exit 1
           fi
 
-      # The licence converts each released version to Apache-2.0 four years
-      # AFTER that version shipped, so the Change Date belongs to the release,
-      # not to the repository. Nothing used to move it: LICENSE still named
-      # version 0.1.0 with a 2030-08-09 Change Date, and a release cut in 2028
-      # against that file would have converted after two years instead of four.
-      # A version published as open source cannot be re-closed, so a missed bump
-      # gives away the remaining years permanently.
-      #
-      # This runs BEFORE the tag is created. A tag pointing at a commit whose
-      # LICENSE names the wrong version is the precise failure being prevented.
-      - name: Set the BUSL Change Date for this release
-        run: |
-          python3 scripts/set_license_change_date.py --version "${{ inputs.version }}"
-          git --no-pager diff -- LICENSE
-
-      - name: Commit the licence bump
-        if: ${{ !inputs.dry_run }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- LICENSE; then
-            echo "LICENSE already carries this version and Change Date."
-          else
-            git add LICENSE
-            git commit -m "chore(license): v${{ inputs.version }} converts to Apache-2.0 four years from release"
-            # If branch protection rejects this, the job fails and NO tag is
-            # created -- which is the outcome we want. Never tag a stale LICENSE.
-            git push origin HEAD:${{ github.ref_name }}
-          fi
-
-      # Belt and braces: whatever happened above, refuse to tag unless LICENSE
-      # now names this version with a Change Date exactly four years out.
+      # The BUSL Change Date steps were removed when this repo relicensed to
+      # Apache-2.0. Apache has no Change Date and no per-release licence bump —
+      # LICENSE is the same text for every version, so there is nothing to set
+      # or commit before tagging.
       - name: Refuse to tag a stale LICENSE
         run: |
           python3 scripts/set_license_change_date.py \

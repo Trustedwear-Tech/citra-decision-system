@@ -1,11 +1,11 @@
 <!--
   Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
   Author: Rohit Kumar Chandan
-  SPDX-License-Identifier: BUSL-1.1
+  SPDX-License-Identifier: Apache-2.0
 
-  Licensed under the Business Source License 1.1. Non-production use is granted;
-  production use requires a commercial licence until the Change Date, after
-  which this file converts to Apache-2.0. See LICENSE at the repository root.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0
 -->
 
 # Contributing to Citra AI
@@ -127,7 +127,7 @@ docs: update deployment guide for Docker Compose
 
 ## License Headers
 
-Every source file we wrote carries the BUSL-1.1 notice. You do not write it by
+Every source file we wrote carries the Apache-2.0 notice. You do not write it by
 hand -- the tool stamps whatever is missing and is safe to re-run:
 
 ```bash
@@ -152,11 +152,11 @@ Markdown use a block comment):
 ```python
 # Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 # Author: Rohit Kumar Chandan
-# SPDX-License-Identifier: BUSL-1.1
+# SPDX-License-Identifier: Apache-2.0
 #
-# Licensed under the Business Source License 1.1. Non-production use is granted;
-# production use requires a commercial licence until the Change Date, after
-# which this file converts to Apache-2.0. See LICENSE at the repository root.
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
 ```
 
 Three things about that header are deliberate:
@@ -164,10 +164,10 @@ Three things about that header are deliberate:
 - **The copyright holder is the company**, not an individual. The author is
   named on his own line, so attribution does not create a second, competing
   ownership claim against the CLA you signed.
-- **`BUSL-1.1` is the registered SPDX identifier**, which licence scanners
-  already recognise. An earlier version of this header said `PROPRIETARY - all
-  rights reserved` with a custom `LicenseRef-` id, which contradicted the
-  BUSL-1.1 grant in `LICENSE`. Contradictory statements of terms are an
+- **`Apache-2.0` is the registered SPDX identifier**, which licence scanners
+  already recognise. Earlier versions of this header said `PROPRIETARY - all
+  rights reserved`, and later `BUSL-1.1`; both contradicted the grant that was
+  actually in `LICENSE` at the time. Contradictory statements of terms are an
   invitation to argue the grant is ambiguous, so do not reintroduce one.
 - **The grant is restated in the file**, not just referenced. A file copied out
   of this repository carries its own terms; a pointer to `LICENSE` does not

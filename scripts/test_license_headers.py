@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
 # Author: Rohit Kumar Chandan
-# SPDX-License-Identifier: BUSL-1.1
+# SPDX-License-Identifier: Apache-2.0
 #
-# Licensed under the Business Source License 1.1. Non-production use is granted;
-# production use requires a commercial licence until the Change Date, after
-# which this file converts to Apache-2.0. See LICENSE at the repository root.
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
 
 """Tests for the licence stamper.
 
@@ -50,7 +50,7 @@ def do(p: Path, rel: str | None = None) -> str:
 def test_plain_python_gets_header_first(tmp_path):
     out = do(write(tmp_path, "a.py", "import os\n"))
     assert out.startswith("# Copyright (c) 2026 Trustedwear Tech")
-    assert "SPDX-License-Identifier: BUSL-1.1" in out
+    assert "SPDX-License-Identifier: Apache-2.0" in out
     assert out.rstrip().endswith("import os")
 
 
@@ -305,7 +305,7 @@ def test_copyright_year_matches_when_the_work_was_created():
 OLD_YEAR_HEADER = (
     "# Copyright (c) 2024-2026 Trustedwear Tech Private Limited (https://citra-ai.com)\n"
     "# Author: Rohit Kumar Chandan\n"
-    "# SPDX-License-Identifier: BUSL-1.1\n"
+    "# SPDX-License-Identifier: Apache-2.0\n"
     "#\n"
     "# Licensed under the Business Source License 1.1. Non-production use is granted;\n"
     "# production use requires a commercial licence until the Change Date, after\n"
