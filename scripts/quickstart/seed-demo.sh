@@ -98,7 +98,11 @@ echo "-> [0/6] validating $TENANT_DIR/mcp/sources.json"
 
 # -- Mint a super-admin JWT for the seed_tenant admin API ---------------------
 echo "-> minting super-admin token"
-ADMIN_JWT="$("$PY" - "$JWT_SECRET" "$ADMIN_EMAIL" <<'PYEOF'
+# tr -d '\r': on Windows $PY is the venv's Scripts/python, which
+# writes CRLF. Command substitution strips the trailing newline but leaves
+# the CR -- which turns a slug into a malformed URL and puts a stray CR in
+# the Authorization header.
+ADMIN_JWT="$("$PY" - "$JWT_SECRET" "$ADMIN_EMAIL" <<'PYEOF' | tr -d '\r'
 import sys, time, jwt
 secret, email = sys.argv[1], sys.argv[2]
 print(jwt.encode({
@@ -225,9 +229,10 @@ echo "-> [6/7] publishing Decision Apps"
 #
 # Promotion can legitimately refuse: an app that learns from historical
 # decisions answers grounding_refresh_required until its grounding is rebuilt.
-# That is a real state, not a seed failure, so it is reported and skipped.
+# On a fresh install there is nothing to rebuild it FROM, so that answer
+# is retried with promote_ungrounded.
 echo "-> [7/7] promoting the Decision Apps to prod"
-PROMOTE_JWT="$("$PY" - "$JWT_SECRET" "$ADMIN_EMAIL" "$TENANT" <<'PYEOF'
+PROMOTE_JWT="$("$PY" - "$JWT_SECRET" "$ADMIN_EMAIL" "$TENANT" <<'PYEOF' | tr -d '\r'
 import sys, time, jwt
 secret, email, tenant = sys.argv[1], sys.argv[2], sys.argv[3]
 now = int(time.time())
@@ -239,22 +244,34 @@ print(jwt.encode({
 }, secret, algorithm="HS256"))
 PYEOF
 )"
-for slug in $("$PY" - "$TENANT_DIR/apps" <<'PYEOF'
+for slug in $("$PY" - "$TENANT_DIR/apps" <<'PYEOF' | tr -d '\r'
 import json, pathlib, sys
 for f in sorted(pathlib.Path(sys.argv[1]).glob("*.json")):
     print(json.loads(f.read_text(encoding="utf-8"))["app_spec"]["slug"])
 PYEOF
 ); do
-  body="$(curl -s -m 60 -X POST -H "Authorization: Bearer $PROMOTE_JWT" \
-       -H "Content-Type: application/json" -d '{}' \
-       "http://localhost:9100/apps/$slug/promote-to-prod" || true)"
+  promote() {
+    curl -s -m 60 -X POST \
+         -H "Authorization: Bearer $PROMOTE_JWT" \
+         -H "Content-Type: application/json" -d "$1" \
+         "http://localhost:9100/apps/$slug/promote-to-prod" || true
+  }
+  body="$(promote '{}')"
   case "$body" in
-    *'"prod_url"'*)                     echo "   [ok] $slug" ;;
-    *grounding_refresh_required*)       echo "   [--] $slug needs a grounding refresh before it can be promoted" ;;
-    *)                                  echo "   [!!] $slug did not promote: $(printf '%s' "$body" | head -c 120)" ;;
+    *grounding_refresh_required*)
+      # The app declares it learns from historical decisions, but a
+      # fresh install has none yet -- the refresh would load an empty
+      # set. Ship it ungrounded so the demo is visible at all; it runs
+      # on its base prompt and grounds itself from the decisions made
+      # in the demo.
+      body="$(promote '{"promote_ungrounded": true}')" ;;
+  esac
+  case "$body" in
+    *'"prod_url"'*)  echo "   [ok] $slug" ;;
+    *)               echo "   [!!] $slug did not promote: $(printf '%s' "$body" | head -c 160)" ;;
   esac
 done
 
 echo ""
-echo "Demo '$TENANT' seeded. Sign in at http://localhost:8081 as $ADMIN_EMAIL,"
-echo "then impersonate into the '$TENANT' org to run its Decision Apps."
+echo "Demo '$TENANT' seeded. Sign in at http://localhost:8081 as $ADMIN_EMAIL"
+echo "and its Decision Apps are on your home screen -- no impersonation needed."

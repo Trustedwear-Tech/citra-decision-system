@@ -2927,6 +2927,11 @@ class PromoteToProdRequest(BaseModel):
     #   * promote_ungrounded=True → explicit override: ship without grounding.
     # With neither set, promoting a grounded app whose memory is never/stale
     # returns 409 grounding_refresh_required so the UI can prompt.
+    #
+    # The gate has one further precondition: the contract's dataset must
+    # actually declare `decision_history` in the source registry. A contract
+    # pointing at a dataset with no declared history has nothing to load, so
+    # the refresh would be a no-op and promote proceeds without it.
     refresh_grounding: bool = False
     promote_ungrounded: bool = False
 
@@ -2939,7 +2944,9 @@ class PromoteToProdResponse(BaseModel):
     agent_promoted: bool
     # Grounding-gate outcome: run_id when a refresh was kicked off as part of
     # promote (poll /grounding/refresh/status), and a status the UI can render:
-    # "refreshing" | "fresh" | "skipped" (override) | None (not a grounded app).
+    # "refreshing" | "fresh" | "skipped" (override) | "no_history" (contract's
+    # dataset declares no decision_history, so there was nothing to load) |
+    # None (not a grounded app).
     grounding_refresh_run_id: Optional[str] = None
     grounding_status: Optional[str] = None
 
@@ -4384,7 +4391,48 @@ async def promote_to_prod(
                             "message": f"grounding contract invalid: {e}"},
                 )
 
-    if grounded and not payload.promote_ungrounded:
+    # Having a grounding contract is not evidence there is anything to ground
+    # ON. The contract names a dataset; whether that dataset holds past
+    # decisions is declared by `decision_history` in the source registry
+    # (source-mcp-template/sources.json). With no such declaration the refresh
+    # would pull an empty set, so demanding it blocks the release without
+    # changing how the app decides.
+    #
+    # Answered from the catalogue rather than assumed, and it opens the gate
+    # ONLY on a definite "no history declared". A lookup that errors leaves the
+    # gate shut, because not knowing is not the same as knowing there is none.
+    _has_history = True
+    if grounded and grounding_contract is not None:
+        from catalogue_client import fetch_catalogue_entry
+        try:
+            _entry = await fetch_catalogue_entry(
+                settings=settings,
+                auth_header=request.headers.get("authorization"),
+                tenant_id=get_tenant_id(request),
+                dataset_id=grounding_contract.dataset_id,
+                source_id=grounding_contract.source_id,
+            )
+            # `decision_history` is a DICT when present, and a dict is truthy
+            # even when it says is_decision_record=false — so test the flag, not
+            # the field. That flag is the ontology's own declaration (it is what
+            # sources.json sets), which is exactly the condition being asked
+            # about here.
+            _dh = _entry.get("decision_history") if _entry else None
+            if _entry is not None and not (_dh or {}).get("is_decision_record"):
+                _has_history = False
+                logger.info(
+                    "[promote] %s: grounding gate skipped - %s declares no "
+                    "decision_history, so there is no history to load",
+                    slug, grounding_contract.dataset_id,
+                )
+        except Exception as e:  # an unknown answer must not open the gate
+            logger.warning(
+                "[promote] %s: could not read decision_history for %s (%s); "
+                "keeping the grounding gate", slug,
+                grounding_contract.dataset_id, e.__class__.__name__,
+            )
+
+    if grounded and _has_history and not payload.promote_ungrounded:
         _fresh = _grounding_freshness_state(slug)
         if _fresh in ("never", "stale") and not payload.refresh_grounding:
             from grounding_runs import get_grounding_run_store
@@ -4398,8 +4446,11 @@ async def promote_to_prod(
                         "grounding has "
                         + ("never been refreshed" if _fresh == "never"
                            else "gone stale")
-                        + " — refresh it for production, or promote without "
-                          "grounding."
+                        + " — refresh it for production "
+                          "(refresh_grounding=true), or ship without it "
+                          "(promote_ungrounded=true). This gate fires only "
+                          "because the dataset declares decision_history; an "
+                          "app with no history to learn from is never gated."
                     ),
                     "freshness": _fresh,
                     "last_refreshed_at": (_last or {}).get("last_refreshed_at"),
@@ -4559,6 +4610,12 @@ async def promote_to_prod(
                 requested_by=requester_id,
             )
             grounding_status = "refreshing" if grounding_run_id else "fresh"
+        elif not _has_history:
+            # Passed because the contract's dataset declares no decision_history
+            # — there is nothing to load. Do NOT report "fresh": the app is
+            # running on its base prompt, and calling that fresh would tell the
+            # BA the grounding is working when no history exists to ground on.
+            grounding_status = "no_history"
         else:
             # Passed the gate without asking to refresh → memory was already fresh.
             grounding_status = "fresh"
