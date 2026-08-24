@@ -18,5 +18,14 @@
         "subagents": { "allowAgents": [] }
       }
     ]
+  },
+  "mcp": {
+    "servers": {
+      "citra": {
+        "headers": {
+          "X-Smart-App-Internal": "Bearer ${SMART_APP_INTERNAL_SECRET}"
+        }
+      }
+    }
   }
 }

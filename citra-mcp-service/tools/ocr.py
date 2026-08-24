@@ -6,7 +6,15 @@
 # use this file except in compliance with the License. You may obtain a copy of
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
-"""citra_ocr — vision OCR via action-chat-service's Qwen3-VL proxy.
+"""DEPRECATED — UNREACHABLE, PENDING DELETION.
+Gated to scope="action-sandbox", which nothing has minted since
+action-chat-service was removed from this repo; the only MCP caller left
+(the smart-app builder pod) authenticates as "smart-app-builder", so
+tools/list hides this and tools/call refuses it. See the "DEAD TOOL
+SURFACE" block in tools/registry.py before changing or reviving anything
+here.
+
+citra_ocr — vision OCR via action-chat-service's Qwen3-VL proxy.
 
 Accepts either an inline image (base64) or a public URL. The upstream
 route handles PDF rasterization via pdf2image+poppler too, so the same
@@ -93,5 +101,6 @@ register_tool(ToolSpec(
     # OCR pipeline reads user-supplied image bytes and routes through the
     # action-chat user-data backend (storage, vision processor, audit).
     # Smart-app builder doesn't need to OCR personal uploads.
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
 ))

@@ -39,6 +39,18 @@ class CallerContext:
     # JWT-aware downstream (e.g. discovery-service) reuse this so the
     # caller's claims propagate without us re-minting a token.
     auth_header: str = ""
+    # Optional SECOND credential, sent by the caller as ``X-Smart-App-Internal``.
+    # smart-app-service's /smart-app/internal/* API does NOT accept the JWT
+    # above — it requires an internal bearer signed with
+    # SMART_APP_INTERNAL_SIGNING_KEY and carrying a ``tools`` allow-list. The
+    # builder pod already holds one (SMART_APP_INTERNAL_SECRET) and relays it
+    # here so tools like citra_visual_review can reach that API.
+    #
+    # This service deliberately CANNOT mint one: it has no signing key, so it
+    # can only pass along a credential the caller already had, exactly as it
+    # relays ``auth_header`` to discovery-service. Callers that send no such
+    # header simply cannot use the tools that need it, and get told so.
+    internal_bearer: str = ""
 
 
 def require_caller(request: Request) -> CallerContext:
@@ -104,4 +116,5 @@ def require_caller(request: Request) -> CallerContext:
         scope=scope,
         raw_claims=claims,
         auth_header=header,
+        internal_bearer=(request.headers.get("X-Smart-App-Internal") or "").strip(),
     )

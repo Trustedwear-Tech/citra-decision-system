@@ -35,7 +35,7 @@ import jwt
 
 from auth import CallerContext
 from config import get_config
-from ._forward import call_internal
+from ._forward import call_smart_app_internal
 from .registry import ToolSpec, register_tool
 
 logger = logging.getLogger(__name__)
@@ -205,8 +205,11 @@ async def _exec(args: dict[str, Any], caller: CallerContext) -> dict[str, Any]:
         "content_type": "image/png",
         "prompt": prompt,
     }
-    res = await call_internal(
-        "actionchat/internal/ocr", body, caller, timeout_seconds=180.0
+    # smart-app-service's /smart-app/internal/ocr — same request shape
+    # ({image_b64, content_type, prompt}) and same response ({text, ...}) as
+    # the action-chat route this used to call before that service was removed.
+    res = await call_smart_app_internal(
+        "ocr", body, caller, timeout_seconds=180.0
     )
     text = (res or {}).get("text") or ""
     parsed = _extract_json_object(text) or {}

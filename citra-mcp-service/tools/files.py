@@ -6,7 +6,15 @@
 # use this file except in compliance with the License. You may obtain a copy of
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
-"""User-files tools — list / get_url / get_bytes / put.
+"""DEPRECATED — UNREACHABLE, PENDING DELETION.
+Gated to scope="action-sandbox", which nothing has minted since
+action-chat-service was removed from this repo; the only MCP caller left
+(the smart-app builder pod) authenticates as "smart-app-builder", so
+tools/list hides this and tools/call refuses it. See the "DEAD TOOL
+SURFACE" block in tools/registry.py before changing or reviving anything
+here.
+
+User-files tools — list / get_url / get_bytes / put.
 
 All four forward to action-chat-service's S3-backed proxy. The MCP layer
 never touches buckets directly; the upstream enforces per-user prefix
@@ -68,6 +76,7 @@ register_tool(ToolSpec(
     ),
     schema=_LIST_SCHEMA,
     executor=_exec_list,
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
 ))
 
@@ -111,6 +120,7 @@ register_tool(ToolSpec(
     ),
     schema=_GET_URL_SCHEMA,
     executor=_exec_get_url,
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
 ))
 
@@ -151,6 +161,7 @@ register_tool(ToolSpec(
     ),
     schema=_GET_BYTES_SCHEMA,
     executor=_exec_get_bytes,
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
 ))
 
@@ -200,6 +211,7 @@ async def _exec_put(args: dict[str, Any], caller: CallerContext) -> dict[str, An
 
 register_tool(ToolSpec(
     name="citra_files_put",
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
     description=(
         "Write an agent-generated artifact to the caller's outputs bucket. "

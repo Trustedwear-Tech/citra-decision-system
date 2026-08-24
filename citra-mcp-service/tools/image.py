@@ -6,7 +6,14 @@
 # use this file except in compliance with the License. You may obtain a copy of
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
-"""citra_image_generate — text-to-image via the configured cloud provider.
+"""DEPRECATED — NOT REGISTERED, PENDING DELETION.
+tools/__init__.py deliberately does not import this module, so nothing
+here reaches the registry — see the reason recorded at that import site,
+and the "DEAD TOOL SURFACE" block in tools/registry.py. The
+scope="action-sandbox" gate below is moot twice over: that scope has had
+no minter since action-chat-service was removed from this repo.
+
+citra_image_generate — text-to-image via the configured cloud provider.
 
 Mirrors the env-var contract of action-chat-service so a single .env
 line works across services. Default provider is Runware; the MCP
@@ -163,5 +170,6 @@ register_tool(ToolSpec(
     executor=_exec_image_generate,
     # End-user content generation — belongs to the chat surface, not
     # the enterprise app builder.
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
 ))

@@ -6,7 +6,14 @@
 # use this file except in compliance with the License. You may obtain a copy of
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
-"""citra_sql_duckdb — run a SELECT over a sandbox-supplied file.
+"""DEPRECATED — NOT REGISTERED, PENDING DELETION.
+tools/__init__.py deliberately does not import this module, so nothing
+here reaches the registry — see the reason recorded at that import site,
+and the "DEAD TOOL SURFACE" block in tools/registry.py. The
+scope="action-sandbox" gate below is moot twice over: that scope has had
+no minter since action-chat-service was removed from this repo.
+
+citra_sql_duckdb — run a SELECT over a sandbox-supplied file.
 
 Wraps action-chat-service /actionchat/internal/duckdb, which loads the
 file into an in-memory DuckDB table named 'data' and runs the query.
@@ -102,5 +109,6 @@ register_tool(ToolSpec(
     # Operates on the agent's session file bytes via the action-chat
     # /internal/duckdb route — session-scoped, not appropriate for
     # smart-app builder.
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
 ))

@@ -64,8 +64,7 @@ app = FastAPI(
     version="1.0.0",
     description=(
         "Citra tool surface exposed over the MCP HTTP protocol. "
-        "Consumed by OpenClaw sandboxes spawned by action-chat-service "
-        "and smart-app-service."
+        "Consumed by the OpenClaw builder pods smart-app-service spawns."
     ),
 )
 
@@ -88,8 +87,7 @@ def main() -> None:
     if not cfg.jwt_secret:
         logger.warning(
             "JWT_SECRET is not configured — /mcp will reject all calls. "
-            "Set JWT_SECRET to the same value action-chat-service and "
-            "smart-app-service use."
+            "Set JWT_SECRET to the same value smart-app-service uses."
         )
     if not cfg.serper_api_key:
         logger.warning(

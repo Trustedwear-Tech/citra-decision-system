@@ -23,6 +23,46 @@ logger = logging.getLogger(__name__)
 ToolExecutor = Callable[..., Awaitable[Any]]
 
 
+# ---------------------------------------------------------------------------
+# DEAD TOOL SURFACE — unreachable, pending deletion
+# ---------------------------------------------------------------------------
+# Eight tools cannot be called by anybody. They fall into two groups.
+#
+# (1) REGISTERED BUT SCOPE-GATED TO A SCOPE NOBODY MINTS —
+#     citra_files_list / citra_files_get_url / citra_files_get_bytes /
+#     citra_files_put / citra_vault_search / citra_ocr
+#
+#     Gated to ``allowed_scopes=("action-sandbox",)``. That scope was minted
+#     only by action-chat-service, which has been REMOVED from this repo. The
+#     one MCP caller left is the smart-app builder pod, whose token carries
+#     ``scope="smart-app-builder"``, so ``list_tool_schemas`` hides them from
+#     tools/list and ``is_tool_allowed`` refuses them on tools/call. They
+#     cannot fail, because they cannot be reached. They would also not work
+#     if reached: they forward to ``/actionchat/internal/*`` on
+#     CITRA_USER_DATA_BACKEND_URL — action-chat-service's old port — which
+#     nothing serves any more.
+#
+# (2) NOT IMPORTED AT ALL — citra_sql_duckdb, citra_image_generate
+#
+#     Never reach this registry: tools/__init__.py deliberately does not
+#     import tools/sql.py or tools/image.py, for reasons that predate the
+#     action-chat removal and are documented at those import sites (duckdb
+#     ships in the sandbox image; inline base64 image blobs corrupted tool
+#     calls). Scope is irrelevant to them.
+#
+# ALL EIGHT ARE KEPT ON PURPOSE, NOT OVERLOOKED: they are the reference
+# implementation for a second sandbox consumer, should one appear (the
+# sandbox base image is deliberately consumer-neutral for the same reason).
+# DELETE THEM if none materialises — tools/files.py, vault.py, ocr.py,
+# sql.py, image.py, and tools/_forward.py once citra_visual_review no longer
+# uses it.
+#
+# Do NOT "fix" group (1) by widening its scope to smart-app-builder. The
+# builder designs enterprise apps; it has no business reading the BA's
+# personal files, and its own AGENTS.md tells the agent these tools are not
+# part of its surface.
+
+
 @dataclass(frozen=True)
 class ToolSpec:
     name: str
@@ -32,9 +72,10 @@ class ToolSpec:
     # JWT scopes allowed to call this tool. ``None`` means "open to every
     # scope in CITRA_MCP_ACCEPTED_SCOPES" — the default for generic tools
     # (web search, discovery, embed, rerank). Tools whose backing data is
-    # USER-scoped (vault, files, ocr, sql_duckdb) restrict
-    # to ``("action-sandbox",)`` because the smart-app builder is for
-    # enterprise app design, not for poking the BA's personal files.
+    # USER-scoped (vault, files, ocr) restrict to ``("action-sandbox",)``
+    # because the smart-app builder is for enterprise app design, not for
+    # poking the BA's personal files. That scope is now dead — see the
+    # DEAD TOOL SURFACE block above.
     allowed_scopes: tuple[str, ...] | None = None
 
 

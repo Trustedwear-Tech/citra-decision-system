@@ -33,11 +33,17 @@ class MCPConfig:
     # any token signed with it and accepts the scopes listed below.
     jwt_secret: str = os.getenv("JWT_SECRET", "")
     jwt_issuer: str = os.getenv("JWT_ISSUER", "Citra-AI")
-    # The MCP service accepts EITHER caller — action-chat sandboxes
-    # (scope=action-sandbox, minted by action-chat-service) or smart-app
-    # builder pods (scope=smart-app-builder, minted by smart-app-service).
-    # Comma-separated allowlist; legacy ``smart-app-sandbox`` kept for
-    # any operator that copied the placeholder before this was settled.
+    # Comma-separated allowlist of accepted ``scope`` claims.
+    #
+    # ``smart-app-builder`` (minted by smart-app-service) is the ONLY scope
+    # anything mints today — the builder pod is the sole MCP caller.
+    #
+    # ``action-sandbox`` is retained but DEAD: it was minted by
+    # action-chat-service, which has been removed from this repo. It stays in
+    # the default only so the eight tools still gated to it keep their
+    # gate meaningful rather than silently becoming open-to-all. See the
+    # "DEAD TOOL SURFACE" block in tools/registry.py; when those tools are
+    # deleted, drop this scope with them.
     accepted_scopes: tuple[str, ...] = tuple(
         s.strip() for s in (
             os.getenv(
@@ -117,6 +123,16 @@ class MCPConfig:
     # Any sandbox (action-chat, smart-app, future) calls the same MCP
     # service and reaches the same user data. A file the user uploaded
     # in action-chat is visible from smart-app and vice versa.
+    # smart-app-service's internal API root, e.g.
+    # ``http://smart-app-service:9100/smart-app/internal``. Used by
+    # citra_visual_review for the vision-critique step. Authenticated with the
+    # caller-relayed internal bearer (X-Smart-App-Internal), never with a
+    # credential this service holds.
+    smart_app_internal_url: str = os.getenv("SMART_APP_INTERNAL_URL", "").strip()
+
+    # DEPRECATED — only the dead tool surface reads this (see the DEAD TOOL
+    # SURFACE block in tools/registry.py). It pointed at action-chat-service,
+    # which no longer exists; delete it with those tools.
     user_data_backend_url: str = (
         os.getenv("CITRA_USER_DATA_BACKEND_URL", "")
         or os.getenv("ACTIONCHAT_INTERNAL_URL", "")

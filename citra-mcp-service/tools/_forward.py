@@ -101,3 +101,79 @@ async def call_internal(
         data = {"result": data}
     data.setdefault("upstream_elapsed_ms", elapsed_ms)
     return data
+
+
+async def call_smart_app_internal(
+    path: str,
+    body: dict[str, Any],
+    caller: CallerContext,
+    *,
+    timeout_seconds: float = 25.0,
+) -> dict[str, Any]:
+    """Forward a JSON POST to smart-app-service's internal API.
+
+    ``path`` is appended to ``SMART_APP_INTERNAL_URL`` (e.g. ``"ocr"`` ->
+    ``http://smart-app-service:9100/smart-app/internal/ocr``).
+
+    Authentication differs from :func:`call_internal` in a way that matters:
+    that API rejects the caller's MCP JWT outright. It requires an INTERNAL
+    BEARER signed with SMART_APP_INTERNAL_SIGNING_KEY whose ``tools`` claim
+    names the specific route being invoked (``vision_ocr`` for /ocr) — a cost
+    gate, not just an identity check.
+
+    This service holds no signing key and mints nothing. It relays the bearer
+    the caller sent as ``X-Smart-App-Internal``; the builder pod already has
+    one and passes it through its MCP client headers. A caller that sends no
+    such header cannot use this path, and is told exactly that rather than
+    getting a 401 from a service it has never heard of.
+    """
+    cfg = get_config()
+    if not cfg.smart_app_internal_url:
+        raise RuntimeError(
+            "SMART_APP_INTERNAL_URL is not configured on citra-mcp-service — "
+            "set it to smart-app-service's internal API root, e.g. "
+            "http://smart-app-service:9100/smart-app/internal"
+        )
+    bearer = (caller.internal_bearer or "").strip()
+    if not bearer:
+        raise RuntimeError(
+            "this tool needs smart-app-service's internal API, but the caller "
+            "sent no X-Smart-App-Internal header. The builder pod relays its "
+            "SMART_APP_INTERNAL_SECRET there (see the sandbox openclaw config "
+            "overlay); citra-mcp-service cannot mint one."
+        )
+    if not bearer.lower().startswith("bearer "):
+        bearer = f"Bearer {bearer}"
+
+    url = f"{cfg.smart_app_internal_url.rstrip('/')}/{path.lstrip('/')}"
+    headers = {"Authorization": bearer, "Content-Type": "application/json"}
+    started = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=timeout_seconds) as client:
+            r = await client.post(url, headers=headers, json=body)
+    except httpx.TimeoutException as e:
+        raise RuntimeError(
+            f"smart-app-service timed out after {timeout_seconds:.0f}s ({path})"
+        ) from e
+    except httpx.HTTPError as e:
+        raise RuntimeError(f"smart-app-service transport failed: {e}") from e
+
+    elapsed_ms = int((time.time() - started) * 1000)
+    if r.status_code >= 400:
+        try:
+            detail = r.json()
+        except Exception:  # noqa: BLE001
+            detail = {"detail": r.text}
+        raise RuntimeError(
+            f"smart-app-service {r.status_code}: "
+            f"{detail.get('detail') if isinstance(detail, dict) else detail}"
+        )
+
+    try:
+        data = r.json()
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"smart-app-service returned non-JSON body: {e}") from e
+    if not isinstance(data, dict):
+        data = {"result": data}
+    data.setdefault("upstream_elapsed_ms", elapsed_ms)
+    return data

@@ -6,7 +6,15 @@
 # use this file except in compliance with the License. You may obtain a copy of
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
-"""citra_vault_search — semantic search over the caller's user vault.
+"""DEPRECATED — UNREACHABLE, PENDING DELETION.
+Gated to scope="action-sandbox", which nothing has minted since
+action-chat-service was removed from this repo; the only MCP caller left
+(the smart-app builder pod) authenticates as "smart-app-builder", so
+tools/list hides this and tools/call refuses it. See the "DEAD TOOL
+SURFACE" block in tools/registry.py before changing or reviving anything
+here.
+
+citra_vault_search — semantic search over the caller's user vault.
 
 Forwards to action-chat-service ``/actionchat/internal/vault/search``,
 which embeds the query, runs Milvus over **Citra-Service's main
@@ -91,5 +99,6 @@ register_tool(ToolSpec(
     # User vault is a personal/session resource — relevant only inside an
     # action-chat session. The smart-app builder is designing enterprise
     # software and should not poke the BA's personal vault.
+    # DEPRECATED — unreachable; see this module's docstring.
     allowed_scopes=("action-sandbox",),
 ))
