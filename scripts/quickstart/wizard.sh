@@ -135,25 +135,48 @@ setkv SEARCH_API_KEY  "$key"
 setkv RERANK_API_KEY  "$key"
 echo "  [ok] one key configured for reasoning, embeddings, vision, search and rerank"
 
-# -- 3. Super-admin -----------------------------------------------------------
-hr; echo "$(b "Step 3/4 - super-admin")"
-cur_email="$(getkv ADMIN_EMAIL)"; cur_email="${cur_email:-admin@citra-ai.com}"
-adm_email="$(ask "Super-admin email" "$cur_email")"; setkv ADMIN_EMAIL "$adm_email"
-if yes_no "Set a super-admin password now? (otherwise a random one is generated and printed)" "n"; then
-  apw="$(ask_secret "Super-admin password")"; [ -n "$apw" ] && setkv ADMIN_PASSWORD "$apw"
-fi
-echo "  [ok] super-admin = $adm_email"
-
-# -- 4. Which starting point --------------------------------------------------
+# -- 3. Which starting point --------------------------------------------------
 # Two genuinely different audiences: "show me what this does" and "point it at
 # my data". The old flow silently assumed the first and left the second as a doc
 # link, so a user finished with a bank on their laptop and no idea what it was.
-hr; echo "$(b "Step 4/4 - what do you want to start with?")"
+#
+# Asked BEFORE the super-admin, because the organisation question below only has
+# a sensible answer once we know which of the two this is.
+hr; echo "$(b "Step 3/4 - what do you want to start with?")"
 echo
 echo "  $(b "1) The acme-bank demo")   see the whole decision loop in ~10 minutes"
 echo "  $(b "2) My own database")      connect a SQL source and build it up"
 echo
 start_choice="$(ask "Choose 1-2" "1")"
+
+# -- 4. Super-admin + organisation --------------------------------------------
+hr; echo "$(b "Step 4/4 - super-admin")"
+echo "The first user. Created as an admin OF the organisation below, which is"
+echo "what makes the apps, sources and queues in it visible on sign-in."
+echo
+cur_email="$(getkv ADMIN_EMAIL)"; cur_email="${cur_email:-admin@citra-ai.com}"
+adm_email="$(ask "Super-admin email" "$cur_email")"; setkv ADMIN_EMAIL "$adm_email"
+
+# ORG_ID is what start.sh passes to create-admin.js as --org. Leaving it at the
+# .env.example default put the admin in an org with nothing in it: everything
+# was installed correctly and the screen was empty anyway.
+if [ "$start_choice" = "2" ]; then
+  cur_org="$(getkv ORG_ID)"; cur_org="${cur_org:-my-org}"
+  org_id="$(ask "Organisation id (lowercase, no spaces, e.g. acme-bank)" "$cur_org")"
+else
+  # Not a free choice on the demo path: the demo's data, apps and officer
+  # personas are all seeded into acme-bank, so an admin of any other org would
+  # sign in to an empty screen.
+  org_id="acme-bank"
+  echo "  Organisation: $(b "acme-bank")  (fixed - the demo's data, apps and"
+  echo "  personas all live in it, so the super-admin is created there)"
+fi
+setkv ORG_ID "$org_id"
+
+if yes_no "Set a super-admin password now? (otherwise a random one is generated and printed)" "n"; then
+  apw="$(ask_secret "Super-admin password")"; [ -n "$apw" ] && setkv ADMIN_PASSWORD "$apw"
+fi
+echo "  [ok] super-admin = $adm_email   admin of = $org_id"
 
 hr; echo "$(b "Bringing up the data stores")"
 if yes_no "Run setup now (data stores + database resources)?" "y"; then
@@ -190,9 +213,11 @@ if [ "$start_choice" = "2" ]; then
     exit 1
   fi
 
-  org_id="$(ask "Organisation id (lowercase, e.g. acme-bank)" "my-org")"
+  # org and admin were settled in step 4 -- asking again invited two different
+  # answers, and the org seeded here has to be the one the admin belongs to.
+  echo "  Organisation: $org_id     admin: $adm_email"
   dept_id="$(ask "First department id (e.g. claims, ops)" "ops")"
-  admin_email="$(ask "Admin email for this organisation" "$adm_email")"
+  admin_email="$adm_email"
 
   hr; echo "$(b "Building the ontology")"
   echo "A model reads your schema and asks what it cannot infer."
@@ -255,9 +280,21 @@ else
 fi
 
 hr
-echo "$(b "Done.")  Open  http://localhost:8081  and sign in as  $adm_email"
+# Print the credentials HERE, not only in start.sh. start.sh does print them,
+# but that scrolls past long before the wizard finishes -- and if the user
+# declined "start now" it never ran at all, leaving a generated password
+# readable only by grepping .env.
+adm_pw="$(getkv ADMIN_PASSWORD)"; adm_pw="${adm_pw:-<see ADMIN_PASSWORD in .env>}"
+echo "$(b "Done.")  Open  $(b "http://localhost:8081")  and sign in:"
+echo
+echo "    email     $adm_email"
+echo "    password  $adm_pw"
+echo "    org       $org_id   (you are an admin of it, so you see everything in it)"
+echo
 if [ "$start_choice" != "2" ]; then
-  echo "Impersonate an acme-bank persona: user menu -> Login as User."
+  echo "The four Decision Apps are on your home screen. To see the demo as one of"
+  echo "the officer personas instead: user menu -> Login as User."
   echo "Point it at your own data later:  docs/change-the-demo.md"
 fi
+echo "Credentials live in .env (ADMIN_EMAIL / ADMIN_PASSWORD)."
 echo "Re-run this wizard any time to change keys:  ./scripts/quickstart/wizard.sh"

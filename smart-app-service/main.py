@@ -4399,11 +4399,16 @@ async def promote_to_prod(
     # changing how the app decides.
     #
     # Answered from the catalogue rather than assumed, and it opens the gate
-    # ONLY on a definite "no history declared". A lookup that errors leaves the
-    # gate shut, because not knowing is not the same as knowing there is none.
+    # ONLY on a definite "no history declared". If that question cannot be
+    # answered the request fails with the real reason rather than falling back
+    # to a gate message that would misdescribe an outage as a data problem.
+    # Skipped when promote_ungrounded is set: the operator has already decided
+    # to ship without grounding, so the precondition is moot — and the override
+    # must remain usable while discovery is down.
     _has_history = True
-    if grounded and grounding_contract is not None:
+    if grounded and grounding_contract is not None and not payload.promote_ungrounded:
         from catalogue_client import fetch_catalogue_entry
+        from discovery_cache import DiscoveryError
         try:
             _entry = await fetch_catalogue_entry(
                 settings=settings,
@@ -4412,24 +4417,49 @@ async def promote_to_prod(
                 dataset_id=grounding_contract.dataset_id,
                 source_id=grounding_contract.source_id,
             )
-            # `decision_history` is a DICT when present, and a dict is truthy
-            # even when it says is_decision_record=false — so test the flag, not
-            # the field. That flag is the ontology's own declaration (it is what
-            # sources.json sets), which is exactly the condition being asked
-            # about here.
-            _dh = _entry.get("decision_history") if _entry else None
-            if _entry is not None and not (_dh or {}).get("is_decision_record"):
-                _has_history = False
-                logger.info(
-                    "[promote] %s: grounding gate skipped - %s declares no "
-                    "decision_history, so there is no history to load",
-                    slug, grounding_contract.dataset_id,
-                )
-        except Exception as e:  # an unknown answer must not open the gate
-            logger.warning(
-                "[promote] %s: could not read decision_history for %s (%s); "
-                "keeping the grounding gate", slug,
-                grounding_contract.dataset_id, e.__class__.__name__,
+        except DiscoveryError as exc:
+            # Do NOT fall back to gating. "Refresh your grounding" would be a
+            # statement about the app's data when the real fact is that
+            # discovery is down — the operator cannot act on that correctly,
+            # and the override below would look like the fix for the wrong
+            # problem. Say what actually happened.
+            logger.error(
+                "[promote] %s: cannot evaluate the grounding precondition for "
+                "%s — catalogue unavailable (%s): %s",
+                slug, grounding_contract.dataset_id, exc.code, exc,
+            )
+            raise HTTPException(
+                exc.status,
+                detail={
+                    "code": "grounding_precondition_unavailable",
+                    "message": (
+                        "Cannot tell whether "
+                        f"{grounding_contract.dataset_id} holds decision "
+                        "history: the data catalogue is unavailable "
+                        f"({exc.code}). This is an infrastructure fault, not a "
+                        "grounding problem — retry once discovery is back, or "
+                        "pass promote_ungrounded=true to ship without "
+                        "grounding deliberately."
+                    ),
+                    "cause": exc.code,
+                    "dataset_id": grounding_contract.dataset_id,
+                },
+            ) from exc
+
+        # `decision_history` is a DICT when present, and a dict is truthy even
+        # when it says is_decision_record=false — so test the flag, not the
+        # field. That flag is the ontology's own declaration (it is what
+        # sources.json sets), which is exactly the condition being asked about
+        # here. A None entry means the dataset is not registered at all; that
+        # is a real answer ("no history"), not an outage — fetch_catalogue_entry
+        # returns None only on a 404 and raises on everything else.
+        _dh = (_entry or {}).get("decision_history")
+        if not (_dh or {}).get("is_decision_record"):
+            _has_history = False
+            logger.info(
+                "[promote] %s: grounding gate skipped - %s declares no "
+                "decision_history, so there is no history to load",
+                slug, grounding_contract.dataset_id,
             )
 
     if grounded and _has_history and not payload.promote_ungrounded:
