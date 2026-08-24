@@ -81,23 +81,25 @@ chmod 600 "$OPENCLAW_CFG_DIR/openclaw.json"
 
 # ---- 4a. Optional per-consumer config overlay ---------------------------
 # The base template is NEUTRAL: it declares only the `main` agent with an
-# empty subagents.allowAgents. The sub-agent ROSTER (researcher / analyst /
-# reporter / excel-generator / chartist / synthesizer) is NOT wired here,
-# so a consumer that ships no overlay (e.g. citra-app-builder) boots with
-# main and nothing to delegate to.
+# empty subagents.allowAgents. The sub-agent ROSTER is NOT wired there, so
+# an image that ships no overlay boots with main and nothing to delegate to.
 #
-# A consumer that DOES want sub-agents ships /srv/citra/openclaw.config.overlay.json
-# (the action-chat consumer does â€” see action-chat-service/sandbox/).
+# A consumer that DOES want sub-agents ships
+# /srv/citra/openclaw.config.overlay.json. citra-app-builder does: its
+# overlay adds the `runtime-verifier` sub-agent and patches
+# main.subagents.allowAgents to reach it (see
+# smart-app-service/builder-sandbox/openclaw.config.overlay.json).
+#
 # We envsubst it with the SAME var set, then deep-merge it onto the rendered
 # openclaw.json. Merge rules (see merge below):
 #   - dicts merge recursively (overlay keys win on conflict)
 #   - lists of objects that all carry an "id" (e.g. agents.list) merge BY id:
-#     same id â†’ deep-merge, new id â†’ append. This lets the overlay both add
-#     the 6 sub-agent entries AND patch main.subagents.allowAgents.
+#     same id -> deep-merge, new id -> append. This lets the overlay both add
+#     sub-agent entries AND patch main.subagents.allowAgents.
 #   - any other value: overlay replaces base.
 # Keeping the roster in the consumer overlay (not the shared base) is what
-# prevents the builder from advertising a delegation tool naming 6 personas
-# it never ships.
+# stops an image from advertising a delegation tool naming personas it does
+# not ship.
 OVERLAY=/srv/citra/openclaw.config.overlay.json
 if [ -f "$OVERLAY" ]; then
   echo "[entrypoint] merging config overlay $OVERLAY"

@@ -206,6 +206,10 @@ services:
       - SANDBOX_HOST_PUBLIC_HOST=host.docker.internal
       - SANDBOX_HOST_LISTEN_HOST=0.0.0.0
       - SANDBOX_HOST_LISTEN_PORT=7090
+      # The image action-sandbox-host spawns for profile=app-builder.
+      # This is the ONLY place the builder image is chosen — smart-app-service
+      # does not pick it. Built by scripts/quickstart/build-sandboxes.sh.
+      - SANDBOX_HOST_BUILDER_IMAGE=citra-app-builder:latest
       - SANDBOX_HOST_SANDBOX_NETWORK=citra-network
       - SANDBOX_HOST_APPROVED_EGRESS_NETWORK=citra-network
     networks:
@@ -232,7 +236,6 @@ services:
       # requests (multi-worker is leader-elected safe — see smart-app-service/Dockerfile).
       - WEB_CONCURRENCY=${SMART_APP_WEB_CONCURRENCY:-2}
       - SMART_APP_PROXY_BASE_URL=http://smart-app-service-dev:9100/smart-app/internal
-      - CITRA_APP_BUILDER_IMAGE=citra-app-builder:latest
       - SANDBOX_HOST_URL=http://action-sandbox-host:7090
       - SANDBOX_HOST_SECRET=dev-actionchat-host-secret-change-me
       - DISCOVERY_SERVICE_URL=http://discovery-service:9000

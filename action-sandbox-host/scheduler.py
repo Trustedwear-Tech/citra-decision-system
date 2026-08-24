@@ -29,7 +29,7 @@ from typing import Iterable, Set
 
 import docker
 import httpx
-from docker.errors import APIError, DockerException, NotFound
+from docker.errors import APIError, DockerException, ImageNotFound, NotFound
 
 from config import HostConfig, get_config
 from models import (
@@ -171,15 +171,30 @@ class Scheduler:
             )
 
         host_port = self._pick_host_port(self._list_bound_ports())
-        # Resolve profile -> image. Unknown profiles fall back to sandbox
-        # so older callers without a profile field keep working. (`profile`
-        # was resolved above for the per-profile capacity check.)
+        # Resolve profile -> image. Unknown profiles (and callers that send
+        # no profile field at all) fall through to the generic `sandbox`
+        # image, which is unset unless an operator configures a consumer
+        # overlay — see the guard below. (`profile` was resolved above for
+        # the per-profile capacity check.)
         if profile == "app-builder":
             image = cfg.builder_image
             name_prefix = "citra-builder"
         else:
             image = cfg.sandbox_image
             name_prefix = "citra-action"
+        # No silent default for the generic profile: action-chat-service (the
+        # only consumer that ever used it) was removed from this repo, so an
+        # unconfigured SANDBOX_HOST_IMAGE means the operator has not wired a
+        # consumer overlay yet. Say that, rather than handing the daemon an
+        # empty image and reporting "no command specified".
+        if not image:
+            raise RuntimeError(
+                f"no image configured for profile={profile!r}: set "
+                f"SANDBOX_HOST_IMAGE to a consumer overlay built on "
+                f"citra-agent-sandbox-base. Only profile='app-builder' "
+                f"(SANDBOX_HOST_BUILDER_IMAGE={cfg.builder_image!r}) ships "
+                f"with this repo."
+            )
         container_name = f"{name_prefix}-{req.session_id[:12]}"
         labels = {
             "citra.action.user": req.user_id,
@@ -251,6 +266,18 @@ class Scheduler:
 
         try:
             container = client.containers.run(**run_kwargs)
+        except ImageNotFound as e:
+            # This repo ships as source: the sandbox images are NOT built by
+            # `docker compose up`, because they are spawned per-session rather
+            # than run as services. A fresh clone therefore reaches this line
+            # the first time anyone starts a build, and the bare Docker 404
+            # ("No such image") gives no hint about which script produces it.
+            raise RuntimeError(
+                f"sandbox image {image!r} is not present on this host. "
+                f"Build it first:  ./scripts/quickstart/build-sandboxes.sh  "
+                f"(builds citra-agent-sandbox-base, then {image!r}). "
+                f"Original error: {e}"
+            ) from e
         except APIError as e:
             # 409 Conflict — a previous container with the same
             # deterministic name `citra-action-{session_id[:12]}` is

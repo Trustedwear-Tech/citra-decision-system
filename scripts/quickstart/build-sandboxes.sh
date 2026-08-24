@@ -24,9 +24,14 @@
 #   ./scripts/build-sandboxes.sh            # build from source (default)
 #   ./scripts/build-sandboxes.sh --pull     # pull prebuilt from GHCR + retag to local names
 #
-# --pull fetches the published images (CITRA_REGISTRY / CITRA_VERSION, same defaults
-# as docker-compose.release.yml) and retags them to the local tags the host spawns
-# by — no local build.
+# --pull fetches prebuilt images (CITRA_REGISTRY / CITRA_VERSION) and retags them to
+# the local tags the host spawns by — no local build.
+#
+# NOTE: the sandbox images are NOT part of this repo's public release matrix
+# (.github/workflows/release.yml builds the long-running services only), so
+# --pull works only against a registry YOU populated — set CITRA_REGISTRY and
+# CITRA_VERSION to point at it. Building from source (the default) is the
+# supported path for a fresh clone.
 #
 set -uo pipefail
 # ../.. — this script lives in scripts/quickstart/, so one ".." lands in
@@ -62,7 +67,16 @@ if [ "$MODE" = "pull" ]; then
     src="${REGISTRY}/${pair}:${VERSION}"; dst="${pair}:latest"
     if docker pull "$src" && docker tag "$src" "$dst"; then echo "   ✓ $dst  (from $src)"; else echo "   ✗ $pair FAILED"; FAILED=1; fi
   done
-  echo; [ "$FAILED" = 0 ] && echo "✅ prebuilt sandbox images ready (retagged to local names)" || echo "❌ some pulls failed — is the release published + the package public?"
+  echo
+  if [ "$FAILED" = 0 ]; then
+    echo "✅ prebuilt sandbox images ready (retagged to local names)"
+  else
+    echo "❌ some pulls failed from ${REGISTRY} (tag ${VERSION})."
+    echo "   The sandbox images are not published by this repo's release"
+    echo "   workflow — --pull only works against a registry you populated"
+    echo "   yourself (set CITRA_REGISTRY / CITRA_VERSION). To build from"
+    echo "   source instead, re-run without --pull."
+  fi
   exit $FAILED
 fi
 

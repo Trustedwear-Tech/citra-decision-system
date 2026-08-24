@@ -16,7 +16,7 @@
 #                                   No gateway, no internet.
 #   citra-action-approved-egress  — internal:false (REQUIRED). Carries the
 #                                   sandbox's approved reach: the dual-homed
-#                                   services it may call (action-chat-service
+#                                   services it may call (smart-app-service
 #                                   [tool + internal LLM proxies],
 #                                   citra-mcp-service, discovery-service) AND
 #                                   the route to the host gateway
@@ -35,12 +35,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # This compose file ONLY builds the image and declares the networks. The
 # per-user sandbox containers themselves are spawned dynamically by the
-# `action-sandbox-host` service (out of this repo) in response to /spawn
-# HTTP calls from Citra-Service. That service MUST apply the following
+# `action-sandbox-host` service (in this repo) in response to /spawn
+# HTTP calls from smart-app-service. That service MUST apply the following
 # Docker create flags on every spawned container — the security guarantees
 # documented in the Dockerfile header depend on them:
 #
-#   image:          citra-agent-sandbox-base:latest
+#   image:          a CONSUMER overlay, not the bare base — today that is
+#                   citra-app-builder:latest (SANDBOX_HOST_BUILDER_IMAGE).
+#                   The base ships an empty workspace-seed/, so spawning it
+#                   directly gives an agent with no persona and no skills.
 #   user:           "1500:1500"
 #   read_only:      true                # rootfs is immutable; agent install
 #                                       # attempts fail loudly via shims +
@@ -86,7 +89,18 @@
 services:
   # One-shot builder — produces the neutral base image (empty workspace-seed,
   # no persona). action-sandbox-host does NOT spawn this directly; it spawns
-  # one of the consumer overlays below (citra-action-chat-sandbox by default).
+  # a consumer overlay that layers a persona on top of it.
+  #
+  # ONE consumer ships in this repo: citra-app-builder
+  # (smart-app-service/builder-sandbox/Dockerfile), which is NOT built here —
+  # its build context is smart-app-service/, so it lives in
+  # scripts/quickstart/build-sandboxes.sh, which builds both in the right
+  # order. Prefer that script; this file exists for the networks and for
+  # rebuilding the base alone.
+  #
+  # (A citra-action-chat-sandbox overlay used to be built here too. It went
+  # with action-chat-service when that service was removed from the repo —
+  # do not re-add a build stanza for a directory that no longer exists.)
   citra-agent-sandbox-base-builder:
     image: citra-agent-sandbox-base:latest
     build:
@@ -94,24 +108,6 @@ services:
       dockerfile: Dockerfile
     command: ["python", "-c", "print('citra-agent-sandbox-base image built')"]
     restart: "no"
-
-  # One-shot builder — action-chat consumer overlay. FROM citra-agent-sandbox-base
-  # and COPY the deep-research persona (SOUL, IDENTITY, AGENTS, USER, MEMORY,
-  # TOOLS + 16 SKILL_*.md + agents/) into /srv/citra/workspace-seed/, which
-  # seed-persona.sh injects into /workspace/.openclaw/workspace/ at every
-  # container start. This is the tag action-sandbox-host's SANDBOX_HOST_IMAGE
-  # defaults to; without this build step the scheduler has no persona-bearing
-  # image to spawn and the agent boots with no skills/SOUL.
-  citra-action-chat-sandbox-builder:
-    image: citra-action-chat-sandbox:latest
-    build:
-      context: ../../action-chat-service/sandbox
-      dockerfile: Dockerfile
-    command: ["python", "-c", "print('citra-action-chat-sandbox image built')"]
-    restart: "no"
-    depends_on:
-      citra-agent-sandbox-base-builder:
-        condition: service_completed_successfully
 
 networks:
   citra-action-egress:
@@ -128,6 +124,6 @@ networks:
     # Upstream services the sandbox is allowed to reach must ALSO be attached
     # to this network (in each service's own compose). They are additionally
     # on citra-network:
-    #   - action-chat-service  (tool proxies + the internal LLM proxy)
+    #   - smart-app-service    (tool proxies + the internal LLM proxy)
     #   - citra-mcp-service     (web / vault / files / ocr / discovery tools)
     #   - discovery-service

@@ -82,21 +82,29 @@ class HostConfig:
     allow_unbounded_ram: bool = _bool("SANDBOX_HOST_ALLOW_UNBOUNDED_RAM", False)
 
     # ---- container defaults ------------------------------------------
-    # The two consumer images both layer on the (neutral)
-    # citra-agent-sandbox-base. Each owns its own persona under
-    # /srv/citra/workspace-seed/. Built by:
-    #   - action-chat-service/sandbox/Dockerfile
-    #   - smart-app-service/builder-sandbox/Dockerfile
-    # The base image is NOT spawned directly in production â€” running it
-    # bare would mean no persona, no skills, no useful agent identity.
+    # Consumer images layer their own persona onto the (neutral)
+    # citra-agent-sandbox-base under /srv/citra/workspace-seed/. The base
+    # image is NOT spawned directly â€” running it bare means no persona, no
+    # skills, no useful agent identity.
+    #
+    # Exactly ONE consumer ships today: the smart-app builder
+    # (smart-app-service/builder-sandbox/Dockerfile), spawned with
+    # profile="app-builder". action-chat-service and its
+    # citra-action-chat-sandbox overlay were REMOVED from this repo; the
+    # generic `profile="sandbox"` path is kept as the extension point for
+    # a future consumer, but it has NO default image, because defaulting it
+    # to an image nobody builds turned "you never configured this" into an
+    # opaque 404 from the Docker daemon at spawn time. Set SANDBOX_HOST_IMAGE
+    # to your own overlay tag to use it; leaving it blank makes any
+    # non-builder spawn fail immediately with an explicit message
+    # (see scheduler._spawn_blocking).
+    sandbox_image: str = os.getenv("SANDBOX_HOST_IMAGE", "").strip()
+    # Builder profile (used by smart-app-service to spawn ephemeral
+    # builder pods that turn a BA goal into AppSpec+AgentSpec JSON).
     # `or default` (not getenv default) so an env var set to EMPTY string
     # falls back to the image tag instead of blanking it â€” an empty image
     # makes docker create fail with "no command specified".
-    sandbox_image: str = (
-        os.getenv("SANDBOX_HOST_IMAGE") or "citra-action-chat-sandbox:latest"
-    )
-    # Builder profile (used by smart-app-service to spawn ephemeral
-    # builder pods that turn a BA goal into AppSpec+AgentSpec JSON).
+    # Built locally by scripts/quickstart/build-sandboxes.sh.
     builder_image: str = (
         os.getenv("SANDBOX_HOST_BUILDER_IMAGE") or "citra-app-builder:latest"
     )

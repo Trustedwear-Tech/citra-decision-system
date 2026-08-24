@@ -267,9 +267,8 @@ RUN pip3 install --no-cache-dir -r /srv/citra/requirements.txt
 
 # Runtime assets â€” neutral base only. Persona files (SOUL / IDENTITY /
 # AGENTS / USER / MEMORY / TOOLS / SKILL_*.md) are NOT shipped in this
-# image. Each consumer layers its own persona into /srv/citra/workspace-seed/:
-#   - action-chat workload â†’ action-chat-service/sandbox/Dockerfile
-#                              builds citra-action-chat-sandbox:latest
+# image. Each consumer layers its own persona into /srv/citra/workspace-seed/.
+# ONE consumer ships today:
 #   - smart-app builder    â†’ smart-app-service/builder-sandbox/Dockerfile
 #                              builds citra-app-builder:latest
 # /srv/citra/workspace-seed/ is created empty here so seed-persona.sh's
@@ -281,8 +280,11 @@ RUN pip3 install --no-cache-dir -r /srv/citra/requirements.txt
 # wants research sub-agents ships BOTH their personas
 # (workspace-seed/agents/<name>/) AND a delegation overlay
 # (/srv/citra/openclaw.config.overlay.json, deep-merged onto the rendered
-# config by entrypoint.sh step 4a). action-chat does; the builder does not,
-# so the builder's main agent advertises no delegation tool.
+# config by entrypoint.sh step 4a). The smart-app builder does exactly
+# that: builder-sandbox/openclaw.config.overlay.json adds
+# `runtime-verifier` to main's subagents.allowAgents and declares that
+# agent's workspace, so the builder's main agent DOES advertise a
+# delegation tool. An image run with no overlay gets `main` alone.
 COPY runner                          /srv/citra/runner
 COPY openclaw.config.template.json   /srv/citra/openclaw.config.template.json
 COPY entrypoint.sh                   /srv/citra/entrypoint.sh

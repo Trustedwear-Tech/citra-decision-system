@@ -91,7 +91,10 @@ services:
       WORKFLOW_SERVICE_URL: ${WORKFLOW_SERVICE_URL:-}
       MCP_SERVICE_API_KEY: ${MCP_SERVICE_API_KEY:-}
       # ----- Builder pod settings -----
-      CITRA_APP_BUILDER_IMAGE: citra/citra-app-builder:local
+      # NOTE: no action-sandbox-host runs in this file, so builder pods cannot
+      # be spawned from it at all. The image below is built for convenience
+      # only; the host that would spawn it picks the image via
+      # SANDBOX_HOST_BUILDER_IMAGE, not from smart-app-service.
       # When the builder pod calls back, it does so over the docker
       # network using the smart-app-service container hostname.
       SMART_APP_PROXY_BASE_URL: http://smart-app-service:9100/smart-app/internal
