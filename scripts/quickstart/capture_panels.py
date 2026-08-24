@@ -104,6 +104,13 @@ CARDS = [
 ]
 
 
+# Panels that open on the wrong tab: shot name -> tab to select first.
+THEN = {
+    "17-app-memory": "Loan Application Triage",
+    "19-success-rate": "Loan Application Triage",
+}
+
+
 def shot(page, name, note):
     OUT.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(OUT / f"{name}.png"))
@@ -193,6 +200,18 @@ def main() -> int:
                 missing.append(label)
                 continue
             page.wait_for_timeout(4500)
+            # Some panels open on a tab that is not the interesting one. App
+            # Memory defaults to the first app alphabetically, which on this
+            # demo is a dashboard with no judgements -- shooting it straight
+            # away photographs an empty state and calls it "learned
+            # judgements". THEN is the tab worth showing.
+            then = THEN.get(name)
+            if then:
+                if page.evaluate("([t]) => window.__tap(t)", [then]):
+                    page.wait_for_timeout(3000)
+                else:
+                    print(f"  [--] {name}: could not select {then!r}; "
+                          f"shooting the default tab")
             shot(page, name, note)
             captured.append(label)
 

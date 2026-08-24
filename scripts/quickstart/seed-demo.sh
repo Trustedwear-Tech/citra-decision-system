@@ -197,6 +197,12 @@ if [ -f "$TENANT_DIR/scripts/ingest_docs.py" ] && [ -d "$TENANT_DIR/raw" ]; then
     # MSYS_NO_PATHCONV stops Git Bash on Windows rewriting /app/... into a
     # Windows path before docker sees it. Harmless elsewhere.
     MSYS_NO_PATHCONV=1 docker exec "$SVC_CID" mkdir -p /app/demo-data/tenants
+    # Remove the target first. `docker cp SRC CID:DEST` copies SRC *into* DEST
+    # when DEST already exists, so a second run lands the tree at
+    # .../acme-bank/acme-bank/ and leaves the FIRST run's copy in place -- the
+    # command below then executes a stale ingest_docs.py and reports success.
+    # Silent on a fresh install, silent on re-run, wrong only in what it ran.
+    MSYS_NO_PATHCONV=1 docker exec "$SVC_CID" rm -rf "/app/demo-data/tenants/$TENANT"
     MSYS_NO_PATHCONV=1 docker cp "$TENANT_DIR" "$SVC_CID:/app/demo-data/tenants/$TENANT"
     MSYS_NO_PATHCONV=1 docker exec -w /app/Citra-Service "$SVC_CID" \
       python "/app/demo-data/tenants/$TENANT/scripts/ingest_docs.py" \

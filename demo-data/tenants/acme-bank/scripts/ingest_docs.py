@@ -103,6 +103,9 @@ DOC_TYPE_RULES: List[Tuple[str, str]] = [
 # is deterministic — NO Date/random, so reseeds are reproducible).
 _NS = uuid.UUID("00000000-0000-0000-0000-0000ac3e0001")   # arbitrary fixed namespace
 FOLDER_ID = str(uuid.uuid5(_NS, f"{ORG_ID}/{DEPT}/{SOURCE_ID}"))
+# Audit-only stamp on the seeded folder/file records. Never an ownership
+# key -- dept libraries are authorized by (org_id, dept_id), not by creator.
+SEED_USER_ID = "seed:ingest_docs"
 
 
 def _doc_type_for(path: Path) -> str:
@@ -225,8 +228,89 @@ async def _run(docs: List[Path], *, dry_run: bool) -> int:
         total_chunks += n
     log.info("Ingestion complete — %d chunks across %d docs into %s.",
              total_chunks, len(docs), collection)
+
+    # The vectors are retrievable now, but nothing in the UI knows this
+    # corpus exists until it is registered as a library.
+    _register_dept_library(docs)
     return 0
 
+
+
+def _register_dept_library(docs: List[Path]) -> int:
+    """Make the ingested corpus visible in the SOP Library panel.
+
+    The vectors alone are invisible to the UI: the panel lists Mongo `folders`
+    and, inside a library, Mongo `files`. Without these the demo shows "No
+    department libraries yet" while the apps cite these very documents.
+
+    Idempotent, on the same stable FOLDER_ID the vectors carry, so a re-run
+    updates in place rather than creating a second library.
+    """
+    from datetime import datetime as _dt
+
+    from citra_auth.constants import OwnerType
+    from CRUD_utils import get_mongo_client, MONGODB_DATABASE
+    from dept_library import FOLDER_KIND, _store_dept_original
+    from dept_library_store import shared_dept_collection
+
+    db = get_mongo_client()[MONGODB_DATABASE]
+    now = _dt.now()
+
+    db["folders"].update_one(
+        {"_id": FOLDER_ID},
+        {"$set": {
+            "owner_type": OwnerType.DEPT,
+            "folder_kind": FOLDER_KIND,
+            "org_id": ORG_ID,
+            "dept_id": DEPT,
+            "milvus_collection": shared_dept_collection(),
+            # Must match what the chunks are stamped with, or the panel and the
+            # retriever disagree about which corpus this library is.
+            "source_id": SOURCE_ID,
+            # Org-wide: the demo has one admin, and every department's apps
+            # cite this corpus. Curation stays admin-only regardless.
+            "public_within_org": True,
+            "name": "Policy Library",
+            "description": ("Acme Bank credit, collections and claims policy — "
+                            "the SOPs the Decision Apps cite."),
+            "color": "#0f766e",
+            "created_by": SEED_USER_ID,
+            "updated_at": now,
+            "deleted": False,
+        }, "$setOnInsert": {"created_at": now}},
+        upsert=True,
+    )
+
+    # Replace this library's file records outright rather than merging: a
+    # renamed or removed source document would otherwise linger in the panel
+    # forever, listed but no longer backed by any vector.
+    db["files"].delete_many({"folder_id": FOLDER_ID, "owner_type": "dept"})
+
+    written = 0
+    for doc in docs:
+        doc_path = doc.relative_to(RAW_ROOT).as_posix()
+        try:
+            _store_dept_original(
+                content=doc.read_bytes(),
+                content_type=_content_type_for(doc),
+                org_id=ORG_ID, dept_id=DEPT, folder_id=FOLDER_ID,
+                document_id=_document_id(doc_path),
+                filename=doc.name,
+                file_ext=doc.suffix.lstrip("."),
+                user_id=SEED_USER_ID,
+                doc_type=_doc_type_for(doc),
+            )
+            written += 1
+        except Exception as exc:  # noqa: BLE001
+            # Loud, and it does not abort: the vectors are already in, so the
+            # apps still cite correctly. Only this document's row in the panel
+            # is missing, and a re-run fixes it.
+            log.error("  x could not register '%s' in the library panel: %s",
+                      doc_path, exc)
+
+    log.info("Registered library '%s' (folder=%s) with %d/%d document record(s)",
+             "Policy Library", FOLDER_ID, written, len(docs))
+    return written
 
 def main() -> int:
     ap = argparse.ArgumentParser(

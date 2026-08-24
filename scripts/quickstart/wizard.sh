@@ -246,6 +246,55 @@ if [ "$start_choice" = "2" ]; then
       --sources "$REPO_ROOT/my-source/sources.json" --yes \
     || { echo "  [FAIL] organisation not created - the catalogue would be unreachable." >&2; exit 1; }
 
+  # ---- SOPs: the rules half of the product ----------------------------------
+  # Connecting a database gives the agent facts. SOPs give it RULES -- what your
+  # team already does with those facts. Without them a recommendation cannot
+  # cite anything, which is most of the difference between this and a chatbot
+  # over your database.
+  hr; echo "$(b "Your SOPs - the rules your apps decide by")"
+  echo
+  echo "Your database says what IS TRUE. Your SOPs say what to DO about it:"
+  echo
+  echo "  - when a loan can be approved, and what must be verified first"
+  echo "  - when a claim settles, when it needs a surveyor, when it is rejected"
+  echo "  - what makes an account NPA, what the KYC steps are"
+  echo
+  echo "Anything you would hand a new joiner and expect them to follow."
+  echo "$(b "PDF, Word, Markdown or text.")"
+  echo
+  echo "This is what makes a recommendation quotable: $(b "\"approve under §4.2 of")"
+  echo "$(b "the credit policy\"") rather than an opinion you cannot check. It is also"
+  echo "the layer that always wins -- what the app learns from your officers"
+  echo "sits underneath your SOPs, never over them."
+  echo
+  sop_dir="$(ask "Folder of SOP documents (blank to upload from the UI later)" "")"
+
+  if [ -n "$sop_dir" ]; then
+    if [ ! -d "$sop_dir" ]; then
+      echo "  [!] $sop_dir is not a folder - skipping. Upload from the UI instead:" >&2
+      echo "      Home -> SOP Library -> New library -> Upload SOPs" >&2
+    else
+      SVC_CID="$($COMPOSE ps -q citra-service 2>/dev/null || true)"
+      if [ -z "$SVC_CID" ]; then
+        echo "  [!] citra-service is not running - skipping SOP ingestion." >&2
+      else
+        # Runs inside citra-service: the ingest imports that service's
+        # embedding client and Milvus wiring, which the host venv does not have.
+        MSYS_NO_PATHCONV=1 docker exec "$SVC_CID" rm -rf /app/_sops_in
+        MSYS_NO_PATHCONV=1 docker cp "$sop_dir" "$SVC_CID:/app/_sops_in"
+        MSYS_NO_PATHCONV=1 docker exec -w /app/Citra-Service "$SVC_CID" \
+          python /app/scripts/quickstart/ingest_sops.py \
+            --org "$org_id" --dept "$dept_id" --dir /app/_sops_in \
+          || echo "  [!] SOP ingestion failed - your apps will have no rules to cite." >&2
+      fi
+    fi
+  else
+    echo
+    echo "  No SOPs loaded. Your apps will read your data but will not be able to"
+    echo "  cite a rule. Add them any time:"
+    echo "      $(b "Home -> SOP Library -> New library -> Upload SOPs")"
+  fi
+
   hr; echo "$(b "Verifying")"
   "$PY" "$REPO_ROOT/scripts/quickstart/verify_install.py" --org-id "$org_id" || true
 else
