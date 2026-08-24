@@ -25,7 +25,24 @@
 
 set -e
 
-INDEX="/usr/share/nginx/html/index.html"
+# Find the index.html that is ACTUALLY served. Two images serve this app and
+# they put it in different places: Dockerfile.web builds an nginx image
+# (/usr/share/nginx/html), while Dockerfile.dev — the one the quickstart builds
+# — serves ./dist with `serve`. This was hardcoded to the nginx path, so under
+# the quickstart the injection wrote to a file nobody reads and the bundle fell
+# back to its build-time default of https://api.citra-ai.com. A self-hoster got
+# a UI pointed at the vendor's production API and could not sign in.
+INDEX=""
+for candidate in /usr/share/nginx/html/index.html                  /app/Citra-UI/dist/index.html                  ./dist/index.html                  /app/dist/index.html; do
+  if [ -f "$candidate" ]; then INDEX="$candidate"; break; fi
+done
+if [ -z "$INDEX" ]; then
+  echo "FATAL: no index.html found to inject runtime config into." >&2
+  echo "       Looked in the nginx and dist locations. Without it the bundle" >&2
+  echo "       uses its build-time API URLs, which are NOT this deployment's." >&2
+  exit 1
+fi
+echo "-> injecting runtime config into $INDEX"
 
 # Build the runtime config JSON from environment variables
 # Only include variables that are actually set

@@ -30,11 +30,29 @@ RUN --mount=type=cache,target=/root/.npm \
 # .env (EXPO_PUBLIC_ENVIRONMENT=development -> localhost API URLs), matching the
 # previous `expo start --web` behavior. Code changes require a rebuild:
 #   .\dev-docker.ps1  ->  Re-deploy services  ->  One service  ->  citra-ui
+# self-hosted, explicitly. config.js only consults window.__CITRA_ENV__ inside
+# its `isSelfHosted` branch, so without this the bundle resolves to the
+# PRODUCTION URLs and calls https://api.citra-ai.com — the vendor's API — from
+# a self-hoster's own deployment. The old comment above says .env supplies this,
+# which is true in the private tree and false here: Citra-UI/.env is gitignored,
+# so it exists for us and not for anyone who clones the repo.
+ARG EXPO_PUBLIC_ENVIRONMENT=self-hosted
+ENV EXPO_PUBLIC_ENVIRONMENT=${EXPO_PUBLIC_ENVIRONMENT}
+
 COPY . .
 RUN npm run web:build
 
 # Expose Expo Web port
 EXPOSE 8081
+
+# Citra's runtime-config entrypoint. WITHOUT this the image inherits node's own
+# docker-entrypoint.sh, `window.__CITRA_ENV__` is never injected, and the bundle
+# keeps the API URLs baked in at build time — which for a self-hoster means the
+# UI calls https://api.citra-ai.com, the vendor's production API, instead of
+# their own services. Sign-in cannot work and nothing says why.
+COPY docker-entrypoint.sh /usr/local/bin/citra-entrypoint.sh
+RUN chmod +x /usr/local/bin/citra-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/citra-entrypoint.sh"]
 
 # Serve the static export. No file watching.
 CMD ["serve", "-s", "dist", "-l", "8081"]
