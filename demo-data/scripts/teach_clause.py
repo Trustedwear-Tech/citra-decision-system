@@ -92,7 +92,14 @@ HELD_OUT_DSA = "LAN-2026-005351"
 # Not DSA. The half that proves the scope is real -- if this diverts too, the
 # app has just become generally more cautious, which is a different (worse)
 # thing than having learned something specific.
-CONTROL_BRANCH = "LAN-2026-000205"
+#
+# Chosen to differ from HELD_OUT_DSA in the CHANNEL AND NOTHING ELSE: same
+# product (auto), same amount band, same FOIR band, same income-proof state. A
+# first pick (LAN-2026-000205) sat at FOIR 31.36 and so differed in two
+# families at once -- had the clause not fired on it, the result could not tell
+# you whether the channel or the FOIR band was responsible, which is no control
+# at all.
+CONTROL_BRANCH = "LAN-2026-000276"
 
 
 def _token(subject: str) -> str:
@@ -192,31 +199,43 @@ def main() -> int:
                     help="How many officers correct (3 is the promotion threshold).")
     ap.add_argument("--skip-effect", action="store_true",
                     help="Skip the held-out / control runs at the end.")
+    ap.add_argument("--effect-only", action="store_true",
+                    help="Only run the held-out / control check against the "
+                         "clause that already exists. Teaching again would add "
+                         "a second set of corrections for the same lesson.")
     a = ap.parse_args()
 
     if a.officers < 3:
         log.warning("Fewer than 3 officers: the clause will stay a CANDIDATE, "
                     "not become active. That is the real behaviour, not a bug.")
 
-    lessons = LESSONS[:a.officers]
+    lessons = [] if a.effect_only else LESSONS[:a.officers]
     ids = [app_id for _, app_id, _ in lessons]
     if not a.skip_effect:
         ids += [HELD_OUT_DSA, CONTROL_BRANCH]
     rows = _fetch_rows(ids)
 
-    log.info("Teaching from %d correction(s), one per officer:", len(lessons))
-    done = sum(_run_and_correct(o, rows[i], r) for o, i, r in lessons)
-    if done < 3:
-        log.error("Only %d correction(s) landed; 3 distinct officers are needed "
-                  "for an ACTIVE clause. Stopping before consolidation.", done)
-        return 1
+    admin_probe = _token("admin@citra-ai.com")
+    if a.effect_only:
+        clauses = _call("GET", f"/apps/{SLUG}/memory/clauses", admin_probe).get("clauses") or []
+        if not [c for c in clauses if c.get("status") == "active"]:
+            log.error("No ACTIVE clause to test. Run without --effect-only first.")
+            return 1
+    else:
+        log.info("Teaching from %d correction(s), one per officer:", len(lessons))
+        done = sum(_run_and_correct(o, rows[i], r) for o, i, r in lessons)
+        if done < 3:
+            log.error("Only %d correction(s) landed; 3 distinct officers are needed "
+                      "for an ACTIVE clause. Stopping before consolidation.", done)
+            return 1
 
     # Consolidation also runs on a timer (CONSOLIDATION_INTERVAL_SECONDS,
     # default 900). Calling it directly avoids a quarter-hour wait that makes
     # this look flaky when it is merely scheduled.
-    log.info("Running consolidation...")
-    admin = _token("admin@citra-ai.com")
-    _call("POST", "/admin/consolidation/run", admin, {}, timeout=300)
+    admin = admin_probe
+    if not a.effect_only:
+        log.info("Running consolidation...")
+        _call("POST", "/admin/consolidation/run", admin, {}, timeout=300)
 
     clauses = _call("GET", f"/apps/{SLUG}/memory/clauses", admin).get("clauses") or []
     if not clauses:

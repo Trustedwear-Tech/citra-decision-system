@@ -10,7 +10,12 @@
 
 # Plan: produce a learned clause in the demo
 
-Status: plan. Nothing run yet. Written 2026-08-17.
+Status: DONE, and the original recipe was wrong. Written 2026-08-17, run
+and corrected 2026-08-24. What shipped is `demo-data/scripts/teach_clause.py`;
+it produced C-001 on the acme-bank demo. The correction is in "What
+consolidation requires" below -- read that before writing corrections of
+your own, because the instinct the first version encoded is the natural one
+and it silently produces nothing.
 
 The acme-bank seed publishes four apps, a policy library and 211,615 rows of
 system-of-record data — and **no learned judgement**. `smartapp_clauses` is
@@ -33,52 +38,94 @@ showing. The demo needs the corrections, and then the real consolidation pass.
 
 ## What consolidation requires
 
-From `clause_store.py`:
+Two components, and the plan originally read only the first.
+
+**Promotion** (`clause_store.py`) — how many officers make a clause `active`:
 
 ```python
 promotion_min_officers: int = 3
 "status": "active" if len(officers) >= promotion_min_officers else "candidate"
 ```
 
-and the comment beside it — *"it counts distinct officers, never per-officer
-weights (no trust tiers)"*.
+It counts DISTINCT officers, never per-officer weights. Three corrections from
+one officer produce a `candidate`, and a screenshot of a candidate proves less
+than nothing, because it looks like the feature half-worked.
 
-So:
+**Clustering** (`consolidation.py`) — whether those corrections are even
+recognised as the same lesson. This is the part that was missed. Corrections
+combine only when BOTH gates pass, pairwise against the cluster's first member:
 
-| requirement | value |
-|---|---|
-| distinct officers correcting the same way | **3** — fewer leaves the clause `candidate`, not `active` |
-| corrections must share a case facet | the facet becomes the clause's scope |
-| the facet must exist on the app's case_signature | loan-triage has `sourcing_channel`, `product`, `amount_band`, `foir_band`, `income_proof` |
+| gate | function | threshold | what it means |
+|---|---|---|---|
+| text | `text_similarity` | `CLUSTER_SIMILARITY` = **0.34** | Jaccard over content tokens |
+| facets | `facet_compatible` | `CLUSTER_FACET_OVERLAP` = **0.5** | overlap coefficient, `len(a&b) / min(len(a), len(b))` |
 
-The scope is the **intersection** of the case labels on every correction that
-formed it. Correct three files that differ in product and ticket size but share
-a channel, and the channel is the only thing left — which is why a well-formed
-clause is narrow without anyone choosing its narrowness.
+### The trap
+
+The original recipe said: pick cases that differ in product, ticket size and
+FOIR band so the only shared facet is `sourcing_channel:dsa`, and the scope
+falls out narrow without anyone choosing its narrowness.
+
+That is exactly backwards. Sharing one facet out of five is an overlap of
+**0.2**, well under 0.5 — such corrections are treated as different KINDS of
+case and never cluster, so no clause forms at all. Measured on the first
+attempt:
+
+```
+priya vs arjun    text=0.148 FAIL   facets=FAIL
+priya vs fatima   text=0.107 FAIL   facets=FAIL
+arjun vs fatima   text=0.071 FAIL   facets=FAIL
+```
+
+Consolidation reported `pending: 3, clusters: 3, created: 0` — three clusters
+of one. Nothing in that output says "your facets were too different"; it just
+quietly creates nothing.
+
+**A clause's scope cannot be narrower than what the clustering gate will hold
+together.** With a five-family signature, corrections must agree on at least
+three families (0.6), so the tightest achievable scope is three facets.
+
+The text gate bites too, and in the opposite direction from what feels right.
+Officers writing the same lesson in genuinely different words score 0.07–0.15.
+Real corrections repeat the domain's vocabulary — "DSA", "verify employment",
+"employer", "before approval" — and that repetition is what makes them
+clusterable. Writing five freshly-phrased 25-word paragraphs, which reads as
+more realistic, produces five unrelated clusters. (Same effect recorded when a
+25-word minimum was proposed for correction reasons and rejected: 0/15 clusters
+survived it.)
 
 ## The recipe
 
-The credit note's C-002 is the worked example and the demo should reproduce it,
-not invent something new. The data supports it: **2,863 DSA-sourced
-applications** in the acme-bank system of record.
+What actually works, and what `teach_clause.py` does:
 
-1. **Pick 3–5 DSA-sourced cases** that clear every policy gate — the right-hand
-   branch. Deliberately vary product, ticket size and FOIR band so the only
-   shared facet is `sourcing_channel:dsa`.
-2. **Run each through `loan-application-triage`.** Without memory these come
-   back `approve`.
-3. **Correct each as a DIFFERENT officer** via
-   `POST /apps/{slug}/items/{item_id}/feedback` — three distinct officer
-   identities, same change: `approve` → `verify_employment`, with the reason
-   stated in the officer's own words rather than copied between them.
-4. **Run consolidation** (`POST /admin/consolidation/run`).
-5. **Verify**: `GET /apps/{slug}/memory/clauses` shows the clause `active` with
-   three officers; `…/{clause_id}/provenance` shows the three corrections and
-   the cases behind them.
+1. **Pick 3–5 cases that agree on three facet families and vary the rest.** For
+   loan-triage that is `sourcing_channel:dsa` + `foir_band:lt_30` +
+   `income_proof:present`, varying product and ticket size — 3/5 = 0.6 overlap.
+2. **Run each through `loan-application-triage`**, passing the WHOLE record as
+   `inputs`, not just the application id. Case facets are derived from the
+   record; a run given only an id yields `family:__unknown` for every family.
+   The correction is still stored, its facets match nothing, and no clause can
+   ever be scoped from it. Nothing anywhere reports this.
+3. **Correct each as a DIFFERENT officer** — `POST
+   /apps/{slug}/run/{correlation_id}/approve` with
+   `{"decision": "reject", "decision_reason": "..."}`. Three distinct
+   identities. Reasons should share the domain's vocabulary; check them against
+   `text_similarity` before spending model calls on runs.
+4. **Run consolidation** — `POST /admin/consolidation/run`.
+5. **Verify**: `GET /apps/{slug}/memory/clauses` shows it `active` with
+   `support_count: 3`, and `provenance` lists the three correction ids.
 
-Step 3 is the one to get right. Three corrections from one officer produce a
-`candidate`, not an `active` clause — and a screenshot of a candidate proves
-less than nothing, because it looks like the feature half-worked.
+Result on the demo:
+
+> **C-001** · active · *"For DSA-sourced files, verify employment directly with
+> the employer before approval."*
+> scope: `foir_band:lt_30`, `income_proof:present`, `sourcing_channel:dsa`
+> 3 officers · 3 corrections cited
+
+Note the scope carries `foir_band` and `income_proof` as well as the channel.
+That is not a compromise to make the demo work — it is the honest scope of what
+those three officers actually agreed on, and the clustering gate is what stops
+you claiming anything broader.
 
 ## Then check it actually changed behaviour
 
@@ -94,9 +141,36 @@ decision**:
 That pair is also the honest version of the experiment in the credit note:
 14 vs 1 with memory on versus off, 19/19 correctly targeted, 0/2 on controls.
 
+### Measured, 2026-08-24
+
+`teach_clause.py --effect-only`, against C-001:
+
+| case | channel | clauses cited |
+|---|---|---|
+| `LAN-2026-005351` — held out, never corrected | dsa | **1** |
+| `LAN-2026-000276` — control | branch | **0** |
+
+The two differ in the CHANNEL AND NOTHING ELSE: both auto, both under ₹500k,
+both FOIR under 30, both with income proof on file. So the clause firing on one
+and not the other is attributable to the channel, which is what the clause
+claims to be about.
+
+Getting that right took a second attempt. The first control (`LAN-2026-000205`)
+sat at FOIR 31.36 and so differed in two families at once — it also returned 0
+cited clauses, but that number could not distinguish "the scope is real" from
+"the FOIR band excluded it". A control that differs in more than one place
+answers a question you did not ask.
+
+One thing this measures and one it does not: it shows the clause is RETRIEVED
+for the held-out case and not for the control, which is the scoping mechanism
+working. Whether the final recommendation flips to `verify_employment` is a
+further claim about the model's use of what it was given — worth checking
+separately, and not something the citation count establishes on its own.
+
 ## Whether to ship it in the seed
 
-Two options, and the second is better:
+Two options. The second was chosen, and `demo-data/scripts/teach_clause.py`
+is it — the seed does NOT run it:
 
 - **Seed the corrections** in `demo-data/tenants/acme-bank/` and have
   `seed-demo.sh` run consolidation as step 7. Every install then shows learned
