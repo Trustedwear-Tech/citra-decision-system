@@ -55,6 +55,20 @@ services:
     env_file: [.env]
   citra-app-runtime:
     env_file: [.env]
+    environment:
+      # .env carries the HOST-side URL (http://localhost:9100), because the
+      # seed and quickstart scripts run on the host and need it. Inside this
+      # container `localhost` is the container itself, so every server-side
+      # call from a Decision App page died with ECONNREFUSED and the app
+      # rendered "Something went wrong" -- the headline feature, broken on a
+      # clean install while every container reported healthy.
+      #
+      # The runtime resolves exactly one service URL server-side
+      # (src/lib/env.ts -> smartAppServiceUrl), so this single override is the
+      # whole fix. It deliberately does NOT get a default in the code: env.ts
+      # throws rather than falling back to localhost, which is what made this
+      # findable at all.
+      - SMART_APP_SERVICE_URL=http://smart-app-service:9100
   data-discovery-service:
     env_file: [.env]
     environment:
