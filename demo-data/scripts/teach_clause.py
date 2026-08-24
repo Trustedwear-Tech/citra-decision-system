@@ -53,6 +53,14 @@ BASE = os.getenv("SMART_APP_SERVICE_URL", "http://localhost:9100")
 # Officers who each independently reach the same conclusion. THREE distinct
 # identities is the promotion threshold in clause_store.
 #
+# These are minted JWT subjects, not registered users -- the promotion gate
+# counts distinct officer identities on the corrections, and nothing here
+# checks them against the user store. That is fine for seeding a demo and it
+# is NOT how a real deployment works: there, three people signed in and
+# disagreed with the app. Do not read the resulting clause as evidence that
+# three humans were consulted; read it as a faithful reproduction of what
+# happens when they are.
+#
 # Two gates in consolidation.py decide whether these become one lesson or three
 # unrelated ones, and both were measured against the real functions before
 # these were written:

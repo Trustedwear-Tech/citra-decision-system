@@ -364,7 +364,7 @@ directly from the code in `smart-app-service/clause_store.py`:
        src="assets/screens/panels/17-app-memory.png" width="100%">
 </p>
 
-<p align="center"><i>One of these, as the app holds it: the sentence, the scope it fires within, and the three officers whose corrections formed it. Every judgement links back to the corrections that taught it, so it can be read, challenged and retired — never silently rewritten.</i></p>
+<p align="center"><i>One of these, as the app holds it: the sentence, the scope it fires within, and the three officers whose corrections formed it. Every judgement links back to the corrections that taught it, so it can be read, challenged and retired — never silently rewritten.<br><br><b>This is not what a fresh install looks like.</b> Clauses are formed, not seeded, so the demo ships with none — an app that arrived already knowing things would be demonstrating the opposite of the claim. Run <code>demo-data/scripts/teach_clause.py</code> to watch this one form from three officer corrections.</i></p>
 
 
 Three worked examples, in the shape the system stores them -- from three
