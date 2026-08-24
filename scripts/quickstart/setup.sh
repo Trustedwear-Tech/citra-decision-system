@@ -22,6 +22,11 @@ cd "$REPO_ROOT"
 ENV_FILE="$REPO_ROOT/.env"
 COMPOSE="docker compose -f docker-compose.quickstart.yml"
 
+# Check the host BEFORE writing .env. Without this the first failure was
+# "docker: command not found" from line 77, after secrets had been generated.
+. "$REPO_ROOT/scripts/quickstart/preflight.sh"
+preflight || exit 1
+
 # citra-network is created by docker-compose.infra.yml (name: pinned, not
 # external), so nothing needs to pre-create it here. It used to be declared
 # external and created by hand at this point — see the infra networks block.

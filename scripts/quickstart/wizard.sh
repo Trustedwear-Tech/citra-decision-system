@@ -28,6 +28,12 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; cd "$REPO_ROOT"
 PY="$(command -v python3 || command -v python || true)"
 ENV_FILE="$REPO_ROOT/.env"
 
+# Before the FIRST question. The wizard asks for an org, an admin password
+# and an API key before it ever reaches setup.sh, so a host that cannot run
+# the stack used to discover that only after the whole interview was over.
+. "$REPO_ROOT/scripts/quickstart/preflight.sh"
+preflight || exit 1
+
 b()  { printf '\033[1m%s\033[0m' "$1"; }
 hr() { printf '\n------------------------------------------------------------\n'; }
 ask() {

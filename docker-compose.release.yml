@@ -18,15 +18,15 @@
 # CITRA_VERSION. Override the registry/owner with CITRA_REGISTRY if you forked.
 # See RELEASE.md. Plain `docker compose up` (build-from-source) is unchanged.
 services:
-  citra-service:             { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/citra-service:${CITRA_VERSION:-latest}" }
-  citra-ui:                  { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/citra-ui:${CITRA_VERSION:-latest}" }
-  citra-user-service:        { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/citra-user-service:${CITRA_VERSION:-latest}" }
-  duckdb-query-service:      { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/duckdb-query-service:${CITRA_VERSION:-latest}" }
-  reranker-service:          { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/reranker-service:${CITRA_VERSION:-latest}" }
-  discovery-service:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/discovery-service:${CITRA_VERSION:-latest}" }
-  action-sandbox-host:       { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/action-sandbox-host:${CITRA_VERSION:-latest}" }
-  smart-app-service:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/smart-app-service:${CITRA_VERSION:-latest}" }
-  citra-app-runtime:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/citra-app-runtime:${CITRA_VERSION:-latest}" }
-  data-discovery-service:    { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/data-discovery-service:${CITRA_VERSION:-latest}" }
-  citra-mcp-service:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/citra-mcp-service:${CITRA_VERSION:-latest}" }
-  playwright-render-service: { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech}/playwright-render-service:${CITRA_VERSION:-latest}" }
+  citra-service:             { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/citra-service:${CITRA_VERSION:-latest}" }
+  citra-ui:                  { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/citra-ui:${CITRA_VERSION:-latest}" }
+  citra-user-service:        { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/citra-user-service:${CITRA_VERSION:-latest}" }
+  duckdb-query-service:      { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/duckdb-query-service:${CITRA_VERSION:-latest}" }
+  reranker-service:          { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/reranker-service:${CITRA_VERSION:-latest}" }
+  discovery-service:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/discovery-service:${CITRA_VERSION:-latest}" }
+  action-sandbox-host:       { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/action-sandbox-host:${CITRA_VERSION:-latest}" }
+  smart-app-service:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/smart-app-service:${CITRA_VERSION:-latest}" }
+  citra-app-runtime:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/citra-app-runtime:${CITRA_VERSION:-latest}" }
+  data-discovery-service:    { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/data-discovery-service:${CITRA_VERSION:-latest}" }
+  citra-mcp-service:         { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/citra-mcp-service:${CITRA_VERSION:-latest}" }
+  playwright-render-service: { image: "${CITRA_REGISTRY:-ghcr.io/trustedwear-tech/citra-decision-system}/playwright-render-service:${CITRA_VERSION:-latest}" }

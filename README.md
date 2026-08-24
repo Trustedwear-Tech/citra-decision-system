@@ -965,8 +965,19 @@ cd citra-decision-system
 make wizard
 ```
 
-It asks for one OpenRouter key, writes `.env`, brings up the full stack, and
-seeds the `acme-bank` demo.
+It checks your host first, asks for one OpenRouter key, writes `.env`, brings up
+the full stack, and seeds the `acme-bank` demo. If a prerequisite is missing it
+says which one and stops before writing anything, rather than failing halfway
+through with `docker: command not found`.
+
+A release tarball works identically -- it is self-contained, with the wizard and
+every setup script inside:
+
+```bash
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.2.0.tar.gz | tar xz
+cd citra-decision-system-0.2.0
+make wizard
+```
 
 > **No `make`?** It is not installed by default on Windows, and the targets are
 > thin wrappers -- run the script directly instead. Every `make X` below has a
@@ -998,6 +1009,66 @@ equivalents are `docker compose -f docker-compose.quickstart.yml ps` / `logs`
 > brings up the service fleet -- each its own image, so you can scale, restart
 > and debug them individually -- and on first run also builds the sandbox
 > images the builder needs, which takes a few minutes and is cached after.
+
+### What gets built, and in what order
+
+Everything is built from source on your machine. Nothing is pulled from a
+private registry, and there is no image you cannot rebuild yourself.
+
+**1. The fleet — fourteen services.** `docker compose` builds these from
+`docker-compose.dev.yml`, which `docker-compose.quickstart.yml` includes. Six of
+them (`citra-service`, `smart-app-service`, `duckdb-query-service`,
+`reranker-service`, `discovery-service`, `data-discovery-service`,
+`playwright-render-service`) build with the **repository root** as their context,
+because they copy the shared packages out of `citra-common/`. The rest build from
+their own directory.
+
+**2. The sandbox images — three, and one of them depends on another.** These are
+*not* built by compose, because compose never runs them: `action-sandbox-host`
+spawns them per user, at runtime, when someone builds a Decision App or executes
+code in chat. `start.sh` builds them on first run via
+`scripts/quickstart/build-sandboxes.sh`; you can also run it directly:
+
+```bash
+bash scripts/quickstart/build-sandboxes.sh
+```
+
+They form a chain, which is why the builder is a separate step rather than
+another matrix entry:
+
+```
+ghcr.io/openclaw/openclaw:<pinned digest>      the upstream agent runtime
+        │
+        └── citra-agent-sandbox-base            infrastructure/action-sandbox/Dockerfile
+                │                               neutral base: toolkit, shims, Chart.js
+                │
+                └── citra-app-builder           smart-app-service/builder-sandbox/Dockerfile
+                                                adds the builder persona + workspace seed
+
+quick-chat-sandbox                              Citra-Service/Dockerfile.quick-chat-sandbox
+                                                independent, FROM python:3.11-slim
+```
+
+`citra-app-builder` is built `FROM citra-agent-sandbox-base`, so the base must
+exist first — the script builds them in that order and skips the consumers if
+the base fails, rather than producing a confusing error two layers down.
+
+**`citra-app-builder` is not `smart-app-service`.** They are easy to confuse
+because one is built from the other's directory. `smart-app-service` is a
+long-running service in the fleet, `FROM python:3.11-slim`; it is the thing you
+talk to when you build or run a Decision App. `citra-app-builder` is an
+**ephemeral, per-user container** it spawns to do the building, isolated on its
+own no-egress network. Rebuilding one does not rebuild the other.
+
+The script also creates the two egress networks the host attaches sandboxes to.
+`citra-action-egress` is `--internal` (no route off the box) and
+`citra-action-approved-egress` deliberately is not; making the second one
+internal breaks every spawn.
+
+If the sandbox build fails, `start.sh` warns and carries on. That is deliberate:
+**running** Decision Apps is unaffected, only *building* them and code execution
+in chat need these images. Re-run the script once it is fixed.
+
 
 ### What the demo gives you
 

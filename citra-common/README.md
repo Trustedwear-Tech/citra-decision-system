@@ -70,6 +70,14 @@ here rather than in Citra-AI — that is the point of the move.
 
 ## Consuming it
 
+> **In this repository, this directory is a vendored copy, not a submodule.**
+> A submodule cannot be downloaded: GitHub's source archives ship an empty
+> directory where one was, so every Dockerfile copying from `citra-common/`
+> failed for anyone who used the release tarball or a plain `git clone`. The
+> upstream repository still exists and is still where changes should land; this
+> tree carries a copy so it can be built without one. The section below
+> describes consuming it from upstream, which other products still do.
+
 Git submodule in each product, pinned per repo:
 
 ```bash

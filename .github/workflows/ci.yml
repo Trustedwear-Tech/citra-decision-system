@@ -69,12 +69,6 @@ jobs:
           - Monitoring-Service
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Required: every requirements.txt has `-e ../citra-common/<pkg>`,
-          # and citra-common is a submodule. Without this the checkout leaves
-          # it empty and pip fails with
-          #   ../citra-common/citra-service-utils is not a valid editable requirement
-          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -146,13 +140,6 @@ jobs:
             context: Monitoring-Service
     steps:
       - uses: actions/checkout@v4
-        with:
-          # citra-common is a SUBMODULE, and checkout skips submodules unless
-          # asked. Every Dockerfile here copies from citra-common/..., so
-          # without this the build fails on "/citra-common/citra-service-utils:
-          # not found" -- a path that is plainly present locally, which is what
-          # made it look like a context problem rather than a checkout one.
-          submodules: recursive
       - name: Build Docker image
         run: |
           # Context is the REPO ROOT, not the service directory. Four of

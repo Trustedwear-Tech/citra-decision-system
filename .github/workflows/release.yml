@@ -7,10 +7,29 @@
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
 # =============================================================================
-# Citra AI Platform — Release & Publish Pipeline
+# Release: build and publish every image, then cut the GitHub Release.
 # =============================================================================
-# Manual trigger — builds all service images, publishes to GHCR, creates
-# a GitHub Release with version table and changelog.
+# This workflow had never run once, and would not have succeeded if it had. It
+# built a service that does not exist (citra-mcp-server), one that lives inside
+# citra-common (Citra-User-Service), used a service-scoped context for six
+# Dockerfiles that copy from the repo root, and omitted smart-app-service --
+# the service this product is built around -- along with six others. Its own
+# release notes told people to run a compose file containing zero services.
+#
+# What it builds now:
+#
+#   14 long-running services   the fleet a deployment runs
+#    3 sandbox images          spawned per-user at RUNTIME, never by compose
+#
+# The sandbox images are a CHAIN and cannot be a matrix: citra-app-builder is
+# FROM citra-agent-sandbox-base, so the base must exist before the builder can
+# build. They run sequentially in one job for that reason -- the same order
+# scripts/quickstart/build-sandboxes.sh uses locally.
+#
+# Images publish under ghcr.io/<owner>/<repo>/<service>, which ties each package
+# to THIS repository so it inherits the repo's visibility. The older
+# ghcr.io/trustedwear-tech/citra-ai/* packages are the private production ones
+# and are deliberately not reused.
 # =============================================================================
 
 name: Release
@@ -19,11 +38,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (semver, e.g. 1.0.0)'
+        description: 'Release version (semver, e.g. 0.3.0)'
         required: true
         type: string
       dry_run:
-        description: 'Dry run — build images but do not push or create release'
+        description: 'Build everything but push nothing and create no release'
         required: false
         type: boolean
         default: false
@@ -31,87 +50,54 @@ on:
 permissions:
   contents: write
   packages: write
-  id-token: write        # For sigstore signing
-  attestations: write    # For GitHub attestations
+  id-token: write
+  attestations: write
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
-  VERSION: ${{ inputs.version }}
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Validate version & create git tag
-  # ---------------------------------------------------------------------------
   validate:
-    name: Validate Version
+    name: Validate
     runs-on: ubuntu-latest
-    outputs:
-      tag: v${{ inputs.version }}
     steps:
-      - name: Validate semver format
+      - name: Validate semver
         run: |
           if ! echo "${{ inputs.version }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
-            echo "::error::Invalid version format '${{ inputs.version }}'. Expected semver (e.g. 1.0.0 or 1.0.0-rc.1)"
+            echo "::error::'${{ inputs.version }}' is not semver (e.g. 0.3.0 or 0.3.0-rc.1)"
             exit 1
           fi
-          echo "✅ Version v${{ inputs.version }} is valid"
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Check tag does not already exist
+      - name: Tag must not already point elsewhere
         run: |
-          if git rev-parse "v${{ inputs.version }}" >/dev/null 2>&1; then
-            echo "::error::Tag v${{ inputs.version }} already exists"
-            exit 1
-          fi
-
-      - name: Import the signing key
-        id: signing
-        if: ${{ !inputs.dry_run }}
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-        run: |
-          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::No GPG_PRIVATE_KEY secret — tag v${{ inputs.version }} will be UNSIGNED."
-            echo "> :warning: **Release tag is unsigned.** Add a \`GPG_PRIVATE_KEY\` secret to sign future releases — see docs/license-stamping-plan.md." >> $GITHUB_STEP_SUMMARY
-            exit 0
-          fi
-          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
-          KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {print $5; exit}')
-          echo "default-cache-ttl 3600" >> ~/.gnupg/gpg-agent.conf
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          gpg-connect-agent reloadagent /bye
-          git config user.signingkey "$KEY_ID"
-          git config commit.gpgsign true
-          git config tag.gpgsign true
-          git config gpg.program gpg
-          echo "signed=true" >> "$GITHUB_OUTPUT"
-          echo "Signing with key $KEY_ID"
-
-      - name: Create and push tag
-        if: ${{ !inputs.dry_run }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
-            # Sign, then VERIFY. A signing step that silently produced an
-            # unsigned tag would be the worst of both worlds.
-            git tag -s "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
-            git tag -v "v${{ inputs.version }}"
+          # The previous version failed outright when the tag existed, which
+          # made it unusable for a release tagged by hand. Reuse a tag that
+          # already points at this commit; refuse only when it points somewhere
+          # else, because that would silently ship different code than the tag
+          # claims.
+          TAG="v${{ inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            AT=$(git rev-list -n1 "$TAG")
+            if [ "$AT" != "${{ github.sha }}" ]; then
+              echo "::error::$TAG exists and points at $AT, not ${{ github.sha }}"
+              exit 1
+            fi
+            echo "$TAG already exists at this commit - reusing it"
           else
-            git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+            echo "$TAG will be created"
           fi
-          git push origin "v${{ inputs.version }}"
 
   # ---------------------------------------------------------------------------
-  # Build and publish Docker images
+  # The long-running fleet. `context` is derived from what each Dockerfile
+  # actually COPYs: anything reaching into citra-common/ needs the repo root,
+  # everything else builds from its own directory.
   # ---------------------------------------------------------------------------
-  publish-images:
-    name: Publish ${{ matrix.service }}
+  publish-services:
+    name: ${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: validate
     strategy:
@@ -119,39 +105,57 @@ jobs:
       matrix:
         include:
           - service: citra-service
-            context: Citra-Service
             dockerfile: Citra-Service/Dockerfile
-          - service: user-service
-            context: Citra-User-Service
-            dockerfile: Citra-User-Service/Dockerfile
-          - service: citra-ui
-            context: Citra-UI
-            dockerfile: Citra-UI/Dockerfile.web
+            context: .
+          - service: smart-app-service
+            dockerfile: smart-app-service/Dockerfile
+            context: .
           - service: duckdb-query-service
-            context: duckdb-query-service
             dockerfile: duckdb-query-service/Dockerfile
+            context: .
           - service: reranker-service
-            context: reranker-service
             dockerfile: reranker-service/Dockerfile
+            context: .
+          - service: discovery-service
+            dockerfile: discovery-service/Dockerfile
+            context: .
+          - service: data-discovery-service
+            dockerfile: data-discovery-service/Dockerfile
+            context: .
           - service: playwright-render-service
-            context: playwright-render-service
             dockerfile: playwright-render-service/Dockerfile
-          - service: mcp-server
-            context: citra-mcp-server
-            dockerfile: citra-mcp-server/Dockerfile
+            context: .
+          - service: source-mcp-template
+            dockerfile: source-mcp-template/Dockerfile
+            context: .
+          - service: citra-ui
+            dockerfile: Citra-UI/Dockerfile.web
+            context: Citra-UI
+          - service: citra-user-service
+            dockerfile: citra-common/Citra-User-Service/Dockerfile
+            context: citra-common/Citra-User-Service
+          - service: action-sandbox-host
+            dockerfile: action-sandbox-host/Dockerfile
+            context: action-sandbox-host
+          - service: citra-app-runtime
+            dockerfile: citra-app-runtime/Dockerfile
+            context: citra-app-runtime
+          - service: citra-mcp-service
+            dockerfile: citra-mcp-service/Dockerfile
+            context: citra-mcp-service
           - service: monitoring-service
-            context: Monitoring-Service
             dockerfile: Monitoring-Service/Dockerfile
+            context: Monitoring-Service
     steps:
       - uses: actions/checkout@v4
-
+      - uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
+        if: ${{ !inputs.dry_run }}
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and push
         id: build
         uses: docker/build-push-action@v5
@@ -162,12 +166,14 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ inputs.version }}
             ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           labels: |
             org.opencontainers.image.version=${{ inputs.version }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Attest build provenance
+            org.opencontainers.image.licenses=Apache-2.0
+      - name: Attest provenance
         if: ${{ !inputs.dry_run }}
         uses: actions/attest-build-provenance@v1
         with:
@@ -175,99 +181,180 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
-      - name: Output image info
+  # ---------------------------------------------------------------------------
+  # Sandbox images. Deliberately NOT a matrix: citra-app-builder is FROM the
+  # base, so this is a dependency chain that has to run in order, in one job,
+  # so the base is in the local daemon when the builder is built.
+  # ---------------------------------------------------------------------------
+  publish-sandboxes:
+    name: sandbox images
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GHCR
+        if: ${{ !inputs.dry_run }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 1 of 3 - citra-agent-sandbox-base (FROM OpenClaw)
         run: |
-          echo "### ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Image: \`${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ inputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Digest: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Dry run: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          # Also tagged with the bare LOCAL name, because step 2's Dockerfile
+          # defaults BASE_IMAGE to citra-agent-sandbox-base:latest.
+          docker build \
+            -t citra-agent-sandbox-base:latest \
+            -t ${{ env.IMAGE_PREFIX }}/citra-agent-sandbox-base:${{ inputs.version }} \
+            -t ${{ env.IMAGE_PREFIX }}/citra-agent-sandbox-base:latest \
+            -f infrastructure/action-sandbox/Dockerfile \
+            infrastructure/action-sandbox
+
+      - name: 2 of 3 - citra-app-builder (FROM the base)
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE=citra-agent-sandbox-base:latest \
+            -t ${{ env.IMAGE_PREFIX }}/citra-app-builder:${{ inputs.version }} \
+            -t ${{ env.IMAGE_PREFIX }}/citra-app-builder:latest \
+            -f smart-app-service/builder-sandbox/Dockerfile \
+            smart-app-service
+
+      - name: 3 of 3 - quick-chat-sandbox (independent)
+        run: |
+          docker build \
+            -t ${{ env.IMAGE_PREFIX }}/quick-chat-sandbox:${{ inputs.version }} \
+            -t ${{ env.IMAGE_PREFIX }}/quick-chat-sandbox:latest \
+            -f Citra-Service/Dockerfile.quick-chat-sandbox \
+            Citra-Service
+
+      - name: Push
+        if: ${{ !inputs.dry_run }}
+        run: |
+          for i in citra-agent-sandbox-base citra-app-builder quick-chat-sandbox; do
+            docker push "${{ env.IMAGE_PREFIX }}/$i:${{ inputs.version }}"
+            docker push "${{ env.IMAGE_PREFIX }}/$i:latest"
+          done
 
   # ---------------------------------------------------------------------------
-  # Generate SBOM
-  # ---------------------------------------------------------------------------
   sbom:
-    name: Generate SBOM
+    name: SBOM
     runs-on: ubuntu-latest
-    needs: publish-images
+    needs: [publish-services, publish-sandboxes]
     if: ${{ !inputs.dry_run }}
     steps:
       - uses: actions/checkout@v4
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
+      - uses: anchore/sbom-action@v0
         with:
           format: spdx-json
           output-file: sbom.spdx.json
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: sbom.spdx.json
 
   # ---------------------------------------------------------------------------
-  # Create GitHub Release
-  # ---------------------------------------------------------------------------
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [publish-images, sbom]
+    needs: [publish-services, publish-sandboxes, sbom]
     if: ${{ !inputs.dry_run }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Download SBOM
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: sbom
 
-      - name: Generate changelog
+      - name: Create the tag if it does not exist
+        run: |
+          TAG="v${{ inputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists - leaving it alone"
+          else
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Changelog since the previous tag
         id: changelog
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" > CHANGELOG.txt
-          else
-            git log --pretty=format:"- %s (%h)" -50 > CHANGELOG.txt
-          fi
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          PREV=$(git describe --tags --abbrev=0 "v${{ inputs.version }}^" 2>/dev/null || echo "")
+          {
+            echo "changelog<<CHANGELOG_EOF"
+            if [ -n "$PREV" ]; then
+              git log "${PREV}..v${{ inputs.version }}" --pretty='- %s'
+            else
+              git log --pretty='- %s' -50
+            fi
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
-          name: Citra AI Platform v${{ inputs.version }}
+          name: Citra Decision System v${{ inputs.version }}
           files: sbom.spdx.json
           body: |
-            ## Citra AI Platform v${{ inputs.version }}
+            ## Install
 
-            ### Docker Images
-
-            All images published to GitHub Container Registry:
-
-            | Service | Image | Tag |
-            |---------|-------|-----|
-            | Core AI Backend | `${{ env.IMAGE_PREFIX }}/citra-service` | `${{ inputs.version }}` |
-            | Web Frontend | `${{ env.IMAGE_PREFIX }}/citra-ui` | `${{ inputs.version }}` |
-            | User Service | `${{ env.IMAGE_PREFIX }}/user-service` | `${{ inputs.version }}` |
-            | DuckDB Query Service | `${{ env.IMAGE_PREFIX }}/duckdb-query-service` | `${{ inputs.version }}` |
-            | Reranker Service | `${{ env.IMAGE_PREFIX }}/reranker-service` | `${{ inputs.version }}` |
-            | Playwright Render | `${{ env.IMAGE_PREFIX }}/playwright-render-service` | `${{ inputs.version }}` |
-            | MCP Server | `${{ env.IMAGE_PREFIX }}/mcp-server` | `${{ inputs.version }}` |
-            | Monitoring | `${{ env.IMAGE_PREFIX }}/monitoring-service` | `${{ inputs.version }}` |
-
-            ### Quick Start (Self-Hosted)
+            The source archives below are **self-contained** - they include the
+            setup wizard, every quickstart script, and the shared `citra-common`
+            packages. Nothing else needs fetching.
 
             ```bash
-            # Pull all images
-            CITRA_IMAGE_TAG=${{ inputs.version }} docker compose \
-              -f infrastructure/compose/docker-compose.base.yml \
-              -f infrastructure/compose/docker-compose.prebuilt.yml \
-              --env-file .env up -d
+            curl -sSL https://github.com/${{ github.repository }}/archive/refs/tags/v${{ inputs.version }}.tar.gz | tar xz
+            cd citra-decision-system-${{ inputs.version }}
+            make wizard
             ```
 
-            ### Changelog
+            `make wizard` checks your host first, writes `.env`, builds the
+            images from source, and seeds the `acme-bank` demo. A `git clone`
+            works exactly the same way.
+
+            ### Or run the prebuilt images
+
+            ```bash
+            CITRA_VERSION=${{ inputs.version }} \
+              docker compose -f docker-compose.release.yml --env-file .env up -d
+            ```
+
+            ## Images
+
+            Fourteen long-running services:
+
+            | image | what it is |
+            |---|---|
+            | `citra-service` | core backend |
+            | `smart-app-service` | Decision Apps: build, publish, run |
+            | `citra-ui` | web frontend |
+            | `citra-user-service` | identity, orgs, roles |
+            | `citra-app-runtime` | the runtime Decision Apps render in |
+            | `citra-mcp-service` | governed access to systems of record |
+            | `discovery-service` | source discovery |
+            | `data-discovery-service` | dataset discovery |
+            | `duckdb-query-service` | analytical queries |
+            | `reranker-service` | retrieval reranking |
+            | `playwright-render-service` | server-side rendering |
+            | `action-sandbox-host` | spawns and supervises sandboxes |
+            | `source-mcp-template` | per-department MCP image |
+            | `monitoring-service` | metrics and health |
+
+            Three sandbox images, spawned per user at **runtime** rather than by
+            compose. `citra-app-builder` is built FROM the base, so they are
+            built in this order:
+
+            | image | what it is |
+            |---|---|
+            | `citra-agent-sandbox-base` | neutral agent base, FROM OpenClaw |
+            | `citra-app-builder` | the Decision App builder, FROM the base |
+            | `quick-chat-sandbox` | code execution for chat |
+
+            All at `${{ env.IMAGE_PREFIX }}/<name>:${{ inputs.version }}`.
+
+            ## Changelog
+
             ${{ steps.changelog.outputs.changelog }}
-          generate_release_notes: true
