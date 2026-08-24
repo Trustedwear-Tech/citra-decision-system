@@ -1,0 +1,72 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+
+# docker-compose.yml for Citra AI User Service - Combined Prod and Test Environments
+#
+# Cloud deploy: pulls ghcr.io/trustedwear-tech/citra-ai/citra-user-service:${IMAGE_TAG}
+# pushed by .github/workflows/deploy.yml.
+#
+# Config: prod/test profiles read from HashiCorp Vault via VAULT_ADDR +
+# VAULT_SECRET_PATH. NO .env file in prod. For local-dev, override with
+# docker-compose.local.yml that adds `build: .` and `env_file: .env`.
+
+x-common: &common
+  image: ghcr.io/trustedwear-tech/citra-ai/citra-user-service:${IMAGE_TAG:-prod-latest}
+  restart: unless-stopped
+  ports:
+    - 7004
+  volumes:
+    - ~/citra-ai/logs/Citra-User-Service:/app/logs
+  networks:
+    - citra-ai-net
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  citra-ai-user-service-prod-1:
+    <<: *common
+    profiles: [prod]
+    container_name: citra-ai-user-service-prod-1
+    # .vault_secret holds VAULT_TOKEN (root for pre-prod; replace with
+    # AppRole VAULT_ROLE_ID+VAULT_SECRET_ID once an `citra-user-service`
+    # AppRole is provisioned, mirroring the citra-service pattern).
+    # File lives on the box at /home/ubuntu/citra-ai/services/Citra-User-Service/.vault_secret,
+    # mode 0600, NOT committed to git.
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      NODE_ENV: "prod"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "d2bee9af-30cd-f116-fcee-4e465fbb7a37"
+      VAULT_SECRET_PATH: "prod/citra-ai-user-service"
+    command: >
+      sh -lc 'npm run start 2>&1 | ts "[%Y-%m-%d %H:%M:%S %z]" | tee -a /app/logs/user_service_prod_1.log'
+
+  citra-ai-user-service-test-1:
+    <<: *common
+    profiles: [test]
+    container_name: citra-ai-user-service-test-1
+    env_file:
+      - .vault_secret
+    environment:
+      TZ: "America/New_York"
+      NODE_ENV: "test"
+      VAULT_ADDR: "${VAULT_ADDR:-http://vault:8200}"
+      VAULT_ROLE_ID: "d2bee9af-30cd-f116-fcee-4e465fbb7a37"
+      VAULT_SECRET_PATH: "test/citra-ai-user-service"
+    command: >
+      sh -lc 'npm run start 2>&1 | ts "[%Y-%m-%d %H:%M:%S %z]" | tee -a /app/logs/user_service_test_1.log'
+
+networks:
+  citra-ai-net:
+    external: true
+    name: citra-ai-net

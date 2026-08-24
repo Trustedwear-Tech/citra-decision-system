@@ -1,0 +1,25 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "citra-llm"
+version = "1.0.0"
+description = "Unified LLM client factory (chat / embedding / vision / search). Single source of truth for LLM_BASE_URL/LLM_API_KEY/LLM_MODEL env-driven client creation, used by every service that talks to an LLM."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "openai>=1.0,<2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["citra_llm*"]

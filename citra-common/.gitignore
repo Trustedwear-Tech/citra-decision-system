@@ -1,0 +1,17 @@
+# Environment files hold real credentials and are NEVER committed.
+# Keep a local copy outside the repo; ship .env.example only.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.DS_Store
+
+build/
+dist/

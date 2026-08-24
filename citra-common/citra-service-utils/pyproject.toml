@@ -1,0 +1,40 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "citra-service-utils"
+version = "1.3.0"
+description = "Shared infrastructure utilities for Citra services: distributed-tracing setup, circuit-breaker, request-id propagation. Used across Citra-Service, action-chat-service, smart-app-service, and any future surface that needs the same plumbing."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "httpx>=0.25,<1.0",
+  "opentelemetry-api>=1.20",
+  "opentelemetry-sdk>=1.20",
+  "opentelemetry-exporter-otlp-proto-http>=1.20",
+  "opentelemetry-instrumentation-fastapi>=0.42b0",
+  "opentelemetry-instrumentation-httpx>=0.42b0",
+]
+
+# pymilvus is a SOFT dependency: milvus_client.py imports it lazily inside the
+# functions that use it, so a consumer that never calls get_milvus_client()
+# never needs it installed. Declaring it as an extra makes that contract
+# explicit and installable (`pip install citra-service-utils[milvus]`) instead
+# of tribal knowledge. Do NOT promote it to a hard dependency — that would force
+# a vector database on every consumer of the tracing and circuit-breaker
+# helpers, which is exactly what this package split exists to avoid.
+[project.optional-dependencies]
+milvus = ["pymilvus>=2.4"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["citra_service_utils*"]
