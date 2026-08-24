@@ -113,6 +113,14 @@ queue: cases arrive, rules are applied, and a handful of them need a person who
 knows better than the rules. That person is the whole system, and nobody has a
 copy of them.
 
+
+<p align="center">
+  <img alt="A claim recommendation citing Health SOP sections 2 and 4 and Motor SOP section 2.1, with the write staged for approval"
+       src="assets/screens/04-recommendation.png" width="100%">
+</p>
+
+<p align="center"><i>A real run on the bundled demo. The recommendation cites the sections it relied on, the fraud check is stated rather than implied, and the write is <b>staged</b> — "review the plan below and Apply to commit" — not executed.</i></p>
+
 The same structure, five industries:
 
 - A **credit officer** declines a file that passes every policy gate, because
@@ -326,8 +334,10 @@ directly from the code in `smart-app-service/clause_store.py`:
 - **Scoped.** Every clause carries a set of facets, and it fires for a case
   only when `scope_facets ⊆ case_facets`. Its scope is the intersection of
   the labels on every correction that formed it -- so a rule formed from
-  three corrections that happened to share exactly one thing applies to that
-  one thing, and stays silent everywhere else.
+  three corrections about small agent-sourced files applies to those, and
+  stays silent everywhere else. That scope has a floor: corrections only
+  combine into one judgement when their facets overlap by at least half, so a
+  clause is never narrower than what its own evidence agreed on.
 - **Written once.** The text is written at birth, from roughly three
   clustered corrections, by a single LLM call -- and is never rewritten.
   Later matching corrections touch provenance and counters only. This is
@@ -348,6 +358,14 @@ directly from the code in `smart-app-service/clause_store.py`:
 - **Reversible.** Retiring one is a status change, not a migration. A policy
   clause, by contrast, ships unmeasured and takes another committee to
   revise.
+
+<p align="center">
+  <img alt="App Memory showing one team judgement learned from three officer corrections, scoped to DSA-sourced, low-FOIR, documented-income files"
+       src="assets/screens/panels/17-app-memory.png" width="100%">
+</p>
+
+<p align="center"><i>One of these, as the app holds it: the sentence, the scope it fires within, and the three officers whose corrections formed it. Every judgement links back to the corrections that taught it, so it can be read, challenged and retired — never silently rewritten.</i></p>
+
 
 Three worked examples, in the shape the system stores them -- from three
 different sectors, all the same object:
@@ -552,6 +570,14 @@ Deep dive: `docs/write-actions.md`.
 
 The builder cannot offer you a table it has never seen. The
 `data-discovery-service` is what makes the ontology *browsable*.
+
+
+<p align="center">
+  <img alt="The claim triage queue: 465 open claims read from Postgres through the department MCP"
+       src="assets/screens/03-claim-queue.png" width="100%">
+</p>
+
+<p align="center"><i>465 open claims, read live from the demo's Postgres through the department MCP. No copy, no sync, no vector store standing in for the system of record.</i></p>
 
 It walks every registered MCP and, per table, asks three questions: what
 columns do you have, what does the schema look like, and may I see a small
@@ -924,6 +950,27 @@ A bank with five departments and fourteen officer personas, a Postgres
 system-of-record holding ~211,000 rows across 16 tables, an MCP serving it,
 a SOP library in Milvus, and four published Decision Apps: loan triage,
 collections priority, claims triage, and sales performance.
+
+
+<p align="center">
+  <img alt="The Decision Apps list after installing the demo: claim triage, collections priority, loan triage and a sales dashboard"
+       src="assets/screens/02-decision-apps.png" width="100%">
+</p>
+
+<p align="center"><i>What is on your home screen after <code>make wizard</code>.</i></p>
+
+
+<p align="center">
+  <img alt="The SOP Library listing the acme-bank Policy Library, readable org-wide"
+       src="assets/screens/panels/12-sop-library.png" width="100%">
+</p>
+
+<p align="center"><i>The rules layer. Recommendations cite these documents by section, and your SOPs always win over anything the app has learned from officers.</i></p>
+
+More screens — memory, learning batch, money impact, screening health, the
+kill switches — are in [`assets/screens/panels/`](assets/screens/panels/),
+captured from a running install by
+[`scripts/quickstart/capture_panels.py`](scripts/quickstart/capture_panels.py).
 
 ### Signing in
 
