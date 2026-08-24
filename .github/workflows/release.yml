@@ -55,14 +55,23 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
   # ---------------------------------------------------------------------------
   validate:
     name: Validate
     runs-on: ubuntu-latest
+    outputs:
+      prefix: ${{ steps.prefix.outputs.prefix }}
     steps:
+      - name: Lowercase the image prefix
+        id: prefix
+        run: |
+          # Docker repository names must be lowercase and github.repository
+          # carries the owner's real casing (Trustedwear-Tech). Actions
+          # expressions have no lower(), so it is computed once here and read
+          # by every other job rather than interpolated raw at 17 call sites.
+          echo "prefix=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
       - name: Validate semver
         run: |
           if ! echo "${{ inputs.version }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
@@ -164,8 +173,8 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: ${{ !inputs.dry_run }}
           tags: |
-            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:${{ inputs.version }}
-            ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
+            ${{ needs.validate.outputs.prefix }}/${{ matrix.service }}:${{ inputs.version }}
+            ${{ needs.validate.outputs.prefix }}/${{ matrix.service }}:latest
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           labels: |
@@ -177,7 +186,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          subject-name: ${{ needs.validate.outputs.prefix }}/${{ matrix.service }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -206,8 +215,8 @@ jobs:
           # defaults BASE_IMAGE to citra-agent-sandbox-base:latest.
           docker build \
             -t citra-agent-sandbox-base:latest \
-            -t ${{ env.IMAGE_PREFIX }}/citra-agent-sandbox-base:${{ inputs.version }} \
-            -t ${{ env.IMAGE_PREFIX }}/citra-agent-sandbox-base:latest \
+            -t ${{ needs.validate.outputs.prefix }}/citra-agent-sandbox-base:${{ inputs.version }} \
+            -t ${{ needs.validate.outputs.prefix }}/citra-agent-sandbox-base:latest \
             -f infrastructure/action-sandbox/Dockerfile \
             infrastructure/action-sandbox
 
@@ -215,16 +224,16 @@ jobs:
         run: |
           docker build \
             --build-arg BASE_IMAGE=citra-agent-sandbox-base:latest \
-            -t ${{ env.IMAGE_PREFIX }}/citra-app-builder:${{ inputs.version }} \
-            -t ${{ env.IMAGE_PREFIX }}/citra-app-builder:latest \
+            -t ${{ needs.validate.outputs.prefix }}/citra-app-builder:${{ inputs.version }} \
+            -t ${{ needs.validate.outputs.prefix }}/citra-app-builder:latest \
             -f smart-app-service/builder-sandbox/Dockerfile \
             smart-app-service
 
       - name: 3 of 3 - quick-chat-sandbox (independent)
         run: |
           docker build \
-            -t ${{ env.IMAGE_PREFIX }}/quick-chat-sandbox:${{ inputs.version }} \
-            -t ${{ env.IMAGE_PREFIX }}/quick-chat-sandbox:latest \
+            -t ${{ needs.validate.outputs.prefix }}/quick-chat-sandbox:${{ inputs.version }} \
+            -t ${{ needs.validate.outputs.prefix }}/quick-chat-sandbox:latest \
             -f Citra-Service/Dockerfile.quick-chat-sandbox \
             Citra-Service
 
@@ -232,8 +241,8 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           for i in citra-agent-sandbox-base citra-app-builder quick-chat-sandbox; do
-            docker push "${{ env.IMAGE_PREFIX }}/$i:${{ inputs.version }}"
-            docker push "${{ env.IMAGE_PREFIX }}/$i:latest"
+            docker push "${{ needs.validate.outputs.prefix }}/$i:${{ inputs.version }}"
+            docker push "${{ needs.validate.outputs.prefix }}/$i:latest"
           done
 
   # ---------------------------------------------------------------------------
@@ -257,7 +266,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [publish-services, publish-sandboxes, sbom]
+    needs: [validate, publish-services, publish-sandboxes, sbom]
     if: ${{ !inputs.dry_run }}
     steps:
       - uses: actions/checkout@v4
@@ -353,7 +362,7 @@ jobs:
             | `citra-app-builder` | the Decision App builder, FROM the base |
             | `quick-chat-sandbox` | code execution for chat |
 
-            All at `${{ env.IMAGE_PREFIX }}/<name>:${{ inputs.version }}`.
+            All at `${{ needs.validate.outputs.prefix }}/<name>:${{ inputs.version }}`.
 
             ## Changelog
 
