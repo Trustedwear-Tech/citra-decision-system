@@ -23,8 +23,13 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
-# Install dependencies first (layer cache friendly)
-COPY package.json package-lock.json* ./
+# Install dependencies first (layer cache friendly).
+# .npmrc carries legacy-peer-deps=true and MUST come across with the manifests:
+# react-joyride@2.9.3 peers on react "15 - 18" and this project is on react 19,
+# so npm ci fails outright without it. Dockerfile.dev passes --legacy-peer-deps
+# on the command line instead, which is why only the web image ever broke -- and
+# nothing built this file until the release pipeline first ran.
+COPY package.json package-lock.json* .npmrc* ./
 RUN npm ci --prefer-offline
 
 # Copy source and build
