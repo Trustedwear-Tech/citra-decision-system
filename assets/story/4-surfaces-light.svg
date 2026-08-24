@@ -1,0 +1,41 @@
+<!--
+  Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+  Author: Rohit Kumar Chandan
+  SPDX-License-Identifier: Apache-2.0
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Ships as an app, embedded in your own UI, or as an API; runs on demand, ahead of time, or automatically">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C9D2DC"/>
+    </marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="320" fill="#FFFFFF"/>
+  <text x="40" y="46" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="19" font-weight="600" fill="#15181A" text-anchor="start">It reaches your team however suits the work.</text>
+  <rect x="40" y="80" width="350" height="62" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="60" y="106" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#2563EB" text-anchor="start">AS AN APP</text>
+  <text x="60" y="128" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">A screen your team opens.</text>
+  <rect x="40" y="154" width="350" height="62" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="60" y="180" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#2563EB" text-anchor="start">EMBEDDED</text>
+  <text x="60" y="202" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">A panel inside your own system.</text>
+  <rect x="40" y="228" width="350" height="62" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="60" y="254" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#2563EB" text-anchor="start">AS AN API</text>
+  <text x="60" y="276" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">No UI at all.</text>
+  <text x="430" y="100" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="22" font-weight="400" fill="#79838F" text-anchor="middle">×</text>
+  <rect x="470" y="80" width="690" height="62" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="490" y="106" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#0F766E" text-anchor="start">ON DEMAND</text>
+  <text x="490" y="128" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Someone asks; it answers.</text>
+  <rect x="470" y="154" width="690" height="62" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="490" y="180" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#0F766E" text-anchor="start">PREPARED AHEAD</text>
+  <text x="490" y="202" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Ready before the desk opens.</text>
+  <rect x="470" y="228" width="690" height="62" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="490" y="254" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#0F766E" text-anchor="start">AUTOMATIC</text>
+  <text x="490" y="276" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Within limits you set, case by case.</text>
+  <text x="40" y="302" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="400" fill="#5A6472" text-anchor="start">Self-hosted throughout — your infrastructure, your models, your data. Nothing leaves your network.</text>
+</svg>

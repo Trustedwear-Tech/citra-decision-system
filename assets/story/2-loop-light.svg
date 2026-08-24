@@ -1,0 +1,48 @@
+<!--
+  Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+  Author: Rohit Kumar Chandan
+  SPDX-License-Identifier: Apache-2.0
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="350" viewBox="0 0 1200 350" role="img" aria-label="One case at a time: recommend with evidence, let the officer decide, learn from the correction">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C9D2DC"/>
+    </marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="350" fill="#FFFFFF"/>
+  <text x="40" y="46" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="19" font-weight="600" fill="#15181A" text-anchor="start">So it learns that judgement, one case at a time.</text>
+  <rect x="40" y="80" width="180" height="150" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="58" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#79838F" text-anchor="start">A CASE</text>
+  <text x="58" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Arrives from your</text>
+  <text x="58" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">system of record.</text>
+  <path d="M230,155 L267,155" stroke="#C9D2DC" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <rect x="275" y="80" width="180" height="150" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="293" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#79838F" text-anchor="start">IT RECOMMENDS</text>
+  <text x="293" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">With the SOP passage</text>
+  <text x="293" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">and past cases cited.</text>
+  <path d="M465,155 L502,155" stroke="#C9D2DC" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <rect x="510" y="80" width="180" height="150" rx="10" fill="#E8F0FE" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="528" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#2563EB" text-anchor="start">A PERSON DECIDES</text>
+  <text x="528" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Approves, or corrects it</text>
+  <text x="528" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">and says why.</text>
+  <path d="M700,155 L737,155" stroke="#2563EB" stroke-width="2" fill="none" marker-end="url(#ab)"/>
+  <rect x="745" y="80" width="180" height="150" rx="10" fill="#E8F0FE" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="763" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#2563EB" text-anchor="start">IT LEARNS</text>
+  <text x="763" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Three officers agreeing</text>
+  <text x="763" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">makes it a rule.</text>
+  <path d="M935,155 L972,155" stroke="#2563EB" stroke-width="2" fill="none" marker-end="url(#ab)"/>
+  <rect x="980" y="80" width="180" height="150" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="998" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#79838F" text-anchor="start">NEXT CASE</text>
+  <text x="998" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">The rule applies —</text>
+  <text x="998" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">only where it fits.</text>
+  <path d="M1070,240 L1070,286 L130,286 L130,240" stroke="#2563EB" stroke-width="2" fill="none" stroke-dasharray="5 5" marker-end="url(#ab)"/>
+  <text x="600" y="278" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="600" fill="#2563EB" text-anchor="middle">every case makes the next one better</text>
+  <text x="40" y="326" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="400" fill="#5A6472" text-anchor="start">A judgement cites the corrections that formed it, applies only to cases like those, and can be retired when it stops being true.</text>
+</svg>

@@ -36,6 +36,50 @@
 *Sovereign by design -- run it in your own infrastructure, on open models. Your
 data never leaves.*
 
+## The short version
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/story/1-why-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/story/1-why-light.svg">
+    <img alt="Cases arrive; your SOP and data answer most of them; the ones carrying real money are resolved by a person whose judgement is written down nowhere" src="assets/story/1-why-light.svg" width="100%">
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/story/2-loop-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/story/2-loop-light.svg">
+    <img alt="A case is recommended with citations, a person approves or corrects it, three officers agreeing turns that into a rule, and the next similar case uses it" src="assets/story/2-loop-light.svg" width="100%">
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/story/3-governed-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/story/3-governed-light.svg">
+    <img alt="The agent proposes an action, a policy gate bounds it, a person approves before anything is written, and every step is recorded" src="assets/story/3-governed-light.svg" width="100%">
+  </picture>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/story/4-surfaces-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/story/4-surfaces-light.svg">
+    <img alt="Runs as an app, embedded in your own UI, or as an API; on demand, prepared ahead of time, or automatically within limits you set" src="assets/story/4-surfaces-light.svg" width="100%">
+  </picture>
+</p>
+
+Two things come out of that loop, and they are worth separating: the
+**money** saved by getting the high-stakes calls right, and the **hours**
+saved by not re-deciding the routine ones. Most tools chase the second.
+This is built for the first, and gets the second on the way.
+
+Everything below is the detail — [the problem](#the-problem-it-addresses),
+[what we measured](#what-we-measured), [how it works](#how-it-works), and
+[how to run it](#quickstart).
+
+
 ## Support this project
 
 Citra Decision System is Apache-2.0 and free to run on your own

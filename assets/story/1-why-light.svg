@@ -1,0 +1,59 @@
+<!--
+  Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+  Author: Rohit Kumar Chandan
+  SPDX-License-Identifier: Apache-2.0
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-label="Most cases follow the rules; the ones that matter need judgement that is written down nowhere">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C9D2DC"/>
+    </marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="330" fill="#FFFFFF"/>
+  <text x="40" y="46" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="19" font-weight="600" fill="#15181A" text-anchor="start">Every day, your team decides thousands of cases.</text>
+  <rect x="40" y="80" width="250" height="190" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="60" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#79838F" text-anchor="start">CASES ARRIVE</text>
+  <rect x="62" y="124" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="106" y="124" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="150" y="124" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="194" y="124" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="62" y="150" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="106" y="150" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="150" y="150" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="194" y="150" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="62" y="176" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="106" y="176" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="150" y="176" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="194" y="176" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="62" y="202" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="106" y="202" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="150" y="202" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="194" y="202" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="62" y="228" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="106" y="228" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="150" y="228" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <rect x="194" y="228" width="30" height="14" rx="3" fill="#C9D2DC" opacity=".55"/>
+  <path d="M300,175 L348,175" stroke="#C9D2DC" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <rect x="358" y="80" width="250" height="190" rx="10" fill="#F5F7FA" stroke="#DFE6EE" stroke-width="1.5"/>
+  <text x="378" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#79838F" text-anchor="start">YOUR SOP + YOUR DATA</text>
+  <text x="378" y="142" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="400" fill="#15181A" text-anchor="start">Answers most of them.</text>
+  <text x="378" y="168" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Written down, testable,</text>
+  <text x="378" y="190" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">already automatable.</text>
+  <text x="378" y="232" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#0F766E" text-anchor="start">MOST CASES</text>
+  <rect x="378" y="240" width="60" height="8" rx="4" fill="#0F766E" stroke="#0F766E" stroke-width="0"/>
+  <path d="M618,175 L666,175" stroke="#2563EB" stroke-width="2" fill="none" marker-end="url(#ab)"/>
+  <rect x="676" y="80" width="484" height="190" rx="10" fill="#E8F0FE" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="696" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#2563EB" text-anchor="start">THE ONES THAT CARRY THE MONEY</text>
+  <text x="696" y="142" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="400" fill="#15181A" text-anchor="start">Resolved by a person who knows better than the rules.</text>
+  <text x="696" y="176" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">That knowledge is not in your SOP.</text>
+  <text x="696" y="200" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#5A6472" text-anchor="start">Not in your recorded data. Not in the model's training.</text>
+  <text x="696" y="236" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="600" fill="#15181A" text-anchor="start">It leaves when they do.</text>
+  <text x="40" y="306" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="400" fill="#5A6472" text-anchor="start">A model that has read your policy still cannot make this call. It has never seen the judgement — because nobody wrote it down.</text>
+</svg>

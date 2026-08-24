@@ -1,0 +1,44 @@
+<!--
+  Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+  Author: Rohit Kumar Chandan
+  SPDX-License-Identifier: Apache-2.0
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+  use this file except in compliance with the License. You may obtain a copy of
+  the License at http://www.apache.org/licenses/LICENSE-2.0
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-label="The agent proposes; a policy gate bounds it; a person approves; everything is recorded">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2A3648"/>
+    </marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5B8DEF"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="330" fill="#0B1220"/>
+  <text x="40" y="46" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="19" font-weight="600" fill="#E6EDF6" text-anchor="start">And it is never allowed to just act.</text>
+  <rect x="40" y="80" width="215" height="130" rx="10" fill="#111A2B" stroke="#243247" stroke-width="1.5"/>
+  <text x="60" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#76839A" text-anchor="start">THE AGENT</text>
+  <text x="60" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">Proposes one</text>
+  <text x="60" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">specific action.</text>
+  <path d="M265,145 L313,145" stroke="#2A3648" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <rect x="323" y="80" width="215" height="130" rx="10" fill="#2A2413" stroke="#F0B429" stroke-width="1.5"/>
+  <text x="343" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#F0B429" text-anchor="start">POLICY GATE</text>
+  <text x="343" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">Only what you</text>
+  <text x="343" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">allowed. Nothing more.</text>
+  <path d="M548,145 L596,145" stroke="#2A3648" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <rect x="606" y="80" width="215" height="130" rx="10" fill="#16233A" stroke="#5B8DEF" stroke-width="1.5"/>
+  <text x="626" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#5B8DEF" text-anchor="start">A PERSON</text>
+  <text x="626" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">Sees the plan before</text>
+  <text x="626" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">anything is written.</text>
+  <path d="M831,145 L879,145" stroke="#2A3648" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <rect x="889" y="80" width="271" height="130" rx="10" fill="#122A29" stroke="#3FBFA9" stroke-width="1.5"/>
+  <text x="909" y="108" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#3FBFA9" text-anchor="start">YOUR SYSTEM OF RECORD</text>
+  <text x="909" y="140" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">Written only on approval,</text>
+  <text x="909" y="162" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">and reversible.</text>
+  <rect x="40" y="232" width="1120" height="46" rx="10" fill="#111A2B" stroke="#243247" stroke-width="1.5"/>
+  <text x="60" y="261" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#76839A" text-anchor="start">AUDIT</text>
+  <text x="120" y="261" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="400" fill="#93A1B3" text-anchor="start">Who decided, what it read, which rule it applied, what changed — for every case, kept.</text>
+  <text x="40" y="312" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="400" fill="#93A1B3" text-anchor="start">One switch halts every run and every write, immediately.</text>
+</svg>
