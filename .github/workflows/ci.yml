@@ -120,6 +120,13 @@ jobs:
             context: Monitoring-Service
     steps:
       - uses: actions/checkout@v4
+        with:
+          # citra-common is a SUBMODULE, and checkout skips submodules unless
+          # asked. Every Dockerfile here copies from citra-common/..., so
+          # without this the build fails on "/citra-common/citra-service-utils:
+          # not found" -- a path that is plainly present locally, which is what
+          # made it look like a context problem rather than a checkout one.
+          submodules: recursive
       - name: Build Docker image
         run: |
           # Context is the REPO ROOT, not the service directory. Four of
