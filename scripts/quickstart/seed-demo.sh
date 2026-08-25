@@ -83,7 +83,31 @@ PG_CONN="postgresql://acme_bank:acme_bank_demo_pw@localhost:${PG_PORT}/acme_bank
 PYBIN="$(command -v python3 || command -v python || true)"
 [ -n "$PYBIN" ] || { echo "python3/python not found on PATH - install Python 3." >&2; exit 1; }
 VENV="$REPO_ROOT/.venv-seed"
-[ -d "$VENV/bin" ] || [ -d "$VENV/Scripts" ] || { echo "-> creating seed venv ($VENV)"; "$PYBIN" -m venv "$VENV"; }
+# The DIRECTORY existing is not the same as the venv working. A run that died
+# partway -- most commonly `python3 -m venv` failing on Debian for want of
+# python3-venv -- leaves a .venv-seed with a bin/python in it and no pip, and
+# testing only for the directory then reuses that corpse on every retry:
+#
+#   .venv-seed/bin/python: No module named pip
+#
+# which reads like a seeding bug rather than leftover state from the failure
+# before it. Test for a working pip, and rebuild when it is not there.
+venv_ok() {
+  local py
+  if   [ -x "$VENV/bin/python" ];      then py="$VENV/bin/python"
+  elif [ -x "$VENV/Scripts/python" ];  then py="$VENV/Scripts/python"
+  else return 1; fi
+  "$py" -m pip --version >/dev/null 2>&1
+}
+if ! venv_ok; then
+  [ -e "$VENV" ] && { echo "-> discarding an unusable seed venv ($VENV)"; rm -rf "$VENV"; }
+  echo "-> creating seed venv ($VENV)"
+  "$PYBIN" -m venv "$VENV" || {
+    echo "   Could not create a virtualenv with $PYBIN." >&2
+    echo "   Debian/Ubuntu: sudo apt install python3-venv" >&2
+    exit 1
+  }
+fi
 if [ -d "$VENV/bin" ]; then PY="$VENV/bin/python"; else PY="$VENV/Scripts/python"; fi
 "$PY" -m pip -q install --upgrade pip >/dev/null 2>&1 || true
 "$PY" -m pip -q install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3 >/dev/null 2>&1 || \
