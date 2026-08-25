@@ -326,6 +326,13 @@ jobs:
 
             ### Or run the prebuilt images
 
+            > **Check the packages are public before relying on this.** GHCR
+            > publishes container packages PRIVATE by default, even under a
+            > public repository, and the visibility can only be changed by hand
+            > in the package settings -- there is no API for it. Until that is
+            > done, pulling these returns 403 for anyone outside the org.
+            > Building from source is unaffected and needs no registry.
+
             ```bash
             CITRA_VERSION=${{ inputs.version }} \
               docker compose -f docker-compose.release.yml --env-file .env up -d
