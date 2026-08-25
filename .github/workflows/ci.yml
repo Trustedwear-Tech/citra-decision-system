@@ -114,6 +114,34 @@ jobs:
   # ---------------------------------------------------------------------------
   # Docker Build Verification
   # ---------------------------------------------------------------------------
+  # Script permissions
+  # ---------------------------------------------------------------------------
+  script-perms:
+    name: Script Permissions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every script with a shebang must be executable
+        run: |
+          # core.filemode is false on Windows, so a +x done there is never
+          # recorded and every .sh in this repo silently landed as 100644.
+          # `make wizard` runs ./scripts/quickstart/wizard.sh, so the entire
+          # install failed with "Permission denied" on Linux and macOS while
+          # working fine for the author, because MSYS ignores the bit.
+          bad=0
+          while read -r mode _ _ path; do
+            case "$mode" in
+              100755) continue ;;
+            esac
+            if head -1 "$path" 2>/dev/null | grep -q '^#!'; then
+              echo "::error file=$path::has a shebang but is mode $mode - run: git update-index --chmod=+x $path"
+              bad=1
+            fi
+          done < <(git ls-files -s '*.sh')
+          [ "$bad" = 0 ] && echo "All shebang scripts are executable."
+          exit "$bad"
+
+  # ---------------------------------------------------------------------------
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
