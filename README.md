@@ -974,8 +974,8 @@ A release tarball works identically -- it is self-contained, with the wizard and
 every setup script inside:
 
 ```bash
-curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.2.0.tar.gz | tar xz
-cd citra-decision-system-0.2.0
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.3.0.tar.gz | tar xz
+cd citra-decision-system-0.3.0
 make wizard
 ```
 
@@ -1069,6 +1069,29 @@ If the sandbox build fails, `start.sh` warns and carries on. That is deliberate:
 **running** Decision Apps is unaffected, only *building* them and code execution
 in chat need these images. Re-run the script once it is fixed.
 
+
+### Running it again, and after a reboot
+
+Every service is declared `restart: unless-stopped`, so **the stack comes back
+by itself** when Docker starts — after a reboot you do not need to run anything.
+The one exception is `mongodb-init-rs`, which is `restart: no` on purpose: it
+initialises the Mongo replica set once and is meant to exit.
+
+For everything else:
+
+| | |
+|---|---|
+| `make stop` | stop the containers, keep them — fastest to resume |
+| `make up` | bring them back, no rebuild and **no re-seeding** |
+| `make down` | stop and remove the containers; **data volumes survive** |
+| `make down ARGS=-v` | also wipe the volumes — this destroys the demo data |
+| `make start` | full phase 2 again: services, super-admin, and re-seed the demo |
+
+`make up` is the one you want after a `make down`. `make start` also works but
+re-runs the seed, which is slower and unnecessary if the data is still there.
+
+If you changed source code, `make up` will not rebuild — use
+`docker compose -f docker-compose.quickstart.yml up -d --build <service>`.
 
 ### What the demo gives you
 
