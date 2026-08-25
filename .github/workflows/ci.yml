@@ -149,6 +149,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Use the Compose version the README's install gives users
+        run: |
+          # The runner's bundled compose plugin is older than the one
+          # get.docker.com installs, and rejects this repo's overlay:
+          #
+          #   services.minio conflicts with imported resource
+          #
+          # docker-compose.quickstart.yml deliberately `include`s the infra and
+          # dev files and then re-declares 13 of their services to add
+          # `env_file: [.env]`. Newer Compose treats that as an override; older
+          # Compose treats it as a conflict. Testing against a version no user
+          # is told to install would prove nothing, so CI installs the same one
+          # the README does.
+          mkdir -p ~/.docker/cli-plugins
+          curl -fsSL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64             -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          docker compose version
+
       - name: Build the quickstart stack from source
         run: |
           # docker-build below builds the PROD Dockerfiles. `make wizard` builds

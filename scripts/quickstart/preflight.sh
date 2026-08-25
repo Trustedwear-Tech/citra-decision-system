@@ -60,6 +60,30 @@ preflight() {
     fi
   fi
 
+  # 3b. Compose must be new enough to OVERRIDE an included service, not just
+  #     new enough to exist. docker-compose.quickstart.yml `include`s the infra
+  #     and dev files and then re-declares 13 of their services to add
+  #     `env_file: [.env]`. Newer Compose merges that; older Compose refuses:
+  #
+  #       services.minio conflicts with imported resource
+  #
+  #     Checking a version NUMBER would mean guessing which release changed it.
+  #     Ask Compose to parse the real file instead -- the capability is the
+  #     thing that matters, and this is the same lesson as testing for the venv
+  #     MODULE rather than for the python binary.
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    _cfg_err="$(docker compose -f docker-compose.quickstart.yml config -q 2>&1 || true)"
+    case "$_cfg_err" in
+      *"conflicts with imported resource"*)
+        echo "  [X] Your Docker Compose is too old for this stack's compose file." >&2
+        echo "      It reports: ${_cfg_err}" >&2
+        echo "      Upgrade Compose v2 (the version get.docker.com installs works):" >&2
+        echo "        https://docs.docker.com/compose/install/" >&2
+        fail=1
+        ;;
+    esac
+  fi
+
   # 4. curl. wait_for() in start.sh polls the health endpoints with it, so
   #    without it the install hangs its full 5-minute timeout and then reports
   #    the SERVICE as unhealthy, which sends you debugging the wrong thing.
