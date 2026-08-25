@@ -1356,7 +1356,7 @@ them; the rest are called on your behalf.
 
 | | Service | Host port | What it is |
 |---|---|---|---|
-| **UI** | **Citra-UI** | **8081** | The page you actually open. Expo / React Native web shell -- sign-in, chat, documents, My Apps. |
+| **UI** | **Citra-UI** | **8081** | The page you actually open. Expo / React Native web shell -- sign-in, chat, documents, the app builder and the published-app lists. |
 | **UI** | citra-app-runtime | 3100 | Next.js renderer for a published Decision App. Runs *inside* the shell -- never opened directly. |
 | **API** | **smart-app-service** | **9100** | The engine, and the API you integrate against: authors apps, runs the agent loop, records decisions, serves the embed. |
 | | Citra-User-Service | 7004 | Auth, orgs, departments, users. Issues the JWT every other service verifies. |
@@ -1397,9 +1397,17 @@ under *Three surfaces, one intelligence* above; this is the mechanics.
 
 ### 1. Build a Decision App
 
-**In the UI.** Sign in at http://localhost:8081, open **My Apps**, and describe
-the app in plain English. A builder pod drafts the spec against the catalogue,
-asks what it cannot infer, and publishes when you accept.
+**In the UI.** Sign in at http://localhost:8081. Under **🚀 Run your
+high-stakes, complex operations**, open **Self-Improving Decision Apps & APIs**
+— that is the builder — and describe the app in plain English. A builder pod
+drafts the spec against the catalogue, asks what it cannot infer, and publishes
+when you accept.
+
+**Not "My Decision Apps".** That card next to it is the *consumer* list: it
+shows apps someone else built and published **to you**, and it is what a user
+without build rights sees. Building is gated on `canBuildApps`, so an operator
+who only consumes apps will not see the builder card at all. Same distinction
+for **My Dashboards**.
 
 One question it asks matters more than the others: the **surface** -- a full
 app, an embedded card, or headless. Pick the embedded surface if you intend to
