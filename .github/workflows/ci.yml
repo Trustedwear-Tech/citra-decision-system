@@ -142,6 +142,29 @@ jobs:
           exit "$bad"
 
   # ---------------------------------------------------------------------------
+  # The images users actually build
+  # ---------------------------------------------------------------------------
+  compose-build:
+    name: Compose Build (what make wizard runs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the quickstart stack from source
+        run: |
+          # docker-build below builds the PROD Dockerfiles. `make wizard` builds
+          # the .dev ones, via this compose file -- so until now the images every
+          # user actually builds were tested by nothing.
+          #
+          # A clean-room install found the cost of that: twelve .dev Dockerfiles
+          # shared one BuildKit pip cache at sharing=shared, and building them
+          # concurrently made pip report a dependency conflict that did not
+          # exist. Building one image at a time would NOT have caught it. This
+          # job runs the real command, with the real parallelism, which is the
+          # only thing that reproduces it.
+          cp .env.example .env
+          docker compose -f docker-compose.quickstart.yml build
+
+  # ---------------------------------------------------------------------------
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
