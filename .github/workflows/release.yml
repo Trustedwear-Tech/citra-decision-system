@@ -324,20 +324,6 @@ jobs:
             images from source, and seeds the `acme-bank` demo. A `git clone`
             works exactly the same way.
 
-            ### Or run the prebuilt images
-
-            > **Check the packages are public before relying on this.** GHCR
-            > publishes container packages PRIVATE by default, even under a
-            > public repository, and the visibility can only be changed by hand
-            > in the package settings -- there is no API for it. Until that is
-            > done, pulling these returns 403 for anyone outside the org.
-            > Building from source is unaffected and needs no registry.
-
-            ```bash
-            CITRA_VERSION=${{ inputs.version }} \
-              docker compose -f docker-compose.release.yml --env-file .env up -d
-            ```
-
             ## Images
 
             Fourteen long-running services:
@@ -369,7 +355,9 @@ jobs:
             | `citra-app-builder` | the Decision App builder, FROM the base |
             | `quick-chat-sandbox` | code execution for chat |
 
-            All at `${{ needs.validate.outputs.prefix }}/<name>:${{ inputs.version }}`.
+            `make wizard` builds all seventeen from source on your machine.
+            Nothing is pulled from a private registry and there is no image
+            here you cannot rebuild yourself.
 
             ## Changelog
 
