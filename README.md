@@ -949,13 +949,36 @@ database, in a schema you can read.
 
 | Need | Why |
 |------|-----|
-| **Docker Engine 24+** with Compose v2 | runs the whole stack |
+| **Docker Engine 24+** with **Compose v2** | runs the whole stack. Compose v1 cannot parse the `include:` this uses |
 | **16 GB+ RAM** (32 GB recommended) | Milvus plus the service fleet |
-| **python3** on PATH | the demo seed scripts (a venv is created for you) |
+| **Python 3.9+**, with **`venv`** and **`pip`** | the setup and seed scripts. The seed builds a venv and installs into it |
+| **curl** | the installer polls service health with it |
 | **An OpenAI-compatible LLM key** | recommendations and NL->SQL -- OpenRouter, OpenAI, DeepSeek, or your own vLLM |
+| **Internet access on first run** | pulling base images, and the seed's `pip install` |
+
+**Debian and Ubuntu need three packages, not one.** `python3` there ships
+without `ensurepip`, so `python3 -m venv` fails on a machine where Python is
+plainly installed — *"the virtual environment was not created successfully
+because ensurepip is not available"*. Install all of:
+
+```bash
+sudo apt install python3 python3-venv python3-pip curl
+```
+
+**What you do _not_ need on the host**, despite the stack using them:
+
+| | |
+|---|---|
+| **Node.js** | only ever run inside the containers (`docker compose exec ... node`) |
+| **git** | needed to clone, not to build — the release tarball is self-contained |
+| **make** | convenience only; every target is a one-line script call, see below |
+| **openssl** | used for secrets if present, falls back to `/dev/urandom` |
 
 `docker version` should print a **Server** section. If it does not, Docker is
 not running.
+
+You do not have to check any of this by hand: `make wizard` and `make setup`
+run a preflight first and name whatever is missing, before writing anything.
 
 ### Easiest: the wizard
 
@@ -1445,10 +1468,14 @@ itself to.
 
 ## Requirements
 
-- Docker + Docker Compose, and enough disk/RAM on one host to run the stack
-  described in `ARCHITECTURE.md` (Mongo, Milvus, Redis, MinIO, plus the
-  application services) -- comfortable on a single modern developer machine
-  for evaluation; size a dedicated host for anything beyond that.
+- Docker Engine 24+ and Compose **v2**, plus Python 3.9+ with `venv`/`pip`
+  and `curl` on the host -- see [Prerequisites](#prerequisites) for the full
+  list and the Debian/Ubuntu caveat. Node.js and git are *not* host
+  requirements.
+- Enough disk/RAM on one host to run the stack described in `ARCHITECTURE.md`
+  (Mongo, Milvus, Redis, MinIO, plus the application services) -- comfortable
+  on a single modern developer machine for evaluation; size a dedicated host
+  for anything beyond that.
 - An OpenAI-compatible model endpoint. OpenRouter (or any compatible hosted
   provider) works to evaluate; production deployments typically move to a
   self-hosted endpoint so no prompt or document ever leaves your network.

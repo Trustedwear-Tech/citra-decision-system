@@ -60,7 +60,47 @@ preflight() {
     fi
   fi
 
-  # 4. The vendored shared packages. Every service Dockerfile copies from
+  # 4. curl. wait_for() in start.sh polls the health endpoints with it, so
+  #    without it the install hangs its full 5-minute timeout and then reports
+  #    the SERVICE as unhealthy, which sends you debugging the wrong thing.
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "  [X] curl is not on PATH (the installer polls service health with it)." >&2
+    echo "      Debian/Ubuntu: sudo apt install curl        macOS: brew install curl" >&2
+    fail=1
+  fi
+
+  # 5. Python, and specifically a python that can build a venv and pip-install.
+  #    seed-demo.sh creates a venv and installs into it. Debian and Ubuntu ship
+  #    python3 WITHOUT ensurepip, so `python3 -m venv` fails on a box where
+  #    python3 is plainly installed:
+  #
+  #      The virtual environment was not created successfully because ensurepip
+  #      is not available. ... you need to install the python3-venv package
+  #
+  #    The README said "python3 on PATH", which is true and not sufficient.
+  #    Checking the interpreter alone would reproduce exactly that mistake, so
+  #    the module is checked, not the binary.
+  local py
+  py="$(command -v python3 || command -v python || true)"
+  if [ -z "$py" ]; then
+    echo "  [X] python3 is not on PATH (the setup and seed scripts are Python)." >&2
+    echo "      Debian/Ubuntu: sudo apt install python3 python3-venv python3-pip" >&2
+    echo "      macOS: brew install python       Windows: https://python.org/downloads" >&2
+    fail=1
+  else
+    if ! "$py" -c "import ensurepip" >/dev/null 2>&1; then
+      echo "  [X] $py cannot create virtual environments (no ensurepip)." >&2
+      echo "      The demo seed builds a venv and installs into it." >&2
+      echo "      Debian/Ubuntu: sudo apt install python3-venv" >&2
+      fail=1
+    fi
+    if ! "$py" -m pip --version >/dev/null 2>&1; then
+      echo "  [!] $py has no pip module. The seed venv usually provides its own," >&2
+      echo "      but if seeding fails: sudo apt install python3-pip" >&2
+    fi
+  fi
+
+  # 6. The vendored shared packages. Every service Dockerfile copies from
   #    citra-common/. It used to be a git submodule, so a plain clone and both
   #    source downloads left it EMPTY and every build died on a path that is
   #    plainly present in a developer's checkout. It is vendored now, but an
