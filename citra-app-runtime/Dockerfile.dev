@@ -17,7 +17,7 @@ RUN apk add --no-cache curl bash
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm install --legacy-peer-deps
 
 # Expose Next.js port

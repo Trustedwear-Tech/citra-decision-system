@@ -29,7 +29,7 @@ COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 WORKDIR /app/playwright-render-service
 
 # Install deps
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install --upgrade pip && \
     pip install -r requirements.txt
 

@@ -62,6 +62,33 @@ async function seedOrgs() {
     upserted++;
   }
 
+  // The DEPLOYMENT org must exist, whether or not the seed file names it.
+  //
+  // validateDeploymentOrg() throws when ORG_ID has no row here, and server.js
+  // calls it a few lines after this function -- so an ORG_ID that is not in
+  // orgs.seed.json crash-loops the service. On a fresh install that is a
+  // deadlock, because the thing that would create the org (seed-demo.sh) is
+  // run by start.sh only AFTER it has waited for this service to report
+  // healthy, which it never does.
+  //
+  // It applied to both wizard paths: the demo pins ORG_ID=acme-bank and the
+  // own-database path defaults it to my-org, and orgs.seed.json ships only
+  // citra-ai. deptSeed already seeds departments for ORG_ID, so creating the
+  // org itself is the consistent thing to do rather than the special case.
+  const deploymentOrgId = (process.env.ORG_ID || '').trim();
+  if (deploymentOrgId && !entries.some((e) => e && e.id === deploymentOrgId)) {
+    const existing = await Org.findOne({ id: deploymentOrgId }).lean();
+    if (!existing) {
+      await Org.updateOne(
+        { id: deploymentOrgId },
+        { $set: { id: deploymentOrgId, name: deploymentOrgId, domain: null, is_demo: false } },
+        { upsert: true }
+      );
+      upserted++;
+      console.log(`[orgSeed] created deployment org '${deploymentOrgId}' (ORG_ID, not in the seed file)`);
+    }
+  }
+
   console.log(`[orgSeed] ✅ upserted=${upserted}`);
 }
 

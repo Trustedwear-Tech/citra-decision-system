@@ -18,7 +18,7 @@ COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY discovery-service/requirements.txt /app/discovery-service/requirements.txt
 WORKDIR /app/discovery-service
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install -r requirements.txt
 
 COPY discovery-service /app/discovery-service

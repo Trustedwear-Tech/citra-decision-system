@@ -17,12 +17,12 @@ RUN apk add --no-cache curl bash
 COPY package.json package-lock.json* ./
 
 # Install dependencies (development dependencies are required)
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm install --legacy-peer-deps
 
 # Install the static file server BEFORE copying source so frontend rebuilds
 # (which only change source) reuse this cached layer.
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm install -g serve
 
 # Bake the production web build into the image (no Metro watcher at runtime).

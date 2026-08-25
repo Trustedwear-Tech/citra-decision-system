@@ -32,14 +32,14 @@ WORKDIR /app/reranker-service
 
 # Install torch FIRST (variant-selected) so sentence-transformers reuses it
 # instead of pulling the default CUDA wheel from PyPI.
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     if [ "$TORCH_VARIANT" = "gpu" ]; then \
         pip install torch; \
     else \
         pip install torch --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip install -r requirements.txt
 
 # Pre-download ONLY the model this image's hardware will use at runtime — never
