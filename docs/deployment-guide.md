@@ -15,10 +15,10 @@
 | Approach | Best For | Guide |
 |----------|----------|-------|
 | **Docker Compose** (modular) | Single machine, multi-machine, or hybrid | This page |
-| **Pre-built images** | Fast deployment without building from source | This page |
+| **Build from source** | The supported path. `make wizard` builds every image locally | [README quickstart](../README.md#quickstart) |
 | **Build from source** (no Docker) | Development, custom modifications | [Component guides](components/citra-services.md#option-b-build-from-source-no-docker) |
 
-> **Kubernetes retired (2026-06-11):** the K8s manifests and Helm charts were removed from this repository (recoverable from the `archive/pre-infra-cleanup-2026-06-11` branch). The supported deployment path is Docker Compose (`docker-compose.release.yml`, or the `Makefile` targets).
+> **Kubernetes retired (2026-06-11):** the K8s manifests and Helm charts were removed from this repository (recoverable from the `archive/pre-infra-cleanup-2026-06-11` branch). The supported deployment path is Docker Compose via the `Makefile` targets, building from source.
 
 ---
 
@@ -129,7 +129,7 @@ curl http://localhost:7004/health    # User-Service
 
 ## Kubernetes
 
-The Kubernetes manifests were retired on 2026-06-11 (recoverable from the `archive/pre-infra-cleanup-2026-06-11` branch). The supported deployment path is Docker Compose (`docker-compose.release.yml`, or the `Makefile` targets).
+The Kubernetes manifests were retired on 2026-06-11 (recoverable from the `archive/pre-infra-cleanup-2026-06-11` branch). The supported deployment path is Docker Compose via the `Makefile` targets, building from source.
 
 ---
 

@@ -7,7 +7,7 @@
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
 # =============================================================================
-# Release: build and publish every image, then cut the GitHub Release.
+# Release: verify every image builds, then cut the GitHub Release.
 # =============================================================================
 # This workflow had never run once, and would not have succeeded if it had. It
 # built a service that does not exist (citra-mcp-server), one that lives inside
@@ -26,10 +26,16 @@
 # build. They run sequentially in one job for that reason -- the same order
 # scripts/quickstart/build-sandboxes.sh uses locally.
 #
-# Images publish under ghcr.io/<owner>/<repo>/<service>, which ties each package
-# to THIS repository so it inherits the repo's visibility. The older
-# ghcr.io/trustedwear-tech/citra-ai/* packages are the private production ones
-# and are deliberately not reused.
+# Nothing is PUSHED. Every image is built and thrown away.
+#
+# This repo used to publish seventeen packages to GHCR. They landed private --
+# GHCR does that by default even under a public repository, with no API to
+# change it -- so the "run the prebuilt images" path 403'd for everyone and
+# would have needed seventeen manual visibility flips before every release, to
+# support an install route nobody asked for. Building from source is the only
+# supported path, so the build is now a GATE rather than a publish step: if the
+# tag cannot be built from a clean checkout, there is nothing to release,
+# because building it is exactly what every user is about to do.
 # =============================================================================
 
 name: Release
@@ -42,36 +48,20 @@ on:
         required: true
         type: string
       dry_run:
-        description: 'Build everything but push nothing and create no release'
+        description: 'Verify the builds but create no release'
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: write
-  packages: write
-  id-token: write
-  attestations: write
-
-env:
-  REGISTRY: ghcr.io
 
 jobs:
   # ---------------------------------------------------------------------------
   validate:
     name: Validate
     runs-on: ubuntu-latest
-    outputs:
-      prefix: ${{ steps.prefix.outputs.prefix }}
     steps:
-      - name: Lowercase the image prefix
-        id: prefix
-        run: |
-          # Docker repository names must be lowercase and github.repository
-          # carries the owner's real casing (Trustedwear-Tech). Actions
-          # expressions have no lower(), so it is computed once here and read
-          # by every other job rather than interpolated raw at 17 call sites.
-          echo "prefix=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
       - name: Validate semver
         run: |
           if ! echo "${{ inputs.version }}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
@@ -105,8 +95,8 @@ jobs:
   # actually COPYs: anything reaching into citra-common/ needs the repo root,
   # everything else builds from its own directory.
   # ---------------------------------------------------------------------------
-  publish-services:
-    name: ${{ matrix.service }}
+  verify-builds:
+    name: builds ${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: validate
     strategy:
@@ -158,23 +148,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Log in to GHCR
-        if: ${{ !inputs.dry_run }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
+      - name: Build
         id: build
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
-          push: ${{ !inputs.dry_run }}
-          tags: |
-            ${{ needs.validate.outputs.prefix }}/${{ matrix.service }}:${{ inputs.version }}
-            ${{ needs.validate.outputs.prefix }}/${{ matrix.service }}:latest
+          # Never pushed. This proves the tag builds from a clean checkout,
+          # which is what every user is about to do themselves.
+          push: false
+          tags: citra-${{ matrix.service }}:${{ inputs.version }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           labels: |
@@ -182,41 +165,23 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=Apache-2.0
-      - name: Attest provenance
-        if: ${{ !inputs.dry_run }}
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ needs.validate.outputs.prefix }}/${{ matrix.service }}
-          subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
-
   # ---------------------------------------------------------------------------
   # Sandbox images. Deliberately NOT a matrix: citra-app-builder is FROM the
   # base, so this is a dependency chain that has to run in order, in one job,
   # so the base is in the local daemon when the builder is built.
   # ---------------------------------------------------------------------------
-  publish-sandboxes:
-    name: sandbox images
+  verify-sandbox-builds:
+    name: builds sandbox images
     runs-on: ubuntu-latest
     needs: validate
     steps:
       - uses: actions/checkout@v4
-      - name: Log in to GHCR
-        if: ${{ !inputs.dry_run }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: 1 of 3 - citra-agent-sandbox-base (FROM OpenClaw)
         run: |
-          # Also tagged with the bare LOCAL name, because step 2's Dockerfile
-          # defaults BASE_IMAGE to citra-agent-sandbox-base:latest.
+          # The local tag matters: step 2's Dockerfile defaults BASE_IMAGE to
+          # citra-agent-sandbox-base:latest and resolves it from this daemon.
           docker build \
             -t citra-agent-sandbox-base:latest \
-            -t ${{ needs.validate.outputs.prefix }}/citra-agent-sandbox-base:${{ inputs.version }} \
-            -t ${{ needs.validate.outputs.prefix }}/citra-agent-sandbox-base:latest \
             -f infrastructure/action-sandbox/Dockerfile \
             infrastructure/action-sandbox
 
@@ -224,32 +189,22 @@ jobs:
         run: |
           docker build \
             --build-arg BASE_IMAGE=citra-agent-sandbox-base:latest \
-            -t ${{ needs.validate.outputs.prefix }}/citra-app-builder:${{ inputs.version }} \
-            -t ${{ needs.validate.outputs.prefix }}/citra-app-builder:latest \
+            -t citra-app-builder:latest \
             -f smart-app-service/builder-sandbox/Dockerfile \
             smart-app-service
 
       - name: 3 of 3 - quick-chat-sandbox (independent)
         run: |
           docker build \
-            -t ${{ needs.validate.outputs.prefix }}/quick-chat-sandbox:${{ inputs.version }} \
-            -t ${{ needs.validate.outputs.prefix }}/quick-chat-sandbox:latest \
+            -t quick-chat-sandbox:latest \
             -f Citra-Service/Dockerfile.quick-chat-sandbox \
             Citra-Service
-
-      - name: Push
-        if: ${{ !inputs.dry_run }}
-        run: |
-          for i in citra-agent-sandbox-base citra-app-builder quick-chat-sandbox; do
-            docker push "${{ needs.validate.outputs.prefix }}/$i:${{ inputs.version }}"
-            docker push "${{ needs.validate.outputs.prefix }}/$i:latest"
-          done
 
   # ---------------------------------------------------------------------------
   sbom:
     name: SBOM
     runs-on: ubuntu-latest
-    needs: [publish-services, publish-sandboxes]
+    needs: [verify-builds, verify-sandbox-builds]
     if: ${{ !inputs.dry_run }}
     steps:
       - uses: actions/checkout@v4
@@ -266,7 +221,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [validate, publish-services, publish-sandboxes, sbom]
+    needs: [validate, verify-builds, verify-sandbox-builds, sbom]
     if: ${{ !inputs.dry_run }}
     steps:
       - uses: actions/checkout@v4

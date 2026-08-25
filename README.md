@@ -945,7 +945,12 @@ database, in a schema you can read.
 
 ## Quickstart
 
-### Prerequisites
+### Step 1 — install the prerequisites
+
+Nothing here is pulled from us. There is no container registry to sign in to and
+no image we publish — **you build the whole system on your own machine**, from
+either a clone or a release download. What you need is a Docker daemon, a Python
+that can make a virtualenv, and curl.
 
 | Need | Why |
 |------|-----|
@@ -956,14 +961,11 @@ database, in a schema you can read.
 | **An OpenAI-compatible LLM key** | recommendations and NL->SQL -- OpenRouter, OpenAI, DeepSeek, or your own vLLM |
 | **Internet access on first run** | pulling base images, and the seed's `pip install` |
 
-**Debian and Ubuntu need three packages, not one.** `python3` there ships
-without `ensurepip`, so `python3 -m venv` fails on a machine where Python is
-plainly installed — *"the virtual environment was not created successfully
-because ensurepip is not available"*. Install all of:
-
-```bash
-sudo apt install python3 python3-venv python3-pip curl
-```
+> **Why `python3-venv` is listed separately below.** Debian and Ubuntu ship
+> `python3` without `ensurepip`, so `python3 -m venv` fails on a machine where
+> Python is plainly installed — *"the virtual environment was not created
+> successfully because ensurepip is not available"*. The demo seed builds a
+> venv, so installing `python3` alone is not enough.
 
 **What you do _not_ need on the host**, despite the stack using them:
 
@@ -974,41 +976,93 @@ sudo apt install python3 python3-venv python3-pip curl
 | **make** | convenience only; every target is a one-line script call, see below |
 | **openssl** | used for secrets if present, falls back to `/dev/urandom` |
 
-`docker version` should print a **Server** section. If it does not, Docker is
-not running.
-
-You do not have to check any of this by hand: `make wizard` and `make setup`
-run a preflight first and name whatever is missing, before writing anything.
-
-### Easiest: the wizard
+**Ubuntu / Debian**
 
 ```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip curl make
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker "$USER"     # then log out and back in
+```
+
+**Fedora / RHEL / Rocky**
+
+```bash
+sudo dnf install -y python3 python3-pip curl make
+curl -fsSL https://get.docker.com | sudo sh
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"     # then log out and back in
+```
+
+**macOS** — install [Docker Desktop](https://docs.docker.com/desktop/install/mac-install/), then:
+
+```bash
+brew install python curl make
+```
+
+**Windows** — install [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
+and [Python](https://www.python.org/downloads/) (tick *Add python.exe to PATH*),
+then run everything below from **Git Bash** or **WSL**, not `cmd` or PowerShell.
+`make` is not present on Windows; use the `bash scripts/quickstart/...` form
+shown beside every `make` command.
+
+Check Docker is actually running — `docker version` must print a **Server**
+section, not just a Client one:
+
+```bash
+docker version
+```
+
+### Step 2 — get the code
+
+Either route gives you an identical, self-contained tree. Pick one.
+
+```bash
+# Clone it
 git clone https://github.com/Trustedwear-Tech/citra-decision-system.git
 cd citra-decision-system
-make wizard
 ```
-
-It checks your host first, asks for one OpenRouter key, writes `.env`, brings up
-the full stack, and seeds the `acme-bank` demo. If a prerequisite is missing it
-says which one and stops before writing anything, rather than failing halfway
-through with `docker: command not found`.
-
-A release tarball works identically -- it is self-contained, with the wizard and
-every setup script inside:
 
 ```bash
-curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.3.0.tar.gz | tar xz
-cd citra-decision-system-0.3.0
-make wizard
+# Or download the release — no git needed
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.3.1.tar.gz | tar xz
+cd citra-decision-system-0.3.1
 ```
 
-> **No `make`?** It is not installed by default on Windows, and the targets are
-> thin wrappers -- run the script directly instead. Every `make X` below has a
-> `bash scripts/quickstart/X.sh` equivalent:
->
-> ```bash
-> bash scripts/quickstart/wizard.sh
-> ```
+### Step 3 — run the wizard
+
+```bash
+make wizard          # or, without make:  bash scripts/quickstart/wizard.sh
+```
+
+It re-checks your host and stops before writing anything if something is
+missing, then asks for an OpenRouter (or other OpenAI-compatible) API key,
+writes `.env` with freshly generated secrets, and does the rest itself:
+
+1. starts the data stores — Mongo, Redis, Milvus, MinIO, Postgres
+2. **builds all twelve application services from source**
+3. **builds the three sandbox images**, including the OpenClaw-based
+   `citra-agent-sandbox-base` and the `citra-app-builder` layered on top of it
+4. creates your admin user
+5. seeds the `acme-bank` demo
+
+**Expect 20–40 minutes on the first run**, most of it compiling images. It is
+cached afterwards — a second run takes a couple of minutes.
+
+The one thing that still reaches the internet is base images: `python:3.11-slim`,
+`mongo:7.0`, `ghcr.io/openclaw/openclaw` and the rest come from public
+registries, and the seed `pip install`s into a venv. Both are ordinary public
+downloads needing no account.
+
+If the sandbox build fails, the wizard **warns and carries on**. That is
+deliberate: running Decision Apps is unaffected, only *building* them and
+code-exec in chat need those images. Re-run
+`bash scripts/quickstart/build-sandboxes.sh` once it is fixed.
+
+### Step 4 — sign in
+
+The wizard prints the URL and the credentials it created when it finishes. See
+[Signing in](#signing-in) for what to do first.
 
 ### Or by hand -- two phases
 
@@ -1469,7 +1523,7 @@ itself to.
 ## Requirements
 
 - Docker Engine 24+ and Compose **v2**, plus Python 3.9+ with `venv`/`pip`
-  and `curl` on the host -- see [Prerequisites](#prerequisites) for the full
+  and `curl` on the host -- see [Prerequisites](#step-1--install-the-prerequisites) for the full
   list and the Debian/Ubuntu caveat. Node.js and git are *not* host
   requirements.
 - Enough disk/RAM on one host to run the stack described in `ARCHITECTURE.md`

@@ -61,24 +61,31 @@ Set up databases first (see individual component guides), then deploy services.
 
 ### All services on one machine
 
-Services run from the compose files at the repo root -- `docker-compose.dev.yml` to build from source, or `docker-compose.release.yml` for the pre-built images below.
+Services run from the compose files at the repo root. `docker-compose.quickstart.yml` is the one to use; it includes `docker-compose.infra.yml` (the data stores) and `docker-compose.dev.yml` (the twelve application services, built from source).
 
-### Pre-built images (no local build)
+### Building the images
+
+There is no pre-built image path. Nothing is published to a container registry,
+so there is no registry to authenticate against, no image that can go stale
+against the source, and nothing that stops working when a package's visibility
+changes. Every image is built on the machine that runs it:
 
 ```bash
-cd infrastructure/compose
-docker compose -f docker-compose.base.yml -f docker-compose.prebuilt.yml \
-  --env-file ../../.env up -d
+make wizard          # or: bash scripts/quickstart/wizard.sh
 ```
 
-Or pull individual images:
+That builds the twelve application services via compose, and the three sandbox
+images (`citra-agent-sandbox-base`, `citra-app-builder`, `quick-chat-sandbox`)
+via `scripts/quickstart/build-sandboxes.sh`. Base images still come from public
+registries -- `python:3.11-slim`, `mongo:7.0`, `ghcr.io/openclaw/openclaw` and
+the rest -- so the first build needs internet access.
+
+To rebuild one service after changing its source:
+
 ```bash
-docker pull ghcr.io/trustedwear-tech/citra-service:latest
-docker pull ghcr.io/trustedwear-tech/user-service:latest
-docker pull ghcr.io/trustedwear-tech/duckdb-query-service:latest
-docker pull ghcr.io/trustedwear-tech/reranker-service:latest
-docker pull ghcr.io/trustedwear-tech/playwright-render-service:latest
+docker compose -f docker-compose.quickstart.yml up -d --build smart-app-service
 ```
+
 
 ### Individual service on a separate machine
 
