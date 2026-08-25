@@ -116,6 +116,21 @@ services:
       - -c
       - |
         set -eo pipefail
+        # WAIT FOR THE PORT, not just for the healthcheck. depends_on
+        # service_healthy only proves `db.adminCommand('ping')` answered; on a
+        # loaded or slow machine mongod can pass that and still refuse an
+        # authenticated connection a moment later. This ran ONCE, and one
+        # ECONNREFUSED left the replica set uninitiated forever, because
+        # restart is "no". The install then died several minutes later at
+        # "citra-user-service not healthy", which points at the wrong service
+        # entirely -- user-service was fine, it just had no rs0 to connect to.
+        for i in $$(seq 1 30); do
+          if mongosh --host mongodb --port 27017                -u "$$MONGODB_USER" -p "$$MONGODB_PASSWORD"                --authenticationDatabase admin --quiet                --eval 'db.adminCommand({ping:1}).ok' >/dev/null 2>&1; then
+            break
+          fi
+          echo "waiting for mongod to accept authenticated connections ($$i/30)"
+          sleep 2
+        done
         # -u/-p rather than a URI: a password containing URI-reserved
         # characters would otherwise need percent-encoding.
         mongosh --host mongodb --port 27017 \
