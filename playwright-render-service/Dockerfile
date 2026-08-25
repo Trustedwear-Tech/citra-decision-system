@@ -24,7 +24,7 @@ COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY playwright-render-service/requirements.txt /app/playwright-render-service/requirements.txt
 WORKDIR /app/playwright-render-service
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --retries 10 --timeout 60 --no-cache-dir -r requirements.txt
 
 COPY playwright-render-service /app/playwright-render-service
 

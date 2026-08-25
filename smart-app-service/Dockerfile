@@ -11,7 +11,7 @@ FROM python:3.11-slim
 # Build context = monorepo root. requirements.txt has editable local deps:
 # `-e ../citra-common/citra-service-utils`, `-e ../citra-common/citra-auth`, `-e ../citra-common/citra-cache`, and
 # `-e ../citra-common/citra-queue` (the shared durable job queue) — each must be COPYed
-# into the build context before the pip install below.
+# into the build context before the pip install --retries 10 --timeout 60 below.
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ COPY citra-common/citra-queue /app/citra-common/citra-queue
 
 COPY smart-app-service/requirements.txt /app/smart-app-service/requirements.txt
 WORKDIR /app/smart-app-service
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --retries 10 --timeout 60 --no-cache-dir -r requirements.txt
 
 COPY smart-app-service /app/smart-app-service
 

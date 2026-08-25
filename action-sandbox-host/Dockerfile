@@ -41,8 +41,8 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt \
- && pip install --no-cache-dir psutil==6.1.0
+RUN pip install --retries 10 --timeout 60 --no-cache-dir -r /app/requirements.txt \
+ && pip install --retries 10 --timeout 60 --no-cache-dir psutil==6.1.0
 
 COPY config.py           /app/config.py
 COPY models.py           /app/models.py

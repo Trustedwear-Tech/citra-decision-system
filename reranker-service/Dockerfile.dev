@@ -34,13 +34,13 @@ WORKDIR /app/reranker-service
 # instead of pulling the default CUDA wheel from PyPI.
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     if [ "$TORCH_VARIANT" = "gpu" ]; then \
-        pip install torch; \
+        pip install --retries 10 --timeout 60 torch; \
     else \
-        pip install torch --index-url https://download.pytorch.org/whl/cpu; \
+        pip install --retries 10 --timeout 60 torch --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install -r requirements.txt
+    pip install --retries 10 --timeout 60 -r requirements.txt
 
 # Pre-download ONLY the model this image's hardware will use at runtime — never
 # both. (At runtime the host may also bind-mount ~/.cache/huggingface.)

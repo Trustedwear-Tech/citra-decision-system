@@ -22,7 +22,7 @@ COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY duckdb-query-service/requirements.txt /app/duckdb-query-service/requirements.txt
 WORKDIR /app/duckdb-query-service
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --retries 10 --timeout 60 --no-cache-dir -r requirements.txt
 
 COPY duckdb-query-service /app/duckdb-query-service
 

@@ -9,7 +9,7 @@
 FROM python:3.11-slim
 
 # Build context = monorepo root. requirements.txt has editable local deps;
-# copy each sibling package before pip install so `-e ../...` resolves.
+# copy each sibling package before pip install --retries 10 --timeout 60 so `-e ../...` resolves.
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ COPY citra-common/citra-queue /app/citra-common/citra-queue
 COPY smart-app-service/requirements.txt /app/smart-app-service/requirements.txt
 WORKDIR /app/smart-app-service
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install -r requirements.txt
+    pip install --retries 10 --timeout 60 -r requirements.txt
 
 COPY smart-app-service /app/smart-app-service
 

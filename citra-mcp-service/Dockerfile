@@ -19,7 +19,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt
+RUN pip install --retries 10 --timeout 60 -r /app/requirements.txt
 
 COPY main.py            /app/main.py
 COPY config.py          /app/config.py

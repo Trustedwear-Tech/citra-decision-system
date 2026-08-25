@@ -12,7 +12,7 @@ FROM python:3.11-slim
 RUN groupadd -r sandbox && useradd -r -g sandbox -d /workspace -s /sbin/nologin sandbox
 
 # Pre-install common data processing libraries
-RUN pip install --no-cache-dir \
+RUN pip install --retries 10 --timeout 60 --no-cache-dir \
     pandas==2.2.3 \
     openpyxl==3.1.5 \
     xlrd==2.0.1 \

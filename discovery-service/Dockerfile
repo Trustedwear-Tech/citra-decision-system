@@ -18,7 +18,7 @@ COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY discovery-service/requirements.txt /app/discovery-service/requirements.txt
 WORKDIR /app/discovery-service
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --retries 10 --timeout 60 --no-cache-dir -r requirements.txt
 
 COPY discovery-service /app/discovery-service
 

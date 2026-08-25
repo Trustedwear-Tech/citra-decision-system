@@ -49,7 +49,7 @@ COPY citra-common/citra-llm /app/citra-common/citra-llm
 WORKDIR /app/Citra-Service
 
 # Install deps
-RUN pip install -r requirements.txt
+RUN pip install --retries 10 --timeout 60 -r requirements.txt
 
 # Copy service source LAST for caching
 COPY Citra-Service /app/Citra-Service

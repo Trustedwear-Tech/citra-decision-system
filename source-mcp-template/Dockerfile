@@ -20,7 +20,7 @@ COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 
 COPY source-mcp-template/requirements.txt /app/source-mcp-template/requirements.txt
 WORKDIR /app/source-mcp-template
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --retries 10 --timeout 60 --no-cache-dir -r requirements.txt
 
 COPY source-mcp-template /app/source-mcp-template
 

@@ -15,7 +15,7 @@ COPY citra-common/citra-service-utils /app/citra-common/citra-service-utils
 COPY data-discovery-service/requirements.txt /app/data-discovery-service/requirements.txt
 WORKDIR /app/data-discovery-service
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    pip install -r requirements.txt
+    pip install --retries 10 --timeout 60 -r requirements.txt
 COPY data-discovery-service /app/data-discovery-service
 
 EXPOSE 8095

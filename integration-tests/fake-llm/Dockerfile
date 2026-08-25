@@ -8,6 +8,6 @@
 
 FROM python:3.12-slim
 WORKDIR /app
-RUN pip install --no-cache-dir fastapi uvicorn pydantic pyyaml
+RUN pip install --retries 10 --timeout 60 --no-cache-dir fastapi uvicorn pydantic pyyaml
 COPY . /app
 CMD ["python", "main.py"]
