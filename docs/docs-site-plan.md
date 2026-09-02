@@ -20,7 +20,47 @@ that fits on one screen, and everything else on a docs site the README links to.
   `gh-pages` branch by CI. Source of truth stays next to the code it describes.
 - The internal plan documents **stay in the repo** but never render on the
   site — they move to `docs/internal/` and are excluded from the build.
-- **The README stays long.** See below — this reverses the original plan.
+- ~~**The README stays long.**~~ **Superseded 2026-08-25** — the README is
+  now 228 lines and the detail lives on the GitHub wiki, sourced from
+  `wiki/` in this repo. See the section directly below.
+
+---
+
+## Reversed again (2026-08-25): the first screen was fixed, the order was not
+
+The section below argued the README should stay long, and it was right at the
+time. Its reasoning turned on one measurement: *"951 lines, and **zero**
+visual signal above the fold."* A thin README over a bare top would have read
+as a weekend project, so the header was built and the body left alone.
+
+**That premise no longer holds.** The first screen now carries a banner,
+five badges, a link row, a contents block and a hero diagram. The credibility
+problem that argument solved is solved.
+
+What was left was a different problem, and measuring it is what settled it:
+
+| | then | now |
+|---|---|---|
+| README | 1,627 lines · 12,416 words · ~62 min | 228 lines · ~6 min |
+| "build an app, an API, an embedded UI" | line 1443 — **88% down** | line 87 — **38%** |
+| the experiment | 131 lines, near the top | 6 lines and a link |
+| Quickstart | 406 lines — 25% of the page | a 3-command block |
+
+The product got ten lines; the experiment got a hundred and thirty-one and sat
+first. A reader who stopped after two screens — most of them — saw a research
+write-up, which is exactly what the page was not supposed to be.
+
+So the fix was **order and depth, not deletion**. What the section below
+correctly insisted on is kept: the argument, the concepts and the architecture
+still exist in full and are still linked from where an evaluator lands — they
+now live on the wiki, one click away, rather than inline.
+
+And the hard rule below is honoured. **Do not link to pages that do not
+exist**: all twelve wiki pages were written and their links verified — README
+to wiki, and wiki to wiki — before anything was published. The wiki source
+lives in `wiki/` in this repo and reaches GitHub only via
+`scripts/sync-wiki.sh`, so a docs change is reviewed in the same pull request
+as the code change rather than typed into a browser.
 
 ---
 
