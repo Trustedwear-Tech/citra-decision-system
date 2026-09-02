@@ -62,7 +62,7 @@ Take 100 agent-sourced files through the policy gates.
 
 ```mermaid
 flowchart TD
-    A["100 agent-sourced files"] --> B{"Policy gates<br/>bureau · income · FOIR"}
+    A["100 agent-sourced files"] --> B{"Policy gates<br/>credit score · income · debt-to-income"}
     B -->|"~70 declined"| C["Dead on a hard rule<br/>Memory changes nothing<br/>the branch our run sampled"]
     B -->|"~30 clear every gate"| D["Approved<br/>policy asked for documents,<br/>never for a phone call"]
     D --> E["Without memory<br/>30 disburse<br/>employer never contacted<br/>loss lands 6-18 months later"]
@@ -74,7 +74,7 @@ flowchart TD
     style H stroke-width:2px
 ```
 
-**About 70 fail a hard rule and are declined** -- bureau 617, FOIR 95%,
+**About 70 fail a hard rule and are declined** -- credit score 617, debt-to-income 95%,
 income below floor. Memory changes nothing here. A file already dead on a
 hard rule cannot be saved by better reasoning. **This is the branch our run
 sampled**, which is exactly why no verdict moved in it.
@@ -88,7 +88,7 @@ later as principal, provisioning and collection cost.
 call.** 27 come back clean and clear within a day. **3 are fabricated and
 stop before payout.**
 
-On a ₹5 lakh ticket that is **₹15 lakh that never leaves the bank -- for the
+On a $50,000 ticket that is **$150,000 that never leaves the bank -- for the
 cost of 30 phone calls.**
 
 *Catch counts are arithmetic on a 100-file cohort. The 14-of-19 marker is

@@ -121,7 +121,7 @@ def hero(t: dict) -> str:
 
     # the sentence
     s += box(x0, 108, 520, 52, t, fill=t["panel"], stroke=t["panelEdge"])
-    s += txt(x0 + 16, 132, "“Triage motor claims: flag anything over ₹5 lakh", t,
+    s += txt(x0 + 16, 132, "“Triage motor claims: flag anything over $50,000", t,
              size=13.5, fill=t["ink"])
     s += txt(x0 + 16, 150, "  or a repeat claimant, and say why.”", t,
              size=13.5, fill=t["ink"])
