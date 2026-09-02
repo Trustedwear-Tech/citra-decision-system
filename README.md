@@ -49,8 +49,26 @@ corrects it.**
 
 Your SOPs and your data already answer most cases. The ones carrying real
 money are settled by an experienced person whose reasoning is written down
-nowhere, and leaves when they do. Citra puts that reasoning in a ledger you
-own, and applies it to the next case.
+nowhere.
+
+**You may already have tried fine-tuning a model for exactly these.** A
+fine-tune learns the patterns in the records it was shown, and that is also
+its ceiling. In a hard case the deciding factor usually is not in the data:
+*the column that would settle it does not exist, and the SOP does not cover
+this one.* That is the moment a person takes over, on judgement built over
+years and applied exactly where the rules run out.
+
+That judgement is the most valuable asset in the operation and the least
+protected. **It lives in one head. It walks out of the door.** Citra puts it in
+a ledger you own, and applies it to the next case.
+
+This is a **decision system, not a vertical application** — it carries no
+industry logic of its own. What a case is, what evidence counts, what may be
+written back and by whom is declared per deployment, which is why the same
+engine serves lending, insurance, energy, public services and logistics. The
+demo ships as a bank because a runnable demo has to pick one.
+
+→ [Why this exists](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Why-this-exists)
 
 ---
 
@@ -198,6 +216,7 @@ restates the SOP changes nothing, because the SOP already fires.
 | [The learning loop](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-learning-loop) | Judgements, clauses, precedent, the ledger |
 | [Architecture](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Architecture) | Services, data flow, what talks to what |
 | [Governance and the sandbox](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Governance-and-the-sandbox) | Policy gates, approvals, isolation |
+| [Why this exists](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Why-this-exists) | The argument: why a fine-tune does not close it |
 | [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-experiment) | Method, results, the null result, limits |
 | [Configuration](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Configuration) | Every environment variable |
 | [Operations](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Operations) | Running it, upgrading, backups |

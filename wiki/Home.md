@@ -14,6 +14,7 @@ short version. This wiki is the detail.
 
 | | |
 |---|---|
+| [Why this exists](Why-this-exists) | The argument: high-stakes calls, the fine-tune ceiling, and what a decision system is |
 | [Install and first run](Install-and-first-run) | Prerequisites per OS, the wizard, what it builds, what the demo gives you |
 | [Build apps, APIs and embedded UI](Build-apps-APIs-and-embedded-UI) | The builder, the three surfaces, embedding into a screen you already run |
 | [Connect your data](Connect-your-data) | Databases, the ontology, the catalogue, governed writes, country and vertical packs |
