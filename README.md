@@ -155,6 +155,11 @@ before writing anything if a prerequisite is missing, asks for one API key,
 builds every image from source, and seeds a worked bank demo: five
 departments, a policy corpus, and four Decision Apps you can open and drive.
 
+> **The demo is a hypothetical Indian bank**, so screenshots show rupee
+> amounts and Indian digit grouping. Nothing in the platform is tied to
+> that: currency, date order and ID checksums come from the country pack,
+> and packs ship for `IN` and `US` today.
+
 **First run takes 20–40 minutes**, nearly all of it compiling images. Cached
 after that.
 

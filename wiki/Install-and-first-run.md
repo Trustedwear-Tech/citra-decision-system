@@ -3,6 +3,11 @@
 
 ## Quickstart
 
+> **The demo is a hypothetical Indian bank**, so screenshots show rupee
+> amounts and Indian digit grouping. Nothing in the platform is tied to
+> that: currency, date order and ID checksums come from the country pack,
+> and packs ship for `IN` and `US` today.
+
 ### Step 1 — install the prerequisites
 
 Nothing here is pulled from us. There is no container registry to sign in to and

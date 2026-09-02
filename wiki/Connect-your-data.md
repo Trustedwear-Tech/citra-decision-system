@@ -3,6 +3,11 @@
 
 ## The core concepts, in plain terms
 
+> **The demo is a hypothetical Indian bank**, so screenshots show rupee
+> amounts and Indian digit grouping. Nothing in the platform is tied to
+> that: currency, date order and ID checksums come from the country pack,
+> and packs ship for `IN` and `US` today.
+
 Five ideas explain most of the system. None of them need code to understand,
 and once they land the rest of this README reads easily. Each one points at
 where to go deeper.

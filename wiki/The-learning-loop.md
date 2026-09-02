@@ -3,6 +3,11 @@
 
 ## What a "learned judgement" actually is
 
+> **The demo is a hypothetical Indian bank**, so screenshots show rupee
+> amounts and Indian digit grouping. Nothing in the platform is tied to
+> that: currency, date order and ID checksums come from the country pack,
+> and packs ship for `IN` and `US` today.
+
 This is the object the whole system exists to produce, so it is worth being
 precise. It is not a summary, an embedding, or a fine-tune. It is a row in a
 Mongo collection (`smartapp_clauses`), and it has five properties that follow
