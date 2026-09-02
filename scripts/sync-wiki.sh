@@ -47,7 +47,11 @@ PUSH=0
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-if ! git clone -q "https://github.com/${REPO}.wiki.git" "$TMP/wiki" 2>/dev/null; then
+# -c core.autocrlf=false: git-for-windows converts LF to CRLF on checkout,
+# which makes every page compare as changed against the LF sources here.
+# The first sync then reported all twelve as "updated" when two had been
+# touched, and every future sync would commit noise over the real diff.
+if ! git -c core.autocrlf=false clone -q "https://github.com/${REPO}.wiki.git" "$TMP/wiki" 2>/dev/null; then
   cat >&2 <<EOF
 Could not clone https://github.com/${REPO}.wiki.git
 
