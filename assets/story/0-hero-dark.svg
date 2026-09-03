@@ -24,6 +24,9 @@
     <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#5B8DEF"/>
     </marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3FBFA9"/>
+    </marker>
   </defs>
   <rect width="1240" height="430" fill="#0B1220"/>
 <line x1="620" y1="34" x2="620" y2="400" stroke="#2A3648" stroke-width="1" stroke-dasharray="3 5"/>
@@ -45,7 +48,7 @@
   <rect x="300" y="236" width="236" height="58" rx="10" fill="#122A29" stroke="#3FBFA9" stroke-width="1.5"/>
   <text x="418" y="260" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14.5" font-weight="700" fill="#3FBFA9" text-anchor="middle">becomes a rule</text>
   <text x="418" y="278" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="400" fill="#3FBFA9" text-anchor="middle">written down, cited, reversible</text>
-<path d="M300 265 L98 265 L98 192" stroke="#3FBFA9" stroke-width="1.6" fill="none" stroke-dasharray="5 4" marker-end="url(#ab)"/>
+<path d="M300 265 L98 265 L98 192" stroke="#3FBFA9" stroke-width="1.6" fill="none" stroke-dasharray="5 4" marker-end="url(#ag)"/>
   <text x="112" y="248" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="600" fill="#3FBFA9" text-anchor="start">the next case uses it</text>
   <text x="40" y="356" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="400" fill="#93A1B3" text-anchor="start">Nothing is learned from a single opinion.</text>
   <text x="40" y="376" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="400" fill="#93A1B3" text-anchor="start">Agreement is the bar, and every rule says who set it.</text>

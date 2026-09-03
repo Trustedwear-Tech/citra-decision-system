@@ -69,6 +69,10 @@ def head(w: int, h: int, label: str, t: dict) -> str:
             f'markerWidth="7" markerHeight="7" orient="auto-start-reverse">\n'
             f'      <path d="M0,0 L10,5 L0,10 z" fill="{t["brand"]}"/>\n'
             f'    </marker>\n'
+            f'    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" '
+            f'markerWidth="7" markerHeight="7" orient="auto-start-reverse">\n'
+            f'      <path d="M0,0 L10,5 L0,10 z" fill="{t["good"]}"/>\n'
+            f'    </marker>\n'
             f'  </defs>\n'
             f'  <rect width="{w}" height="{h}" fill="{t["bg"]}"/>\n')
 

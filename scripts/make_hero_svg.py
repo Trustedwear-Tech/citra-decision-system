@@ -106,7 +106,7 @@ def hero(t: dict) -> str:
     # rule feeds the next case
     s += (f'<path d="M300 {ay+29} L98 {ay+29} L98 {ry+bh+8}" '
           f'stroke="{t["good"]}" stroke-width="1.6" fill="none" '
-          f'stroke-dasharray="5 4" marker-end="url(#ab)"/>\n')
+          f'stroke-dasharray="5 4" marker-end="url(#ag)"/>\n')
     s += txt(112, ay + 12, "the next case uses it", t, size=12, fill=t["good"], weight="600")
 
     s += txt(40, 356, "Nothing is learned from a single opinion.", t,
