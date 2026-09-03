@@ -58,6 +58,12 @@ records and policy it came from. Your team approves or overrides,
 **and it asks why.** That reason is captured, and the next matching case is
 decided with it.
 
+**The memory is part of the system, not a component you bolt on.** It sits in
+your own database next to the decisions it came from, and it keeps growing
+while your people work — no retraining, no model swap, no batch job. An
+officer's judgement on Tuesday is being applied on Wednesday, and it stays
+current for the same reason it got there: because your team kept deciding.
+
 | | |
 |---|---|
 | **Lending** | approve, decline, or send for verification |
