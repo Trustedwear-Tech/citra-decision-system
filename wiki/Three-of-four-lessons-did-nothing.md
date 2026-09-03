@@ -3,8 +3,17 @@
 
 # Three of four lessons did nothing
 
-*A field note on what happened when we tried to teach an AI what an
-experienced loan officer knows.*
+*A field note on testing whether captured human judgement actually does
+anything — and finding that three quarters of it did not.*
+
+We build an open-source decision system for calls where being confidently
+wrong is expensive: approving a loan, settling a claim, releasing an aircraft
+part for service, energising a substation, clearing a shipment. Anywhere an
+experienced person overrides what the data alone would say.
+
+**Lending is the test domain below, not the product.** It is where we could
+get real judgement from real officers and measure the effect honestly. The
+engine carries no industry logic of its own.
 
 > **The demo is a hypothetical Indian bank**, so figures below are in rupees
 > where they come from the seeded data. Nothing in the platform is tied to
@@ -39,12 +48,12 @@ A model trained on your records learns the patterns *in those records*. That
 is also its ceiling. In a hard case, the fact that decides it is usually not
 in the records at all.
 
-Look at what the system stores. There is a field for whether an income
+Look at what the lender's own system stores. There is a field for whether an income
 document is **present**. There is none for whether it is **true**. No quantity
 of training data fixes that, because the column does not exist — you cannot
 learn a pattern in a variable nobody recorded.
 
-The same applies to the written policy. The credit policy says it applies to
+The same applies to the written policy. The lender's credit policy says it applies to
 all sourcing channels, then prescribes nothing channel-specific. A model that
 reads every policy document perfectly still has nothing telling it to treat
 agent-sourced files differently.
@@ -99,6 +108,17 @@ anyway. Around thirty pass every automated gate — the policy asked for
 documents, never for a phone call. With the judgement on, those thirty get a
 verification call. Twenty-seven clear within a day. Three are fabricated and
 stop before payout.
+
+## What this says about domains other than lending
+
+Nothing in the mechanism is about loans. The shape recurs wherever a rule
+covers the common case and a person covers the rest: an inspector who knows
+which supplier's paperwork to distrust, a controller who knows which route
+files understate turnaround, an adjuster who knows which garage inflates.
+
+In each, the deciding fact is not a column and the procedure does not mention
+it — which is exactly the gap the three failed lessons mapped out, and exactly
+where the fourth worked.
 
 ## What it changed
 
