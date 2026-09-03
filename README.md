@@ -172,6 +172,35 @@ inside the containers.
 
 ---
 
+## What it looks like
+
+Three screens, in the order the work happens. All from the demo the wizard
+seeds, on a machine with nothing on it.
+
+**The apps, built and published.** Four of them, from four sentences.
+
+<p align="center">
+  <img alt="The Decision Apps list after installing the demo: claim triage, collections priority, loan triage and a sales dashboard" src="assets/screens/02-decision-apps.png" width="100%">
+</p>
+
+**A recommendation, with its reasoning and the SOP it cites.** The approver
+checks the argument, not just the answer.
+
+<p align="center">
+  <img alt="A claim triage recommendation showing the agent's proposed action, the reasoning, the policy sections it cites and the documents it checked" src="assets/screens/04-recommendation.png" width="100%">
+</p>
+
+**What it has learned from your people.** Named, attributed, reversible — and
+switchable off.
+
+<p align="center">
+  <img alt="App Memory showing a learned judgement formed from officer corrections, with its scope and the decisions behind it" src="assets/screens/panels/17-app-memory.png" width="100%">
+</p>
+
+→ [More screens](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Install-and-first-run)
+
+---
+
 ## Does it actually work?
 
 We ran nineteen agent-sourced loan applications twice — identical inputs, one

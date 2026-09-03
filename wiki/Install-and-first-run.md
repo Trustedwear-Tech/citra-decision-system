@@ -397,4 +397,102 @@ The model is a commodity input you can swap. Your decision memory stays put.
 
 ---
 
+
+## The screens
+
+Every surface the demo ships with, captured on a freshly seeded install.
+
+**Landing**
+
+<p align="center">
+  <img alt="The landing page before signing in" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/00-landing.png" width="100%">
+</p>
+
+**Home**
+
+<p align="center">
+  <img alt="The home screen after signing in, showing the operations and admin sections" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/01-home.png" width="100%">
+</p>
+
+**Admin section**
+
+<p align="center">
+  <img alt="The admin section of the home screen, full page" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/09-home-admin.png" width="100%">
+</p>
+
+**Dashboards**
+
+<p align="center">
+  <img alt="Live KPI and chart views" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/10-dashboards.png" width="100%">
+</p>
+
+**Operations chat**
+
+<p align="center">
+  <img alt="Governed natural-language questions over operational data" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/11-operations-chat.png" width="100%">
+</p>
+
+**SOP library**
+
+<p align="center">
+  <img alt="The policy corpus recommendations cite" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/12-sop-library.png" width="100%">
+</p>
+
+**Learning batch**
+
+<p align="center">
+  <img alt="Officer feedback folded into memory" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/18-learning-batch.png" width="100%">
+</p>
+
+**Success rate**
+
+<p align="center">
+  <img alt="How often recommendations are accepted" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/19-success-rate.png" width="100%">
+</p>
+
+**Money impact**
+
+<p align="center">
+  <img alt="Value recovered and protected" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/20-money-impact.png" width="100%">
+</p>
+
+**Screening health**
+
+<p align="center">
+  <img alt="Fraud checks and false alarms" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/21-screening-health.png" width="100%">
+</p>
+
+**Automation control**
+
+<p align="center">
+  <img alt="Kill switches: halt runs and writes" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/22-automation.png" width="100%">
+</p>
+
+**Manage users**
+
+<p align="center">
+  <img alt="Organisation membership and roles" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/14-manage-users.png" width="100%">
+</p>
+
+**Departures**
+
+<p align="center">
+  <img alt="Deactivation and handover" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/15-departures.png" width="100%">
+</p>
+
+**Managed resources**
+
+<p align="center">
+  <img alt="Connections and sources IT manages" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/16-resources.png" width="100%">
+</p>
+
+**Login as user**
+
+<p align="center">
+  <img alt="Audited impersonation" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/screens/panels/23-login-as-user.png" width="100%">
+</p>
+
+
+---
+
 When something will not start, see [Troubleshooting](Troubleshooting).

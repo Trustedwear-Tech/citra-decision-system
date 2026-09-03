@@ -8,6 +8,15 @@
 > that: currency, date order and ID checksums come from the country pack,
 > and packs ship for `IN` and `US` today.
 
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/2-loop-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/2-loop-light.svg">
+    <img alt="A case is recommended with citations, a person approves or corrects it, three officers agreeing turns that into a rule, and the next similar case uses it" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/2-loop-light.svg" width="100%">
+  </picture>
+</p>
+
 This is the object the whole system exists to produce, so it is worth being
 precise. It is not a summary, an embedding, or a fine-tune. It is a row in a
 Mongo collection (`smartapp_clauses`), and it has five properties that follow

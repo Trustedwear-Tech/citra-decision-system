@@ -3,6 +3,15 @@
 
 ## Building on it
 
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/4-surfaces-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/4-surfaces-light.svg">
+    <img alt="Runs as an app, embedded in your own UI, or as an API; on demand, prepared ahead of time, or automatically within limits you set" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/4-surfaces-light.svg" width="100%">
+  </picture>
+</p>
+
 One published spec, three ways to consume it -- the surfaces are described
 under *Three surfaces, one intelligence* above; this is the mechanics.
 

@@ -3,6 +3,15 @@
 
 ## How the agent is sandboxed
 
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/3-governed-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/3-governed-light.svg">
+    <img alt="The agent proposes an action, a policy gate bounds it, a person approves before anything is written, and every step is recorded" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/3-governed-light.svg" width="100%">
+  </picture>
+</p>
+
 The builder is an [OpenClaw](https://github.com/openclaw/openclaw) agent, and it
 never runs on your host. Every build session gets its **own container**, spawned
 by `action-sandbox-host` and destroyed when the session ends. OpenClaw's own

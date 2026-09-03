@@ -3,6 +3,15 @@
 
 # Why this exists
 
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/1-why-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/1-why-light.svg">
+    <img alt="Cases arrive; your SOP and data answer most of them; the ones carrying real money are resolved by a person whose judgement is written down nowhere" src="https://raw.githubusercontent.com/Trustedwear-Tech/citra-decision-system/main/assets/story/1-why-light.svg" width="100%">
+  </picture>
+</p>
+
 Every sector has decisions that carry real weight. Whether to energise a
 substation. Whether an aircraft part is fit to fly. Whether to sanction a
 loan, pay a claim, clear a shipment, escalate a transaction, or commit an
