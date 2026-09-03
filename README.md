@@ -152,6 +152,14 @@ People have built claim triage, loan origination, asset-quality review,
 grievance routing and operations dashboards this way. The shape of the work
 does not change — only the ontology does.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/story/build-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="assets/story/build-light.gif">
+    <img alt="The build path, animated: your database, the ontology that describes it, a sentence of plain English, the builder drafting against the catalogue, and one published spec served as a Decision App, an API or an embedded card" src="assets/story/build-light.gif" width="100%">
+  </picture>
+</p>
+
 ### Your data, described once
 
 The system needs to know what your tables *mean* — which one records
