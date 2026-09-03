@@ -57,92 +57,12 @@ reference), `source-mcp-template/registry_models.py` (the schema itself).
 
 ### 2. Governed writes -- why the AI cannot go off-script
 
-This is the part people most want to understand, so here it is in full.
+Moved to its own page, with the sandbox it belongs beside:
+**[Governance and the sandbox](Governance-and-the-sandbox)**.
 
-**The AI never writes SQL against your systems.** Not "we ask it not to" --
-there is no field on the request where a statement could travel.
-
-What you declare in the ontology is a **write action**: a named, human-authored
-operation on one table. Its heart is a fixed parameterized statement you wrote
-yourself. For example:
-
-```json
-{
-  "id": "record_credit_decision",
-  "verb": "update",
-  "sql_template": "UPDATE loan_applications SET status=:status, decision_reason=:decision_reason, decided_by=:decided_by, decided_at=:decided_at WHERE application_id=:application_id",
-  "key_fields": ["application_id"],
-  "roles_allowed_write": ["dept_admin", "org_admin", "super_admin"],
-  "input_schema": {
-    "type": "object",
-    "required": ["application_id", "status"],
-    "properties": {
-      "status":       { "type": "string", "description": "approved | rejected | under_review." },
-      "decided_by":   { "type": "string", "x-citra-fill": "actor" }
-    }
-  }
-}
-```
-
-Read what that guarantees. **The statement only `SET`s four columns, so those
-are the only four columns any AI, any officer, or any API caller can ever
-change through this action.** Not because something checks a per-column
-"updatable" flag -- there is no such flag -- but because the statement is
-fixed and the model never gets to write one. To make a fifth column writable,
-a human edits the ontology and the change goes through review like any other
-code.
-
-What the model actually produces is not SQL but a small structured object:
-
-```
-{ dataset_id: "loan_origination.loan_applications",   <- chosen from a fixed list
-  action_id:  "record_credit_decision",               <- chosen from a fixed list
-  payload:    { application_id: "...", status: "rejected", decision_reason: "..." } }
-```
-
-Both ids come from an enumerated list bound to the app, so the model is
-picking from a menu, not composing a command. That request goes to the MCP,
-which independently re-checks, in order:
-
-1. the caller's service credentials and user token are valid;
-2. the action is actually registered on that dataset (unknown -> rejected);
-3. the caller's **role** is allowed to write (default: department admin and
-   above -- an empty allow-list does not mean "everyone");
-4. the payload carries every required field, and the key fields are present;
-5. then, and only then, the values are **bound as parameters** to your stored
-   statement. Nothing is ever string-concatenated into SQL.
-
-Two fields are stamped by the server and cannot be forged by the payload:
-`x-citra-fill: actor` binds the verified identity from the token, and
-`now` binds the server clock. So "who decided this, and when" is not
-something the AI gets to assert.
-
-**And a human still approves.** During a case the agent's proposed writes are
-only *staged* -- collected as `planned_writes`, shown to the officer with the
-exact values. Approval replays precisely those staged writes, with no second
-model round-trip, so what was approved is what commits. If the plan changed
-between display and approval, a hash check rejects it. Officers can edit
-values before approving, but only fields the app marks editable, and an edited
-payload is re-validated before it commits.
-
-Two more guarantees worth stating:
-
-- **Chat is structurally read-only.** The write tool is blocked at dispatch in
-  the chat surface unconditionally -- not by prompt, by code.
-- **Read before write.** An agent may not stage a write about a record it never
-  actually read. This is enforced in the human-approval path; on the fully
-  unattended path it currently ships in observe-and-log mode, so treat that
-  one as reporting rather than blocking.
-
-Being straight about the trust boundary: the platform does not parse or
-sanity-check your `sql_template`. It executes the statement you registered. The
-security property is that *only a human can author or change one*, and it is
-reviewed like code -- not that the system validates the SQL you wrote. Also
-note that on the SQL path an extra, undeclared field in the payload is simply
-ignored rather than rejected; it cannot reach the database, because the
-statement does not mention it.
-
-Deep dive: `docs/write-actions.md`.
+In short: the AI never writes SQL against your systems, every write is
+schema-validated against the ontology before it runs, and a person approves
+it.
 
 ### 3. The data catalogue -- the menu the builder orders from
 

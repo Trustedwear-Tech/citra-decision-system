@@ -75,6 +75,16 @@ current for the same reason it got there: because your team kept deciding.
 Anywhere being confidently wrong is expensive, and an experienced person is
 the last line.
 
+**Bounded by an ontology, and auditable end to end.** What the system may read,
+may build, and may write back is declared up front in one reviewable file per
+deployment — not inferred, and not learned. The agent never writes to your
+systems on its own: every write is schema-validated and a person approves it,
+with autonomy opt-in later and only where you choose. And every case is
+recorded — the evidence assembled, the recommendation, the passages it cited,
+who decided, what they overrode, and why. That record is in your own database,
+in a schema you can read, which is what makes it something an auditor can be
+shown rather than a claim about a model.
+
 Two things come out of it: the **losses avoided** by getting the hard calls
 right, and the **hours saved** by not re-analysing the easy ones. Most tools
 chase the second. This is built for the first.
