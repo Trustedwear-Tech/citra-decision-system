@@ -215,8 +215,14 @@ the correct behaviour is to do nothing.
 | **p = 0.0005** | odds of that being luck: about 1 in 2,000 |
 
 It fires where it belongs, stays silent where it does not, and the effect is
-not the underlying model. It also found the limits — a lesson that merely
-restates the SOP changes nothing, because the SOP already fires.
+not the underlying model.
+
+**Three of the four judgements we seeded did nothing at all.** Switched off,
+the system reached exactly the same conclusion — because all three restated
+something the written policy already said, and the system can read the policy.
+We publish that because it is what makes the fourth believable, and because it
+draws the line: this is not a rulebook engine. It is the layer for what the
+rulebook never covered.
 
 → [The full experiment, including the null result](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-experiment)
 

@@ -135,3 +135,5 @@ loss-given-default -- a real book has a distribution for both.
 ---
 
 The argument this measures — why a fine-tune does not close it, and why the judgement is worth capturing — is on [Why this exists](Why-this-exists).
+
+A narrative version of the same run, written for someone meeting this cold: [Three of four lessons did nothing](Three-of-four-lessons-did-nothing).
