@@ -24,7 +24,7 @@ short version. This wiki is the detail.
 | | |
 |---|---|
 | [The learning loop](The-learning-loop) | What a learned judgement is, how one is formed, why three officers |
-| [The decision ledger](The-decision-ledger) | What is recorded on every decision |
+| [The decision ledger](The-learning-loop#what-the-ledger-records) | What is recorded on every decision |
 | [Architecture](Architecture) | Services, data flow, what talks to what |
 | [Governance and the sandbox](Governance-and-the-sandbox) | Policy gates, approvals, isolation, what the agent may never do |
 

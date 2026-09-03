@@ -1,7 +1,10 @@
 <!-- Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
      SPDX-License-Identifier: Apache-2.0 -->
 
-## Troubleshooting
+# Troubleshooting
+
+Symptoms seen during a first install, and what each one usually is.
+For what a healthy stack looks like, see [Operations](Operations).
 
 | Symptom | Fix |
 |---------|-----|

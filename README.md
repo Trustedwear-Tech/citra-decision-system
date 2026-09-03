@@ -98,7 +98,7 @@ routine ones. Most tools chase the second. This is built for the first, and
 gets the second on the way.
 
 → [How the learning loop works](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-learning-loop) ·
-[What the decision ledger records](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-decision-ledger)
+[What the decision ledger records](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-learning-loop#what-the-ledger-records)
 
 ---
 
@@ -106,14 +106,16 @@ gets the second on the way.
 
 Say what you want in plain English. A builder agent drafts the spec against
 your data catalogue, asks about what it cannot infer, and publishes when you
-accept. One published spec, four ways to use it:
+accept. One published spec, three ways to use it:
 
 | | |
 |---|---|
 | **Decision App** | A working case queue: case pages, live dashboards, a plain-English copilot. |
 | **API** | Every recommendation, score, reason and the learning loop itself, over REST. Call it from a system you already run. |
-| **Embedded UI** | Drop the recommendation and its reasoning into your existing LOS, CRM or core screen. Your team never changes tools. |
-| **Dashboard** | Live operational views over the same governed data. |
+| **Embedded UI** | Drop the recommendation and its reasoning into your existing screen — LOS, CRM, core system. Your team never changes tools. |
+
+A dashboard is not a fourth thing: it is an app whose primary page is a
+dashboard rather than a case queue.
 
 People have built claim triage, loan origination, asset-quality review,
 grievance routing and operations dashboards this way. The shape of the work

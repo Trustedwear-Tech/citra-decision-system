@@ -55,24 +55,20 @@
   <text x="676" y="132" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="400" fill="#E6EDF6" text-anchor="start">“Triage motor claims: flag anything over $50,000</text>
   <text x="676" y="150" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="400" fill="#E6EDF6" text-anchor="start">  or a repeat claimant, and say why.”</text>
 <path d="M920 162 L920 178" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
-<path d="M721 178 L1116 178" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
-<path d="M721 178 L721 188" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
-<path d="M838 178 L838 188" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
-<path d="M968 178 L968 188" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
-<path d="M1116 178 L1116 188" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
-  <rect x="660" y="196" width="122" height="30" rx="15" fill="#16233A" stroke="#5B8DEF" stroke-width="1.2"/>
-  <text x="721.0" y="215.5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="600" fill="#2563EB" text-anchor="middle">Decision App</text>
-  <rect x="792" y="196" width="92" height="30" rx="15" fill="#16233A" stroke="#5B8DEF" stroke-width="1.2"/>
-  <text x="838.0" y="215.5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="600" fill="#2563EB" text-anchor="middle">API</text>
-  <rect x="894" y="196" width="148" height="30" rx="15" fill="#16233A" stroke="#5B8DEF" stroke-width="1.2"/>
-  <text x="968.0" y="215.5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="600" fill="#2563EB" text-anchor="middle">Embedded UI</text>
-  <rect x="1052" y="196" width="128" height="30" rx="15" fill="#16233A" stroke="#5B8DEF" stroke-width="1.2"/>
-  <text x="1116.0" y="215.5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="600" fill="#2563EB" text-anchor="middle">Dashboard</text>
-<path d="M721 226 L721 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
-<path d="M838 226 L838 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
-<path d="M968 226 L968 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
-<path d="M1116 226 L1116 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
-<path d="M721 242 L1116 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
+<path d="M746 178 L1094 178" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
+<path d="M746 178 L746 188" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
+<path d="M920 178 L920 188" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
+<path d="M1094 178 L1094 188" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
+  <rect x="674" y="196" width="144" height="30" rx="15" fill="#16233A" stroke="#5B8DEF" stroke-width="1.2"/>
+  <text x="746.0" y="215.5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="600" fill="#2563EB" text-anchor="middle">Decision App</text>
+  <rect x="874" y="196" width="92" height="30" rx="15" fill="#16233A" stroke="#5B8DEF" stroke-width="1.2"/>
+  <text x="920.0" y="215.5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="600" fill="#2563EB" text-anchor="middle">API</text>
+  <rect x="1018" y="196" width="152" height="30" rx="15" fill="#16233A" stroke="#5B8DEF" stroke-width="1.2"/>
+  <text x="1094.0" y="215.5" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="600" fill="#2563EB" text-anchor="middle">Embedded UI</text>
+<path d="M746 226 L746 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
+<path d="M920 226 L920 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
+<path d="M1094 226 L1094 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
+<path d="M746 242 L1094 242" stroke="#5B8DEF" stroke-width="1.6" fill="none"/>
 <path d="M920 242 L920 256" stroke="#5B8DEF" stroke-width="1.6" fill="none" marker-end="url(#ab)"/>
   <rect x="660" y="258" width="520" height="74" rx="10" fill="#16233A" stroke="#5B8DEF" stroke-width="1.5"/>
   <text x="920" y="283" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,'Helvetica Neue',Arial,sans-serif" font-size="14.5" font-weight="700" fill="#2563EB" text-anchor="middle">your database, described once</text>

@@ -3,6 +3,11 @@
 
 ## What we measured
 
+> **The demo is a hypothetical Indian bank**, so figures below come from that
+> seeded data. Lending is the test domain, not the product — the engine
+> carries no industry logic of its own.
+
+
 **Can a system learn something from a person that exists in no document -- and
 then apply it to exactly the right cases?**
 

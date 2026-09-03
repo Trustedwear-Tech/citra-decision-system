@@ -105,3 +105,11 @@ the clause once you know it exists.
    it, and a corrected pattern that repeats across officers hardens into a
    named, attributed, reversible learned judgement -- not a silent weight
    update.
+
+## What the ledger records
+
+For every case: the case itself, the evidence assembled for it, the
+recommendation and its citations, the human decision, any override, **the
+why**, and the outcome once it is known. It lives in your database, in a
+schema you can read, and it is what makes the next recommendation better --
+and what an auditor can be shown.

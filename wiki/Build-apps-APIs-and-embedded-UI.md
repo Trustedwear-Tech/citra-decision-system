@@ -12,8 +12,12 @@
   </picture>
 </p>
 
-One published spec, three ways to consume it -- the surfaces are described
-under *Three surfaces, one intelligence* above; this is the mechanics.
+One published spec, three ways to consume it. The surfaces are summarised
+at the [bottom of this page](#three-surfaces-one-intelligence); this part is
+the mechanics.
+
+A dashboard is not a fourth surface — it is an app whose primary page is a
+dashboard rather than a case queue.
 
 ### 1. Build a Decision App
 
