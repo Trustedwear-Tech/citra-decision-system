@@ -6,7 +6,15 @@
 # use this file except in compliance with the License. You may obtain a copy of
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
-"""An animated GIF of the learning loop, for the README.
+"""An animated GIF of the learning loop.
+
+NOT USED IN THE README, DELIBERATELY. The hero diagram at the top of the page
+already carries this loop as its left panel, beat for beat and in the same
+words, so putting the animation in the section below it showed a reader the
+same picture twice, two screens apart. The static hero stays; this is kept for
+places the hero cannot go — a Reddit or LinkedIn post, a slide, an email —
+where a single self-contained animation does the job the two-panel hero does
+on GitHub.
 
 WHY A GIF AND NOT AN ANIMATED SVG
     An SVG with CSS or SMIL animation is smaller and sharper, and it does not
