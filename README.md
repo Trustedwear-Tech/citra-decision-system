@@ -120,6 +120,14 @@ you can read, cite, and switch off.
 
 The next matching case is recommended against it.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/story/loop-dark.gif">
+    <source media="(prefers-color-scheme: light)" srcset="assets/story/loop-light.gif">
+    <img alt="The loop, animated: a case arrives, Citra recommends with the SOP passage it cites, an officer overrides and it asks why, three officers agree, it becomes a named and reversible rule, and the next case is decided with it" src="assets/story/loop-light.gif" width="100%">
+  </picture>
+</p>
+
 
 → [How the learning loop works](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-learning-loop) ·
 [What the decision ledger records](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-learning-loop#what-the-ledger-records)

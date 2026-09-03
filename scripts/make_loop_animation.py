@@ -8,13 +8,15 @@
 
 """An animated GIF of the learning loop.
 
-NOT USED IN THE README, DELIBERATELY. The hero diagram at the top of the page
-already carries this loop as its left panel, beat for beat and in the same
-words, so putting the animation in the section below it showed a reader the
-same picture twice, two screens apart. The static hero stays; this is kept for
-places the hero cannot go — a Reddit or LinkedIn post, a slide, an email —
-where a single self-contained animation does the job the two-panel hero does
-on GitHub.
+DELIBERATELY OVERLAPS THE HERO. The hero diagram at the top of the page
+carries this same loop as its left panel, beat for beat. That repetition is
+the point rather than an oversight: the hero is a glance, and this is the
+mechanism unfolding a step at a time, in the section that explains it. A
+reader who skimmed the top meets it again where they are actually reading.
+
+It also travels where the hero cannot — a Reddit or LinkedIn post, a slide, an
+email — because it is one self-contained image rather than half of a
+two-panel layout.
 
 WHY A GIF AND NOT AN ANIMATED SVG
     An SVG with CSS or SMIL animation is smaller and sharper, and it does not
