@@ -43,9 +43,37 @@ data never leaves.*
   </picture>
 </p>
 
-**Build the decision app, the API or the embedded card by describing it in
-plain English — then watch it get better every time one of your people
-corrects it.**
+**A complete decision system for the calls that carry real money — and it
+learns the judgement of the people who make them.**
+
+Describe the operation in plain English and it builds you a working enterprise
+application over your own data: a case queue your team works in, an API your
+existing systems call, or a card embedded in the screen they already use.
+Point it at a database you run, or stand a new one up and plug it in.
+
+Then it goes to work. Every case arrives assembled, analysed and scored, with
+a recommended action and the reasoning behind it. The analysis a person would
+otherwise do from scratch on every file is already done, and cited back to the
+records and policy it came from. Your team approves or overrides,
+**and it asks why.** That reason is captured, and the next matching case is
+decided with it.
+
+| | |
+|---|---|
+| **Lending** | approve, decline, or send for verification |
+| **Insurance** | settle a claim, or investigate it |
+| **Energy & utilities** | clear a substation for service, approve an equipment change |
+| **Aviation & industry** | release a part, sign off an inspection |
+| **Public services** | route a grievance, prioritise a case |
+
+Anywhere being confidently wrong is expensive, and an experienced person is
+the last line.
+
+Two things come out of it: the **losses avoided** by getting the hard calls
+right, and the **hours saved** by not re-analysing the easy ones. Most tools
+chase the second. This is built for the first.
+
+---
 
 Your SOPs and your data already answer most cases. The ones carrying real
 money are settled by an experienced person whose reasoning is written down
@@ -91,11 +119,6 @@ recommendation → officer corrects → three officers agree → a written rule
                                                               ↓
                                           the next case is decided with it
 ```
-
-Two things come out of that loop, worth separating: the **money** saved by
-getting high-stakes calls right, and the **hours** saved by not re-deciding
-routine ones. Most tools chase the second. This is built for the first, and
-gets the second on the way.
 
 → [How the learning loop works](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-learning-loop) ·
 [What the decision ledger records](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-learning-loop#what-the-ledger-records)
