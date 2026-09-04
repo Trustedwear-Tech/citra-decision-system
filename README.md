@@ -329,19 +329,25 @@ rulebook never covered.
 
 ## Community edition and Citra Enterprise
 
-**The core is fully open source and production-capable.** The builder, the
-runtime, the governed ontology and the decision ledger are all here, all
-Apache-2.0. You can run real operations on this edition, on your own
-infrastructure, forever, without ever talking to us.
+**The core is a complete, standalone production deployment.** Not a demo tier
+and not a crippled one: the builder, the runtime, the governed ontology, the
+decision ledger, the memory curation UI and the automation controls are all
+here, all Apache-2.0. You can see what the system has learned, retire a
+judgement, exclude a precedent, read loop health, and start or stop every
+automated job — because a decision system you cannot inspect or switch off
+is not one anybody should run. Deploy it on your own infrastructure and
+operate it forever without ever talking to us.
 
-**Citra Enterprise** is the same core plus the things an institution needs
-once a decision system is load-bearing — scale, identity, assurance,
-continuity, and managed judgement memory:
+**Citra Enterprise** is the same core plus what an institution needs once that
+deployment is load-bearing and there is more than one of them — scale,
+identity, assurance, continuity, and judgement memory managed rather than
+curated by hand:
 
 | | Community (Apache-2.0) | Citra Enterprise |
 |---|---|---|
 | **Decision engine, builder, ontology, ledger** | Everything | The same core |
-| **Memory management** | It works — you operate it | Memory health console, drift detection, automated clause hygiene, retention and unlearning at scale, promotion tuning |
+| **Memory** | Full curation UI — judgements, precedents, loop health, retire and quarantine | Adds fleet-wide health, drift detection, automated clause hygiene, retention and unlearning at scale, promotion tuning |
+| **Automation** | Full control — schedules, auto-run and auto-recommend jobs, kill switches | Adds a fleet console across every deployment you run |
 | **Scale** | Single-node Compose | HA multi-node, sharded vector tier, horizontal workers, capacity planning |
 | **Identity** | Local auth | SAML/OIDC SSO, SCIM provisioning, fine-grained RBAC |
 | **Security** | Standard | Encryption at rest with your KMS/HSM, air-gapped install, signed supply chain |

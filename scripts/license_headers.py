@@ -152,6 +152,61 @@ OUR_SPDX_RE = re.compile(r"SPDX-License-Identifier:\s*(Apache-2\.0|BUSL-1\.1|Lic
 # the end of a header and --rewrite mangled files instead of no-oping.
 HEADER_LAST_LINE = "http://www.apache.org/licenses/LICENSE-2.0"
 
+# --------------------------------------------------------------------------
+# The inverse guard: nothing here may declare a licence that is not ours.
+#
+# The check above answers "does every file carry OUR header". It cannot answer
+# the question that matters once a proprietary edition exists: did a file from
+# it land in this tree. Such a file is not MISSING a header -- it has one,
+# correct and complete, for a licence we do not publish under. The check above
+# passes it without comment, because it is only ever asked whether a header is
+# absent.
+#
+# So: fail on any SPDX identifier that is not Apache-2.0, appearing where a
+# header lives.
+#
+# WHY ONLY THE FIRST FEW LINES. A licence header is at the top of a file. Text
+# further down is discussion, not a declaration -- docs/license-stamping-plan.md
+# quotes the retired proprietary and BUSL identifiers while explaining them, and
+# test_license_headers.py builds legacy headers as fixtures to prove they get
+# replaced. Both are correct; neither is a leak. Scanning whole files would fail
+# on all six and force an allowlist, and an allowlist is the thing that
+# eventually gets a real violation added to it.
+#
+# WHY THIS ONE IGNORES EXCLUDE_PATTERNS. Those decide what gets STAMPED: a build
+# output or a vendored snapshot is not ours to sign. But an enterprise file
+# dropped under runtime-reference/ is precisely the case this exists to catch,
+# so this scan reads every tracked file.
+FOREIGN_SPDX_RE = re.compile(
+    r"SPDX-License-Identifier:\s*(?!Apache-2\.0\b)([A-Za-z0-9.\-+]+)"
+)
+FOREIGN_SCAN_LINES = 12
+
+
+def foreign_licences() -> list[tuple[str, int, str]]:
+    """Every tracked file declaring a non-Apache licence in its header.
+
+    Returns (path, line number, identifier).
+    """
+    hits = []
+    for rel in tracked_files():
+        path = REPO_ROOT / rel
+        if not path.is_file():
+            continue
+        try:
+            with path.open("r", encoding="utf-8") as fh:
+                for n, line in enumerate(fh, 1):
+                    if n > FOREIGN_SCAN_LINES:
+                        break
+                    m = FOREIGN_SPDX_RE.search(line)
+                    if m:
+                        hits.append((rel, n, m.group(1)))
+        except (UnicodeDecodeError, OSError):
+            # Binary or unreadable. A licence header is text; if it will not
+            # decode there is no header here to find.
+            continue
+    return hits
+
 
 def header_span(lines: list[str], style) -> tuple[int, int] | None:
     """Locate an existing Citra header, returning [start, end) line indices.
@@ -417,7 +472,19 @@ def main() -> int:
             print(f"\n{len(missing)} of {scope} are missing a licence header.")
             print("Run: python scripts/license_headers.py")
             return 1
-        print(f"All {scope} carry a licence header.")
+        foreign = foreign_licences()
+        if foreign:
+            for rel, line, ident in foreign:
+                print(f"::error file={rel},line={line}::declares "
+                      f"SPDX-License-Identifier: {ident} - this repository "
+                      f"publishes Apache-2.0 only")
+            print()
+            print(f"{len(foreign)} file(s) declare a licence that is not "
+                  f"Apache-2.0. If this is Citra Enterprise code, it does "
+                  f"not belong in the open repository.")
+            return 1
+        print(f"All {scope} carry a licence header, and none declares a "
+              f"licence other than Apache-2.0.")
         return 0
 
     print(f"Stamped {len(missing)} file(s); {scope}.")

@@ -141,6 +141,38 @@ jobs:
           [ "$bad" = 0 ] && echo "All shebang scripts are executable."
           exit "$bad"
 
+  tree-hygiene:
+    name: Tree Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No build output may be tracked
+        run: |
+          # Citra-UI/dist is a compiled web bundle. Dockerfile.web produces it
+          # with `npx expo export --platform web` inside the build stage, and it
+          # is gitignored in three places, so today nothing here is tracked.
+          #
+          # This exists for the day that changes. A committed bundle is minified
+          # JavaScript for whatever happened to be in the tree when someone ran
+          # the build -- so once a proprietary edition exists, it is a way for
+          # enterprise code to reach the open repository without a single source
+          # file being added to it. Nothing else would notice: the licence-header
+          # check reads headers, and a bundle has none.
+          #
+          # A .gitignore does not prevent this. `git add -f` walks straight past
+          # it, and so does an editor's "stage all". This does not.
+          bad=$(git ls-files | grep -E '(^|/)(dist|build|\.next|\.expo)/' || true)
+          if [ -n "$bad" ]; then
+            echo "$bad" | while read -r path; do
+              echo "::error file=$path::build output must not be tracked - it is gitignored and produced at image-build time"
+            done
+            echo
+            echo "Build output is tracked. Remove it with:"
+            echo "  git rm -r --cached <path>"
+            exit 1
+          fi
+          echo "No build output is tracked."
+
   # ---------------------------------------------------------------------------
   # The images users actually build
   # ---------------------------------------------------------------------------
