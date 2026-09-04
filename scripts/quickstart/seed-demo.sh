@@ -62,7 +62,7 @@ TENANT_DIR="demo-data/tenants/$TENANT"
 # setup.sh hit exactly that on MONGODB_USER.
 getenv() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
 JWT_SECRET="$(getenv JWT_SECRET)"
-ADMIN_EMAIL="$(getenv ADMIN_EMAIL)"; ADMIN_EMAIL="${ADMIN_EMAIL:-admin@citra-ai.com}"
+ADMIN_EMAIL="$(getenv ADMIN_EMAIL)"; ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
 [ -n "$JWT_SECRET" ] || { echo "JWT_SECRET missing from .env" >&2; exit 1; }
 
 # Read the Postgres port through getenv, NOT as a shell variable. ${VAR:?...}

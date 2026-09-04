@@ -38,7 +38,10 @@ esac
 # in .env.example today; the first one that does not would fail silently.
 # setup.sh hit exactly that on MONGODB_USER.
 getenv() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
-ADMIN_EMAIL="$(getenv ADMIN_EMAIL)";       ADMIN_EMAIL="${ADMIN_EMAIL:-admin@citra-ai.com}"
+# Falls back to a reserved placeholder, never to the vendor's domain -- see
+# the note in wizard.sh. Reached only on a non-interactive install where
+# ADMIN_EMAIL was left unset.
+ADMIN_EMAIL="$(getenv ADMIN_EMAIL)";       ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
 ADMIN_PASSWORD="$(getenv ADMIN_PASSWORD)"; ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe!123}"
 
 if [ -z "$(getenv LLM_API_KEY)" ]; then
@@ -116,6 +119,17 @@ echo "-> creating super-admin $ADMIN_EMAIL"
 ADMIN_ORG="$DEMO"
 [ "$ADMIN_ORG" = "none" ] && ADMIN_ORG="$(getenv ORG_ID)"
 ADMIN_ORG="${ADMIN_ORG:-citra-ai}"
+
+# Seeding a demo puts the super-admin in the DEMO org, not the ORG_ID the
+# operator was asked for -- deliberately, per the note above, so the seeded
+# apps are visible on first sign-in. It was not SAID anywhere, so someone who
+# typed their own org and accepted the demo found their admin somewhere else
+# with no explanation. The banner below now reports it.
+ORG_NOTE=""
+_WANTED_ORG="$(getenv ORG_ID)"
+if [ -n "$_WANTED_ORG" ] && [ "$_WANTED_ORG" != "$ADMIN_ORG" ]; then
+  ORG_NOTE="   (the demo org; your ORG_ID $_WANTED_ORG is unused until you seed it)"
+fi
 $COMPOSE exec -T citra-user-service \
   node src/scripts/create-admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD" "Citra Admin" \
        --role=super_admin --org="$ADMIN_ORG"
@@ -137,6 +151,7 @@ Citra Decision System is running.
 
    Web UI        http://localhost:8081
    Sign in       ${ADMIN_EMAIL}  /  ${ADMIN_PASSWORD}
+   Admin org     ${ADMIN_ORG}${ORG_NOTE}
    ${DEMO_NOTE}
 
    Your own data   docs/change-the-demo.md   (edit sources.json, restart, done)

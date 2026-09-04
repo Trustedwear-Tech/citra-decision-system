@@ -10,25 +10,42 @@
  * Deployment defaults — what enterprise-context fields every user gets
  * when their slot was previously empty.
  *
- * Citra is sold as a platform: the deployment's home org is `citra-ai`
- * (set via process.env.ORG_ID) and there is exactly ONE dept for all
- * Citra employees — `citra-software`. Demo tenants (acme-cement, etc.)
- * have their own orgs + their own depts, seeded via demo-data scripts;
- * those users are NEVER created via this auth-defaults path because
- * they can't log in directly (impersonation-only).
+ * A deployment has a home org, set via process.env.ORG_ID, and anyone who
+ * signs in through the UI belongs to it. Demo tenants have their own orgs
+ * and depts seeded via demo-data scripts; those users are NEVER created
+ * through this path because they cannot log in directly
+ * (impersonation-only).
  *
- * Anyone who logs in via the UI is therefore a Citra user and gets:
- *   org_id      = ORG_ID env (citra-ai)
- *   dept_ids    = [citra-software]
+ * Anyone who logs in via the UI therefore gets:
+ *   org_id      = ORG_ID env
+ *   dept_ids    = [DEFAULT_DEPT_ID env]  — only when that is set
  *   entity_type = company
+ *
+ * DEFAULT_DEPT_ID USED TO BE THE HARDCODED STRING 'citra-software', which is
+ * the name of a department in OUR org. Every self-hosted install therefore
+ * filed its own users into a department it had never created and did not own:
+ * on a fresh clone the super-admin came out as org_admin of one org while
+ * being a member of a department belonging to another. Dept-scoped reads then
+ * match nothing, and the operator has no way to see why.
+ *
+ * It is now read from the environment, and when it is unset NO department is
+ * assigned. A user with no department is a state the platform already handles;
+ * a user in a department that does not exist is not. Set DEFAULT_DEPT_ID in
+ * .env to restore the old behaviour for a deployment that really does have
+ * one home department.
  *
  * The functions below are idempotent: they only set a field when it's
  * currently empty. Demo personas seeded with explicit org_id/dept_ids
  * are left untouched.
  */
 
-const DEFAULT_DEPT_ID = 'citra-software';
 const DEFAULT_ENTITY_TYPE = 'company';
+
+// null when unset — see the note above on why we assign nothing rather
+// than inventing a department the deployment does not have.
+function defaultDeptId() {
+  return (process.env.DEFAULT_DEPT_ID || '').trim() || null;
+}
 
 function deploymentOrgId() {
   return (process.env.ORG_ID || '').trim() || null;
@@ -49,9 +66,10 @@ function applyToUserData(userData, existing, isNew) {
   if (isNew || !existing || !existing.org_id) {
     userData.org_id = orgId;
   }
+  const deptId = defaultDeptId();
   const hasDept = Array.isArray(existing?.dept_ids) && existing.dept_ids.length > 0;
-  if (isNew || !hasDept) {
-    userData.dept_ids = [DEFAULT_DEPT_ID];
+  if (deptId && (isNew || !hasDept)) {
+    userData.dept_ids = [deptId];
   }
   if (isNew || !existing?.entity_type || existing.entity_type === 'general') {
     userData.entity_type = DEFAULT_ENTITY_TYPE;
@@ -74,8 +92,9 @@ function applyToUserDoc(user) {
     user.org_id = orgId;
     changed = true;
   }
-  if (!Array.isArray(user.dept_ids) || user.dept_ids.length === 0) {
-    user.dept_ids = [DEFAULT_DEPT_ID];
+  const deptId = defaultDeptId();
+  if (deptId && (!Array.isArray(user.dept_ids) || user.dept_ids.length === 0)) {
+    user.dept_ids = [deptId];
     changed = true;
   }
   if (!user.entity_type || user.entity_type === 'general') {
@@ -86,7 +105,7 @@ function applyToUserDoc(user) {
 }
 
 module.exports = {
-  DEFAULT_DEPT_ID,
+  defaultDeptId,
   DEFAULT_ENTITY_TYPE,
   deploymentOrgId,
   applyToUserData,

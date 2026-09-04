@@ -160,7 +160,17 @@ hr; echo "$(b "Step 4/4 - super-admin")"
 echo "The first user. Created as an admin OF the organisation below, which is"
 echo "what makes the apps, sources and queues in it visible on sign-in."
 echo
-cur_email="$(getkv ADMIN_EMAIL)"; cur_email="${cur_email:-admin@citra-ai.com}"
+# Default the admin to the operator's own org, not ours. This used to offer
+# admin@citra-ai.com, so anyone who pressed Enter ran their deployment on an
+# account branded with the vendor's domain -- and, since ORG_ID is asked for
+# a few lines below, on an address that had nothing to do with the org they
+# just named. example.com is reserved by RFC 2606, so the fallback can never
+# collide with a real address.
+cur_email="$(getkv ADMIN_EMAIL)"
+if [ -z "$cur_email" ]; then
+  _org="$(getkv ORG_ID)"
+  if [ -n "$_org" ]; then cur_email="admin@${_org}.local"; else cur_email="admin@example.com"; fi
+fi
 adm_email="$(ask "Super-admin email" "$cur_email")"; setkv ADMIN_EMAIL "$adm_email"
 
 # ORG_ID is what start.sh passes to create-admin.js as --org. Leaving it at the
