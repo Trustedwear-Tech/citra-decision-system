@@ -20,6 +20,37 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 ENV_FILE="$REPO_ROOT/.env"
+# Everything that scrolls past is also written to a file. A first run is 20-40
+# minutes of build output; when it fails at minute 30 the useful part has left
+# the terminal's scrollback, and the operator is asked to paste something
+# nobody can get back. Placed AFTER argument parsing so `--help` does not
+# create a transcript, and before everything else so it captures all of it.
+#
+# CITRA_SETUP_LOG is exported, so setup.sh and start.sh called from here write
+# into the SAME transcript rather than opening their own -- and still get one
+# of their own when run directly.
+#
+# chmod is attempted and is a NO-OP on Windows, where this is most often run --
+# the file lands 644 whatever we ask for. So the password is not written at
+# all rather than written and hopefully protected: fd 3 is opened on the real
+# terminal BEFORE stdout is teed, and secret_line() prints there only.
+TTY_FD=""
+if [ -z "${CITRA_SETUP_LOG:-}" ]; then
+  mkdir -p "$REPO_ROOT/logs"
+  CITRA_SETUP_LOG="$REPO_ROOT/logs/setup-$(date +%Y%m%d-%H%M%S).log"
+  : > "$CITRA_SETUP_LOG"
+  chmod 600 "$CITRA_SETUP_LOG" 2>/dev/null || true
+  export CITRA_SETUP_LOG
+  exec 3>&1
+  TTY_FD=3
+  exec > >(tee -a "$CITRA_SETUP_LOG") 2>&1
+  echo "Transcript: $CITRA_SETUP_LOG"
+fi
+# On screen, never in the transcript. A child script inherits an already-teed
+# stdout and no fd 3, so it falls back -- only the wizard prints secrets.
+secret_line() {
+  if [ -n "$TTY_FD" ]; then printf '%s\n' "$*" >&3; else printf '%s\n' "$*"; fi
+}
 
 setup_usage() {
   cat >&2 <<'USAGE'

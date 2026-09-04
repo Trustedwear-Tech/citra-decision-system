@@ -60,6 +60,38 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+# Everything that scrolls past is also written to a file. A first run is 20-40
+# minutes of build output; when it fails at minute 30 the useful part has left
+# the terminal's scrollback, and the operator is asked to paste something
+# nobody can get back. Placed AFTER argument parsing so `--help` does not
+# create a transcript, and before everything else so it captures all of it.
+#
+# CITRA_SETUP_LOG is exported, so setup.sh and start.sh called from here write
+# into the SAME transcript rather than opening their own -- and still get one
+# of their own when run directly.
+#
+# chmod is attempted and is a NO-OP on Windows, where this is most often run --
+# the file lands 644 whatever we ask for. So the password is not written at
+# all rather than written and hopefully protected: fd 3 is opened on the real
+# terminal BEFORE stdout is teed, and secret_line() prints there only.
+TTY_FD=""
+if [ -z "${CITRA_SETUP_LOG:-}" ]; then
+  mkdir -p "$REPO_ROOT/logs"
+  CITRA_SETUP_LOG="$REPO_ROOT/logs/wizard-$(date +%Y%m%d-%H%M%S).log"
+  : > "$CITRA_SETUP_LOG"
+  chmod 600 "$CITRA_SETUP_LOG" 2>/dev/null || true
+  export CITRA_SETUP_LOG
+  exec 3>&1
+  TTY_FD=3
+  exec > >(tee -a "$CITRA_SETUP_LOG") 2>&1
+  echo "Transcript: $CITRA_SETUP_LOG"
+fi
+# On screen, never in the transcript. A child script inherits an already-teed
+# stdout and no fd 3, so it falls back -- only the wizard prints secrets.
+secret_line() {
+  if [ -n "$TTY_FD" ]; then printf '%s\n' "$*" >&3; else printf '%s\n' "$*"; fi
+}
+
 # python3 does not exist on Windows (it is `python`); the READMEs list python3
 # as a prereq but the binary name is not portable. Resolve it once.
 PY="$(command -v python3 || command -v python || true)"
@@ -844,11 +876,18 @@ else
   echo "collection activities, policies, claims, surveyor reports, leads."
   echo "$(b "Five departments, fourteen officer personas") you can sign in as."
   echo
-  echo "Four Decision Apps - the same loop over different data:"
+  echo "Four Decision Apps come pre-built - $(b "so you have something to open on")"
+  echo "$(b "minute one"), not because apps arrive with the product:"
   echo "  - $(b "Loan triage")           approve or decline against credit policy"
   echo "  - $(b "Collections priority")  who to chase today, grounded in what worked"
   echo "  - $(b "Claims triage")         settle or reject, with fraud screening"
   echo "  - $(b "Sales performance")     a dashboard app - no decisions"
+  echo
+  echo "$(b "The product is the builder, not these four.") Each was made the way you"
+  echo "will make yours: someone described the work in a sentence on the home"
+  echo "screen and answered questions while it was built. Open the builder and"
+  echo "ask for a fifth - the ontology this demo seeds is what it reads to know"
+  echo "which tables exist, what they mean, and which columns may be written."
   echo
   echo "Plus a SOP library in Milvus, so recommendations cite the actual policy."
   echo
@@ -889,11 +928,17 @@ green "════════════════════════�
 green " READY"
 green "════════════════════════════════════════════════════════════════"
 echo
-echo "$(b "1. Open it")"
-echo "     $(b "http://localhost:8081")"
-echo "     email     $adm_email"
-echo "     password  $adm_pw"
-echo "     org       $org_id   (you are an admin of it, so you see everything)"
+# The whole block goes to the terminal by the same route, or it arrives out of
+# order: fd 3 writes straight through while everything else queues behind tee,
+# so mixing the two put the password line above the heading it belongs under.
+secret_line "$(b "1. Open it")"
+secret_line "     $(b "http://localhost:8081")"
+secret_line "     email     $adm_email"
+secret_line "     password  $adm_pw"
+secret_line "     org       $org_id   (you are an admin of it, so you see everything)"
+if [ -n "$TTY_FD" ]; then
+  echo "$(b "1. Open it")   -- shown on screen only, kept out of this transcript"
+fi
 echo
 echo "$(b "2. What this run did")"
 if [ -f "$STATE_FILE" ]; then
