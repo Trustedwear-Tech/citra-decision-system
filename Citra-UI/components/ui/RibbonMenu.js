@@ -119,11 +119,23 @@ export const RibbonMenu = ({
     //   label: 'Connection',
     //   icon: 'link-outline',
     // },
-    {
-      id: 'help',
-      label: 'Help',
-      icon: 'help-circle-outline',
-    },
+    // DEPRECATED — hidden until the help content is rewritten for this product.
+    //
+    // The tab opened HowToUseModal (583 lines) and the product tour, both of
+    // which document decks and flows: Living Decks, Agent Builder nodes, Data
+    // Stores, Meetings & Audio. Those products were cut out into their own
+    // repositories and none of that help applies here. Not one section covered
+    // Decision Apps, the ontology, the decision loop or judgement memory.
+    //
+    // Help for the wrong product is worse than no help, so the entry point is
+    // closed rather than left pointing at it. The modal and TourSteps are now
+    // unreachable and listed for deletion in docs/decks-flows-leftovers.md;
+    // restore this tab when there is real content to open.
+    // {
+    //   id: 'help',
+    //   label: 'Help',
+    //   icon: 'help-circle-outline',
+    // },
     // {
     //   id: 'customize',
     //   label: 'Customize UI',

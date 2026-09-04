@@ -19,12 +19,14 @@ This file records what is still here so it can be removed deliberately, rather
 than discovered by a stranger reading the code. Nothing below is scheduled;
 it is a list, not a plan.
 
-**One correction to the assumption that prompted this list: the largest item
-is not invisible. It is on a live tab.** The rest genuinely is unreachable.
+**The largest item was NOT invisible when this list was written** — the help
+modal sat on a live ribbon tab. That tab is now commented out, so everything
+below is unreachable. The history is kept because it is the reason the tab was
+closed rather than the modal quietly deleted.
 
 ---
 
-## 1. `Citra-UI/components/HowToUseModal.js` — 583 lines, REACHABLE
+## 1. `Citra-UI/components/HowToUseModal.js` — 583 lines, now unreachable
 
 The in-product help. Every one of its eleven sections belongs to a product
 this repository no longer contains:
@@ -39,21 +41,24 @@ this repository no longer contains:
 Not one section covers Decision Apps, the ontology, the decision loop, or
 judgement memory. The help for a decision system documents decks and flows.
 
-It is wired end to end and a user can open it today:
+It was wired end to end and could be opened until the tab was commented out:
 
 ```
-RibbonMenu.js:122   { id: 'help', label: 'Help', … }        ← tab is live
-                    (the tabs either side of it are commented out; this one is not)
+RibbonMenu.js:122   { id: 'help', label: 'Help', … }        ← NOW COMMENTED OUT
+                    (the tabs either side were already commented; this one was not)
 RibbonMenu.js:298   <RibbonButton label="How to use" onPress={onShowHowToUse} />
 App.js:8214         handleShowHowToUse → setShowHowToUseModal(true)
 App.js:15246        <HowToUseModal … />
 ```
 
-**Two ways out.** Removing the entry point is a few lines — drop the `help`
-tab entry and the `onShowHowToUse` prop, and the modal becomes dead code that
-can be deleted with the rest. Writing real help for this product is a
-different piece of work. Shipping help for the wrong product is worse than
-shipping none, so the entry point should go first whichever way it ends.
+**Entry point closed.** The `help` tab in `RibbonMenu.js` is commented out,
+so the modal and the product tour can no longer be opened. Marked DEPRECATED
+there, with the reason, and to be rewritten before the tab comes back —
+shipping help for the wrong product is worse than shipping none.
+
+The modal, `TourSteps.js` and the `onShowHowToUse` plumbing through
+`App.js` are now dead code and can be deleted outright. Left in place for now
+so the rewrite has something to read.
 
 ## 2. `Citra-UI/components/ProductTour/TourSteps.js` — 249 lines
 
