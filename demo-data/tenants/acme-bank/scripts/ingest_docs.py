@@ -245,6 +245,16 @@ def _register_dept_library(docs: List[Path]) -> int:
 
     Idempotent, on the same stable FOLDER_ID the vectors carry, so a re-run
     updates in place rather than creating a second library.
+
+    DELIBERATELY does NOT register the source with discovery, and does not set
+    ``discovery_registered``. The demo MCP already advertises this corpus from
+    its own ``mcp/sources.json`` (``acme_bank_policy_library``, type=semantic,
+    rag.milvus_collection=mcp_dept_libraries), so registering here would publish
+    it TWICE. Exactly one side registers -- the MCP here, the upload path in
+    ``scripts/quickstart/ingest_sops.py`` (which has no MCP behind it and so
+    must register itself). Leaving ``discovery_registered`` unset is what stops
+    a panel delete from deregistering a source the MCP owns and will re-register
+    on its next boot.
     """
     from datetime import datetime as _dt
 

@@ -33,6 +33,10 @@ The same corpus can also be uploaded from the UI -- Home -> SOP Library -> New
 library -> Upload SOPs -- which is the better route for one-off additions. This
 script exists for the first load, where clicking through twelve files is worse
 than naming the folder once.
+
+Both routes leave the SAME state behind: the same ``sop_library_<dept>`` source
+id, the same shared Milvus collection, and a discovery registration -- so a
+library seeded here and one uploaded from the UI are one library, not two.
 """
 from __future__ import annotations
 
@@ -86,11 +90,21 @@ async def _run(*, org: str, dept: str, docs: List[Path], name: str,
                source_id: str, public: bool, dry_run: bool) -> int:
     from citra_auth.constants import OwnerType
     from CRUD_utils import get_mongo_client, MONGODB_DATABASE
-    from dept_library import FOLDER_KIND, _store_dept_original
+    from dept_library import (
+        FOLDER_KIND, _store_dept_original, build_dept_library_registration,
+        dept_library_source_id,
+    )
     from dept_library_store import (
         ensure_shared_dept_collection, ingest_dept_document, delete_dept_docs,
         shared_dept_collection,
     )
+
+    # Default to the id the UI derives (`sop_library_<dept>`), not a separate
+    # `<org>_<dept>_policy_library`. Two ids for one department's SOPs means two
+    # sources sharing one Milvus collection but isolated from each other by
+    # source_id -- so a later upload from Home -> SOP Library would create a
+    # second library that cannot see the documents seeded here.
+    source_id = (source_id or "").strip() or dept_library_source_id(dept)
 
     folder_id = str(uuid.uuid5(_NS, f"{org}/{dept}/{name}"))
     collection = shared_dept_collection()
@@ -104,6 +118,35 @@ async def _run(*, org: str, dept: str, docs: List[Path], name: str,
         return 0
 
     ensure_shared_dept_collection()
+
+    # Advertise the library in the DISCOVERY registry, exactly as the UI does
+    # (dept_library.create_dept_library). Without this the corpus is ingested and
+    # UNREADABLE: /semantic/search resolves a source's scope from discovery and
+    # returns 403 "unknown or retired semantic source" for anything it does not
+    # know -- so the builder never catalogues it and no agent can cite it. This
+    # script used to stop at Mongo + Milvus, while the wizard told the operator
+    # their apps would now decide by their SOPs.
+    #
+    # Registered BEFORE ingesting, and fail loud: a half-seeded library nobody
+    # can read is worse than none, and re-running is idempotent.
+    from services.enterprise_mcp_client import register_source, service_api_key
+    try:
+        await register_source(
+            build_dept_library_registration(
+                org_id=org, dept_id=dept, name=name,
+                description=f"SOPs and policy for {dept}.",
+                api_key=service_api_key(), public_within_org=public,
+                source_id=source_id),
+            service_api_key(),
+        )
+    except Exception as exc:  # noqa: BLE001 -- reported, never ingested behind
+        log.error("Discovery registration FAILED for org=%s dept=%s source=%s: %s",
+                  org, dept, source_id, exc)
+        log.error("Nothing was ingested. Check DISCOVERY_SERVICE_URL and "
+                  "SERVICE_API_KEY in citra-service, then re-run.")
+        return 1
+    log.info("Registered '%s' with discovery as a semantic source", source_id)
+
     # Replace this library's contents rather than merging, so a document
     # removed from the folder does not linger in the index forever.
     removed = delete_dept_docs(folder_id=folder_id)
@@ -121,6 +164,10 @@ async def _run(*, org: str, dept: str, docs: List[Path], name: str,
             "name": name,
             "description": f"SOPs and policy for {dept}.",
             "color": "#0f766e", "created_by": "seed:ingest_sops",
+            # This library owns its discovery registration, so deleting it from
+            # the UI deregisters the source -- dept_library deregisters only what
+            # it registered, never an externally-advertised one.
+            "discovery_registered": True,
             "updated_at": now, "deleted": False,
         }, "$setOnInsert": {"created_at": now}},
         upsert=True,
@@ -172,7 +219,8 @@ def main() -> int:
     ap.add_argument("--dept", required=True, help="Department id (e.g. ops).")
     ap.add_argument("--dir", required=True, help="Folder of SOP documents.")
     ap.add_argument("--name", default="Policy Library", help="Library name shown in the UI.")
-    ap.add_argument("--source-id", default="", help="Defaults to <org>_<dept>_policy_library.")
+    ap.add_argument("--source-id", default="",
+                    help="Defaults to sop_library_<dept> -- the id the UI derives.")
     ap.add_argument("--private", action="store_true",
                     help="Restrict to the department (default: readable org-wide).")
     ap.add_argument("--dry-run", action="store_true", help="List what would be ingested.")
@@ -189,10 +237,11 @@ def main() -> int:
         return 2
     log.info("Found %d document(s) under %s", len(docs), root)
 
-    source_id = (a.source_id or "").strip() or f"{a.org}_{a.dept}_policy_library".replace("-", "_")
+    # Resolved inside _run -- the derivation lives in citra-service's
+    # dept_library, which is only importable in that container.
     return asyncio.run(_run(org=a.org, dept=a.dept, docs=docs, name=a.name,
-                            source_id=source_id, public=not a.private,
-                            dry_run=a.dry_run))
+                            source_id=(a.source_id or "").strip(),
+                            public=not a.private, dry_run=a.dry_run))
 
 
 if __name__ == "__main__":

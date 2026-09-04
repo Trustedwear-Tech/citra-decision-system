@@ -456,6 +456,19 @@ then binds it into the `sql_template`/endpoint.
 
 ## 8. Semantic (RAG) sources
 
+> **A department's SOP / policy library does NOT belong in this file.** It is created by
+> *uploading* documents — the quickstart wizard's SOP step, or **Home → SOP Library → New
+> library → Upload SOPs** — and it registers itself with discovery at upload time
+> (`Citra-Service/dept_library.py`). Every dept library shares one Milvus collection and is
+> isolated by `source_id`, so declaring one here *as well* creates a SECOND, empty source
+> that cannot see the documents you uploaded.
+>
+> Declaring one here is right in exactly one case: a corpus **seeded with the MCP**, whose
+> documents are loaded by a script under that same `source_id` and which therefore never
+> self-registers — how the acme-bank demo ships its policy library
+> (`demo-data/tenants/acme-bank/`). The rule is simply that **exactly one side registers**:
+> the MCP, or the upload. Never both, and never neither.
+
 A `type: "semantic"` source is a document corpus. **The MCP does not query it** — it advertises
 it to discovery, and the Citra-Service platform reader answers RAG. So it needs almost no
 structured config, just where its vectors live:
@@ -484,9 +497,14 @@ structured config, just where its vectors live:
 }
 ```
 
-- `rag.milvus_collection` — the shared dept-library collection (`mcp_dept_libraries`) or a
-  per-source collection. This is the authoritative name the reader uses (it's what
-  registration publishes to discovery).
+- `rag.milvus_collection` — **required** for a declared semantic source
+  (`registry_models.py:952`), and the authoritative name the reader uses (it's what
+  registration publishes to discovery). It may be the shared dept-library collection
+  (`mcp_dept_libraries`, as the acme-bank demo uses — libraries there are isolated by
+  `source_id`, not by collection) or a collection of the corpus's own. A source that omits
+  it fails validation and the MCP refuses to boot. Uploaded SOP libraries never need it: the
+  reader derives their collection from `(dept_id, source_id)` by the same rule on both
+  sides.
 - `taxonomy.doc_types` — the vocabulary the routing LLM filters on (`doc_types` on `/query`).
   Each entry: `{id, label?, synonyms?, examples?}`.
 
@@ -969,7 +987,10 @@ columns introspected live). Omit `options.tables` to auto-discover **all** table
    `fraud_screening.applies: true` and annotated artifact columns but **no PK gets no screen at
    all**, with only a log warning (§10.2.1). For a **REST / parameterised** dataset, declare
    `input_schema` (the read param contract) and `read_via.extra.request`/`.response` (§5.1).
-7. For a document corpus, use `type: "semantic"` + `rag.milvus_collection` + `taxonomy`.
+7. For a document corpus **this MCP publishes itself**, use `type: "semantic"` +
+   `rag.milvus_collection` + `taxonomy`. A department's SOP library is *uploaded*, not
+   declared — it self-registers, and declaring it here too creates a second, empty
+   source (§8).
 8. Set `visibility.roles_allowed` (and `public_within_org` for org-wide corpora).
 9. **Validate before you ship** — `python validate_sources.py sources.json` (§15). An invalid
    registry **refuses the boot**; the validator is how you find that out at your desk instead of
