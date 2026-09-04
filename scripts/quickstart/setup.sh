@@ -20,6 +20,27 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 ENV_FILE="$REPO_ROOT/.env"
+
+setup_usage() {
+  cat >&2 <<'USAGE'
+Phase 1 - generate .env, start the data stores, create database resources.
+
+  ./scripts/quickstart/setup.sh [options]
+
+Options:
+  -h, --help   Show this and exit.
+
+Takes no other arguments. For a guided first run use wizard.sh, which calls
+this; for phase 2 use start.sh.
+USAGE
+}
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help) setup_usage; exit 0 ;;
+    *)         echo "unknown option: $1" >&2; echo >&2; setup_usage; exit 2 ;;
+  esac
+  shift
+done
 COMPOSE="docker compose -f docker-compose.quickstart.yml"
 
 # Check the host BEFORE writing .env. Without this the first failure was
@@ -68,6 +89,10 @@ else
   setkv SMART_APP_INTERNAL_SIGNING_KEY "$(rand 32)" "$ENV_FILE"
   setkv CONNECTION_ENCRYPTION_KEY "$(rand 32)" "$ENV_FILE"
   setkv ADMIN_PASSWORD "$(rand 6)" "$ENV_FILE"   # printed by start.sh
+  # Was shipped as `citra-local-admin-key-change-me` in .env.example -- a
+  # credential published in a public repository, identical on every install
+  # that never read that line. Per install, like every other secret here.
+  setkv ADMIN_API_KEY "$(rand 24)" "$ENV_FILE"
   echo "   [ok] secrets generated (JWT, MCP key + service key, signing + connection keys, admin pw)"
   echo "   [!]  set LLM_API_KEY in .env before start.sh - recommendations need it"
 fi

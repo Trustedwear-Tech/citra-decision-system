@@ -18,17 +18,20 @@
 
 COMPOSE := docker compose -f docker-compose.quickstart.yml
 
+# ARGS is passed through to the underlying script, so every flag those
+# scripts accept is reachable from make. `--help` on any of them lists
+# its own options: ./scripts/quickstart/wizard.sh --help
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-wizard: ## Guided setup: configure your AI key, then install (easiest first run)
-	./scripts/quickstart/wizard.sh
+wizard: ## Guided setup, easiest first run (ARGS=--fresh wipes .env + volumes first)
+	./scripts/quickstart/wizard.sh $(ARGS)
 
 setup: ## Phase 1: generate .env, start data stores, create DB resources
 	./scripts/quickstart/setup.sh
 
-start: ## Phase 2: start all services + super-admin + the acme-bank demo
-	./scripts/quickstart/start.sh
+start: ## Phase 2: services + super-admin + demo (ARGS='--no-demo' or '--demo <tenant>')
+	./scripts/quickstart/start.sh $(ARGS)
 
 install: ## Phase 1 + Phase 2 (full bring-up from scratch)
 	./scripts/quickstart/setup.sh && ./scripts/quickstart/start.sh

@@ -27,10 +27,33 @@ cd "$REPO_ROOT"
 COMPOSE="docker compose -f docker-compose.quickstart.yml"
 
 DEMO="acme-bank"
-case "${1:-}" in
-  --no-demo) DEMO="none" ;;
-  --demo)    DEMO="${2:-acme-bank}" ;;
-esac
+start_usage() {
+  cat >&2 <<'USAGE'
+Phase 2 - start every service, create the super-admin, optionally seed a demo.
+
+  ./scripts/quickstart/start.sh [options]
+
+Options:
+  --demo <tenant>   Seed this demo tenant after start-up (default: acme-bank).
+  --no-demo         Start the services and create the admin, seed nothing.
+  -h, --help        Show this and exit.
+
+Reads ADMIN_EMAIL, ADMIN_PASSWORD and ORG_ID from .env; run wizard.sh if they
+are not set. Requires SOURCES_FILE for a non-demo install.
+USAGE
+}
+# The case below had no `*)` arm, so an unrecognised flag was DISCARDED and the
+# default applied: `--nodemo`, a plausible typo, silently seeded the demo --
+# the exact opposite of what was asked for, with nothing printed.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-demo)  DEMO="none" ;;
+    --demo)     DEMO="${2:-acme-bank}"; shift ;;
+    -h|--help)  start_usage; exit 0 ;;
+    *)          echo "unknown option: $1" >&2; echo >&2; start_usage; exit 2 ;;
+  esac
+  shift
+done
 
 # `|| true` is load-bearing: these scripts run `set -euo pipefail`, so a grep
 # that matches nothing returns 1 and kills the script at the assignment —
@@ -38,11 +61,20 @@ esac
 # in .env.example today; the first one that does not would fail silently.
 # setup.sh hit exactly that on MONGODB_USER.
 getenv() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
-# Falls back to a reserved placeholder, never to the vendor's domain -- see
-# the note in wizard.sh. Reached only on a non-interactive install where
-# ADMIN_EMAIL was left unset.
-ADMIN_EMAIL="$(getenv ADMIN_EMAIL)";       ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
-ADMIN_PASSWORD="$(getenv ADMIN_PASSWORD)"; ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe!123}"
+# NO fallback. These used to default to admin@example.com / ChangeMe!123 --
+# a real super-admin account, with a password published in this repository,
+# created on any install that reached here with them unset. A guessable
+# credential is worse than a stopped install, so this stops and says what to do.
+ADMIN_EMAIL="$(getenv ADMIN_EMAIL)"
+ADMIN_PASSWORD="$(getenv ADMIN_PASSWORD)"
+if [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
+  echo "[FAIL] ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env." >&2
+  echo "       They are the super-admin of this deployment, so there is no safe" >&2
+  echo "       default: anything shipped here would be the same account, with the" >&2
+  echo "       same password, on every install that never changed it." >&2
+  echo "       Set both in .env, or run: ./scripts/quickstart/wizard.sh" >&2
+  exit 1
+fi
 
 if [ -z "$(getenv LLM_API_KEY)" ]; then
   echo "[FAIL] LLM_API_KEY is empty in .env." >&2
@@ -118,7 +150,13 @@ echo "-> creating super-admin $ADMIN_EMAIL"
 # order to see their own data.
 ADMIN_ORG="$DEMO"
 [ "$ADMIN_ORG" = "none" ] && ADMIN_ORG="$(getenv ORG_ID)"
-ADMIN_ORG="${ADMIN_ORG:-citra-ai}"
+# Also no fallback. This defaulted to `citra-ai` -- our organisation, created
+# inside someone else's deployment, holding their super-admin.
+if [ -z "$ADMIN_ORG" ]; then
+  echo "[FAIL] ORG_ID is empty in .env, so there is no organisation to create" >&2
+  echo "       the super-admin in. Set ORG_ID, or run the wizard." >&2
+  exit 1
+fi
 
 # Seeding a demo puts the super-admin in the DEMO org, not the ORG_ID the
 # operator was asked for -- deliberately, per the note above, so the seeded
@@ -131,7 +169,7 @@ if [ -n "$_WANTED_ORG" ] && [ "$_WANTED_ORG" != "$ADMIN_ORG" ]; then
   ORG_NOTE="   (the demo org; your ORG_ID $_WANTED_ORG is unused until you seed it)"
 fi
 $COMPOSE exec -T citra-user-service \
-  node src/scripts/create-admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD" "Citra Admin" \
+  node src/scripts/create-admin.js "$ADMIN_EMAIL" "$ADMIN_PASSWORD" "${ADMIN_EMAIL%%@*}" \
        --role=super_admin --org="$ADMIN_ORG"
 
 # -- 6. Demo tenant -----------------------------------------------------------

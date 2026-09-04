@@ -30,6 +30,23 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
+
+seed_usage() {
+  cat >&2 <<'USAGE'
+Re-seed a demo tenant: its Postgres system of record, SOP corpus and apps.
+
+  ./scripts/quickstart/seed-demo.sh [tenant]
+
+  tenant       Directory name under demo-data/tenants/ (default: acme-bank).
+  -h, --help   Show this and exit.
+
+Destructive for that tenant's seeded data; other tenants are untouched.
+USAGE
+}
+case "${1:-}" in
+  -h|--help) seed_usage; exit 0 ;;
+  -*)        echo "unknown option: $1" >&2; echo >&2; seed_usage; exit 2 ;;
+esac
 TENANT="${1:-acme-bank}"
 COMPOSE="docker compose -f docker-compose.quickstart.yml"
 

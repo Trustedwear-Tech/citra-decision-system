@@ -23,6 +23,43 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; cd "$REPO_ROOT"
+
+# Arguments. This script used to ignore argv completely -- `wizard.sh --help`
+# ran the entire wizard, and a mistyped flag was accepted in silence. An
+# unrecognised option now stops, because guessing what someone meant by a flag
+# that installs software is not a favour.
+FRESH=0
+usage() {
+  cat >&2 <<'USAGE'
+Citra Decision System - setup wizard
+
+  ./scripts/quickstart/wizard.sh [options]
+
+Options:
+  --fresh     Delete this deployment's local state first, then set up from
+              scratch: .env, the Docker volumes, and my-source/sources.json.
+              Lists exactly what it will remove and asks once before doing it.
+  -h, --help  Show this and exit.
+
+Without --fresh an existing .env is kept and reconciled: keys added to
+.env.example since it was written are added, and values that were defaults in
+an older release are cleared so you are asked for them rather than inheriting
+them. Your API key, organisation and password are preserved.
+
+Related:
+  ./scripts/quickstart/setup.sh      phase 1 only (data stores, DB resources)
+  ./scripts/quickstart/start.sh      phase 2 only (services, admin, demo)
+  make help                          every target
+USAGE
+}
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --fresh)    FRESH=1 ;;
+    -h|--help)  usage; exit 0 ;;
+    *)          echo "unknown option: $1" >&2; echo >&2; usage; exit 2 ;;
+  esac
+  shift
+done
 # python3 does not exist on Windows (it is `python`); the READMEs list python3
 # as a prereq but the binary name is not portable. Resolve it once.
 PY="$(command -v python3 || command -v python || true)"
@@ -56,17 +93,30 @@ ask_secret() {
   local q="$1" ans="" ch
   printf '%s: ' "$q" >&2
   if [ -t 0 ]; then
+    # One `*` per character AS IT ARRIVES, so a paste is visibly received.
+    # A bare `read -rs` showed nothing at all until Enter, at the very first
+    # question after the preflight -- and printing the asterisks afterwards
+    # was no better, because the doubt is at the moment of pasting.
+    #
+    # Enter must match CR as well as LF. MinTTY on Windows sends CR, and an
+    # earlier version of this matched only LF, so CR fell through to the
+    # control-character case, was DROPPED, and the prompt hung with no way out
+    # but Ctrl-C. Any terminal that ends a line with either now ends the read.
     while IFS= read -rsn1 ch; do
       case "$ch" in
-        "")            break ;;                                  # Enter
-        $'\177'|$'\b') if [ -n "$ans" ]; then ans="${ans%?}"; printf '\b \b' >&2; fi ;;
-        [[:cntrl:]])   : ;;                                      # arrow keys etc
-        *)             ans="$ans$ch"; printf '*' >&2 ;;
+        ''|$'\r'|$'\n') break ;;
+        $'\177'|$'\b')  if [ -n "$ans" ]; then ans="${ans%?}"; printf '\b \b' >&2; fi ;;
+        [[:cntrl:]])    : ;;
+        *)              ans="$ans$ch"; printf '*' >&2 ;;
       esac
     done
   else
     read -rs ans || true
   fi
+  # A terminal left in bracketed-paste mode wraps a paste in ESC[200~ … ESC[201~.
+  # The ESC is a control character and is dropped above, but the `[200~` that
+  # follows is ordinary text and would otherwise be pasted INTO the secret.
+  ans="${ans#'[200~'}"; ans="${ans%'[201~'}"
   printf '\n' >&2
   printf '%s' "$ans"
 }
@@ -145,6 +195,12 @@ clear 2>/dev/null || true
 echo "$(b "Citra Decision System - setup wizard")"
 echo "Self-improving Decision Apps. Your infrastructure, your models, your data."
 echo
+# On launch, not only behind --help. A flag nobody knows about is a flag that
+# does not exist, and the one that matters here -- starting from a clean slate
+# -- is exactly what someone re-running this wants and would never guess.
+echo "$(b "Options:")  --fresh   wipe .env, volumes and sources.json first"
+echo "          --help    what each one does"
+echo
 echo "$(b "What this wizard is.") A quick start for the common case: SQL or Mongo"
 echo "tables, read access, one write action, and your SOPs. It gets you to a"
 echo "working deployment in one sitting."
@@ -157,8 +213,53 @@ echo "this wizard tells you exactly what it left for you when it finishes."
 
 # -- 1. .env ------------------------------------------------------------------
 hr; echo "$(b "Step 1/4 - environment file")"
+
+# --fresh: say what will be destroyed, in full, before destroying any of it.
+if [ "$FRESH" = "1" ]; then
+  echo "$(b "--fresh") will permanently delete:"
+  echo "    .env                        every secret and setting, including your API key"
+  echo "    Docker volumes              Postgres, Mongo, Milvus, MinIO - all seeded data"
+  echo "    my-source/sources.json      the ontology built by a previous run"
+  echo "  Apps, decisions, memory and uploaded SOPs all live in those volumes."
+  echo
+  if yes_no "Delete them and start from scratch?" "n"; then
+    rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json"
+    docker compose -f docker-compose.quickstart.yml down -v --remove-orphans 2>/dev/null || true
+    echo "  [ok] local state removed"
+  else
+    echo "  keeping what is there; continuing as a normal run"
+  fi
+  echo
+fi
+
 if [ -f "$ENV_FILE" ]; then
   echo "Found an existing .env - keeping it (values you set are preserved)."
+  # Reconcile it, every run.
+  #
+  # An .env written by an older release keeps whatever .env.example shipped
+  # THEN, and nothing ever revisited it. That is precisely how ChangeMe!123 and
+  # admin@citra-ai.com survived being removed from the example file: the wizard
+  # read them back out of .env and offered them as values the operator had
+  # chosen. A key added to .env.example since had the same problem in reverse --
+  # absent, so every service using it fell back to a code default nobody set.
+  _added=0
+  for _k in $(grep -oE '^[A-Za-z0-9_]+=' .env.example | tr -d '=' | sort -u); do
+    if ! grep -qE "^${_k}=" "$ENV_FILE"; then
+      setkv "$_k" "$(awk -v k="$_k" 'index($0, k"=")==1 {sub("^" k "=", ""); print; exit}' .env.example)"
+      _added=$((_added + 1))
+    fi
+  done
+  # Values that WERE defaults in an older .env.example and are not any more.
+  # Cleared, never rewritten to something new: the point is that the operator
+  # is asked, rather than inheriting an answer they never gave.
+  _cleared=0
+  for _pair in "ADMIN_EMAIL=admin@citra-ai.com" "ADMIN_EMAIL=admin@example.com" \
+               "ADMIN_PASSWORD=ChangeMe!123" "ADMIN_API_KEY=citra-local-admin-key-change-me" \
+               "ORG_ID=citra-ai"; do
+    _k="${_pair%%=*}"; _v="${_pair#*=}"
+    if [ "$(getkv "$_k")" = "$_v" ]; then setkv "$_k" ""; _cleared=$((_cleared + 1)); fi
+  done
+  echo "  [ok] reconciled with .env.example ($_added key(s) added, $_cleared retired default(s) cleared)"
 else
   echo "Generating .env from .env.example with fresh random secrets..."
   cp .env.example "$ENV_FILE"
@@ -171,7 +272,9 @@ else
   setkv MCP_SERVICE_API_KEY "$MCP_KEY"
   setkv SMART_APP_INTERNAL_SIGNING_KEY "$(rand 32)"
   setkv CONNECTION_ENCRYPTION_KEY "$(rand 32)"
-  echo "  [ok] secrets generated (JWT, MCP key + service key, signing + connection keys, admin pw)"
+  echo "  [ok] secrets generated (JWT, MCP key + service key, signing + connection keys)"
+  # NOT the admin password. This line used to claim one, and none was written
+  # here -- the value came from .env.example, which shipped ChangeMe!123.
 fi
 
 # -- 2. AI provider -----------------------------------------------------------
@@ -269,7 +372,16 @@ echo
 echo "  $(b "1) The acme-bank demo")   see the whole decision loop in ~10 minutes"
 echo "  $(b "2) My own database")      connect a SQL source and build it up"
 echo
-start_choice="$(ask "Choose 1-2" "1")"
+# Validated. Everything downstream tests for exactly "2", so ANY other answer
+# -- a typo, a trailing space, the word "demo" -- silently installed the demo
+# over the database the operator meant to connect, with nothing said about it.
+while :; do
+  start_choice="$(ask "Choose 1-2" "1")"
+  case "$start_choice" in
+    1|2) break ;;
+    *)   echo "  ! type 1 or 2" >&2 ;;
+  esac
+done
 
 # -- 4. Super-admin + organisation --------------------------------------------
 hr; echo "$(b "Step 4/4 - super-admin")"
@@ -280,7 +392,15 @@ echo
 # admin@citra-ai.com, so anyone who pressed Enter ran their deployment on an
 # account branded with the vendor's domain, unrelated to the org they are
 # asked for a few lines later.
-adm_email="$(ask_required "Super-admin email" "$(getkv ADMIN_EMAIL)" valid_email)"
+# Whatever is in .env is offered, EXCEPT the value .env.example used to ship.
+# The comment above was written when this line was added and was true of the
+# CODE and not of the FILE: .env.example still carried admin@citra-ai.com, step
+# 1 copies that file to .env, and getkv duly offered the vendor's address back
+# as the default. Same trap the ORG_ID line below already guards against; the
+# guard is kept for anyone whose .env predates the .env.example fix.
+cur_adm="$(getkv ADMIN_EMAIL)"
+case "$cur_adm" in admin@citra-ai.com|admin@example.com) cur_adm="" ;; esac
+adm_email="$(ask_required "Super-admin email (e.g. you@yourcompany.com)" "$cur_adm" valid_email)"
 setkv ADMIN_EMAIL "$adm_email"
 
 # ORG_ID is what start.sh passes to create-admin.js as --org. Leaving it at the
@@ -297,8 +417,10 @@ else
   # personas are all seeded into acme-bank, so an admin of any other org would
   # sign in to an empty screen.
   org_id="acme-bank"
-  echo "  Organisation: $(b "acme-bank")  (fixed - the demo's data, apps and"
-  echo "  personas all live in it, so the super-admin is created there)"
+  echo "  Organisation: $(b "acme-bank")   (not asked, on the demo path)"
+  echo "  The demo's data, apps and officer personas are all seeded into that"
+  echo "  organisation, so your super-admin is created there too. An admin of"
+  echo "  any other org would sign in to an empty screen."
 fi
 setkv ORG_ID "$org_id"
 
@@ -306,8 +428,30 @@ setkv ORG_ID "$org_id"
 # hex string instead, so almost nobody chose their own password and the one
 # they got existed only in .env and in the closing banner -- which is how you
 # end up locked out of a deployment with no mail provider to reset it.
-if [ -n "$(getkv ADMIN_PASSWORD)" ] && yes_no "Keep the existing super-admin password?" "y"; then
-  :
+#
+# It then became "Keep the existing super-admin password? [y]" -- which on a
+# first run asked the operator to keep a password they had never seen and did
+# not set. .env.example shipped ChangeMe!123, step 1 copies that file, so the
+# value was always "existing" and pressing Enter accepted a credential
+# published in this repository. Never treat the shipped value as a choice.
+cur_pw="$(getkv ADMIN_PASSWORD)"
+case "$cur_pw" in 'ChangeMe!123') cur_pw="" ;; esac
+if [ -n "$cur_pw" ]; then
+  # A real one, set on an earlier run. Show it -- start.sh prints it in the
+  # closing banner anyway -- so "keep or change" is a decision about something
+  # the operator can actually see.
+  echo "  This deployment already has a super-admin password:"
+  echo "    $(b "$cur_pw")"
+  while :; do
+    new_pw="$(ask_secret "New password (blank keeps the one above)")"
+    [ -z "$new_pw" ] && { echo "  [ok] keeping the existing password"; break; }
+    if [ "${#new_pw}" -lt 8 ]; then printf '  ! at least 8 characters
+' >&2; continue; fi
+    confirm="$(ask_secret "Confirm password")"
+    if [ "$new_pw" != "$confirm" ]; then printf '  ! they do not match
+' >&2; continue; fi
+    setkv ADMIN_PASSWORD "$new_pw"; echo "  [ok] password changed"; break
+  done
 else
   setkv ADMIN_PASSWORD "$(ask_password)"
 fi
