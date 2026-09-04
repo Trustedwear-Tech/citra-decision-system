@@ -41,7 +41,35 @@ ask() {
   if [ -n "$def" ]; then printf '%s [%s]: ' "$q" "$def" >&2; else printf '%s: ' "$q" >&2; fi
   read -r ans || true; printf '%s' "${ans:-$def}"
 }
-ask_secret() { local q="$1" ans; printf '%s: ' "$q" >&2; read -rs ans || true; printf '\n' >&2; printf '%s' "$ans"; }
+# Echo one `*` per character, so a paste is visibly RECEIVED.
+#
+# This used to be a bare `read -rs`: nothing appeared, at all, at the very first
+# question after the preflight. The commonest reaction was to sit there
+# wondering whether the paste had landed -- and the only way to find out was to
+# press Enter and see whether the wizard exited. Every password field ever
+# built shows dots for exactly this reason.
+#
+# Backspace is handled, control characters (arrow keys, escape sequences) are
+# dropped rather than smuggled into the value, and a non-interactive stdin --
+# a pipe, a CI runner -- falls back to the plain read.
+ask_secret() {
+  local q="$1" ans="" ch
+  printf '%s: ' "$q" >&2
+  if [ -t 0 ]; then
+    while IFS= read -rsn1 ch; do
+      case "$ch" in
+        "")            break ;;                                  # Enter
+        $'\177'|$'\b') if [ -n "$ans" ]; then ans="${ans%?}"; printf '\b \b' >&2; fi ;;
+        [[:cntrl:]])   : ;;                                      # arrow keys etc
+        *)             ans="$ans$ch"; printf '*' >&2 ;;
+      esac
+    done
+  else
+    read -rs ans || true
+  fi
+  printf '\n' >&2
+  printf '%s' "$ans"
+}
 
 # Ask until there is an answer, and until it is a plausible one.
 #
@@ -158,16 +186,46 @@ echo "Citra calls an LLM for recommendations and NL->SQL, and an embedding"
 echo "model to ground answers in your SOPs. One OpenRouter key covers both."
 echo
 echo "  Get a key: $(b "https://openrouter.ai/keys")"
-key="$(ask_secret "Paste your OpenRouter API key (input hidden)")"
-
-# Fail loud rather than continuing to a stack that cannot recommend anything.
-if [ -z "$key" ]; then
-  echo
-  echo "  [FAIL] no key entered. Decision Apps cannot produce a recommendation" >&2
-  echo "         without a model, so the demo would come up unable to do the one" >&2
-  echo "         thing it exists to show. Re-run once you have a key." >&2
-  exit 1
-fi
+# Ask until there is a key. This used to EXIT on an empty answer -- fail loud,
+# which was the right instinct with the wrong remedy: an empty paste is a slip,
+# not a decision, and exiting threw away every answer given so far and made the
+# operator start the wizard again. Ctrl-C is always available for a real stop.
+#
+# And the key is CHECKED here, not discovered to be wrong half an hour later.
+# A truncated paste, a trailing space or a revoked key all wrote cleanly into
+# eight .env variables and surfaced mid-demo as
+#   LLM endpoint returned 401: Missing Authentication header
+# with nothing pointing back at this prompt.
+key=""
+while [ -z "$key" ]; do
+  key="$(ask_secret "Paste your OpenRouter API key")"
+  if [ -z "$key" ]; then
+    echo "  ! nothing pasted. A model is required -- Decision Apps cannot" >&2
+    echo "    produce a recommendation without one. Ctrl-C to stop." >&2
+    continue
+  fi
+  echo "  [ok] received ${#key} characters"
+  case "$key" in
+    sk-or-*) ;;
+    *) echo "  [!] that does not look like an OpenRouter key -- they begin sk-or-v1-." >&2
+       echo "      Continuing, in case you are pointing at another gateway." >&2 ;;
+  esac
+  # Definitive rejection re-asks; anything else is reported and allowed through,
+  # because being unable to REACH OpenRouter says nothing about the key.
+  if command -v curl >/dev/null 2>&1; then
+    _code="$(curl -s -o /dev/null -m 12 -w '%{http_code}' \
+              -H "Authorization: Bearer $key" \
+              https://openrouter.ai/api/v1/key 2>/dev/null || true)"
+    case "$_code" in
+      200)     echo "  [ok] key verified with OpenRouter" ;;
+      401|403) echo "  [X] OpenRouter rejected that key (HTTP $_code)." >&2
+               echo "      Check for a truncated paste or a revoked key, then try again." >&2
+               key="" ;;
+      *)       echo "  [!] could not verify the key with OpenRouter (HTTP ${_code:-no response})." >&2
+               echo "      Continuing -- if recommendations later fail with a 401, start here." >&2 ;;
+    esac
+  fi
+done
 
 setkv LLM_BASE_URL "https://openrouter.ai/api/v1"
 setkv LLM_MODEL    "deepseek/deepseek-v4-pro:nitro"

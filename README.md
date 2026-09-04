@@ -207,16 +207,72 @@ stay in the environment.
 
 ## Run it in 10 minutes
 
+The wizard checks your host first and stops before writing anything if a
+prerequisite is missing, asks for one API key, builds every image from source,
+and seeds a worked bank demo: five departments, a policy corpus, and four
+Decision Apps you can open and drive. A `git clone` works the same as the
+download below.
+
+Everywhere you need **Docker Engine 24+ with Compose v2**, **16 GB RAM**,
+**Python 3.9+ with `venv`**, and an **OpenAI-compatible API key**. Node.js is
+not required — it runs inside the containers. The rest differs by platform.
+
+### Linux
+
 ```bash
+curl -fsSL https://get.docker.com | sh          # Docker Engine + Compose v2
+sudo usermod -aG docker "$USER" && newgrp docker
+sudo apt install -y python3 python3-venv python3-pip curl make   # Debian/Ubuntu
+
 curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.4.1.tar.gz | tar xz
 cd citra-decision-system-0.4.1
 make wizard
 ```
 
-A `git clone` works identically. The wizard checks your host first and stops
-before writing anything if a prerequisite is missing, asks for one API key,
-builds every image from source, and seeds a worked bank demo: five
-departments, a policy corpus, and four Decision Apps you can open and drive.
+`python3-venv` is a separate package on Debian and Ubuntu, and the seed step
+builds a virtual environment — a `python3` that is plainly installed will still
+fail without it. The preflight check catches this before anything is written.
+
+### macOS
+
+```bash
+xcode-select --install                          # provides make
+brew install python                             # 3.9+ with venv
+# Docker Desktop: https://www.docker.com/products/docker-desktop (includes Compose v2)
+
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.4.1.tar.gz | tar xz
+cd citra-decision-system-0.4.1
+make wizard
+```
+
+### Windows
+
+Install **Docker Desktop** (WSL 2 backend), **Git for Windows**, and **Python**
+from python.org with *Add python.exe to PATH* ticked. Git for Windows is a real
+requirement here, not an optional convenience: it supplies the shell the
+installer runs in.
+
+Then open **Git Bash** — not PowerShell, not Command Prompt:
+
+```bash
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.4.1.tar.gz | tar xz
+cd citra-decision-system-0.4.1
+./scripts/quickstart/wizard.sh
+```
+
+Three things that will otherwise cost you an afternoon:
+
+- **PowerShell cannot run any of the above.** It has no `make`, and its `curl`
+  is an alias for `Invoke-WebRequest`, which rejects these flags. Git Bash has
+  a real `curl` and `tar`; it has no `make` either, which is why the Windows
+  line calls the script directly instead.
+- **`C:\Windows\System32\bash.exe` is the wrong bash.** That is the WSL
+  launcher — it runs inside a different filesystem, with a different Docker
+  socket, against a copy of the repository that is not the one you cloned. Use
+  the Git Bash entry in your Start menu.
+- **Keep the checkout on a local drive**, under your user profile. Docker
+  Desktop bind mounts do not work from network or mapped drives, and the
+  failure surfaces later as an empty container rather than a mount error.
 
 > **The demo is a hypothetical Indian bank**, so screenshots show rupee
 > amounts and Indian digit grouping. Nothing in the platform is tied to
@@ -226,9 +282,9 @@ departments, a policy corpus, and four Decision Apps you can open and drive.
 **First run takes 20–40 minutes**, nearly all of it compiling images. Cached
 after that.
 
-You need Docker Engine 24+ with Compose v2, 16 GB RAM, Python 3.9+ with `venv`,
-`curl`, and an OpenAI-compatible API key. **Not** Node.js or git — those run
-inside the containers.
+Requirements are listed per platform above. The installer verifies every one
+of them before it writes anything, and names the exact package to install when
+one is missing.
 
 → [Install and first run](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Install-and-first-run) ·
 [Troubleshooting](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Troubleshooting)
