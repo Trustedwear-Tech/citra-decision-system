@@ -120,6 +120,52 @@ looks correct.
   `supporting` (never fingerprinted)? Getting this wrong is the worst error you
   can make here.
 - **value_semantics** — which column is money, and what it means. Drives ROI.
+- **write-back** — ask which columns, if any, the system may UPDATE, and who
+  may approve it. Everything is READ-ONLY until this is answered: a dataset with
+  no `write_actions` has no write path at all, which is the safe default and
+  also a system that can only ever recommend.
+
+  Ask it in the operator's own words. They know their tables and columns. They
+  do not know what an `input_schema` is and must not be asked for one:
+
+      "Once a decision is made, should the system be able to write it back?
+       If so — which table, and which columns may it update? Everything else
+       stays read-only. And which role approves that write?"
+
+  Accept table and column names. If they say no, or are unsure, write no
+  `write_actions` and say plainly that the deployment is read-only and can be
+  given a write action later.
+
+  YOU build the action from that answer — this is the part they cannot write:
+
+    * `id` / `verb`   — a name for it, e.g. `record_decision` / `update`.
+    * `key_fields`    — the primary key you already read with `describe_tables`,
+                        so the action can only ever address one identified row.
+    * `input_schema`  — properties for EXACTLY the columns they named and no
+                        others, typed from the real column types. This is the
+                        boundary: a field absent here cannot be written, so
+                        adding a column to it later is a deliberate act.
+    * `sql_template`  — a parameterised UPDATE touching only those columns,
+                        keyed on `key_fields`. Never string-built SQL, never a
+                        template that could widen to other columns.
+    * `roles_allowed_write` — MUST be platform roles, not job titles. The only
+                        valid values are: user, IT-workflow, dept_admin,
+                        org_admin, super_admin, decision-app-builder. The
+                        schema types this as a plain string array, so an
+                        invented role like "credit_manager" VALIDATES and then
+                        matches nobody -- the action exists, passes every check
+                        and can never be invoked by anyone. Map what they say
+                        onto a real role and read the mapping back: "your credit
+                        managers are dept_admin here -- so only they can approve
+                        it." If they name no approver, ask; do not default it.
+                        An action anyone may invoke is not a governed write.
+
+  Then read it back in their words before saving — "the system may update
+  status and decision_reason on loan_applications, for one application at a
+  time, and only a dept_admin may approve it" — and let them correct it.
+  Confirm this one out loud even when the rest was inferred: it is the only
+  answer here that lets software change their records.
+
 - **domain** — ask LAST, and say it is OPTIONAL. Any industry and any ISO
   country are valid; omitting it costs only locale packs and vertical defaults.
 
@@ -133,6 +179,10 @@ it.
 
 - Unknown keys are a BOOT FAILURE (`extra="forbid"`). Only fields in the schema.
 - Never put credentials in the file. Use `connection.env_prefix`.
+- `write_actions` is opt-in, exactly like `fraud_screening`. Absent means the
+  dataset is READ-ONLY — no write path exists for it, not a disabled one. Never
+  add one the user did not ask for, and never widen an `input_schema` beyond the
+  columns they named.
 - `fraud_screening` is opt-in. Absent means "no screening", which is a valid and
   common choice — do not switch it on to look thorough.
 - If the user says they do not know, leave the field out and say what that costs.
