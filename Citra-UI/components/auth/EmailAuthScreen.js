@@ -129,6 +129,9 @@ export default function EmailAuthScreen({ onAuthSuccess, onSwitchToGoogle, theme
     primary: '#2563eb',
     errorText: '#ef4444',
     infoText: '#22c55e',
+    // Amber, not the green above: 'we cannot email you' is a failure to
+    // deliver, and green reads as success.
+    warnText: isDark ? '#fbbf24' : '#b45309',
   };
 
   return (
@@ -142,7 +145,7 @@ export default function EmailAuthScreen({ onAuthSuccess, onSwitchToGoogle, theme
 
           {/* ── Error / Info ── */}
           {!!error && <Text style={[styles.msg, { color: colors.errorText }]}>{error}</Text>}
-          {!!info && <Text style={[styles.msg, { color: colors.infoText }]}>{info}</Text>}
+          {!!info && <Text style={[styles.msg, { color: noMail ? colors.warnText : colors.infoText }]}>{info}</Text>}
 
           {/* No mail provider: the operator has to reset it themselves.
               We deliberately do NOT show the reset token here -- handing
