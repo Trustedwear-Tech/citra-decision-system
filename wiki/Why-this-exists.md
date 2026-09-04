@@ -12,11 +12,20 @@
   </picture>
 </p>
 
-Every sector has decisions that carry real weight. Whether to energise a
-substation. Whether an aircraft part is fit to fly. Whether to sanction a
-loan, pay a claim, clear a shipment, escalate a transaction, or commit an
-asset to an operation. High-stakes calls, where being confidently wrong costs
-money, uptime, or lives.
+**AI still cannot be trusted with the decisions that carry money -- and the
+model is not the problem.**
+
+Every sector has them. Whether to energise a substation. Whether an aircraft
+part is fit to fly. Whether to sanction a loan, pay a claim, clear a shipment,
+escalate a transaction, or commit an asset to an operation. High-stakes calls,
+where being confidently wrong costs money, uptime, or lives.
+
+Point a model at one of these and it stalls. Not because the model is weak,
+but because what settles a hard case usually is not in the systems at all. The
+SOP is written for the average case. The tables hold fields, not reasons. So
+the recommendation arrives confident and hollow, the officer overrides it, and
+within a few weeks nobody opens it any more. That is where almost every
+enterprise AI pilot for high-stakes work is stuck right now.
 
 You may already have tried fine-tuning a model for exactly these.
 

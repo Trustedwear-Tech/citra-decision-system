@@ -21,7 +21,7 @@
   <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache%202.0-2563EB"></a>
   <img alt="Self-hosted" src="https://img.shields.io/badge/deploy-docker%20compose-1E3A8A">
   <img alt="Open models" src="https://img.shields.io/badge/models-open%20weights-4B5563">
-  <a href="https://discordapp.com/channels/1519703038724669551/1535992242433433700"><img alt="Discord" src="https://img.shields.io/badge/discord-join-5865F2"></a>
+  <a href="https://discord.gg/tXHMcja67"><img alt="Discord" src="https://img.shields.io/badge/discord-join-5865F2"></a>
 </p>
 
 <p align="center">
@@ -42,6 +42,17 @@ data never leaves.*
     <img alt="Left: a case arrives, is recommended with its citation, an officer corrects it, three officers agreeing turns that into a rule, and the next case uses it. Right: one sentence of plain English becomes a Decision App, an API, an embedded UI or a dashboard, over your own database described once by the ontology." src="assets/story/0-hero-light.svg" width="100%">
   </picture>
 </p>
+
+**AI still can't be trusted with the decisions that carry money — and the
+model isn't the problem.**
+
+What settles a hard case usually isn't in your systems. The SOP is written for
+the average case. The tables hold fields, not reasons. The thing that actually
+decides it lives in one experienced person's head, at the moment they decide
+— so a model recommends confidently with nothing real behind it, and the
+pilot stalls at exactly that point.
+
+Citra closes that gap at the only place it exists: the decision itself.
 
 **A complete decision system for the calls that carry real money — and it
 learns the judgement of the people who make them.**
@@ -316,6 +327,40 @@ rulebook never covered.
 
 ---
 
+## Community edition and Citra Enterprise
+
+**The core is fully open source and production-capable.** The builder, the
+runtime, the governed ontology and the decision ledger are all here, all
+Apache-2.0. You can run real operations on this edition, on your own
+infrastructure, forever, without ever talking to us.
+
+**Citra Enterprise** is the same core plus the things an institution needs
+once a decision system is load-bearing — scale, identity, assurance,
+continuity, and managed judgement memory:
+
+| | Community (Apache-2.0) | Citra Enterprise |
+|---|---|---|
+| **Decision engine, builder, ontology, ledger** | Everything | The same core |
+| **Memory management** | It works — you operate it | Memory health console, drift detection, automated clause hygiene, retention and unlearning at scale, promotion tuning |
+| **Scale** | Single-node Compose | HA multi-node, sharded vector tier, horizontal workers, capacity planning |
+| **Identity** | Local auth | SAML/OIDC SSO, SCIM provisioning, fine-grained RBAC |
+| **Security** | Standard | Encryption at rest with your KMS/HSM, air-gapped install, signed supply chain |
+| **Assurance** | The ledger, raw | Audit packs, tamper-evident export, regulator-ready artifacts |
+| **Continuity** | Your own backups | Point-in-time restore, verified restore drills, DR, multi-region |
+| **Hosting** | Your infrastructure | Dedicated private cloud — ours or yours (BYOC), single-tenant either way |
+| **SLA and maintenance** | Community issues | Contracted uptime and response, upgrades, migrations, patching |
+| **Roadmap** | Community roadmap | Prioritised engineering against the workflows you actually run |
+
+Setup and deployment, ontology authoring and custom development are quoted
+separately. Nothing above is removed from Community: it is a complete system
+that you run yourself.
+
+Talk to us at **[citra-ai.com](https://citra-ai.com)** or contact@citra-ai.com
+— or just ask in
+[Discord](https://discord.gg/tXHMcja67).
+
+---
+
 ## Support this project
 
 Citra Decision System is Apache-2.0 and free to run on your own infrastructure,
@@ -331,7 +376,7 @@ Apache-2.0 too.
 ## Community
 
 Questions and bug reports: [Issues](https://github.com/Trustedwear-Tech/citra-decision-system/issues).
-Conversation: [Discord](https://discordapp.com/channels/1519703038724669551/1535992242433433700).
+Conversation: [Discord](https://discord.gg/tXHMcja67).
 
 ## About
 
