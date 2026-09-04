@@ -232,6 +232,30 @@ class LocalAuthService {
 
   async forgotPassword(email) {
     const normalizedEmail = email.trim().toLowerCase();
+
+    // No mail provider, no reset link. The quickstart configures none, so on
+    // a fresh self-hosted install this is the normal case -- and answering
+    // "a link has been sent" strands the operator with no way to tell why
+    // nothing arrived.
+    //
+    // Checked BEFORE the user lookup, and deliberately: whether the
+    // deployment can send mail is a property of the deployment, not of the
+    // account, so the answer is identical for an address that exists and one
+    // that does not. Nothing is enumerable here.
+    //
+    // The token is NOT returned. Handing a reset token to an unauthenticated
+    // caller is account takeover by design -- anyone who knows an address
+    // gets in without the mailbox. The client renders the manual steps
+    // instead.
+    if (!envConfig.emailProvider) {
+      return {
+        email_delivery: false,
+        message:
+          'This deployment has no email provider configured (EMAIL_PROVIDER is unset), ' +
+          'so no reset link can be sent. Reset the password directly instead.',
+      };
+    }
+
     const user = await CitraAIUser.findOne({ email: normalizedEmail });
 
     // Always return same message to prevent email enumeration

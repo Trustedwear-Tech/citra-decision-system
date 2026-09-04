@@ -35,6 +35,9 @@ export default function EmailAuthScreen({ onAuthSuccess, onSwitchToGoogle, theme
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  // Set when the server reports no EMAIL_PROVIDER: no reset link is
+  // coming, so we show how to reset it by hand instead.
+  const [noMail, setNoMail] = useState(false);
 
   const isDark = theme === 'dark';
 
@@ -97,7 +100,16 @@ export default function EmailAuthScreen({ onAuthSuccess, onSwitchToGoogle, theme
     setLoading(true);
     try {
       const result = await apiCall('/forgot-password', { email });
-      setInfo(result.message || 'If an account exists, a reset link has been sent.');
+      // email_delivery:false means the deployment has no mail provider, so no
+      // link is coming. Say so and show how to reset it by hand rather than
+      // leaving the operator waiting for mail that cannot arrive.
+      if (result.email_delivery === false) {
+        setNoMail(true);
+        setInfo(result.message || 'No email provider is configured on this deployment.');
+      } else {
+        setNoMail(false);
+        setInfo(result.message || 'If an account exists, a reset link has been sent.');
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -131,6 +143,36 @@ export default function EmailAuthScreen({ onAuthSuccess, onSwitchToGoogle, theme
           {/* ── Error / Info ── */}
           {!!error && <Text style={[styles.msg, { color: colors.errorText }]}>{error}</Text>}
           {!!info && <Text style={[styles.msg, { color: colors.infoText }]}>{info}</Text>}
+
+          {/* No mail provider: the operator has to reset it themselves.
+              We deliberately do NOT show the reset token here -- handing
+              one to an unauthenticated caller is account takeover. These
+              steps need shell or admin access, which is the point. */}
+          {noMail && (
+            <View style={[styles.helpBox, { borderColor: colors.inputBorder, backgroundColor: colors.inputBg }]}>
+              <Text style={[styles.helpTitle, { color: colors.text }]}>Reset it yourself</Text>
+
+              <Text style={[styles.helpLabel, { color: colors.text }]}>The admin account</Text>
+              <Text style={[styles.helpBody, { color: colors.textSecondary }]}>
+                Run this from the repository root. It overwrites the password and keeps the
+                account&apos;s existing organisation and departments:
+              </Text>
+              <Text selectable style={[styles.helpCode, { color: colors.text, backgroundColor: colors.bg }]}>
+                {'docker compose exec citra-user-service \\\n  node src/scripts/create-admin.js ' + (email || '<your-email>') + ' \'<new-password>\''}
+              </Text>
+
+              <Text style={[styles.helpLabel, { color: colors.text }]}>Anyone else</Text>
+              <Text style={[styles.helpBody, { color: colors.textSecondary }]}>
+                Ask an administrator to reset it from Manage Users. Do not use the command above
+                for a normal account &mdash; it grants super_admin.
+              </Text>
+
+              <Text style={[styles.helpBody, { color: colors.textSecondary, marginTop: 10 }]}>
+                To send real reset emails, set EMAIL_PROVIDER (and the matching SMTP_* or SES
+                settings) in .env and restart the user service.
+              </Text>
+            </View>
+          )}
 
           {/* ── Name (register only) ── */}
           {mode === 'register' && (
@@ -258,6 +300,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 12,
     textAlign: 'center',
+  },
+  helpBox: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 14,
+  },
+  helpTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  helpLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  helpBody: {
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  helpCode: {
+    fontSize: 11.5,
+    lineHeight: 17,
+    fontFamily: 'monospace',
+    padding: 10,
+    borderRadius: 6,
+    marginTop: 6,
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
