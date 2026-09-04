@@ -112,6 +112,37 @@ def ensure_shared_dept_collection() -> str:
     return name
 
 
+#: An HTML comment carrying a copyright or SPDX line. Every Markdown SOP in
+#: this repository opens with one, and so does most policy documentation
+#: anywhere, because licence headers are added by tooling that does not know
+#: the file will later be read aloud to an officer.
+_BOILERPLATE_COMMENT = re.compile(
+    r"<!--(?:(?!-->).)*?(?:SPDX-License-Identifier|Copyright\s*\(c\)|Licensed under the)"
+    r"(?:(?!-->).)*?-->",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _strip_boilerplate(text: str) -> str:
+    """Remove licence headers before chunking.
+
+    The first chunk of every seeded SOP began with the file's Apache header, so
+    the top retrieval hit for "when is a motor claim rejected" opened on a
+    copyright notice instead of the clause. Retrieval still ranked correctly --
+    the rest of the chunk carried the meaning -- but a citation is shown to a
+    person, and the first thing that person saw was legal boilerplate, in the
+    one place the product is meant to be at its most convincing.
+
+    Deliberately narrow: only comments containing a copyright, an SPDX line or
+    the Apache preamble are removed. An HTML comment is a legitimate thing to
+    find in a policy document (authoring notes, review markers) and dropping
+    them all would be a content change nobody asked for.
+    """
+    if not text:
+        return text
+    return _BOILERPLATE_COMMENT.sub("", text).lstrip()
+
+
 def _chunk_uniform(text: str, filename: str) -> List[str]:
     """Chunk with the SAME LlamaIndex SentenceSplitter config the personal folder
     panel uses (2048-token chunks / 300 overlap, structure-aware) so dept +
@@ -123,7 +154,7 @@ def _chunk_uniform(text: str, filename: str) -> List[str]:
     splitter = SentenceSplitter(
         chunk_size=2048, chunk_overlap=300,
         paragraph_separator="\n\n", secondary_chunking_regex=r"[.!?;]\s+")
-    nodes = splitter.get_nodes_from_documents([LlamaDocument(text=text)])
+    nodes = splitter.get_nodes_from_documents([LlamaDocument(text=_strip_boilerplate(text))])
     return [n.get_content() for n in nodes if (n.get_content() or "").strip()]
 
 
