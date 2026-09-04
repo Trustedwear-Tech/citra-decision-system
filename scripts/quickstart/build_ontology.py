@@ -119,6 +119,22 @@ looks correct.
   never be flagged), `payment_proof` (pins the receipt-vs-ledger check), or
   `supporting` (never fingerprinted)? Getting this wrong is the worst error you
   can make here.
+
+  On the SAME column, always set `column_kind` and `mime_hint` too. They are a
+  different contract from `artifact_role` and both are needed:
+
+    * `artifact_role` decides whether fraud screening looks at the document.
+    * `column_kind` (`document`, `image`, `pdf`, `file_url`, …) is what makes the
+      column RESOLVABLE as media — it is the field `/datasets/resolve-media` and
+      the media stream read. A column with an artifact_role and no `column_kind`
+      is screened and cannot be opened: an app can flag a claim photo it is
+      unable to display. The registry accepts that file, so nothing tells you.
+    * `mime_hint` (e.g. `image/jpeg`, `application/pdf`) when the column's rows
+      are consistently one type.
+
+  You already know the column holds a document — that is the question you just
+  asked. Fill all three in the same pass, and never write an `artifact_role`
+  without a media `column_kind`.
 - **value_semantics** — which column is money, and what it means. Drives ROI.
 - **write-back** — ask which columns, if any, the system may UPDATE, and who
   may approve it. Everything is READ-ONLY until this is answered: a dataset with
@@ -655,6 +671,35 @@ def main() -> int:
     print("  library -> Upload SOPs -- and it registers itself. Adding a")
     print("  semantic source to this file as well would create a SECOND,")
     print("  empty library that cannot see the documents you uploaded.")
+    print()
+    print("  ── what this wizard could not reach ────────────────────────────")
+    print("  These are CAPABILITIES you already have, not missing features. An")
+    print("  interview cannot elicit them; sources.json can express all of them:")
+    print()
+    print("    Documents and images that stream through the MCP")
+    print("      A table column holding a claim photo, a policy PDF or a receipt")
+    print("      is served by the MCP, not fetched by the browser. That needs")
+    print("      column_kind + mime_hint on the column. Set them and an app can")
+    print("      display and stream the file.                             s6")
+    print()
+    print("    REST / API sources")
+    print("      Reads over HTTP alongside your tables. The builder wires them")
+    print("      and the runtime calls them. Needs base_url, the auth env_prefix,")
+    print("      options.invocation_template, and read_via.extra.request and")
+    print("      .response per dataset.                                   s5.1")
+    print()
+    print("    The app's own object store")
+    print("      Your MCP is already wired to a bucket for intermediate files an")
+    print("      app writes during a run -- BUCKET_NAME / BUCKET_ENDPOINT_URL /")
+    print("      BUCKET_ACCESS_KEY / BUCKET_SECRET_KEY in its compose file.")
+    print("      It defaults to the bundled MinIO at citra-minio:9000 with the")
+    print("      credentials minioadmin / minioadmin. That is fine on a laptop")
+    print("      and is NOT fine anywhere else -- change both before this")
+    print("      deployment leaves your machine.")
+    print()
+    print("    More than one source in a department")
+    print("      Each backend system is its own entry in the sources list. This")
+    print("      wizard writes the first one; add the rest by copying it.   s2")
     print()
     print("  NONE of that is hidden or paid. It is declarative, and it is all")
     print("  in one reviewable file with no secrets in it (sources declare")

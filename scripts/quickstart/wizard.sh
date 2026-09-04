@@ -116,6 +116,16 @@ rand()  { openssl rand -hex "$1" 2>/dev/null || head -c "$((${1}*2))" /dev/urand
 clear 2>/dev/null || true
 echo "$(b "Citra Decision System - setup wizard")"
 echo "Self-improving Decision Apps. Your infrastructure, your models, your data."
+echo
+echo "$(b "What this wizard is.") A quick start for the common case: SQL or Mongo"
+echo "tables, read access, one write action, and your SOPs. It gets you to a"
+echo "working deployment in one sitting."
+echo
+echo "$(b "What it is not.") A replacement for authoring the ontology by hand."
+echo "Sources that stream documents or images, REST/API sources, fraud"
+echo "screening and multi-source departments are richer than an interview can"
+echo "reach. They are all supported - they are declared in sources.json, and"
+echo "this wizard tells you exactly what it left for you when it finishes."
 
 # -- 1. .env ------------------------------------------------------------------
 hr; echo "$(b "Step 1/4 - environment file")"
@@ -269,11 +279,31 @@ if [ "$start_choice" = "2" ]; then
   echo
 
   db_kind="$(ask "Database kind (postgres | mysql | mongo | mssql | oracle | odata | salesforce | rest)" "postgres")"
-  echo "  Your connection string stays on this machine. It is never sent to a model."
-  db_conn="$(ask_secret "Connection string")"
+  # A REST source is introspected from its OpenAPI/Swagger SPEC, not from a
+  # connection string (introspect_source.introspect_openapi). Asking for a
+  # "connection string" here guaranteed a failure for anyone who picked `rest`:
+  # they had no way to know a spec URL was what was wanted, and the spec is not
+  # a secret, so reading it silently was wrong too.
+  case "$db_kind" in
+    rest|api|openapi|swagger)
+      echo "  A REST source is read from its OpenAPI (Swagger) spec - a URL or a"
+      echo "  local file. The spec is not a secret, so this is echoed as you type."
+      db_conn="$(ask "OpenAPI spec URL or file path" "")"
+      echo
+      echo "  $(b "Note") - the spec gives the wizard your resources and fields. It"
+      echo "  does NOT give it how to CALL the API: base_url, the auth env_prefix"
+      echo "  and options.invocation_template are yours to add afterwards, in"
+      echo "  sources.json (docs/sources-file.md s5.1). Until they are set, the"
+      echo "  builder can see the source and the runtime cannot call it."
+      ;;
+    *)
+      echo "  Your connection string stays on this machine. It is never sent to a model."
+      db_conn="$(ask_secret "Connection string")"
+      ;;
+  esac
   if [ -z "$db_conn" ]; then
     echo
-    echo "  [FAIL] no connection string, so there is nothing to build an ontology" >&2
+    echo "  [FAIL] nothing to introspect, so there is nothing to build an ontology" >&2
     echo "         from. An empty registry is VALID but useless - it would come up" >&2
     echo "         'working' with no data behind it. Re-run and choose the demo if" >&2
     echo "         you want to see the product first." >&2
