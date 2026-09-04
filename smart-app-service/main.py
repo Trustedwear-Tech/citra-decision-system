@@ -15819,6 +15819,36 @@ async def get_document_url(
         # decide whether to silently hide the Open button or alert.
         raise HTTPException(status_code=e.status, detail=f"discovery: {e}")
 
+    # A semantic source has NO MCP endpoint to ask. It is registered with an
+    # empty query_endpoint deliberately (source-mcp-template/registration.py):
+    # the MCP serves no RAG, so advertising an address would only route reads to
+    # something that 404s. Composing a URL from "" produced "/document_url" and
+    # httpx refused it for having no protocol — the guard working, reported as a
+    # transport fault. Its documents live in the platform's object store, put
+    # there by the same upload that produced the chunks, so ask Citra-Service.
+    if (resolved.source_type or "").strip().lower() == "semantic":
+        import httpx as _httpx
+        _base = (settings.citra_service_url or "").rstrip("/")
+        if not _base:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE,
+                                detail="CITRA_SERVICE_URL is not configured")
+        try:
+            async with _httpx.AsyncClient(timeout=30.0) as _c:
+                _r = await _c.post(
+                    f"{_base}/api/dept-library/document-url",
+                    json={"source_id": source_id, "doc_path": body.doc_path},
+                    headers={"Authorization": f"Bearer {user_jwt}"})
+        except _httpx.HTTPError as exc:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY,
+                                detail=f"citra-service transport: {exc}")
+        if _r.status_code >= 400:
+            try:
+                _d = _r.json().get("detail")
+            except Exception:  # noqa: BLE001 — a non-JSON error body
+                _d = _r.text[:200]
+            raise HTTPException(_r.status_code, detail=str(_d))
+        return _r.json()
+
     # The MCP exposes /document_url at the SAME host as /query — just a
     # different path. Compose the URL the same way panel_data builds the
     # /run_query URL from /query.

@@ -8,6 +8,16 @@
 
 /**
  * orgSeedService — read config/orgs.seed.json on startup, upsert each entry
+ *
+ * Ships EMPTY. It used to carry { id: "citra-ai", name: "Citra AI" }, and this
+ * runs on EVERY startup of EVERY deployment -- so every self-hosted install
+ * grew an organisation named after the vendor, sitting in its kill-switch
+ * console next to the operator's own. Same defect as config/depts.seed.json,
+ * which shipped a "Citra Software" department for the same reason.
+ *
+ * Emptying it is safe: the block at the end of seedOrgs() creates the
+ * deployment's own ORG_ID when the seed file does not name it, which is now
+ * always. The organisations of a deployment are the operator's to declare.
  * into the `orgs` collection.
  *
  * Idempotent: safe to run on every boot. Does NOT prune entries that are in

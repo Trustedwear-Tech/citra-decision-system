@@ -34,6 +34,7 @@ the routes are thin wrappers that read ``request.state`` and call them.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import uuid
 from datetime import datetime
@@ -330,6 +331,23 @@ def _derive_s3_key(s3_url: Optional[str]) -> Optional[str]:
         return s3_url.split(".amazonaws.com/", 1)[-1]
     if "s3://" in s3_url:
         return s3_url.split("s3://", 1)[-1].split("/", 1)[-1]
+    # Path-style endpoint: MinIO, and every other S3-compatible store. upload_file
+    # returns "{BUCKET_ENDPOINT_URL}/{bucket}/{key}" whenever BUCKET_ENDPOINT_URL
+    # is set (bucket.py), which is the case on every self-hosted install -- and
+    # neither branch above matches it. The whole URL was returned AS the key, so
+    # presigning prefixed endpoint and bucket a second time and produced
+    #   http://citra-minio:9000/citra-documents/dev/http%3A//citra-minio%3A9000/...
+    # which 404s. That is View and Download in the SOP Library panel, broken
+    # everywhere except AWS.
+    if s3_url.startswith(("http://", "https://")):
+        from urllib.parse import urlsplit, unquote
+        path = unquote(urlsplit(s3_url).path).lstrip("/")
+        bucket = os.getenv("BUCKET_NAME", "").strip()
+        if bucket and path.startswith(bucket + "/"):
+            return path[len(bucket) + 1:]
+        # No BUCKET_NAME to match on: the first segment is the bucket by the
+        # construction above, so drop exactly one.
+        return path.split("/", 1)[1] if "/" in path else path
     return s3_url
 
 
@@ -918,6 +936,64 @@ def _dept_library_file_or_403(folder_id: str, document_id: str, request: Request
         raise HTTPException(status.HTTP_404_NOT_FOUND,
                             detail="no stored file for this document")
     return rec
+
+
+@router.post("/api/dept-library/document-url")
+async def dept_library_document_url(request: Request, body: Dict[str, Any] = Body(...)):
+    """Presigned URL for one document of a dept library, addressed the way a
+    RECOMMENDATION addresses it: by (source_id, doc_path).
+
+    The runtime only ever holds those two. Its other route to a file goes
+    through the dept-MCP, which cannot serve a semantic source: those are
+    registered with an EMPTY query_endpoint on purpose (registration.py) so a
+    naive consumer cannot route a RAG read to an address that serves no RAG.
+    The consumer built its URL from that empty string anyway and produced
+    "/document_url", which httpx rejected as having no protocol -- a deliberate
+    guard surfacing as a transport error.
+
+    Reading these sources was short-circuited to the platform long ago
+    (call_citra_semantic_search); fetching the FILE behind a citation never
+    was. This is that same short-circuit.
+
+    Matching is on the stored filename rather than the whole doc_path: the two
+    ingest paths derive document_id differently (uuid5 of the path in the demo
+    seeder, uuid5 of "source:name" in ingest_sops) but BOTH store filename as
+    the basename, so that is the field that is actually reliable.
+    """
+    get_secure_user_id(request)
+    source_id = str(body.get("source_id") or "").strip()
+    doc_path = str(body.get("doc_path") or "").strip()
+    if not source_id or not doc_path:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="source_id and doc_path are both required")
+    org_id = _org_id(request)
+    lib = _folders().find_one({
+        "owner_type": OwnerType.DEPT, "folder_kind": FOLDER_KIND,
+        "source_id": source_id, "deleted": {"$ne": True},
+        **({"org_id": org_id} if org_id else {}),
+    })
+    if not lib:
+        raise HTTPException(status.HTTP_404_NOT_FOUND,
+                            detail=f"no dept library for source '{source_id}'")
+    if not can_read_dept_library(
+        roles=_roles(request), user_org_id=org_id, user_dept_ids=_dept_ids(request),
+        target_org=lib.get("org_id"), target_dept=lib.get("dept_id"),
+        target_public=bool(lib.get("public_within_org")),
+    ):
+        raise HTTPException(status.HTTP_403_FORBIDDEN,
+                            detail="not a member of that department")
+    base = doc_path.replace("\\", "/").rsplit("/", 1)[-1]
+    rec = get_mongo_client()[MONGODB_DATABASE]["files"].find_one(
+        {"folder_id": lib["_id"], "owner_type": "dept", "filename": base})
+    if not rec or not rec.get("s3_url"):
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            detail=f"'{base}' is not stored in the library for '{source_id}'. "
+                   "Its chunks are searchable but the original was never uploaded.")
+    from bucket import generate_presigned_url
+    return {"url": generate_presigned_url(_derive_s3_key(rec.get("s3_url")), 1800),
+            "filename": rec.get("filename"),
+            "content_type": rec.get("content_type")}
 
 
 @router.get("/api/dept-library/folders/{folder_id}/documents/{document_id}/download")
