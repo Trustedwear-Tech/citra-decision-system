@@ -488,7 +488,17 @@ hr; echo "$(b "Step 2/4 - AI provider (required)")"
 echo "Citra calls an LLM for recommendations and NL->SQL, and an embedding"
 echo "model to ground answers in your SOPs. One OpenRouter key covers both."
 echo
-echo "  Get a key: $(b "https://openrouter.ai/keys")"
+echo "$(b "Getting a key") - two minutes, no card needed to start:"
+echo "  1. Sign up at $(b "https://openrouter.ai")"
+echo "  2. Open $(b "https://openrouter.ai/keys") and press Create Key"
+echo "  3. Copy it once - OpenRouter shows the key only at creation"
+echo
+echo "OpenRouter offers free-tier models, which are enough to see the whole"
+echo "loop work: build an app, get a recommendation, cite a SOP, approve it."
+echo "Heavier use - a real corpus, a full queue, repeated builds - needs paid"
+echo "credit topped up in your OpenRouter account. Nothing is billed through"
+echo "Citra; the key is yours and the spend is visible in their dashboard."
+echo
 # Ask until there is a key. This used to EXIT on an empty answer -- fail loud,
 # which was the right instinct with the wrong remedy: an empty paste is a slip,
 # not a decision, and exiting threw away every answer given so far and made the
