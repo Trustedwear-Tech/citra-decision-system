@@ -871,10 +871,10 @@ export default function SignUpScreen({ theme, pendingAction, onAuthSuccess, onCa
           </Animated.View>
           <Animated.View style={{ opacity: textOpacity, alignItems: 'center' }}>
             <Text style={[styles.welcomeTitle, { color: colors.text }]}>
-              🧠 Welcome to Citra AI
+              Welcome to Citra AI
             </Text>
             <Text style={[styles.welcomeSubtitle, { color: colors.secondaryText }]}>
-              your intelligent partner for content creation.
+              the decision system that learns your team's judgement.
             </Text>
           </Animated.View>
         </View>
@@ -909,9 +909,9 @@ export default function SignUpScreen({ theme, pendingAction, onAuthSuccess, onCa
             <View style={[styles.logoContainer, { shadowColor: colors.accent }]}>
               <Image source={logo} style={styles.popupLogo} resizeMode="contain" />
             </View>
-            <Text style={[styles.popupTitle, { color: colors.text }]}>🧠 Citra AI</Text>
+            <Text style={[styles.popupTitle, { color: colors.text }]}>Citra AI</Text>
             <Text style={[styles.popupSubtitle, { color: colors.secondaryText }]}>
-              Citra is your intelligent partner for content creation
+              The decision system that learns your team&apos;s judgement
             </Text>
           </View>
           {/* Ultra Modern Popup Content */}
@@ -920,7 +920,7 @@ export default function SignUpScreen({ theme, pendingAction, onAuthSuccess, onCa
               <>
                 <View style={styles.modernCardHeader}>
                   <Text style={[styles.modernSubtitle, { color: colors.secondaryText }]}>
-                    Citra AI to enhance productivity. Just upload and manage vault data and let AI take care of rest.
+                    Sign in to your deployment. Every recommendation cites the record it came from.
                   </Text>
                 </View>
 
