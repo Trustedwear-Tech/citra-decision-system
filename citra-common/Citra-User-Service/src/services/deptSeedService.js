@@ -10,6 +10,9 @@
  * deptSeedService — read config/depts.seed.json on startup, upsert each entry
  * into the `depts` collection scoped to the deployment's ORG_ID.
  *
+ * Ships EMPTY. The departments of a deployment are the operator's to declare,
+ * not ours to guess, and an empty file is a no-op (see the guard below).
+ *
  * Idempotent: safe to run on every boot. Removes entries that are in the DB
  * but no longer in the seed file (so deleting from JSON = deleting from DB).
  * If you want to preserve hand-edited depts, drop the prune step.
@@ -43,6 +46,23 @@ async function seedDepts() {
 
   if (!Array.isArray(entries)) {
     console.warn(`[deptSeed] Seed file at ${absPath} is not an array — skipping.`);
+    return;
+  }
+
+  // An EMPTY seed means "this deployment does not seed departments", and must
+  // do nothing at all. It cannot fall through to the prune below: that deletes
+  // every dept whose id is $nin the seed ids, and $nin [] matches everything —
+  // so an empty file would wipe the org's departments on every boot, silently,
+  // including any created through the admin UI.
+  //
+  // Empty is also the SHIPPED default. This file used to contain
+  // { id: "citra-software", name: "Citra Software" } — a department in OUR org
+  // — and seedDepts upserts it into whatever ORG_ID the operator set. Every
+  // self-hosted install therefore had a "Citra Software" department created
+  // inside its own organisation, on every restart, and pruning made the file
+  // authoritative so deleting it by hand did not stick.
+  if (entries.length === 0) {
+    console.log('[deptSeed] seed file is empty — nothing to seed, nothing pruned.');
     return;
   }
 
