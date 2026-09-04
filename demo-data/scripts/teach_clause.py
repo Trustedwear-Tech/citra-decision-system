@@ -47,7 +47,25 @@ import time
 import urllib.error
 import urllib.request
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+# Errors have to be findable in a wall of INFO. A failed catalogue crawl printed
+# one actionable line and it scrolled past unread among two thousand others; the
+# run then produced four confusing 422s that read like a different problem.
+# Colour only when stderr is a terminal and NO_COLOR is unset, so a piped
+# transcript stays plain text.
+class _LevelColour(logging.Formatter):
+    _C = {"ERROR": "\033[31m", "CRITICAL": "\033[31m", "WARNING": "\033[33m"}
+
+    def format(self, record):
+        line = super().format(record)
+        colour = self._C.get(record.levelname)
+        return f"{colour}{line}\033[0m" if colour else line
+
+
+_FMT = "%(asctime)s %(levelname)s %(message)s"
+_want_colour = sys.stderr.isatty() and not __import__("os").environ.get("NO_COLOR")
+_handler = logging.StreamHandler()
+_handler.setFormatter((_LevelColour if _want_colour else logging.Formatter)(_FMT))
+logging.basicConfig(level=logging.INFO, handlers=[_handler])
 log = logging.getLogger(__name__)
 
 SLUG = "loan-application-triage"

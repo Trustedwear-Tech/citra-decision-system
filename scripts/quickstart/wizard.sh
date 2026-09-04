@@ -64,6 +64,112 @@ done
 # as a prereq but the binary name is not portable. Resolve it once.
 PY="$(command -v python3 || command -v python || true)"
 ENV_FILE="$REPO_ROOT/.env"
+# ── Checkpoints ──────────────────────────────────────────────────────────────
+# A re-run used to repeat everything: re-paste the key, re-interview the
+# schema, re-seed 211,000 rows, re-embed every SOP. On a slow connection that
+# is most of an hour to arrive back where you already were, and it is why an
+# install that fails at minute 35 gets abandoned rather than resumed.
+#
+# Two things are recorded, and BOTH must hold before a step is skipped:
+#   the checkpoint  -- this step reported success once, and when
+#   the artifact    -- the thing it produced is still there NOW
+# A checkpoint alone is a claim about the past. `docker compose down -v` makes
+# every one of them a lie, so the artifact is what is trusted; a checkpoint
+# whose artifact is gone is dropped and the step runs again.
+# ── Colour ───────────────────────────────────────────────────────────────────
+# Failures used to be the same white as the 2,000 INFO lines around them. The
+# one line that mattered -- the re-run command for a failed catalogue crawl --
+# scrolled past unread, and the install carried on to produce four confusing
+# 422s instead. Built with printf rather than $'..' so the escapes survive any
+# editor, and switched off when stderr is not a terminal or NO_COLOR is set.
+if [ -t 2 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_RED="$(printf '\033[31m')"; C_AMB="$(printf '\033[33m')"
+  C_GRN="$(printf '\033[32m')"; C_OFF="$(printf '\033[0m')"
+else
+  C_RED=""; C_AMB=""; C_GRN=""; C_OFF=""
+fi
+red()   { printf '%s%s%s\n' "$C_RED" "$*" "$C_OFF" >&2; }
+amber() { printf '%s%s%s\n' "$C_AMB" "$*" "$C_OFF" >&2; }
+green() { printf '%s%s%s\n' "$C_GRN" "$*" "$C_OFF"; }
+
+# ── Where we are, and what to say if we stop here ────────────────────────────
+# Every sub-script runs under `set -e`, so one failing step takes the whole
+# wizard down. That is correct -- carrying on after a failed catalogue crawl
+# only produces confusing errors later -- but it exited to the shell prompt
+# with NOTHING said: no cause, no state, no way back in. The trap makes the
+# ending always print, and the checkpoints make it able to say what survived.
+STEP="starting up"
+step() { STEP="$1"; }
+finish() {
+  rc=$?
+  [ "$rc" = "0" ] && return 0
+  echo >&2
+  red "════════════════════════════════════════════════════════════════"
+  red " SETUP STOPPED during: $STEP"
+  red "════════════════════════════════════════════════════════════════"
+  echo >&2
+  if [ -f "$STATE_FILE" ]; then
+    echo "  Completed before this, and kept:" >&2
+    while IFS='=' read -r _n _t; do
+      [ -n "$_n" ] && printf '    %s%-14s%s %s\n' "$C_GRN" "$_n" "$C_OFF" "$_t" >&2
+    done < "$STATE_FILE"
+  else
+    echo "  Nothing had completed yet." >&2
+  fi
+  echo >&2
+  echo "  $(b "Run the wizard again.") It resumes: every step above is skipped" >&2
+  echo "  after checking that what it produced is still on this machine." >&2
+  echo "    ./scripts/quickstart/wizard.sh" >&2
+  echo >&2
+  echo "  If the same step fails again, the cause is above this banner --" >&2
+  echo "  scroll up to the first $(red_word) line, not the last." >&2
+  [ -n "${CITRA_SETUP_LOG:-}" ] && echo "  Full transcript: $CITRA_SETUP_LOG" >&2
+  echo >&2
+  return 0
+}
+red_word() { printf '%sred%s' "$C_RED" "$C_OFF"; }
+trap finish EXIT
+STATE_FILE="$REPO_ROOT/logs/.setup-state"
+ck_mark()  { mkdir -p "$(dirname "$STATE_FILE")"; ck_drop "$1"; printf '%s=%s\n' "$1" "$(date +%Y-%m-%dT%H:%M:%S)" >> "$STATE_FILE"; }
+ck_has()   { [ -f "$STATE_FILE" ] && grep -q "^$1=" "$STATE_FILE" 2>/dev/null; }
+ck_when()  { [ -f "$STATE_FILE" ] && grep "^$1=" "$STATE_FILE" 2>/dev/null | tail -1 | cut -d= -f2; }
+ck_drop()  { [ -f "$STATE_FILE" ] || return 0; grep -v "^$1=" "$STATE_FILE" > "$STATE_FILE.tmp" 2>/dev/null || true; mv "$STATE_FILE.tmp" "$STATE_FILE"; }
+
+# The live checks. Cheap ones first -- a container listing costs nothing, a
+# psql count costs a second, and neither is worth skipping to save that.
+_running() { docker ps --format '{{.Names}}' 2>/dev/null | grep -q "$1"; }
+have_llm_key()  { [ -n "$(getkv LLM_API_KEY)" ]; }
+have_admin()    { [ -n "$(getkv ADMIN_EMAIL)" ] && [ -n "$(getkv ADMIN_PASSWORD)" ]; }
+have_stores()   { _running '^citra-mongodb$'; }
+have_services() { _running 'citra-service'; }
+have_ontology() { [ -s "$REPO_ROOT/my-source/sources.json" ]; }
+have_demo()     {
+  docker exec citra-ds-acme-bank-postgres psql -U acme_bank -d acme_bank -tAc \
+    'select count(*) from customers' 2>/dev/null | tr -d '[:space:]' | grep -qE '^[1-9]'
+}
+# SOPs live in Mongo (the library record) and Milvus (the chunks). Mongo is the
+# cheaper of the two to ask and cannot be right while Milvus is empty, because
+# the ingest writes the folder LAST. Checked because `down -v` wipes both: a
+# sops checkpoint with no library behind it would skip ingestion and leave an
+# install whose recommendations cite nothing -- the exact failure this guards.
+have_sops()     {
+  local _pw _db
+  _pw="$(getkv MONGODB_PASSWORD)"; [ -n "$_pw" ] || return 1
+  _db="$(getkv MONGODB_DATABASE)"; _db="${_db:-citra}"
+  docker exec citra-mongodb mongosh --quiet -u root -p "$_pw" \
+      --authenticationDatabase admin "$_db" \
+      --eval 'db.folders.countDocuments({folder_kind:"sop_library",deleted:{$ne:true}})' \
+      2>/dev/null | tr -d '[:space:]' | grep -qE '^[1-9]'
+}
+# done <name> <live-check>: true only if the checkpoint AND the artifact agree.
+done_already() {
+  ck_has "$1" || return 1
+  if "$2"; then return 0; fi
+  echo "  [!] '$1' was completed $(ck_when "$1") but what it produced is gone." >&2
+  echo "      Running it again." >&2
+  ck_drop "$1"
+  return 1
+}
 
 # Before the FIRST question. The wizard asks for an org, an admin password
 # and an API key before it ever reaches setup.sh, so a host that cannot run
@@ -201,6 +307,17 @@ echo
 echo "$(b "Options:")  --fresh   wipe .env, volumes and sources.json first"
 echo "          --help    what each one does"
 echo
+# What a previous run got through. Printed before the first question so the
+# operator knows what is about to be skipped rather than discovering it.
+if [ -f "$STATE_FILE" ] && [ "$FRESH" != "1" ]; then
+  echo "$(b "Resuming.") Completed by an earlier run:"
+  while IFS='=' read -r _n _t; do
+    [ -n "$_n" ] && printf '    %-14s %s\n' "$_n" "$_t"
+  done < "$STATE_FILE"
+  echo "  Each is re-checked against what is actually on this machine, and"
+  echo "  re-run if what it produced has gone. $(b "--fresh") ignores all of it."
+  echo
+fi
 echo "$(b "What this wizard is.") A quick start for the common case: SQL or Mongo"
 echo "tables, read access, one write action, and your SOPs. It gets you to a"
 echo "working deployment in one sitting."
@@ -212,6 +329,7 @@ echo "reach. They are all supported - they are declared in sources.json, and"
 echo "this wizard tells you exactly what it left for you when it finishes."
 
 # -- 1. .env ------------------------------------------------------------------
+step "the environment file"
 hr; echo "$(b "Step 1/4 - environment file")"
 
 # --fresh: say what will be destroyed, in full, before destroying any of it.
@@ -223,7 +341,7 @@ if [ "$FRESH" = "1" ]; then
   echo "  Apps, decisions, memory and uploaded SOPs all live in those volumes."
   echo
   if yes_no "Delete them and start from scratch?" "n"; then
-    rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json"
+    rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json" "$STATE_FILE"
     docker compose -f docker-compose.quickstart.yml down -v --remove-orphans 2>/dev/null || true
     echo "  [ok] local state removed"
   else
@@ -250,16 +368,45 @@ if [ -f "$ENV_FILE" ]; then
     fi
   done
   # Values that WERE defaults in an older .env.example and are not any more.
-  # Cleared, never rewritten to something new: the point is that the operator
-  # is asked, rather than inheriting an answer they never gave.
+  # Cleared so the interview ASKS, rather than the operator inheriting an
+  # answer they never gave. Only values something later asks for belong here.
   _cleared=0
   for _pair in "ADMIN_EMAIL=admin@citra-ai.com" "ADMIN_EMAIL=admin@example.com" \
-               "ADMIN_PASSWORD=ChangeMe!123" "ADMIN_API_KEY=citra-local-admin-key-change-me" \
-               "ORG_ID=citra-ai"; do
+               "ADMIN_PASSWORD=ChangeMe!123" "ORG_ID=citra-ai"; do
     _k="${_pair%%=*}"; _v="${_pair#*=}"
     if [ "$(getkv "$_k")" = "$_v" ]; then setkv "$_k" ""; _cleared=$((_cleared + 1)); fi
   done
-  echo "  [ok] reconciled with .env.example ($_added key(s) added, $_cleared retired default(s) cleared)"
+
+  # GENERATED secrets are a different case, and getting this wrong took a stack
+  # down. ADMIN_API_KEY was in the list above, so a reconcile cleared it -- and
+  # nothing refills it: setup.sh generates secrets only when it CREATES .env,
+  # and .env.example now ships it empty. discovery-service then did exactly the
+  # right thing and refused to boot rather than fall back to a default:
+  #   RuntimeError: Required environment variable 'ADMIN_API_KEY' is not set
+  # A secret nobody asks for must be REGENERATED, never merely cleared.
+  _regen=0
+  _cur="$(getkv ADMIN_API_KEY)"
+  if [ -z "$_cur" ] || [ "$_cur" = "citra-local-admin-key-change-me" ]; then
+    setkv ADMIN_API_KEY "$(rand 24)"; _regen=$((_regen + 1))
+  fi
+
+  # The remaining secrets are NOT regenerated on sight, deliberately. Rotating
+  # CONNECTION_ENCRYPTION_KEY orphans every stored connection secret (they were
+  # encrypted with the old one) and rotating JWT_SECRET invalidates every
+  # session. Silently "repairing" either destroys data, so an empty one stops
+  # here and says so.
+  for _k in JWT_SECRET MCP_API_KEY MCP_SERVICE_API_KEY \
+            SMART_APP_INTERNAL_SIGNING_KEY CONNECTION_ENCRYPTION_KEY; do
+    if [ -z "$(getkv "$_k")" ]; then
+      echo "  [FAIL] $_k is empty in .env." >&2
+      echo "         It is not regenerated automatically: a new" >&2
+      echo "         CONNECTION_ENCRYPTION_KEY cannot decrypt secrets stored under" >&2
+      echo "         the old one, and a new JWT_SECRET signs nobody out cleanly." >&2
+      echo "         Set it by hand, or start over with: $0 --fresh" >&2
+      exit 1
+    fi
+  done
+  echo "  [ok] reconciled with .env.example ($_added added, $_cleared cleared, $_regen regenerated)"
 else
   echo "Generating .env from .env.example with fresh random secrets..."
   cp .env.example "$ENV_FILE"
@@ -284,6 +431,7 @@ fi
 # editing .env — self-hosting is the same edit, pointing *_BASE_URL at your own
 # vLLM. Offering four providers here only multiplied the ways a first run could
 # half-work (e.g. an OpenAI key that reasons but was never wired to embeddings).
+step "the AI provider key"
 hr; echo "$(b "Step 2/4 - AI provider (required)")"
 echo "Citra calls an LLM for recommendations and NL->SQL, and an embedding"
 echo "model to ground answers in your SOPs. One OpenRouter key covers both."
@@ -299,7 +447,11 @@ echo "  Get a key: $(b "https://openrouter.ai/keys")"
 # eight .env variables and surfaced mid-demo as
 #   LLM endpoint returned 401: Missing Authentication header
 # with nothing pointing back at this prompt.
-key=""
+key=""; _key_reused=0
+if done_already llm_key have_llm_key; then
+  echo "  [ok] a key is already configured and was verified on $(ck_when llm_key)."
+  if yes_no "Replace it?" "n"; then key=""; else key="$(getkv LLM_API_KEY)"; _key_reused=1; fi
+fi
 while [ -z "$key" ]; do
   key="$(ask_secret "Paste your OpenRouter API key")"
   if [ -z "$key" ]; then
@@ -330,6 +482,10 @@ while [ -z "$key" ]; do
   fi
 done
 
+# Stamped only when the key was actually checked against OpenRouter on THIS
+# run. Re-stamping on the reuse path would put today's date on a verification
+# that never happened, and the next run would report it as fresh.
+if [ "$_key_reused" = "0" ]; then ck_mark llm_key; fi
 setkv LLM_BASE_URL "https://openrouter.ai/api/v1"
 setkv LLM_MODEL    "deepseek/deepseek-v4-pro:nitro"
 setkv LLM_API_KEY  "$key"
@@ -384,6 +540,7 @@ while :; do
 done
 
 # -- 4. Super-admin + organisation --------------------------------------------
+step "the super-admin"
 hr; echo "$(b "Step 4/4 - super-admin")"
 echo "The first user. Created as an admin OF the organisation below, which is"
 echo "what makes the apps, sources and queues in it visible on sign-in."
@@ -457,9 +614,14 @@ else
 fi
 echo "  [ok] super-admin = $adm_email   admin of = $org_id"
 
+step "bringing up the data stores"
 hr; echo "$(b "Bringing up the data stores")"
-if yes_no "Run setup now (data stores + database resources)?" "y"; then
+if done_already stores have_stores; then
+  echo "  [ok] already running (since $(ck_when stores)) - skipping setup."
+  echo "      Re-run it yourself with: ./scripts/quickstart/setup.sh"
+elif yes_no "Run setup now (data stores + database resources)?" "y"; then
   "$REPO_ROOT/scripts/quickstart/setup.sh"
+  ck_mark stores
 fi
 
 if [ "$start_choice" = "2" ]; then
@@ -518,11 +680,20 @@ if [ "$start_choice" = "2" ]; then
   dept_id="$(ask "First department id (e.g. claims, ops)" "ops")"
   admin_email="$adm_email"
 
+  step "building the ontology"
   hr; echo "$(b "Building the ontology")"
   echo "A model reads your schema and asks what it cannot infer."
   echo "Nothing is written until you confirm it."
   echo
-  if ! "$PY" "$REPO_ROOT/scripts/quickstart/build_ontology.py" \
+  _skip_ontology=0
+  if done_already ontology have_ontology; then
+    echo "  An ontology from $(ck_when ontology) is already at my-source/sources.json."
+    echo "  Rebuilding calls a model once per table and asks the same questions again."
+    if ! yes_no "Build it again?" "n"; then _skip_ontology=1; fi
+  fi
+  if [ "$_skip_ontology" = "1" ]; then
+    echo "  [ok] keeping the existing ontology"
+  elif ! "$PY" "$REPO_ROOT/scripts/quickstart/build_ontology.py" \
         --kind "$db_kind" --conn "$db_conn" \
         --org-id "$org_id" --dept "$dept_id" \
         --out "$REPO_ROOT/my-source/sources.json"; then
@@ -531,12 +702,15 @@ if [ "$start_choice" = "2" ]; then
     echo "    cp source-mcp-template/templates/<cell>.sources.json my-source/sources.json" >&2
     echo "    python source-mcp-template/validate_sources.py my-source/sources.json" >&2
     exit 1
+  else
+    ck_mark ontology
   fi
 
   hr; echo "$(b "Starting the platform")"
   SOURCES_FILE="$REPO_ROOT/my-source/sources.json" \
     "$REPO_ROOT/scripts/quickstart/start.sh" --demo none
 
+  step "creating your organisation"
   hr; echo "$(b "Creating your organisation")"
   # Without this the catalogue is scoped to an org that does not exist - which
   # fails SILENTLY, so it is a hard failure here rather than a warning.
@@ -550,6 +724,7 @@ if [ "$start_choice" = "2" ]; then
   # team already does with those facts. Without them a recommendation cannot
   # cite anything, which is most of the difference between this and a chatbot
   # over your database.
+  step "ingesting your SOPs"
   hr; echo "$(b "Your SOPs - the rules your apps decide by")"
   echo
   echo "Your database says what IS TRUE. Your SOPs say what to DO about it:"
@@ -566,7 +741,16 @@ if [ "$start_choice" = "2" ]; then
   echo "the layer that always wins -- what the app learns from your officers"
   echo "sits underneath your SOPs, never over them."
   echo
-  sop_dir="$(ask "Folder of SOP documents (blank to upload from the UI later)" "")"
+  if done_already sops have_sops; then
+    echo "  SOPs were ingested on $(ck_when sops). Re-ingesting re-embeds every"
+    echo "  document, which costs time and tokens for a corpus that has not changed."
+    if ! yes_no "Ingest a folder of SOPs again?" "n"; then sop_dir=""; else sop_dir="__ask__"; fi
+  else
+    sop_dir="__ask__"
+  fi
+  if [ "$sop_dir" = "__ask__" ]; then
+    sop_dir="$(ask "Folder of SOP documents (blank to upload from the UI later)" "")"
+  fi
 
   if [ -n "$sop_dir" ]; then
     if [ ! -d "$sop_dir" ]; then
@@ -584,6 +768,7 @@ if [ "$start_choice" = "2" ]; then
         MSYS_NO_PATHCONV=1 docker exec -w /app/Citra-Service "$SVC_CID" \
           python /app/scripts/quickstart/ingest_sops.py \
             --org "$org_id" --dept "$dept_id" --dir /app/_sops_in \
+          && ck_mark sops \
           || echo "  [!] SOP ingestion failed - your apps will have no rules to cite." >&2
       fi
     fi
@@ -598,6 +783,7 @@ if [ "$start_choice" = "2" ]; then
   "$PY" "$REPO_ROOT/scripts/quickstart/verify_install.py" --org-id "$org_id" || true
 else
   # ---- Path 1: the demo -----------------------------------------------------
+  step "starting services and seeding the demo"
   hr; echo "$(b "What the acme-bank demo is")"
   echo
   echo "A retail bank and general insurer, invented for this demo. Postgres"
@@ -618,8 +804,22 @@ else
   echo "citations, override one with a reason, then watch the governed write land"
   echo "in Postgres and the outcome fold into memory for the next case."
   echo
-  if yes_no "Start all services and seed the acme-bank demo?" "y"; then
-    "$REPO_ROOT/scripts/quickstart/start.sh" --demo acme-bank
+  _demo_flag="--demo acme-bank"
+  if done_already demo have_demo; then
+    echo "  The acme-bank data was seeded on $(ck_when demo) and is still in Postgres."
+    echo "  Re-seeding rewrites all 16 tables - about 211,000 rows."
+    if ! yes_no "Seed it again?" "n"; then
+      _demo_flag="--no-demo"
+      echo "  [ok] keeping the seeded data; starting services only"
+    fi
+  fi
+  if yes_no "Start all services?" "y"; then
+    # shellcheck disable=SC2086
+    "$REPO_ROOT/scripts/quickstart/start.sh" $_demo_flag
+    ck_mark services
+    # NOT `[ ... ] && ck_mark demo`: a false test there returns non-zero as the
+    # last command of the block, and `set -e` takes the whole wizard down.
+    if [ "$_demo_flag" = "--demo acme-bank" ]; then ck_mark demo; fi
     # Finish at "I ran it and it worked", not at "containers started" — the
     # citra-flows pattern, which is the best of the three installs.
     hr; echo "$(b "Verifying")"
@@ -633,16 +833,54 @@ hr
 # declined "start now" it never ran at all, leaving a generated password
 # readable only by grepping .env.
 adm_pw="$(getkv ADMIN_PASSWORD)"; adm_pw="${adm_pw:-<the password you set>}"
-echo "$(b "Done.")  Open  $(b "http://localhost:8081")  and sign in:"
+green "════════════════════════════════════════════════════════════════"
+green " READY"
+green "════════════════════════════════════════════════════════════════"
 echo
-echo "    email     $adm_email"
-echo "    password  $adm_pw"
-echo "    org       $org_id   (you are an admin of it, so you see everything in it)"
+echo "$(b "1. Open it")"
+echo "     $(b "http://localhost:8081")"
+echo "     email     $adm_email"
+echo "     password  $adm_pw"
+echo "     org       $org_id   (you are an admin of it, so you see everything)"
+echo
+echo "$(b "2. What this run did")"
+if [ -f "$STATE_FILE" ]; then
+  while IFS='=' read -r _n _t; do
+    [ -n "$_n" ] && printf '     %s✓%s %-14s %s\n' "$C_GRN" "$C_OFF" "$_n" "$_t"
+  done < "$STATE_FILE"
+else
+  echo "     (no checkpoints recorded)"
+fi
+echo
+echo "$(b "3. Do this first")"
+if [ "$start_choice" != "2" ]; then
+  echo "     Open $(b "Claims triage") from the home screen. Read the recommendation"
+  echo "     AND the citation under it, then override one with a reason. That"
+  echo "     override is what the system learns from - three officers agreeing"
+  echo "     on the same reason becomes a clause the next case cites."
+  echo "     To see it as an officer rather than an admin:"
+  echo "       user menu -> Login as User"
+else
+  echo "     Open the $(b "builder") from the home screen and describe an app in one"
+  echo "     sentence. It reads the ontology you just built to know which tables"
+  echo "     exist, what they mean, and which columns it may write."
+fi
+echo
+echo "$(b "4. Look at the data while you use it")"
+echo "     Mongo     mongodb://127.0.0.1:27017   db citra    apps, decisions, clauses"
+echo "     Postgres  localhost:15444             acme_bank   the bank's own records"
+echo "     Milvus    localhost:19530                         SOP vectors"
+echo "     MinIO     http://localhost:9001                   uploaded files"
+echo "     Passwords for all of them are in $(b ".env")."
+echo
+echo "$(b "5. Useful from here")"
+echo "     make ps                              what is running"
+echo "     make logs                            tail the core services"
+echo "     make down                            stop, keep the data"
+echo "     ./scripts/quickstart/wizard.sh       re-run; resumes, changes keys"
+echo "     ./scripts/quickstart/wizard.sh --fresh   start over from nothing"
+[ -n "${CITRA_SETUP_LOG:-}" ] && echo "     transcript of this run: $CITRA_SETUP_LOG"
 echo
 if [ "$start_choice" != "2" ]; then
-  echo "The four Decision Apps are on your home screen. To see the demo as one of"
-  echo "the officer personas instead: user menu -> Login as User."
-  echo "Point it at your own data later:  docs/change-the-demo.md"
+  echo "Point it at your own data later:  $(b "docs/change-the-demo.md")"
 fi
-echo "Credentials live in .env (ADMIN_EMAIL / ADMIN_PASSWORD)."
-echo "Re-run this wizard any time to change keys:  ./scripts/quickstart/wizard.sh"

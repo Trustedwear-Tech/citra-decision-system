@@ -31,6 +31,14 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+if [ -t 2 ] && [ -z "${NO_COLOR:-}" ]; then
+  C_RED="$(printf '\033[31m')"; C_AMB="$(printf '\033[33m')"; C_OFF="$(printf '\033[0m')"
+else
+  C_RED=""; C_AMB=""; C_OFF=""
+fi
+red()   { printf '%s%s%s\n' "$C_RED" "$*" "$C_OFF" >&2; }
+amber() { printf '%s%s%s\n' "$C_AMB" "$*" "$C_OFF" >&2; }
+
 seed_usage() {
   cat >&2 <<'USAGE'
 Re-seed a demo tenant: its Postgres system of record, SOP corpus and apps.
@@ -254,9 +262,26 @@ fi
 # -- 5. Build the data catalogue ----------------------------------------------
 # data-discovery runs a leader-gated crawl at startup, so the catalogue is
 # usually already populated by now. This is the explicit refresh.
-echo "-> [5/6] refreshing the data catalogue"
-JWT_SECRET="$JWT_SECRET" "$PY" scripts/quickstart/build_catalogue.py --org "$TENANT" \
-  || echo "   [!] catalogue crawl failed - the Builder's dataset palette will be empty. Re-run: JWT_SECRET=... python scripts/quickstart/build_catalogue.py --org $TENANT"
+echo "-> [5/7] refreshing the data catalogue"
+# STOPS on failure. This used to warn and carry on, and every step after it was
+# then guaranteed to fail: publishing validates each data_source.ref against the
+# catalogue, so an empty catalogue rejects all four apps with
+#   E_UNKNOWN_DATASET ... ref does not match any catalogue dataset
+# The operator saw four 422s and "published=0 / 4" -- a plausible-looking app
+# problem -- while the real cause was one warning far above. A step whose
+# failure invalidates everything downstream must not be survivable.
+if ! JWT_SECRET="$JWT_SECRET" "$PY" scripts/quickstart/build_catalogue.py --org "$TENANT"; then
+  red "[FAIL] the catalogue crawl failed, so nothing can be published."
+  echo "       Every app binds its data sources to catalogue datasets; with an" >&2
+  echo "       empty catalogue all four would be rejected as E_UNKNOWN_DATASET." >&2
+  echo >&2
+  echo "       Usually data-discovery-service was not reachable. Check it, then" >&2
+  echo "       re-run this step alone and the seed will continue from here:" >&2
+  echo "         docker ps | grep data-discovery" >&2
+  echo "         JWT_SECRET=... $PY scripts/quickstart/build_catalogue.py --org $TENANT" >&2
+  echo "         ./scripts/quickstart/seed-demo.sh $TENANT" >&2
+  exit 1
+fi
 
 # -- 6. Publish the Decision Apps ---------------------------------------------
 echo "-> [6/7] publishing Decision Apps"
@@ -315,7 +340,7 @@ PYEOF
   esac
   case "$body" in
     *'"prod_url"'*)  echo "   [ok] $slug" ;;
-    *)               echo "   [!!] $slug did not promote: $(printf '%s' "$body" | head -c 160)" ;;
+    *)               red "   [!!] $slug did not promote: $(printf '%s' "$body" | head -c 160)" ;;
   esac
 done
 
