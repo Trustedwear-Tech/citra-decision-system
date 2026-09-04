@@ -161,13 +161,33 @@ have_sops()     {
       --eval 'db.folders.countDocuments({folder_kind:"sop_library",deleted:{$ne:true}})' \
       2>/dev/null | tr -d '[:space:]' | grep -qE '^[1-9]'
 }
-# done <name> <live-check>: true only if the checkpoint AND the artifact agree.
+# done <name> <live-check>: has this step's RESULT already been achieved?
+#
+# The artifact decides, not the checkpoint. Requiring both was wrong in one
+# direction: the first run after these checkpoints existed had no state file,
+# so a .env with a working key, a seeded Postgres and an ingested SOP library
+# were all ignored and every step ran again. Nobody upgrading got any benefit
+# until their second run.
+#
+#   artifact present, no checkpoint -> ADOPT. An install that predates this,
+#                                      or a step run by hand. Both are done.
+#   artifact gone, checkpoint present -> the checkpoint is a lie. Drop it,
+#                                      run the step, and say why.
+#   both -> skip, and report when it was done.
 done_already() {
-  ck_has "$1" || return 1
-  if "$2"; then return 0; fi
-  echo "  [!] '$1' was completed $(ck_when "$1") but what it produced is gone." >&2
-  echo "      Running it again." >&2
-  ck_drop "$1"
+  if "$2"; then
+    if ! ck_has "$1"; then
+      ck_mark "$1"
+      echo "  [ok] '$1' was already in place - adopting it (not recorded by an" >&2
+      echo "       earlier run of this wizard)." >&2
+    fi
+    return 0
+  fi
+  if ck_has "$1"; then
+    echo "  [!] '$1' was completed $(ck_when "$1") but what it produced is gone." >&2
+    echo "      Running it again." >&2
+    ck_drop "$1"
+  fi
   return 1
 }
 
@@ -447,10 +467,42 @@ echo "  Get a key: $(b "https://openrouter.ai/keys")"
 # eight .env variables and surfaced mid-demo as
 #   LLM endpoint returned 401: Missing Authentication header
 # with nothing pointing back at this prompt.
+# 0 = OpenRouter accepted it, 1 = it rejected it, 2 = could not tell.
+# Being unable to REACH OpenRouter says nothing about the key, so 2 is never
+# treated as a failure -- it is reported and allowed through.
+verify_key() {
+  command -v curl >/dev/null 2>&1 || return 2
+  case "$(curl -s -o /dev/null -m 12 -w '%{http_code}' \
+            -H "Authorization: Bearer $1" \
+            https://openrouter.ai/api/v1/key 2>/dev/null || true)" in
+    200)     return 0 ;;
+    401|403) return 1 ;;
+    *)       return 2 ;;
+  esac
+}
+
 key=""; _key_reused=0
-if done_already llm_key have_llm_key; then
-  echo "  [ok] a key is already configured and was verified on $(ck_when llm_key)."
-  if yes_no "Replace it?" "n"; then key=""; else key="$(getkv LLM_API_KEY)"; _key_reused=1; fi
+_existing="$(getkv LLM_API_KEY)"
+if [ -n "$_existing" ]; then
+  # Checked, not assumed. A key already in .env is the common case on a re-run,
+  # and asking someone to find and paste it again -- when we can confirm it in
+  # one second -- is the kind of friction that makes people stop re-running.
+  printf '  A key is already in .env (%s characters). Checking it... ' "${#_existing}"
+  # Status captured explicitly. Reading $? in an elif after an if-condition
+  # does work, and is one edit away from silently meaning something else.
+  # `|| _vk=$?` also keeps a non-zero return from tripping `set -e`.
+  _vk=0; verify_key "$_existing" || _vk=$?
+  if [ "$_vk" = 0 ]; then
+    echo "accepted."
+    if yes_no "Use this key?" "y"; then key="$_existing"; _key_reused=1; ck_mark llm_key; fi
+  elif [ "$_vk" = 1 ]; then
+    echo "rejected."
+    amber "  OpenRouter rejected the key in .env. Paste a current one."
+  else
+    echo "could not be checked."
+    amber "  OpenRouter was unreachable, so the key in .env is unverified."
+    if yes_no "Use it anyway?" "y"; then key="$_existing"; _key_reused=1; fi
+  fi
 fi
 while [ -z "$key" ]; do
   key="$(ask_secret "Paste your OpenRouter API key")"
