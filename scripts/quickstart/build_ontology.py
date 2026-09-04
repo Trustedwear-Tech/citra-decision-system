@@ -166,8 +166,25 @@ looks correct.
   Confirm this one out loud even when the rest was inferred: it is the only
   answer here that lets software change their records.
 
-- **domain** — ask LAST, and say it is OPTIONAL. Any industry and any ISO
-  country are valid; omitting it costs only locale packs and vertical defaults.
+- **domain** — ask LAST, in one question. The industry itself is optional, but
+  three of its fields change ANSWERS rather than presentation, so ask them
+  plainly rather than defaulting:
+
+    * `country` — an ISO code. Drives the locale pack.
+    * `currency` — an ISO code. A money column read as the wrong currency makes
+      every threshold, every ROI figure and every "flag anything over 50,000"
+      wrong by whatever the exchange rate happens to be, and nothing looks
+      broken.
+    * `date_order` — DMY or MDY. 03/04/2026 is two different days. Get it wrong
+      and every ageing, every "older than 30 days" and every date comparison is
+      silently off, most visibly near month boundaries. If the schema uses real
+      DATE types this matters less; if dates arrive as strings it matters a
+      great deal, so look before you ask and say which you found.
+
+  `vertical` is what you should offer a guess at, from the tables you have read
+  — "this looks like lending; correct me" — because it only selects vertical
+  defaults. The three above should be confirmed, not guessed. `sub_vertical`,
+  `region`, `language` and `notes` are optional and not worth a round trip.
 
 ## What you may infer without asking
 
@@ -610,6 +627,35 @@ def main() -> int:
               f"startup.", file=sys.stderr)
         return 1
     print(f"  [ok] validates against {MCP.name}/validate_sources.py")
+
+    # An interview cannot cover a 28-field source, an 18-field dataset and a
+    # 17-field column without becoming an interrogation nobody finishes. It asks
+    # the handful that change answers and leaves the rest at defaults -- so say
+    # so, name the file, and say how to change it. Anything not said here gets
+    # discovered by reading the source code, which is a bad way to learn that
+    # your deployment has a feature.
+    print()
+    print("  ── what was NOT asked ──────────────────────────────────────────")
+    print("  Sensible defaults were taken for everything else, including:")
+    print("    fraud screening      OFF   document reuse / tampering checks")
+    print("    payment proof        off   receipt-vs-ledger matching")
+    print("    verify_against       off   document-vs-record comparison")
+    print("    date_rules           none  date sanity rules")
+    print("    visibility           default roles")
+    print("    taxonomy, rag, relationships, per-column sensitivity")
+    print()
+    print(f"  They are all editable in {out} — it is a plain, reviewable")
+    print("  file with no secrets in it (sources declare env_prefix, never a")
+    print("  password). The field reference is:")
+    print(f"    {MCP.name}/docs/sources-file.md")
+    print()
+    print("  After editing, validate and restart the two services that read it:")
+    print(f"    python {MCP.name}/validate_sources.py {out}")
+    print("    docker compose restart citra-mcp-service     # registry is cached at boot")
+    print("    docker compose restart data-discovery-service # catalogue crawls at startup")
+    print()
+    print("  Both load their view ONCE on startup, so an edit without a restart")
+    print("  changes nothing and looks like the edit did not work.")
     return 0
 
 
