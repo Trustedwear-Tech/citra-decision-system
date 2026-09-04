@@ -206,7 +206,10 @@ export const updateDocumentTitle = (route, itemName = null) => {
   }
 
   const titles = {
-    [ROUTES.HOME]: 'Citra AI - Create Intelligent Content',
+    // "Create Intelligent Content" was the retired consumer product. It is what
+    // a browser tab, a bookmark and any screen recording showed after sign-in,
+    // one click after a landing page describing a decision system.
+    [ROUTES.HOME]: 'Citra AI — Decision System',
     [ROUTES.CHAT]: 'Chat | Citra AI',
   };
 

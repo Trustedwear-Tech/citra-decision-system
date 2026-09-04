@@ -52,6 +52,25 @@ for f in Citra-UI/IntroScreen.js Citra-UI/MobileIntroScreen.js; do
   fi
 done
 
+# The overlay is 26 files, not two. The line-count check above catches the two
+# tracked ones it overwrites; the rest -- components/intro/, components/pages/,
+# citra/, assets -- arrive as UNTRACKED paths under Citra-UI/ that no rule here
+# matched, so `git add -A` while the overlay was applied would have committed
+# commercially-licensed source into an Apache-2.0 repository.
+#
+# Licence header rather than path: it does not care what the overlay is called
+# today, and it catches any other private file that wanders in. Only the first
+# 12 lines are read, where a header lives -- so a doc quoting an identifier
+# further down is not a false positive.
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  spdx="$(git show ":$f" 2>/dev/null | head -12 | grep -oE 'SPDX-License-Identifier:[[:space:]]*[A-Za-z0-9.+-]+' | head -1 | sed 's/.*:[[:space:]]*//')"
+  case "$spdx" in
+    ""|"Apache-2.0") ;;
+    *) bad="$bad$f  (declares $spdx — this repository publishes Apache-2.0 only. Overlay applied? Run: private/scripts/overlay.sh --revert)"$'\n' ;;
+  esac
+done <<< "$staged"
+
 if [ -n "$bad" ]; then
   echo ""
   echo "[pre-commit] BLOCKED — private material is staged for the public repo:"
