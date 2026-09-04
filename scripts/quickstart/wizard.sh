@@ -42,6 +42,55 @@ ask() {
   read -r ans || true; printf '%s' "${ans:-$def}"
 }
 ask_secret() { local q="$1" ans; printf '%s: ' "$q" >&2; read -rs ans || true; printf '\n' >&2; printf '%s' "$ans"; }
+
+# Ask until there is an answer, and until it is a plausible one.
+#
+# The wizard used to fill these in itself -- an email on the vendor's domain, an
+# org id inherited from .env.example, a random password nobody chose. Every one
+# of those is a value the operator did not pick and will not remember, sitting
+# in the identity layer of a system that decides things about money. Accepting
+# an invented answer is worse than asking again.
+#
+# A value ALREADY IN .env is still offered as the default. That is not a guess:
+# it is what this deployment is currently configured with, and re-running the
+# wizard should not force it to be retyped.
+ask_required() {
+  local q="$1" def="${2:-}" validator="${3:-}" ans
+  while :; do
+    ans="$(ask "$q" "$def")"
+    if [ -z "$ans" ]; then printf '  ! required\n' >&2; continue; fi
+    if [ -n "$validator" ] && ! "$validator" "$ans"; then continue; fi
+    printf '%s' "$ans"; return 0
+  done
+}
+
+# Deliberately looser than the server's regex: the job here is to catch a
+# typo or an empty Enter, not to adjudicate RFC 5322.
+valid_email() {
+  case "$1" in
+    *@*.*) return 0 ;;
+    *) printf '  ! that is not an email address\n' >&2; return 1 ;;
+  esac
+}
+valid_slug() {
+  case "$1" in
+    *[!a-z0-9-]*) printf '  ! lowercase letters, digits and hyphens only\n' >&2; return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+# Never echoed, never defaulted, always confirmed. MIN_PASSWORD_LENGTH in
+# Citra-User-Service is 8; asking for less here only moves the rejection later.
+ask_password() {
+  local p1 p2
+  while :; do
+    p1="$(ask_secret "Super-admin password (at least 8 characters)")"
+    if [ "${#p1}" -lt 8 ]; then printf '  ! at least 8 characters\n' >&2; continue; fi
+    p2="$(ask_secret "Confirm password")"
+    if [ "$p1" != "$p2" ]; then printf '  ! they do not match\n' >&2; continue; fi
+    printf '%s' "$p1"; return 0
+  done
+}
 yes_no() { local q="$1" def="${2:-y}" a; a="$(ask "$q (y/n)" "$def")"; case "$a" in y|Y|yes|YES) return 0;; *) return 1;; esac; }
 
 rand()  { openssl rand -hex "$1" 2>/dev/null || head -c "$((${1}*2))" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
@@ -84,7 +133,6 @@ else
   setkv MCP_SERVICE_API_KEY "$MCP_KEY"
   setkv SMART_APP_INTERNAL_SIGNING_KEY "$(rand 32)"
   setkv CONNECTION_ENCRYPTION_KEY "$(rand 32)"
-  setkv ADMIN_PASSWORD "$(rand 6)"
   echo "  [ok] secrets generated (JWT, MCP key + service key, signing + connection keys, admin pw)"
 fi
 
@@ -160,25 +208,22 @@ hr; echo "$(b "Step 4/4 - super-admin")"
 echo "The first user. Created as an admin OF the organisation below, which is"
 echo "what makes the apps, sources and queues in it visible on sign-in."
 echo
-# Default the admin to the operator's own org, not ours. This used to offer
+# No default unless .env already carries one. This used to offer
 # admin@citra-ai.com, so anyone who pressed Enter ran their deployment on an
-# account branded with the vendor's domain -- and, since ORG_ID is asked for
-# a few lines below, on an address that had nothing to do with the org they
-# just named. example.com is reserved by RFC 2606, so the fallback can never
-# collide with a real address.
-cur_email="$(getkv ADMIN_EMAIL)"
-if [ -z "$cur_email" ]; then
-  _org="$(getkv ORG_ID)"
-  if [ -n "$_org" ]; then cur_email="admin@${_org}.local"; else cur_email="admin@example.com"; fi
-fi
-adm_email="$(ask "Super-admin email" "$cur_email")"; setkv ADMIN_EMAIL "$adm_email"
+# account branded with the vendor's domain, unrelated to the org they are
+# asked for a few lines later.
+adm_email="$(ask_required "Super-admin email" "$(getkv ADMIN_EMAIL)" valid_email)"
+setkv ADMIN_EMAIL "$adm_email"
 
 # ORG_ID is what start.sh passes to create-admin.js as --org. Leaving it at the
 # .env.example default put the admin in an org with nothing in it: everything
 # was installed correctly and the screen was empty anyway.
 if [ "$start_choice" = "2" ]; then
-  cur_org="$(getkv ORG_ID)"; cur_org="${cur_org:-my-org}"
-  org_id="$(ask "Organisation id (lowercase, no spaces, e.g. acme-bank)" "$cur_org")"
+  # Whatever is in .env is offered, EXCEPT the value .env.example ships:
+  # inheriting that silently is what the comment above describes, an admin of
+  # an org with nothing in it.
+  cur_org="$(getkv ORG_ID)"; [ "$cur_org" = "citra-ai" ] && cur_org=""
+  org_id="$(ask_required "Organisation id (lowercase, no spaces, e.g. acme-bank)" "$cur_org" valid_slug)"
 else
   # Not a free choice on the demo path: the demo's data, apps and officer
   # personas are all seeded into acme-bank, so an admin of any other org would
@@ -189,8 +234,14 @@ else
 fi
 setkv ORG_ID "$org_id"
 
-if yes_no "Set a super-admin password now? (otherwise a random one is generated and printed)" "n"; then
-  apw="$(ask_secret "Super-admin password")"; [ -n "$apw" ] && setkv ADMIN_PASSWORD "$apw"
+# Asked, never generated. The old prompt defaulted to "n" and minted a random
+# hex string instead, so almost nobody chose their own password and the one
+# they got existed only in .env and in the closing banner -- which is how you
+# end up locked out of a deployment with no mail provider to reset it.
+if [ -n "$(getkv ADMIN_PASSWORD)" ] && yes_no "Keep the existing super-admin password?" "y"; then
+  :
+else
+  setkv ADMIN_PASSWORD "$(ask_password)"
 fi
 echo "  [ok] super-admin = $adm_email   admin of = $org_id"
 
@@ -349,7 +400,7 @@ hr
 # but that scrolls past long before the wizard finishes -- and if the user
 # declined "start now" it never ran at all, leaving a generated password
 # readable only by grepping .env.
-adm_pw="$(getkv ADMIN_PASSWORD)"; adm_pw="${adm_pw:-<see ADMIN_PASSWORD in .env>}"
+adm_pw="$(getkv ADMIN_PASSWORD)"; adm_pw="${adm_pw:-<the password you set>}"
 echo "$(b "Done.")  Open  $(b "http://localhost:8081")  and sign in:"
 echo
 echo "    email     $adm_email"
