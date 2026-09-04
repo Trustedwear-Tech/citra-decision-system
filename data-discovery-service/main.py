@@ -160,8 +160,34 @@ def _verify_jwt(authorization: Optional[str], settings: Settings) -> dict:
         )
     except Exception as exc:
         raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
-    if not claims.get("tenant_id"):
-        raise HTTPException(status_code=401, detail="Token missing tenant_id")
+    # The tenant claim, under any of the names the platform issues it.
+    #
+    # No token this system mints has ever carried "tenant_id". Citra-User-Service
+    # issues "org_id", and smart-app-service has always resolved the scope as
+    # tenant_id -> org_id -> dept_id (auth.py) and then STORED the result under
+    # the name tenant_id -- which is why decision_records and smartapp_apps hold
+    # tenant_id values that are org ids like "acme-bank".
+    #
+    # This service required "tenant_id" outright and never implemented that
+    # fallback, so every human user's token was rejected: /catalogue answered
+    # 401 "Token missing tenant_id", the builder could not read the catalogue,
+    # and a fresh install could not build an app at all. The convention was
+    # already settled; this file was the one that did not follow it.
+    #
+    # Normalised once, here, rather than at the seven call sites below that
+    # index claims["tenant_id"] directly -- those keep working unchanged, and a
+    # future one cannot forget the fallback.
+    tenant = (
+        claims.get("tenant_id")
+        or claims.get("org_id")
+        or claims.get("dept_id")
+    )
+    if not tenant:
+        raise HTTPException(
+            status_code=401,
+            detail="Token carries no tenant scope (tenant_id, org_id or dept_id)",
+        )
+    claims["tenant_id"] = tenant
     return claims
 
 
