@@ -513,10 +513,10 @@ export default function PowerAppsScreen({
       const resp = await SmartAppService.setSelfLearning(item.slug, target);
       setSelfLearn((s) => ({ ...s, [item.slug]: !!resp.auto_refresh }));
       Alert.alert(
-        'Self-learning',
+        'Learning from outcomes',
         resp.auto_refresh
-          ? 'Auto-learning ON — validated outcomes fold into memory automatically.'
-          : 'Manual only — use "Refresh grounding" to learn.'
+          ? 'ON — once a record\'s real outcome is known, it folds into this app\'s examples automatically.'
+          : 'OFF — outcomes are still recorded; the examples update when you click "Refresh grounding".'
       );
     } catch (e) {
       Alert.alert('Self-learning', (e && e.message) || 'Could not change self-learning.');
@@ -1504,9 +1504,9 @@ export default function PowerAppsScreen({
                   color={colors.text}
                 />
                 <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>
-                  {selfLearn[item.slug] === true ? 'Auto-learn: on'
-                    : selfLearn[item.slug] === false ? 'Auto-learn: off'
-                    : 'Auto-learn'}
+                  {selfLearn[item.slug] === true ? 'Outcomes: auto'
+                    : selfLearn[item.slug] === false ? 'Outcomes: manual'
+                    : 'Outcomes'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -1517,7 +1517,7 @@ export default function PowerAppsScreen({
                 hitSlop={6}
               >
                 <Ionicons name="trending-up-outline" size={14} color={colors.text} />
-                <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Learning</Text>
+                <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Decision quality</Text>
               </TouchableOpacity>
             )}
             {item.fraud_enabled && canEdit && (
@@ -2227,7 +2227,7 @@ export default function PowerAppsScreen({
             <View style={[styles.triggersHeader, { borderBottomColor: colors.border }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.triggersTitle, { color: colors.text }]} numberOfLines={1}>
-                  Auto-learn · {autoLearnApp?.title || autoLearnApp?.slug}
+                  Learning from outcomes · {autoLearnApp?.title || autoLearnApp?.slug}
                 </Text>
                 <Text style={[styles.triggersSub, { color: colors.textSecondary }]}>
                   Currently {autoLearnApp && selfLearn[autoLearnApp.slug] === true ? 'ON' : autoLearnApp && selfLearn[autoLearnApp.slug] === false ? 'OFF' : 'unknown'}.
@@ -2245,7 +2245,7 @@ export default function PowerAppsScreen({
                 When <Text style={{ fontWeight: '700' }}>OFF</Text>, outcomes are still tracked, but the app only updates its examples when you click “Refresh grounding”.
               </Text>
               <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18 }}>
-                Either way, the app always learns from your own approve/reject decisions — this setting only controls learning from source-system outcomes.
+                Either way, the app always learns from your own approve/reject decisions and the reasons you give — that is what forms clauses, and this setting does not affect it. This controls one input only: outcomes coming back from the source system.
               </Text>
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
                 <TouchableOpacity onPress={() => setAutoLearnApp(null)} style={[styles.footerBtnGhost, { borderColor: colors.border }]}>

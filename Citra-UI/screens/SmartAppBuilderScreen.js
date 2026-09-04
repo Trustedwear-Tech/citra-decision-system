@@ -141,6 +141,13 @@ export default function SmartAppBuilderScreen({
         : session?.primaryPageKind === 'embed' ? 'embed'
         : 'conversational');
 
+  // Declared ABOVE ingest because ingest reads both: it clears the watchdog and
+  // releases the button when OpenClaw's cancellation arrives. They used to sit
+  // ~140 lines below it, which works only because ingest is never called during
+  // the first render -- one refactor away from a temporal-dead-zone throw.
+  const [stopping, setStopping] = useState(false);
+  const stopWatchdogRef = useRef(null);
+
   // ── event handling ─────────────────────────────────────────────
   const ingest = useCallback((rawEvt) => {
     const evt = normalizeEvent(rawEvt);
@@ -247,6 +254,27 @@ export default function SmartAppBuilderScreen({
       setIsStreaming(false);
       return;
     }
+
+    // OpenClaw's own confirmation that the run stopped. The adapter yields
+    // `{"type":"cancelled"}` when the gateway reports phase=aborted, and the
+    // relay passes chunks through verbatim -- so this is the agent saying it
+    // stopped, not the UI assuming it did. Note `type`, not `kind`: it comes
+    // straight from the adapter and never went through the kind mapping, which
+    // is why every branch above missed it.
+    if (evt.type === 'cancelled') {
+      if (stopWatchdogRef.current) {
+        clearTimeout(stopWatchdogRef.current);
+        stopWatchdogRef.current = null;
+      }
+      setIsStreaming(false);
+      setStopping(false);
+      setMessages((prev) => [
+        ...prev.map((m) => (m.id === assistantIdRef.current ? { ...m, streaming: false } : m)),
+        { id: nextId(), role: 'assistant', text: 'Stopped. I have aborted the current run.', streaming: false },
+      ]);
+      assistantIdRef.current = null;
+      return;
+    }
   }, [onPublished]);
 
   // ── chat send ──────────────────────────────────────────────────
@@ -287,24 +315,81 @@ export default function SmartAppBuilderScreen({
     });
   }, [session?.session_id, ingest]);
 
-  const [stopping, setStopping] = useState(false);
 
+  // Ask the AGENT to stop, then wait for it to say it has.
+  //
+  // This used to abort the local stream FIRST and then post /cancel, which is
+  // backwards: OpenClaw emits `{"type":"cancelled"}` on the open stream a
+  // moment after chat.abort lands, and we had already stopped reading. The
+  // button therefore only ever stopped the OUTPUT -- whether the run stopped
+  // was never known, and the failure modes (/cancel returning 404, 403, or 409
+  // "no live builder pod" after the idle sweep) were swallowed by an empty
+  // catch and rendered identically to success.
+  //
+  // Now: post the cancel, leave the stream open, and let the agent's own
+  // cancellation event close it. The watchdog is the honest fallback -- if
+  // nothing arrives we hang up locally and SAY we could not confirm, rather
+  // than showing a clean stop over a run that may still be spending.
   const cancelStream = useCallback(async () => {
-    streamRef.current?.cancel?.();
-    if (session?.session_id) {
-      // Tell OpenClaw to abort the run server-side too — without this
-      // the model keeps generating tokens we'd just throw away.
-      try { await cancelBuilderTurn(session.session_id); } catch { /* best-effort */ }
+    if (!session?.session_id) {
+      streamRef.current?.cancel?.();
+      setIsStreaming(false);
+      return;
     }
-    setIsStreaming(false);
+    let res = null;
+    try {
+      res = await cancelBuilderTurn(session.session_id);
+    } catch (e) {
+      res = { ok: false, error: e?.message || 'cancel request failed' };
+    }
+    if (res && res.ok === false) {
+      setMessages((prev) => [...prev, {
+        id: nextId(), role: 'assistant', streaming: false,
+        text: `⚠️ Could not reach the agent to stop it${res.error ? ` — ${res.error}` : ''}. It may still be running.`,
+      }]);
+      setStopping(false);
+      return;
+    }
+    // The server can tell us there was nothing to stop. `already_ended` means
+    // the turn had finished before the click; `pod_unreachable` means the pod
+    // died between idle sweeps and the cancel intent is satisfied either way.
+    // Neither will ever produce a `cancelled` event -- there is no run left to
+    // abort -- so arming the watchdog for one guaranteed a spurious "the agent
+    // did not confirm within 8s", which is alarming and untrue.
+    if (res && (res.already_ended || res.pod_unreachable)) {
+      setIsStreaming(false);
+      setStopping(false);
+      setMessages((prev) => [...prev, {
+        id: nextId(), role: 'assistant', streaming: false,
+        text: res.pod_unreachable
+          ? 'Nothing to stop — the builder session had already ended.'
+          : 'Nothing to stop — that turn had already finished.',
+      }]);
+      return;
+    }
+    if (stopWatchdogRef.current) clearTimeout(stopWatchdogRef.current);
+    stopWatchdogRef.current = setTimeout(() => {
+      stopWatchdogRef.current = null;
+      streamRef.current?.cancel?.();
+      setIsStreaming(false);
+      setStopping(false);
+      setMessages((prev) => [...prev, {
+        id: nextId(), role: 'assistant', streaming: false,
+        text: '⚠️ Stop was sent, but the agent did not confirm within 8s. Output here has stopped; the run may still be finishing.',
+      }]);
+    }, 8000);
   }, [session?.session_id]);
 
   // Stop button (top bar): abort the in-flight builder run immediately so a
   // runaway / looping build stops spending. Reuses cancelStream (local stream
   // cancel + OpenClaw chat.abort via /build/{id}/cancel).
+  // `stopping` is cleared by the cancellation event or the watchdog, NOT here.
+  // Clearing it in a finally flipped the button back to "Stop" the instant the
+  // POST returned -- which is the wobble: it looked like nothing happened,
+  // because nothing yet had.
   const handleStop = useCallback(async () => {
     setStopping(true);
-    try { await cancelStream(); } finally { setStopping(false); }
+    await cancelStream();
   }, [cancelStream]);
 
   // Mid-stream BA input — forwards to OpenClaw's chat.send. The active

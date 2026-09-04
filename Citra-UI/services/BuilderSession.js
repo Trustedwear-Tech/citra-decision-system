@@ -133,15 +133,20 @@ export function streamBuilderChat(sessionId, message, handlers = {}) {
  * Returns true on success.
  */
 export async function cancelBuilderTurn(sessionId) {
-  if (!sessionId) return false;
+  if (!sessionId) return { ok: false, error: 'no session' };
   try {
     const r = await authService.authenticatedFetch(
       buildUrl(sessionId, '/cancel'),
       { method: 'POST' },
     );
-    return r.ok;
-  } catch {
-    return false;
+    if (r.ok) return { ok: true, ...(await r.json().catch(() => ({}))) };
+    // The reason matters and used to be discarded: 409 "build session has no
+    // live builder pod" is a normal outcome after the idle sweep reaps a pod,
+    // and is not the same as a stop that worked.
+    const body = await r.json().catch(() => ({}));
+    return { ok: false, status: r.status, error: body.detail || body.error || `HTTP ${r.status}` };
+  } catch (e) {
+    return { ok: false, error: e?.message || 'cancel request failed' };
   }
 }
 

@@ -477,7 +477,7 @@ export default function OperationsControlScreen({ visible, onClose, theme }) {
                               </View>
                             )}
                             <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: l.auto_learn ? '#F0FDF4' : '#F3F4F6' }}>
-                              <Text style={{ fontSize: 10, fontWeight: '700', color: l.auto_learn ? GREEN : sub }}>{l.auto_learn ? 'auto-learn ON' : 'manual'}</Text>
+                              <Text style={{ fontSize: 10, fontWeight: '700', color: l.auto_learn ? GREEN : sub }}>{l.auto_learn ? 'outcomes: auto' : 'outcomes: manual'}</Text>
                             </View>
                             {inert && (
                               <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: '#FEF3C7' }}>

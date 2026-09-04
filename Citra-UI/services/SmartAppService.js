@@ -34,7 +34,13 @@ class SmartAppService {
 
   async _fetch(path, options = {}) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.defaultTimeout);
+    let timedOut = false;
+    // A timed-out request used to surface as the browser's raw abort
+    // exception -- "signal is aborted without reason" -- which names neither
+    // the request nor the timeout, and reads like a bug rather than a slow
+    // backend. The flag distinguishes OUR timer from any other abort, so a
+    // genuine cancellation is still reported as itself.
+    const timer = setTimeout(() => { timedOut = true; controller.abort(); }, this.defaultTimeout);
     try {
       const res = await authService.authenticatedFetch(`${this.baseURL}${path}`, {
         ...options,
@@ -52,6 +58,13 @@ class SmartAppService {
         throw new Error(detail || `${path} → ${res.status}`);
       }
       return body;
+    } catch (e) {
+      if (timedOut) {
+        throw new Error(
+          `${path} did not respond within ${Math.round(this.defaultTimeout / 1000)}s`,
+        );
+      }
+      throw e;
     } finally {
       clearTimeout(timer);
     }

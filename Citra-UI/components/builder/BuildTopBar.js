@@ -77,14 +77,11 @@ export default function BuildTopBar({
         <QueueModeChip currentMode={queueMode} onPress={onPressQueueMode} />
       ) : null}
 
-      {sessionId ? (
-        <View style={[styles.sessionChip, { borderColor: colors.border }]}>
-          <Ionicons name="hardware-chip-outline" size={12} color={colors.textSecondary} />
-          <Text style={[styles.sessionChipText, { color: colors.textSecondary }]} numberOfLines={1}>
-            {sessionId}
-          </Text>
-        </View>
-      ) : null}
+      {/* The build-session id (bs_…) used to sit here as a chip. It is a support
+          identifier — useful in a bug report, meaningless while building, and
+          it occupied the most valuable strip of the screen next to Stop. The
+          value is still passed in as `sessionId` and still gates the Stop
+          button below; it is simply not displayed. */}
 
       {!draft && sessionId && onStop ? (
         <TouchableOpacity

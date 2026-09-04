@@ -173,12 +173,10 @@ const MobileFeatureCard = ({ feature, onPress, containerWidth }) => {
 };
 
 const ACCOUNT_FEATURES = [
-  {
-    id: 'credits',
-    icon: 'stats-chart-outline',
-    title: 'Tokens',
-    color: '#8B5CF6',
-  },
+  // 'Tokens' removed — same dead route as the sidebar entry: there is no
+  // credits screen in this repository, so the card opened a blank page. Its
+  // handler below was `onOpenCredits?.()`, optional-chained, so on mobile the
+  // tap did nothing at all and said nothing either.
   {
     id: 'support',
     icon: 'headset-outline',
@@ -378,8 +376,9 @@ const MobileHomeScreen = ({
                 },
               ]}
               onPress={() => {
-                if (feature.id === 'credits') onOpenCredits?.();
-                else if (feature.id === 'support') onOpenSupport?.();
+                // The 'credits' branch was removed with its card: the screen it
+                // opened never existed in this repository.
+                if (feature.id === 'support') onOpenSupport?.();
               }}
               activeOpacity={0.7}
             >

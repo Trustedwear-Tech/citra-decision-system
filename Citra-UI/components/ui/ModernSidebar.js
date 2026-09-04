@@ -289,15 +289,14 @@ export const ModernSidebar = ({
       active: activeScreen === 'data-store',
       onPress: () => onNavigate('data-store'),
     }] : []),
-    {
-      id: 'credits',
-      icon: 'stats-chart-outline',
-      title: 'Tokens',
-      subtitle: 'Token usage & management',
-      type: 'button',
-      active: activeScreen === 'credits',
-      onPress: () => onNavigate('credits'),
-    },
+    // 'Tokens' (id: credits) removed — it navigated to a screen that does not
+    // exist in this repository. App.js knows the name in four places, all of
+    // them chrome: the header title says "Tokens", the layout drops the padding
+    // for it — and no branch ever renders any content, so the page came up
+    // BLANK. There is no CreditsScreen in screens/ and git history has never
+    // held one; token accounting is a hosted-billing concern, not part of a
+    // self-hosted deployment. Removed rather than stubbed: a menu item that
+    // opens nothing is worse than no menu item.
     {
       id: 'support',
       icon: 'card',
@@ -376,7 +375,7 @@ export const ModernSidebar = ({
       return [
         homeButton,
         ...menuItems.filter(item =>
-          ['data-store', 'credits', 'support'].includes(item.id)
+          ['data-store', 'support'].includes(item.id)
         )
       ];
     }
