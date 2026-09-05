@@ -842,7 +842,30 @@ if [ "$start_choice" = "2" ]; then
   if [ -n "$PY" ]; then "$PY" "$REPO_ROOT/scripts/quickstart/list_sources.py" || true; fi
   echo
 
-  db_kind="$(ask "Database kind (postgres | mysql | mongo | mssql | oracle | odata | salesforce | rest)" "postgres")"
+  # VALIDATED, because the cost of a typo here is paid minutes later and in the
+  # wrong place. A plain ask accepted "postgre"; the interview then ran against a
+  # driver that does not exist and the model reported it as "the backend is
+  # defaulting to `postgre` which isn't in its supported driver list" -- an
+  # accurate sentence that sends the operator to look at the backend rather than
+  # at the letter they dropped. Same shape as the 1-2 prompt earlier: re-ask
+  # until the answer is one of the kinds actually listed.
+  while :; do
+    db_kind="$(ask "Database kind (postgres | mysql | mongo | mssql | oracle | odata | salesforce | rest)" "postgres")"
+    db_kind="$(printf '%s' "$db_kind" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+    case "$db_kind" in
+      postgres|postgresql)      db_kind=postgres;   break ;;
+      mysql|mariadb)            db_kind=mysql;      break ;;
+      mongo|mongodb)            db_kind=mongo;      break ;;
+      mssql|sqlserver)          db_kind=mssql;      break ;;
+      oracle)                                       break ;;
+      odata|sap)                db_kind=odata;      break ;;
+      salesforce|soql|sfdc)     db_kind=salesforce; break ;;
+      rest|api|openapi|swagger)                     break ;;
+      *) echo "  ! '$db_kind' is not one of the kinds listed above." >&2
+         echo "    Pick one exactly - a near-miss fails much later, inside the" >&2
+         echo "    interview, and the error will not mention the spelling." >&2 ;;
+    esac
+  done
   # A REST source is introspected from its OpenAPI/Swagger SPEC, not from a
   # connection string (introspect_source.introspect_openapi). Asking for a
   # "connection string" here guaranteed a failure for anyone who picked `rest`:
