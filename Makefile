@@ -42,6 +42,9 @@ seed-demo: ## Re-seed the demo tenant (TENANT=acme-bank by default)
 ontology: ## Build a sources.json from a live database, by interview (ARGS='--org x --dept y ...')
 	bash scripts/quickstart/make-ontology.sh $(ARGS)
 
+source-db: ## Stand up a separate database to test "connect my own" against (ARGS=--fresh|--down|--dsn)
+	bash scripts/quickstart/source-db.sh $(ARGS)
+
 validate-sources: ## Check a sources.json against the MCP registry schema
 	python source-mcp-template/validate_sources.py \
 	  $(or $(FILE),demo-data/tenants/acme-bank/mcp/sources.json)

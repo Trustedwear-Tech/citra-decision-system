@@ -1,0 +1,61 @@
+# Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+# Author: Rohit Kumar Chandan
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+
+# ─────────────────────────────────────────────────────────────────────────
+# A STANDALONE source database — someone else's system of record.
+#
+# Brought up by scripts/quickstart/source-db.sh and seeded with the same
+# generator the acme-bank demo uses, so the data is familiar while the
+# database is emphatically not the demo's:
+#
+#                      demo tenant                 this
+#   container   citra-ds-acme-bank-postgres   citra-source-db-postgres
+#   host port   15444                         15544
+#   database    acme_bank                     northwind
+#   compose     citra-ds-acme-bank-demo       citra-source-db
+#   volume      acme-bank-pgdata              source-db-pgdata
+#
+# Nothing is shared, so the two can sit side by side and `down -v` on either
+# leaves the other intact. That separation is the whole point: it is what
+# lets "connect my own database" be tested against a database Citra did not
+# install, without the demo's tenant answering for it.
+#
+# NOT on citra-network, deliberately. A customer's database is not on the
+# platform's network, and pretending otherwise hides the one thing this test
+# exists to exercise: the MCP reaching a database that is somewhere else,
+# through a published port. make_mcp.py rewrites a `localhost` connection
+# string to host.docker.internal for exactly that reason.
+# ─────────────────────────────────────────────────────────────────────────
+name: citra-source-db
+
+services:
+  source-db:
+    image: postgres:16-alpine
+    container_name: ${SOURCE_DB_CONTAINER:-citra-source-db-postgres}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SOURCE_DB_NAME:-northwind}
+      POSTGRES_USER: ${SOURCE_DB_USER:-northwind}
+      # A throwaway credential for a database this script creates on your own
+      # machine, in the same spirit as the acme-bank demo's. It is NOT a
+      # platform credential and nothing in Citra defaults to it -- the wizard
+      # asks you for the connection string and stores what you give it.
+      POSTGRES_PASSWORD: ${SOURCE_DB_PASSWORD:-northwind_demo_pw}
+    ports:
+      - "${SOURCE_DB_PORT:-15544}:5432"
+    volumes:
+      - source-db-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SOURCE_DB_USER:-northwind} -d ${SOURCE_DB_NAME:-northwind}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  source-db-pgdata:
