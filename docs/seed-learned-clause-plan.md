@@ -141,9 +141,10 @@ decision**:
 That pair is also the honest version of the experiment in the credit note.
 The figures are deliberately NOT repeated here: they were restated in this
 plan and in the README and the wiki, and a number kept in four places drifts
-in three of them. They live in one place now --
-[The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-experiment),
-alongside the null result and what the run does not show.
+in three of them. They live in one place now -- the dedicated experiment record at
+[docs/Descision-System-Memory](https://github.com/Trustedwear-Tech/citra-decision-system/tree/main/docs/Descision-System-Memory), alongside the null result and what
+the run does not show. Restatements elsewhere were deleted rather than
+re-synced: a second copy is a second thing to keep true.
 
 ### Measured, 2026-08-24
 

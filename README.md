@@ -343,7 +343,7 @@ We publish that because it is what makes the fourth believable, and because it
 draws the line: this is not a rulebook engine. It is the layer for what the
 rulebook never covered.
 
-→ [The full experiment, including the null result](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-experiment)
+→ [The full experiment, including the null result](https://github.com/Trustedwear-Tech/citra-decision-system/tree/main/docs/Descision-System-Memory)
 
 ---
 
@@ -376,7 +376,7 @@ rulebook never covered.
 | [Architecture](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Architecture) | Services, data flow, what talks to what |
 | [Governance and the sandbox](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Governance-and-the-sandbox) | Policy gates, approvals, isolation |
 | [Why this exists](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Why-this-exists) | The argument: why a fine-tune does not close it |
-| [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-experiment) | Method, results, the null result, limits |
+| [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/tree/main/docs/Descision-System-Memory) | Method, results, the null result, limits |
 | [Configuration](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Configuration) | Every environment variable |
 | [Operations](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Operations) | Running it, upgrading, backups |
 | [Troubleshooting](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Troubleshooting) | When something will not start |

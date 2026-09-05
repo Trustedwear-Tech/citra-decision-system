@@ -32,8 +32,7 @@ short version. This wiki is the detail.
 
 | | |
 |---|---|
-| [Three of four lessons did nothing](Three-of-four-lessons-did-nothing) | The story version: what we tried to teach it, and what failed |
-| [The experiment](The-experiment) | Method, results, the null result, and the limits |
+| [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/tree/main/docs/Descision-System-Memory) | Method, results, the null result, and the limits -- the dedicated record, not a retelling |
 | [Configuration](Configuration) | Environment variables |
 | [Operations](Operations) | Running it, upgrading, backups |
 | [Troubleshooting](Troubleshooting) | When something will not start |
