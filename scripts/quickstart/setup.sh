@@ -128,6 +128,44 @@ else
   echo "   [!]  set LLM_API_KEY in .env before start.sh - recommendations need it"
 fi
 
+# -- 1b. Scope the demo tenant to THIS checkout -------------------------------
+# Set OUTSIDE the block above, so an .env that predates this gets repaired on
+# the next run rather than only on a fresh install.
+#
+# The demo tenant's compose used to pin a global project name, so its Postgres
+# volume was shared by every checkout on the machine and `--fresh` in one tree
+# wiped the seeded demo in another. Measured, once, on a real tree.
+#
+# Renaming the project orphans the old volume rather than deleting it -- the
+# data is still there, just no longer referenced -- which would look exactly
+# like the bug this fixes. So the contents are COPIED across, once, and the
+# legacy volume is left alone for the operator to remove.
+_demo_proj="$(basename "$REPO_ROOT" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')-acme-bank-demo"
+if [ -z "$(envget CITRA_DEMO_PROJECT)" ]; then
+  setkv CITRA_DEMO_PROJECT "$_demo_proj" "$ENV_FILE"
+  _legacy_vol="citra-ds-acme-bank-demo_acme-bank-pgdata"
+  _new_vol="${_demo_proj}_acme-bank-pgdata"
+  if docker volume inspect "$_legacy_vol" >/dev/null 2>&1 \
+     && ! docker volume inspect "$_new_vol" >/dev/null 2>&1; then
+    echo "-> the demo tenant is now scoped to this checkout ($_demo_proj)"
+    echo "   carrying the seeded demo across; the old volume is left in place"
+    docker volume create "$_new_vol" >/dev/null
+    if docker run --rm -v "$_legacy_vol":/from:ro -v "$_new_vol":/to alpine:3.20 \
+         sh -c 'cp -a /from/. /to/' >/dev/null 2>&1; then
+      echo "   [ok] copied $_legacy_vol -> $_new_vol"
+      echo "        remove the old one when you are satisfied:"
+      echo "          docker volume rm $_legacy_vol"
+    else
+      # Fail LOUD: a half-copied Postgres data directory is worse than none.
+      docker volume rm "$_new_vol" >/dev/null 2>&1 || true
+      echo "   [FAIL] could not copy the demo volume. The old data is untouched" >&2
+      echo "          at $_legacy_vol. Either copy it by hand, or re-seed:" >&2
+      echo "            ./scripts/quickstart/seed-demo.sh acme-bank" >&2
+      exit 1
+    fi
+  fi
+fi
+
 # -- 2. Bring up the data stores only -----------------------------------------
 echo "-> starting data stores (Mongo, Redis x2, Milvus, MinIO, Postgres)"
 # mongodb-init-rs MUST be named explicitly. `up -d mongodb` starts what mongodb

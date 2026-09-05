@@ -396,7 +396,7 @@ if [ "$FRESH" = "1" ]; then
   echo "    Docker volumes              Postgres, Mongo, Milvus, MinIO - all seeded data"
   echo "    my-source/sources.json      the ontology built by a previous run"
   echo "    deployments/<org>/mcp       the MCP generated for your own database"
-  echo "    the demo tenant             acme-bank's Postgres and its MCP"
+  echo "    the demo tenant             acme-bank's Postgres and its MCP (this checkout only)"
   echo "  Apps, decisions, memory and uploaded SOPs all live in those volumes."
   echo
   echo "  It also REBUILDS every service image, so the clean install is not"

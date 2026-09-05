@@ -15,7 +15,7 @@ For what a healthy stack looks like, see [Operations](Operations).
 | "Milvus collection does not exist" | `docker compose -f docker-compose.quickstart.yml exec citra-service python scripts/setup_milvus_schema.py` |
 | Uploads fail | confirm the bucket exists in the MinIO console (http://localhost:9001) |
 | Builder's dataset palette is empty | the catalogue crawl found nothing -- check the MCP registered: `docker logs citra-ds-mcp-demo-acme-bank` should show `[REGISTRATION] Registered tool:` with no failures |
-| Demo data missing after impersonating | the demo MCP must be up: `docker compose -f demo-data/tenants/acme-bank/mcp/docker-compose.yml ps` |
+| Demo data missing after impersonating | the demo MCP must be up: `docker compose --env-file .env -f demo-data/tenants/acme-bank/mcp/docker-compose.yml ps` |
 | A port is already allocated | another Citra stack is running; override the published port in `.env` (e.g. `MINIO_API_PORT`) |
 
 > All credentials in `.env` are local development defaults. Change every

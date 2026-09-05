@@ -193,7 +193,7 @@ for _ in $(seq 1 30); do
 done
 [ "$PG_READY" = true ] || {
   echo "   [FAIL] $PG_SVC did not accept connections within 60s." >&2
-  echo "          Check: docker compose -f $TENANT_DIR/mcp/docker-compose.yml logs $PG_SVC" >&2
+  echo "          Check: docker compose --env-file $REPO_ROOT/.env -f $TENANT_DIR/mcp/docker-compose.yml logs $PG_SVC" >&2
   exit 1
 }
 
@@ -227,7 +227,7 @@ done
 if [ "$registered" != 1 ]; then
   echo "   [FAIL] the MCP did not register within 80s." >&2
   echo "          Publishing now would fail 'source_not_found' for every app." >&2
-  echo "          Check: docker compose -f $TENANT_DIR/mcp/docker-compose.yml logs" >&2
+  echo "          Check: docker compose --env-file $REPO_ROOT/.env -f $TENANT_DIR/mcp/docker-compose.yml logs" >&2
   exit 1
 fi
 

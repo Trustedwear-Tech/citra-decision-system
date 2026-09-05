@@ -26,7 +26,17 @@
 #   curl http://localhost:18504/health      # must list 5 sources
 #   docker compose down            # keeps the volume
 #   docker compose down -v         # destroys the seeded data
-name: citra-ds-acme-bank-demo
+# The project name is SCOPED TO THIS CHECKOUT, and required rather than
+# defaulted. It used to be the literal `citra-ds-acme-bank-demo`, which made
+# this Postgres volume shared by every checkout of this repo on the machine --
+# so `wizard.sh --fresh` in one tree silently destroyed the seeded demo in
+# another. Every other volume here is project-scoped; this one was not.
+#
+# Required, not defaulted, because a default would silently split the data in
+# two: an invocation that forgot --env-file would address a DIFFERENT project,
+# create a second empty volume, and report a healthy stack over no data.
+# setup.sh writes this into .env; run every compose here with --env-file.
+name: ${CITRA_DEMO_PROJECT:?set CITRA_DEMO_PROJECT (setup.sh writes it into .env) and pass --env-file <repo>/.env}
 services:
 
   citra-ds-mcp-demo-acme-bank:
