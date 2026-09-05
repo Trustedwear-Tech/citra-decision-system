@@ -114,27 +114,46 @@ looks correct.
 
 - **decision_history** — which table records decisions already made, and which
   column IS the decision. Without it apps cannot ground in past cases.
-- **artifact_role** — for every document/image column: is it `evidence`
-  (fraud-relevant), `identity` (verification, duplicates are EXPECTED and must
-  never be flagged), `payment_proof` (pins the receipt-vs-ledger check), or
-  `supporting` (never fingerprinted)? Getting this wrong is the worst error you
-  can make here.
+- **column_kind** — ask about EVERY column whose values are locations rather
+  than data: a URL, an S3 key, a file path, a share link. You can see them in
+  the sample rows, and the name usually says so too (`file_url`, `photo`,
+  `document_path`, `attachment`, `scan`). This is its own question, asked of
+  every such column, whether or not fraud screening is ever switched on.
 
-  On the SAME column, always set `column_kind` and `mime_hint` too. They are a
-  different contract from `artifact_role` and both are needed:
+      "`claim_documents.file_url` holds a link. What is on the other end —
+       a PDF or other document, an image, or something that is not a file
+       at all?"
 
-    * `artifact_role` decides whether fraud screening looks at the document.
-    * `column_kind` (`document`, `image`, `pdf`, `file_url`, …) is what makes the
-      column RESOLVABLE as media — it is the field `/datasets/resolve-media` and
-      the media stream read. A column with an artifact_role and no `column_kind`
-      is screened and cannot be opened: an app can flag a claim photo it is
-      unable to display. The registry accepts that file, so nothing tells you.
-    * `mime_hint` (e.g. `image/jpeg`, `application/pdf`) when the column's rows
-      are consistently one type.
+  Then set, on that column:
 
-  You already know the column holds a document — that is the question you just
-  asked. Fill all three in the same pass, and never write an `artifact_role`
-  without a media `column_kind`.
+    * `column_kind` — EXACTLY one of `plain`, `url`, `image_url`,
+      `document_url`, `file`. Anything else fails validation and the MCP
+      refuses to boot, so do not invent a value like `document` or `pdf`.
+      `document_url` and `image_url` are what make the column RESOLVABLE:
+      they are the field `/datasets/resolve-media` and the media stream read.
+      Leave it `plain` (or unset) for a link that is not a file — a tracking
+      URL, a reference to another system's screen.
+    * `mime_hint` (e.g. `application/pdf`, `image/jpeg`) when the column's
+      rows are consistently one type.
+
+  Get this wrong by omission and the column still reads as a string: an app
+  can cite a document and the officer cannot open it. Nothing errors, because
+  a plain string is a legal column — which is why it must be ASKED, not
+  inferred from whether anyone mentioned fraud.
+
+- **artifact_role — DO NOT ASK, AND DO NOT WRITE IT.** It exists only to drive
+  fraud screening, and fraud screening is not something an interview can get
+  right. It fingerprints real bytes across a whole corpus; whether that produces
+  findings or noise depends on how similar the customer's real documents are to
+  each other, which nobody can know before the documents are in place. Tuned
+  from a conversation, it reports a reused document on nearly every case, and
+  the genuine findings are buried in the false ones.
+
+  So it is authored by hand after deployment, against the real corpus, and
+  tested there. Leave `artifact_role` and `fraud_screening` out of the file
+  entirely — not set to false, ABSENT. `column_kind` above is what makes a
+  document openable, and it is independent of this: an unscreened document is
+  still fully readable, citable and streamable.
 - **value_semantics** — which column is money, and what it means. Drives ROI.
 - **write-back** — ask which columns, if any, the system may UPDATE, and who
   may approve it. Everything is READ-ONLY until this is answered: a dataset with
@@ -216,8 +235,11 @@ it.
   dataset is READ-ONLY — no write path exists for it, not a disabled one. Never
   add one the user did not ask for, and never widen an `input_schema` beyond the
   columns they named.
-- `fraud_screening` is opt-in. Absent means "no screening", which is a valid and
-  common choice — do not switch it on to look thorough.
+- `fraud_screening` and `artifact_role` are NEVER written by this interview.
+  Absent means "no screening", which is the correct outcome here every time.
+  Do not switch either on to look thorough: they are hand-authored against a
+  real corpus after deployment and verified there, because their failure mode
+  is a false alarm on every case rather than an error anyone can see.
 - If the user says they do not know, leave the field out and say what that costs.
 
 ## THE SCHEMA (authoritative — every field, type and enum)
@@ -346,6 +368,54 @@ class Tools:
             os.unlink(tmp)
         return p.returncode == 0, (p.stdout or "") + (p.stderr or "")
 
+    #: Column names that almost always hold a location rather than a value.
+    _LINK_NAME = re.compile(
+        r"(?:^|_)(?:url|uri|link|href|path|key|photo|photos|image|images|img|"
+        r"document|documents|doc|docs|file|files|attachment|attachments|scan|"
+        r"scans|receipt|receipts)(?:_|$)", re.I)
+    #: A sample value that IS a location.
+    _LINK_VALUE = re.compile(r"^\s*(?:https?://|s3://|gs://|/|[A-Za-z]:\\)", re.I)
+    _MEDIA_KINDS = {"url", "image_url", "document_url", "file"}
+
+    def _unmarked_link_columns(self, sources_json: str) -> list:
+        """Columns that look like locations and carry no column_kind.
+
+        The interview is told to ask about these, and an instruction is a thing
+        a model can skip -- quietly, on the one column that mattered. The cost
+        of missing it is invisible: the column still reads as a string, so the
+        file validates, the MCP boots, the app publishes, and the officer
+        simply cannot open the document a recommendation cites. Nothing errors.
+        So it is checked here rather than hoped for.
+
+        Name AND value evidence, because either alone is wrong too often: a
+        column called `document_id` is not a link, and a `notes` column holding
+        one URL is not a media column. Reported, never auto-filled -- what is
+        on the other end of a link is the operator's answer, not a guess.
+        """
+        try:
+            doc = json.loads(sources_json)
+        except Exception:  # noqa: BLE001 — the validator reports bad JSON
+            return []
+        srcs = doc if isinstance(doc, list) else (doc.get("sources") or [])
+        flagged = []
+        for src in srcs:
+            for ds in (src.get("datasets") or []):
+                samples = ds.get("_sample_rows") or []
+                for col in (ds.get("columns") or []):
+                    if col.get("column_kind"):
+                        continue
+                    name = str(col.get("name") or "")
+                    by_name = bool(self._LINK_NAME.search(name))
+                    vals = [r.get(name) for r in samples if isinstance(r, dict)]
+                    vals = [v for v in vals if isinstance(v, str) and v.strip()]
+                    by_value = bool(vals) and all(self._LINK_VALUE.match(v) for v in vals)
+                    if by_name and by_value:
+                        flagged.append(f"{ds.get('id') or ds.get('physical_name')}.{name}")
+                        continue
+                    if by_value and len(vals) >= 2:
+                        flagged.append(f"{ds.get('id') or ds.get('physical_name')}.{name}")
+        return flagged
+
     def validate_draft(self, sources_json: str) -> Any:
         ok, report = self.run_validator(sources_json)
         self.validated_ok = ok
@@ -366,6 +436,23 @@ class Tools:
             return {"error": "this draft does not validate — fix it and save again",
                     "report": report}
         self.saved = sources_json
+        unmarked = self._unmarked_link_columns(sources_json)
+        if unmarked:
+            # Not a refusal: a link column that is genuinely not a file is a
+            # legitimate answer, and blocking on a heuristic would be worse than
+            # the omission. But it must be SAID, and said to the operator too --
+            # this is the one gap that produces a working deployment in which a
+            # cited document cannot be opened.
+            return {
+                "saved": True,
+                "warning": "these columns hold locations and have no column_kind: "
+                           + ", ".join(unmarked),
+                "note": "ASK the user what is on the other end of each -- a document, "
+                        "an image, or not a file at all -- set column_kind "
+                        "(document_url | image_url | url | file | plain) and mime_hint, "
+                        "and save again. If they are genuinely not files, say so to the "
+                        "user in your summary rather than leaving it silent.",
+            }
         return {"saved": True, "note": "done — stop calling tools and summarise for the user"}
 
     @staticmethod
@@ -676,17 +763,38 @@ def main() -> int:
     print("  These are CAPABILITIES you already have, not missing features. An")
     print("  interview cannot elicit them; sources.json can express all of them:")
     print()
-    print("    Documents and images that stream through the MCP")
-    print("      A table column holding a claim photo, a policy PDF or a receipt")
-    print("      is served by the MCP, not fetched by the browser. That needs")
-    print("      column_kind + mime_hint on the column. Set them and an app can")
-    print("      display and stream the file.                             s6")
+    print("    Fraud screening over those documents")
+    print("      This interview set column_kind on your link columns, so apps")
+    print("      can open and cite them. It deliberately did NOT switch on")
+    print("      screening for reuse or tampering, and never will: that is")
+    print("      artifact_role on the column plus a fraud_screening block on")
+    print("      the dataset, hand-authored against your real documents and")
+    print("      tested on them. It fingerprints actual bytes, so whether it")
+    print("      finds fraud or cries wolf depends on how alike your documents")
+    print("      already are -- which cannot be known from an interview.")
+    print("      Switch it on deliberately, later, and check the findings")
+    print("      before anyone relies on them.                      s10, s10.2")
     print()
-    print("    REST / API sources")
-    print("      Reads over HTTP alongside your tables. The builder wires them")
-    print("      and the runtime calls them. Needs base_url, the auth env_prefix,")
-    print("      options.invocation_template, and read_via.extra.request and")
-    print("      .response per dataset.                                   s5.1")
+    print("    REST / API sources -- hand-wired, and worth it")
+    print("      A credit-bureau pull, an identity or KYC check, a sanctions")
+    print("      screen: reads over HTTP that sit alongside your tables. The")
+    print("      builder wires them and the agent calls them deterministically,")
+    print("      as a bound dataset read -- not as a free-text web call.")
+    print("      Declare per source:  connection.base_url, connection.auth")
+    print("      (env_prefix -- the key never enters this file), and")
+    print("      options.invocation_template.                               s4")
+    print("      Declare per dataset: input_schema (the read's parameters) and")
+    print("      read_via.extra.request / .response -- the mapping from those")
+    print("      parameters to an HTTP call and from the JSON reply to typed")
+    print("      columns. A REST dataset with no request mapping fails LOUD")
+    print("      rather than firing a bare GET.                           s5.1")
+    print()
+    print("    Checks a decision must not skip")
+    print("      Set mandatory_when_used: true on such a dataset and the")
+    print("      obligation is enforced, not just documented: the builder")
+    print("      defaults that read tool to required, and the read-before-write")
+    print("      gate REFUSES to stage a write unless the lookup actually ran")
+    print("      for that case. IT declares it once; every app inherits it.  s11")
     print()
     print("    The app's own object store")
     print("      Your MCP is already wired to a bucket for intermediate files an")
