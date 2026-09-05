@@ -197,6 +197,16 @@ eight rounds lost to `phsical_name`, `colums`, `tye`, `is_forgeign_key`.
     * `sql_template`  — a parameterised UPDATE touching only those columns,
                         keyed on `key_fields`. Never string-built SQL, never a
                         template that could widen to other columns.
+    * `decided_by` / `decided_at` style columns — declare them in
+                        `input_schema` with `"x-citra-fill": "actor"` and
+                        `"x-citra-fill": "now"` respectively. The MCP then binds
+                        them from the VERIFIED CALLER and the SERVER CLOCK at the
+                        moment of write, overriding whatever the agent proposed.
+                        Without it the agent's guess is what lands: observed on a
+                        live deployment, a decision made today was written with
+                        "17 Jul 2026, 4:00 pm" because the model invented a
+                        plausible timestamp. A decision time a model guessed is
+                        not an audit trail.
     * `roles_allowed_write` — MUST be platform roles, not job titles. The only
                         valid values are: user, IT-workflow, dept_admin,
                         org_admin, super_admin, decision-app-builder. The
@@ -208,6 +218,30 @@ eight rounds lost to `phsical_name`, `colums`, `tye`, `is_forgeign_key`.
                         managers are dept_admin here -- so only they can approve
                         it." If they name no approver, ask; do not default it.
                         An action anyone may invoke is not a governed write.
+
+  A complete one, for a table keyed on `application_id` where the operator
+  named only `status`:
+
+      "write_actions": [{{
+        "id": "record_decision", "verb": "update",
+        "description": "Record the officer's decision on an application.",
+        "key_fields": ["application_id"],
+        "input_schema": {{"type": "object",
+          "properties": {{
+            "application_id": {{"type": "string"}},
+            "status":         {{"type": "string",
+                               "enum": ["approved", "rejected"]}},
+            "decided_by":     {{"type": "string", "x-citra-fill": "actor"}},
+            "decided_at":     {{"type": "string", "format": "date-time",
+                               "x-citra-fill": "now"}}}},
+          "required": ["application_id", "status"]}},
+        "sql_template": "UPDATE loan_applications SET status=:status, decided_by=:decided_by, decided_at=:decided_at WHERE application_id=:application_id",
+        "roles_allowed_write": ["dept_admin", "org_admin", "super_admin"]
+      }}]
+
+  Every value is BOUND as a named parameter — `:status`, never a string built
+  from one. The MCP binds only the fields `input_schema` declares, so a column
+  absent from it cannot be written whatever the template says.
 
   Then read it back in their words before saving — "the system may update
   status and decision_reason on loan_applications, for one application at a
@@ -355,6 +389,10 @@ TOOLS = [
 #: asks "how should I reach it -- do you have a connection string?", and an
 #: operator who answers helpfully puts the credential into the transcript
 #: themselves. Seen live after a typo'd --kind made every tool call fail.
+#: Words that mean the interview got as far as discussing writing back.
+_WRITE_WORDS = re.compile(r"\bwrite[- ]?backs?\b|\bwrite\s+back\b|\bwrite_actions?\b"
+                          r"|\bupdate\b|\bwrite\b", re.I)
+
 _SECRET_SHAPE = re.compile(
     r"(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|mssql|oracle|redis|https?)://\S*:\S*@"
     r"|(?:password|passwd|pwd|secret|api[_-]?key|token)\s*[=:]\s*\S+"
@@ -457,6 +495,9 @@ class Tools:
         #: correct a typo introduces fresh ones: measured, eight rounds burned
         #: on `phsical_name`, `colums`, `tye`, `is_forgeign_key` and friends.
         self.draft: List[Dict[str, Any]] = []
+        #: Every question asked and answer given, so that what the operator
+        #: agreed to can be checked against what actually reached the file.
+        self.transcript: List[str] = []
         #: The last draft that PASSED. The round cap used to promise it saved
         #: "the best draft so far" and then save nothing at all.
         self.last_valid: str | None = None
@@ -540,6 +581,8 @@ class Tools:
                               "through your tools. Never ask for a connection "
                               "string, host, user or password. Retry the tool "
                               "call instead.)"}
+        self.transcript.append(question)
+        self.transcript.append(ans)
         return {"answer": ans or "(no answer — decide sensibly and say what you assumed)"}
 
     @staticmethod
@@ -590,6 +633,14 @@ class Tools:
     def _unmarked_link_columns(self, sources_json: str) -> list:
         """Columns that look like locations and carry no column_kind.
 
+        Sample values come from the INTROSPECTION CACHE, not from the registry.
+        They used to be read from a `_sample_rows` key on the dataset -- which
+        `extra="forbid"` makes illegal, so a registry carrying one cannot
+        validate, and this only ever runs after validation passes. Both
+        evidence branches needed that key, so the whole guard was unreachable:
+        verified against the cleanroom-4 registry, which has an unmarked
+        `surveyor_reports.photos_url` and was flagged for nothing.
+
         The interview is told to ask about these, and an instruction is a thing
         a model can skip -- quietly, on the one column that mattered. The cost
         of missing it is invisible: the column still reads as a string, so the
@@ -610,7 +661,7 @@ class Tools:
         flagged = []
         for src in srcs:
             for ds in (src.get("datasets") or []):
-                samples = ds.get("_sample_rows") or []
+                samples = self._samples_for(ds)
                 for col in (ds.get("columns") or []):
                     if col.get("column_kind"):
                         continue
@@ -705,6 +756,58 @@ class Tools:
         return on every edit and the model never has to ask."""
         return {s.get("source_id", "?"): [d.get("id", "?") for d in (s.get("datasets") or [])]
                 for s in self.draft}
+
+    def _samples_for(self, ds: dict) -> list:
+        """Rows this script pulled for that table when it introspected it."""
+        key = ds.get("physical_name") or (ds.get("id") or "").split(".")[-1]
+        return (self._cache.get(key) or {}).get("_sample_rows") or []
+
+    def capability_gaps(self, sources_json: str) -> List[str]:
+        """What this registry does NOT switch on, in the operator's words.
+
+        The validator already reports these -- to the MODEL. The operator saw
+        only a list of datasets and a y/n, so an answer that never reached the
+        file was invisible at the only moment it could still be corrected.
+        Measured: write-back was asked, agreed ("only columns with status
+        name"), summarised back by the agent, and then not written at all. The
+        deployment came up read-only and nothing said so.
+        """
+        try:
+            doc = json.loads(sources_json)
+        except json.JSONDecodeError:
+            return []
+        srcs = doc if isinstance(doc, list) else (doc.get("sources") or [])
+        dss = [d for s in srcs for d in (s.get("datasets") or [])]
+        gaps: List[str] = []
+
+        if not any(d.get("write_actions") for d in dss):
+            line = ("READ-ONLY — no dataset has a write_action, so an app can "
+                    "recommend a decision but never record one.")
+            if self._write_back_was_discussed():
+                line += ("\n      The interview DID discuss writing back. If you asked "
+                         "for it, answer n and say so — it is not in this file.")
+            gaps.append(line)
+
+        if not any(d.get("decision_history") for d in dss):
+            gaps.append("no decision_history on any dataset — apps cannot cite past cases.")
+
+        if not any(d.get("value_semantics") for d in dss):
+            gaps.append("no value_semantics — Money Impact and ROI will show nothing.")
+
+        unmarked = self._unmarked_link_columns(sources_json)
+        if unmarked:
+            gaps.append("these hold links and have no column_kind, so a cited file "
+                        "will not open: " + ", ".join(unmarked))
+        return gaps
+
+    def _write_back_was_discussed(self) -> bool:
+        """Did the interview raise writing back at all?
+
+        Deliberately generous: it only makes an existing warning louder, so a
+        false positive costs a sentence and a miss costs a silent read-only
+        deployment.
+        """
+        return any(_WRITE_WORDS.search(t) for t in self.transcript)
 
     def validate_draft(self, sources: Any = None, sources_json: Any = None) -> Any:
         """Validate, and NEVER change the draft.
@@ -1255,6 +1358,14 @@ def main() -> int:
     # its buffer until something reads it. That something was this prompt: the
     # leftover line landed on it, scored as "not y", and threw away a validated
     # registry the operator had just spent ten minutes and real money building.
+    gaps = tools.capability_gaps(tools.saved)
+    if gaps:
+        print("\n  What this does NOT switch on:")
+        for g in gaps:
+            print(f"    - {g}")
+        print("\n  All of these are legitimate answers. They are listed because this "
+              "is the\n  last moment to notice one you did not intend.")
+
     if args.yes:
         ok = True
     else:
