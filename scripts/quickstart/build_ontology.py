@@ -53,7 +53,14 @@ MCP = REPO_ROOT / "source-mcp-template"
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "quickstart"))
 
 DEFAULT_MODEL = os.getenv("ONTOLOGY_MODEL", "deepseek/deepseek-v4-pro")
-MAX_ROUNDS = int(os.getenv("ONTOLOGY_MAX_TOOL_ROUNDS", "20"))
+MAX_ROUNDS = int(os.getenv("ONTOLOGY_MAX_TOOL_ROUNDS", "30"))
+#: Tools that only edit the local draft. They are bounded, validated and
+#: cheap, and they are how the model is SUPPOSED to build the file, so a
+#: round spent entirely on them does not come out of the budget above.
+_EDIT_TOOLS = {"put_source", "add_datasets", "drop_dataset"}
+#: A model that only ever edits still has to stop. Absolute ceiling on
+#: total round trips, however they are spent.
+HARD_ROUND_CEILING = MAX_ROUNDS * 3
 MAX_INPUT_TOKENS = int(os.getenv("ONTOLOGY_MAX_INPUT_TOKENS", "200000"))
 MAX_OUTPUT_TOKENS = int(os.getenv("ONTOLOGY_MAX_OUTPUT_TOKENS", "200000"))
 
@@ -1283,7 +1290,14 @@ def main() -> int:
 
     total_cost = 0.0
     blank = 0
-    for rnd in range(1, args.rounds + 1):
+    # `spent` is the budget; `trips` is every round trip actually made. A round
+    # whose tool calls were all successful draft edits costs a trip and not a
+    # round -- see _EDIT_TOOLS.
+    spent, trips = 0, 0
+    hard_ceiling = max(args.rounds * 3, args.rounds + 1)
+    while spent < args.rounds and trips < hard_ceiling:
+        trips += 1
+        rnd = spent + 1
         while _tokens(messages) > MAX_INPUT_TOKENS:
             before = _tokens(messages)
             messages = _compact(messages)
@@ -1335,6 +1349,7 @@ def main() -> int:
             messages.append({"role": "user", "content": reply})
             continue
 
+        any_edit_failed = False
         for call in calls:
             name = call["function"]["name"]
             try:
@@ -1350,14 +1365,30 @@ def main() -> int:
                     result = fn(**a)
                 except TypeError as e:
                     result = {"error": f"bad arguments: {e}"}
+            # An edit that FAILED is not bookkeeping -- it is the model
+            # getting something wrong, which is exactly what the budget is for.
+            if name in _EDIT_TOOLS and isinstance(result, dict) and result.get("error"):
+                any_edit_failed = True
             messages.append({"role": "tool", "tool_call_id": call["id"],
                              "content": json.dumps(result, default=str)[:60000]})
 
         if tools.saved:
             break
-    else:
-        print(f"\n  Reached the {args.rounds}-round cap without the agent saving.",
-              file=sys.stderr)
+
+        # Pure bookkeeping does not spend the budget. `calls` is non-empty here
+        # (the no-calls branch continues above), so this cannot loop for free
+        # on an empty turn -- and every turn still costs a trip.
+        edits_only = all(c["function"]["name"] in _EDIT_TOOLS for c in calls) \
+            and not any_edit_failed
+        if not edits_only:
+            spent += 1
+    if not tools.saved:
+        if trips >= hard_ceiling:
+            print(f"\n  Stopped after {trips} round trips without the agent saving.",
+                  file=sys.stderr)
+        else:
+            print(f"\n  Reached the {args.rounds}-round cap without the agent saving.",
+                  file=sys.stderr)
 
     print(f"\n  cost this run: ${total_cost:.4f}")
 
