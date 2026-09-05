@@ -35,12 +35,15 @@ guided path, not the only one.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -614,6 +617,58 @@ def _fill_read_via(srcs: list) -> int:
     return filled
 
 
+@contextlib.contextmanager
+def _thinking(label: str):
+    """Show that a round trip to the model is in flight.
+
+    One round can take a minute on a wide schema, and the screen used to say
+    nothing at all while it did - indistinguishable from a hang, so people
+    ctrl-C a session that was working.
+
+    Two shapes, because there are two ways this is run. Standalone, stderr is a
+    terminal and gets a spinner that erases itself. Under the wizard both
+    streams are piped into `tee`, where a carriage return draws nothing and
+    fills the transcript with control characters - so that case gets a dot
+    every couple of seconds, which survives the pipe, appears live on screen,
+    and reads as one ordinary line in the log.
+    """
+    stop = threading.Event()
+    tty = sys.stderr.isatty()
+    frames = "|/-\\"
+    if tty:
+        stream, tick = sys.stderr, 0.12
+    else:
+        stream, tick = sys.stdout, 2.0
+        stream.write(f"  . {label} ")
+        stream.flush()
+    t0 = time.monotonic()
+
+    def spin() -> None:
+        i = 0
+        while not stop.wait(tick):
+            if tty:
+                stream.write(f"\r  {frames[i % 4]} {label}  {time.monotonic() - t0:.0f}s")
+            else:
+                stream.write(".")
+            stream.flush()
+            i += 1
+
+    t = threading.Thread(target=spin, daemon=True)
+    t.start()
+    try:
+        yield
+    finally:
+        stop.set()
+        t.join(timeout=1)
+        if tty:
+            # Blank the line with spaces rather than an ANSI erase - this runs
+            # in MinTTY, cmd.exe and PowerShell, and spaces work in all three.
+            stream.write("\r" + " " * 60 + "\r")
+        else:
+            stream.write(f" {time.monotonic() - t0:.0f}s\n")
+        stream.flush()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -671,7 +726,8 @@ def main() -> int:
                                      headers={"Authorization": f"Bearer {key}",
                                               "Content-Type": "application/json"})
         try:
-            resp = json.loads(urllib.request.urlopen(req, timeout=600).read())
+            with _thinking(f"asking the model (round {rnd}/{args.rounds})"):
+                resp = json.loads(urllib.request.urlopen(req, timeout=600).read())
         except urllib.error.HTTPError as e:
             print(f"  LLM call failed: HTTP {e.code} {e.read().decode()[:300]}", file=sys.stderr)
             return 1
