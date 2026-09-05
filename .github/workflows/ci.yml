@@ -173,6 +173,19 @@ jobs:
           fi
           echo "No build output is tracked."
 
+      - name: The builder's runtime snapshot must match the runtime
+        run: |
+          # skills/citra-system/runtime-reference/ is a copy of the code that
+          # renders, executes and validates a published spec, and SKILL.md tells
+          # the app-builder pod it is the source of truth. A stale copy does not
+          # degrade gracefully: it teaches the builder a contract the runtime no
+          # longer has, and every app authored against it is wrong the same way.
+          #
+          # It has gone stale twice -- a full feature-generation behind in
+          # 2026-07, and publish_validators.py 107 lines behind in 2026-09 --
+          # because it is refreshed by hand and nothing checked that anyone had.
+          python scripts/check_runtime_reference.py
+
       - name: Documented download tags must exist
         run: |
           # A quickstart that 404s is the worst documentation failure there is:

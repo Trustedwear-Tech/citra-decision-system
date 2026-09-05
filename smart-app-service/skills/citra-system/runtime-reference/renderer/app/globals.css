@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+ * Author: Rohit Kumar Chandan
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at http://www.apache.org/licenses/LICENSE-2.0
+ */
+
 :root {
   /* Brand — --citra-primary is overridden per-app via theme.primary (set on
      .app-shell). --citra-accent is the secondary highlight (theme.accent). */
@@ -1518,7 +1528,13 @@ a.dt-doc-title:hover { color: var(--citra-primary); }
   background: #fff;
   border-radius: 14px;
   width: 100%;
-  max-width: 840px;
+  /* 840 -> 1260 (1.5x). The recommendation modal carries the agent's reasoning,
+     a per-item review card per document, and the staged write's fields. At 840
+     the reasoning wrapped every few words and each document card became a tall
+     column of narrow rows, so an officer scrolled instead of reading. Still
+     under .app-shell's 1240 + its 26px padding, so it does not out-dent the
+     page it sits over, and the mobile rule below still takes it to 100%. */
+  max-width: 1260px;
   max-height: 86vh;
   overflow: hidden;
   display: flex;

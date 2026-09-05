@@ -1,5 +1,5 @@
 ﻿# runtime-reference Ã¢â‚¬â€ VENDORED SNAPSHOT (do not edit by hand)
-Generated: 2026-08-15 13:24:52
+Generated: 2026-09-06 00:46:42
 Source repo: C:\Github\Citra-AI
 
 renderer/  <- citra-app-runtime/src/        (how the spec RENDERS Ã¢â‚¬â€ PanelRenderer.tsx, types/spec.ts, lib/pages.ts, lib/chartToEcharts.ts, app/.../page.tsx, app/api/*/route.ts)
@@ -17,6 +17,7 @@ validators/ <- smart-app-service/*.py        (how the spec is CHECKED at publish
   - data_binding_validator.py panel/data-source binding + chart-column checks
 
 Refresh: re-run vendor-runtime-reference.ps1 before rebuilding citra-app-builder:latest.
+
 
 
 

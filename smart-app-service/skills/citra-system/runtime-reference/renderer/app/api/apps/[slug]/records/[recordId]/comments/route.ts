@@ -1,3 +1,11 @@
+// Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+// Author: Rohit Kumar Chandan
+// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
+
 /**
  * Browser → server proxy for the record comments/notes thread.
  *
@@ -42,8 +50,9 @@ function relay(text: string, upstream: Response): NextResponse {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string; recordId: string } }
+  props: { params: Promise<{ slug: string; recordId: string }> }
 ) {
+  const params = await props.params;
   const upstream = await fetch(upstreamUrl(params.slug, params.recordId), {
     method: "GET",
     headers: authHeaders(req),
@@ -54,8 +63,9 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { slug: string; recordId: string } }
+  props: { params: Promise<{ slug: string; recordId: string }> }
 ) {
+  const params = await props.params;
   let body: unknown;
   try {
     body = await req.json();

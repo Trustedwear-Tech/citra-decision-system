@@ -1,3 +1,11 @@
+// Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+// Author: Rohit Kumar Chandan
+// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
+
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { fetchAppDetail, UNAUTHORIZED } from "@/lib/specClient";
@@ -11,21 +19,24 @@ import TokenCapture from "@/components/TokenCapture";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { slug: string; pagePath?: string[] };
-  searchParams: Record<string, string | string[] | undefined>;
+  params: Promise<{ slug: string; pagePath?: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /** Distinct per-app browser-tab title (was a single hardcoded global, so every
  *  open app tab read "Citra Power AI App" — indistinguishable bookmarks/history
  *  and no context for screen readers). Slug-derived to stay zero-fetch. */
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata(props: PageProps) {
+  const params = await props.params;
   const name = params.slug
     .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
   return { title: `${name} · Citra` };
 }
 
-export default async function AppPage({ params, searchParams }: PageProps) {
+export default async function AppPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   // The end-user JWT is handed off from Citra-UI as ?_t= on launch and mirrored
   // into a per-tab cookie (userToken.ts) so a full reload's SSR — which can't
   // read sessionStorage — still has it. SSR authorizes with this REAL user
@@ -33,7 +44,7 @@ export default async function AppPage({ params, searchParams }: PageProps) {
   // no service/god token. No token → smart-app-service 404s → notFound().
   const tokenParam = searchParams?._t;
   const tFromQuery = Array.isArray(tokenParam) ? tokenParam[0] : tokenParam;
-  const tFromCookie = cookies().get("citra_user_token")?.value;
+  const tFromCookie = (await cookies()).get("citra_user_token")?.value;
   const userToken = tFromQuery || tFromCookie || null;
   const detail = await fetchAppDetail(params.slug, userToken);
   if (detail === UNAUTHORIZED) {

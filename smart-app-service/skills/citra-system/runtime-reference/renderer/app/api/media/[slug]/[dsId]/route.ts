@@ -1,3 +1,11 @@
+// Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+// Author: Rohit Kumar Chandan
+// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
+
 /**
  * Browser → server proxy for GET /apps/{slug}/media/{ds_id}.
  *
@@ -21,8 +29,9 @@ import { smartAppServiceUrl } from "@/lib/env";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string; dsId: string } },
+  props: { params: Promise<{ slug: string; dsId: string }> }
 ) {
+  const params = await props.params;
   const slug = encodeURIComponent(params.slug);
   const dsId = encodeURIComponent(params.dsId);
   const sp = req.nextUrl.searchParams;
@@ -38,7 +47,7 @@ export async function GET(
   }
 
   // Plain image/anchor GET → no Authorization header; read the launch cookie.
-  const cookieTok = cookies().get("citra_user_token")?.value;
+  const cookieTok = (await cookies()).get("citra_user_token")?.value;
   const hdrAuth = req.headers.get("authorization") ?? req.headers.get("Authorization");
   const bearer = hdrAuth
     ? hdrAuth

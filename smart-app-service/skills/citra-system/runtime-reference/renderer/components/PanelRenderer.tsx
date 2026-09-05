@@ -1,3 +1,11 @@
+// Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+// Author: Rohit Kumar Chandan
+// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from "react";
@@ -11,7 +19,7 @@ import { KpiSparkline, KpiProgress } from "./KpiSparkline";
 import { usePanelData } from "@/lib/usePanelData";
 import { kpiFromServer, computeMetric, autoMetricIcon, type KpiResult } from "@/lib/kpi";
 import { badgeColorFor, formatCellText, progressFraction } from "@/lib/format";
-import { ItemFindingReview, REASON_MAX, MIN_REASON_WORDS, reasonWordCount,
+import { ItemFindingReview, REASON_MAX, MIN_REASON_WORDS, SOFT_MAX_REASON_WORDS, reasonWordCount,
          type ItemFinding } from "./ItemFindingReview";
 import ScorecardView from "./ScorecardView";
 import type { MapPoint } from "./LeafletMap";
@@ -2316,6 +2324,18 @@ function EditableProposedWrite({
 
   return (
     <div>
+      {/* Nothing else on this card says these fields can be TYPED IN, and
+          editing one is the whole override path -- the strongest correction the
+          system records. Without this line an officer who disagrees reaches for
+          Reject, which writes nothing and leaves the case undecided. Stated
+          once, above the fields, where the choice is actually made. */}
+      {editable.length > 0 && (
+        <div style={{ fontSize: 11, color: "var(--citra-muted, #6b7280)",
+                      margin: "2px 0 8px" }}>
+          These values are the agent&apos;s proposal and can be edited. Change any
+          of them to overrule it, then Apply — you will be asked why.
+        </div>
+      )}
       {editable.map((f) => {
         const cur = (f.name in value ? value[f.name] : payload[f.name]) as unknown;
         const fOpts = opts[f.name] ?? [];
@@ -2460,6 +2480,10 @@ function ReasonPicker({
 }) {
   const words = reasonWordCount(reason);
   const short = words < MIN_REASON_WORDS;
+  // Past the soft ceiling the correction is still recorded but stops
+  // clustering, so it never becomes a clause. Flagged, never blocked --
+  // see SOFT_MAX_REASON_WORDS in ItemFindingReview for the measurement.
+  const rambling = words > SOFT_MAX_REASON_WORDS;
   return (
     <>
       <textarea
@@ -2488,13 +2512,20 @@ function ReasonPicker({
         style={{
           alignSelf: "flex-end",
           fontSize: 11,
-          color: short
+          color: short || rambling
             ? "var(--citra-warning,#d97706)"
             : "var(--citra-muted,#6b7280)",
         }}
       >
+        {/* NOT "1/10". That reads as a CAP -- and the satisfied branch below
+            really does show a cap (`${reason.length}/${REASON_MAX}`), so the
+            same X/Y shape meant "limit" one moment and "floor" the next.
+            Officers read ten words as the most they may write. Count DOWN what
+            is still owed; no fraction appears while the rule is a minimum. */}
         {short
-          ? `${words}/${MIN_REASON_WORDS} words — say what the agent got wrong`
+          ? `${MIN_REASON_WORDS - words} more word${MIN_REASON_WORDS - words === 1 ? "" : "s"} — say what the agent got wrong (${MIN_REASON_WORDS} minimum)`
+          : rambling
+          ? `${words} words — long reasons stop matching similar cases; keep to the one thing that was wrong`
           : `${words} words · ${reason.length}/${REASON_MAX}`}
       </div>
     </>
@@ -3041,17 +3072,26 @@ function RunResultModal({
           )}
           {!isPending && (result.writeEvents?.length ?? 0) > 0 && (
             <div className="rr-section">
-              {/* "Applied" is ONLY a committed write (kind=perform_action,
-                  status=ok). A dry-run STAGED intent (kind=perform_action_plan)
-                  on a failed/blocked run never committed — labelling it
-                  "Applied" told the officer a mutation happened when the run
-                  was in fact blocked (seen live with the evidence gate). */}
+              {/* "Applied" is ONLY a committed write. A staged PLAN on a failed or
+                    blocked run never committed, and calling it "Applied" tells the
+                    officer a mutation happened when it did not.
+
+                    Match the "_plan" SUFFIX, not one literal. The runtime emits TWO
+                    staged kinds -- perform_action_plan and mcp_action_plan -- and this
+                    knew only the first, so a blocked claim decision
+                    (kind=mcp_action_plan, dry_run=false, result.ok=true) rendered as
+                    "Applied changes (1 of 1)" while insurance_claims.claims was
+                    untouched and decision_records held nothing. The bias is
+                    deliberate: calling a commit "staged" understates and is
+                    recoverable; calling a block "Applied" is the officer being told
+                    the opposite of the truth. */}
               {(() => {
                 const evts = result.writeEvents ?? [];
+                const isPlan = (k?: string) => !!k && k.endsWith("_plan");
                 const applied = evts.filter(
-                  (w) => w.status === "ok" && w.kind !== "perform_action_plan",
+                  (w) => w.status === "ok" && !isPlan(w.kind),
                 ).length;
-                const allStaged = evts.every((w) => w.kind === "perform_action_plan");
+                const allStaged = evts.every((w) => isPlan(w.kind));
                 return (
                   <div className="rr-section-head">
                     {allStaged
@@ -3061,7 +3101,7 @@ function RunResultModal({
                 );
               })()}
               {(result.writeEvents ?? []).map((w, i) => {
-                const staged = w.kind === "perform_action_plan";
+                const staged = !!w.kind && w.kind.endsWith("_plan");
                 const okw = w.status === "ok";
                 const errDetail =
                   !okw && w.result
@@ -3208,7 +3248,7 @@ function RunResultModal({
                       }
                       onClick={() => decide("reject")}
                     >
-                      {busy === "reject" ? "Discarding…" : "Confirm — discard proposal"}
+                      {busy === "reject" ? "Rejecting…" : "Confirm — reject recommendation"}
                     </button>
                     <button
                       type="button"
@@ -3279,11 +3319,18 @@ function RunResultModal({
                     type="button"
                     className="q-btn q-btn-danger"
                     disabled={busy != null}
-                    title={"Discard the agent's proposal — nothing is written to "
-                           + "the record. Your reason teaches the app."}
+                    title={"Reject the agent's RECOMMENDATION, not the case. "
+                           + "Nothing is written to the record and the case stays "
+                           + "open. To decide it differently, edit the values above "
+                           + "and Apply instead."}
                     onClick={() => { setActionErr(null); setShowReject(true); }}
                   >
-                    Discard proposal
+                    {/* Was "Discard proposal", which reads as a verdict ON THE CASE.
+                        When the agent proposes a rejection, "discard" parses as a
+                        double negative and nobody can tell whether the case ends up
+                        rejected. It does not -- this button writes nothing. Name what
+                        the button acts on. */}
+                    Reject recommendation
                   </button>
                   {/* Cancel = dismiss without deciding (audited as cancelled); both
                       leave the source untouched but record differently. */}
@@ -3299,9 +3346,10 @@ function RunResultModal({
                   </button>
                   <div style={{ width: "100%", fontSize: 11,
                                 color: "var(--citra-muted, #6b7280)" }}>
-                    Apply writes to the record · Discard writes nothing and
-                    teaches the app · Decide later writes nothing and teaches
-                    nothing
+                    Apply writes to the record — edit a value first to overrule
+                    the agent · Reject recommendation writes nothing, leaves the
+                    case open, and teaches the app · Decide later writes nothing
+                    and teaches nothing
                   </div>
                   {actionErr && (
                     <div style={{ color: "#dc2626", fontSize: 12, width: "100%" }}>

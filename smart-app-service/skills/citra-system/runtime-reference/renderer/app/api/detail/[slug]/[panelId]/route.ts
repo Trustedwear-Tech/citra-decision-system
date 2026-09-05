@@ -1,3 +1,11 @@
+// Copyright (c) 2026 Trustedwear Tech Private Limited (https://citra-ai.com)
+// Author: Rohit Kumar Chandan
+// SPDX-License-Identifier: Apache-2.0
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at http://www.apache.org/licenses/LICENSE-2.0
+
 /**
  * Browser → server proxy for GET /apps/{slug}/detail/{panel_id}.
  *
@@ -14,8 +22,9 @@ import { smartAppServiceUrl } from "@/lib/env";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string; panelId: string } }
+  props: { params: Promise<{ slug: string; panelId: string }> }
 ) {
+  const params = await props.params;
   const slug = encodeURIComponent(params.slug);
   const pid = encodeURIComponent(params.panelId);
   const id = req.nextUrl.searchParams.get("id");
