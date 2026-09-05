@@ -533,7 +533,18 @@ else
   setkv MCP_SERVICE_API_KEY "$MCP_KEY"
   setkv SMART_APP_INTERNAL_SIGNING_KEY "$(rand 32)"
   setkv CONNECTION_ENCRYPTION_KEY "$(rand 32)"
-  echo "  [ok] secrets generated (JWT, MCP key + service key, signing + connection keys)"
+  # .env.example ships this EMPTY on purpose -- it is a credential, and a
+  # shipped default would be the same one on every install. But empty is not a
+  # usable value either: discovery-service calls _require_env on it and refuses
+  # to boot, correctly. It was missing from THIS branch while the reconcile
+  # branch above regenerated it, so --fresh -- the one path that deletes .env
+  # and comes back through here -- produced a tree where discovery-service
+  # crash-looped on
+  #   Required environment variable 'ADMIN_API_KEY' is not set
+  # and the wizard sat on "waiting for discovery-service" until it timed out.
+  setkv ADMIN_API_KEY "$(rand 24)"
+  echo "  [ok] secrets generated (JWT, MCP key + service key, admin API key,"
+  echo "       signing + connection keys)"
   # NOT the admin password. This line used to claim one, and none was written
   # here -- the value came from .env.example, which shipped ChangeMe!123.
 fi
