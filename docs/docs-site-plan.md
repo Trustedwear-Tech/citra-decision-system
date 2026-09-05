@@ -91,7 +91,7 @@ without them read as sprawl.
 
 So the header was built and the body left alone: `assets/banner-{light,dark}.svg`
 (rendered to PNG so the typography does not depend on the viewer's installed
-fonts), honest badges only — CI, BSL-1.1, compose, open weights, Discord — a
+fonts), honest badges only — CI, Apache-2.0, compose, open weights, Discord — a
 link row, and a collapsible contents block. No stars or downloads: they would
 show zero and cost more than they earn.
 

@@ -15,4 +15,5 @@ specific language governing permissions and limitations under the License.
 These are general-purpose libraries and are deliberately permissively licensed:
 they may be used freely, including in production and in commercial products.
 The Citra platform products built on top of them (Citra Decision System, Citra
-Flows) are licensed separately under the Business Source License 1.1.
+Flows, Citra Decks) are Apache-2.0 as well -- the same terms, all the way
+down. Each carries its own LICENSE and NOTICE.

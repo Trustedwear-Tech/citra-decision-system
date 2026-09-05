@@ -10,7 +10,17 @@
 
 # Plan: stamping the tree for BSL 1.1
 
-**Status:** plan. Nothing changed yet.
+> **SUPERSEDED — this repository is Apache-2.0.** The plan below argues for
+> stamping every file `BUSL-1.1`. That is not what shipped: the tree was
+> stamped `Apache-2.0`, `LICENSE` is Apache-2.0, and the production
+> restriction described here was dropped before the repository was made
+> public. An Apache grant is irrevocable, so it does not come back. The
+> document is kept because the mechanics of stamping — who owns what, why the
+> grant is restated per file, why a registered SPDX id matters — are still how
+> the tree is maintained; only the licence being stamped changed. Read every
+> `BUSL-1.1` below as `Apache-2.0`.
+
+**Status:** superseded. Executed with Apache-2.0 in place of BUSL-1.1.
 
 **Goal.** Every source file we wrote carries a notice naming Trustedwear Tech
 Private Limited as owner, Rohit Kumar Chandan as author, and BUSL-1.1 as the
