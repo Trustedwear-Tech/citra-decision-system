@@ -131,53 +131,13 @@ def test_uci_dataset_present_and_parseable():
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_workflows_cover_every_dept_source():
-    """One ingestion workflow per dept_source. No orphan workflows, no missing ones."""
-    sources = json.loads(
-        (ROOT / "mcp-config" / "cement_dept_sources.import.json").read_text("utf-8")
-    )
-    workflows = json.loads(
-        (ROOT / "workflows" / "cement_ingestion_workflows.import.json").read_text("utf-8")
-    )
-    expected = {f"demo_ingest_{s['source_id']}" for s in sources}
-    actual = {w["name"] for w in workflows}
-    assert actual == expected, f"workflow ↔ source mismatch: {expected ^ actual}"
-
-
-def test_every_workflow_writes_to_demo_tagged_milvus():
-    """Demo workflows MUST tag Milvus chunks with `tag=demo` for safe cleanup."""
-    workflows = json.loads(
-        (ROOT / "workflows" / "cement_ingestion_workflows.import.json").read_text("utf-8")
-    )
-    for w in workflows:
-        sinks = [n for n in w["nodes"] if n["type"] == "milvus_writer"]
-        assert sinks, f"{w['name']} has no milvus_writer node"
-        for s in sinks:
-            tags = s.get("config", {}).get("tags", {})
-            assert tags.get("tag") == "demo", (
-                f"{w['name']} → {s['id']} writes Milvus without tag=demo — "
-                "could be impossible to clean up later"
-            )
-            assert tags.get("industry") == "manufacturing"
-
-
-def test_every_workflow_uses_demo_s3_bucket():
-    workflows = json.loads(
-        (ROOT / "workflows" / "cement_ingestion_workflows.import.json").read_text("utf-8")
-    )
-    for w in workflows:
-        listers = [n for n in w["nodes"] if n["type"] == "s3_list"]
-        assert listers, f"{w['name']} has no s3_list node"
-        for n in listers:
-            assert n["config"]["bucket"] == "demo-source-citra", (
-                f"{w['name']} → {n['id']} reads from "
-                f"{n['config'].get('bucket')!r}; expected demo-source-citra"
-            )
-            assert n["config"]["prefix"].startswith("manufacturing/cement/"), (
-                f"{w['name']} → {n['id']} prefix should start with "
-                f"manufacturing/cement/, got {n['config'].get('prefix')!r}"
-            )
-
+# Three workflow tests lived here and are gone. They asserted on the CEMENT
+# demo tenant -- its dept_sources import, its ingestion workflows, its S3
+# bucket -- and that tenant was removed. The files they read
+# (mcp-config/, workflows/) are not in this repository, so they did not skip:
+# they raised FileNotFoundError on every run. A test that cannot reach its
+# fixture is not guarding anything; it is noise that trains people to ignore a
+# red suite. acme-bank is the only tenant that ships.
 
 def test_every_app_has_at_least_one_starter_prompt_if_chat():
     """If an app has an agent_chat panel, it must seed at least one starter."""

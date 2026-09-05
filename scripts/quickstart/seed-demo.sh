@@ -278,9 +278,19 @@ fi
 # published port and to MinIO on ITS published port -- .env carries the
 # docker-network hostname, which does not resolve from here.
 if [ -f "$TENANT_DIR/scripts/generate_claim_documents.py" ]; then
-  echo "-> [5/8] generating and uploading claim documents"
+  # The bank's own bucket, separate from the platform's. setup.sh creates
+  # BUCKET_NAME (citra-documents) for Citra itself; this one holds the source
+  # system's artefacts and is created with the tenant, not with the platform.
+  ACME_BUCKET="$(getenv ACME_BANK_BUCKET)"; ACME_BUCKET="${ACME_BUCKET:-acme-bank-source}"
+  echo "-> [5/8] generating and uploading claim documents (bucket '$ACME_BUCKET')"
+  if ! MSYS_NO_PATHCONV=1 docker exec citra-minio sh -c \
+        "mc alias set local http://localhost:9000 \"$(getenv BUCKET_ACCESS_KEY)\" \"$(getenv BUCKET_SECRET_KEY)\" >/dev/null 2>&1 && \
+         mc mb -p local/$ACME_BUCKET >/dev/null 2>&1"; then
+    amber "   [!] could not create the bank's bucket '$ACME_BUCKET' - skipping documents."
+  fi
   MINIO_HOST_PORT="$(getenv MINIO_API_PORT)"; MINIO_HOST_PORT="${MINIO_HOST_PORT:-9002}"
   if ! ACME_BANK_PG_PORT="$PG_PORT" \
+       ACME_BANK_BUCKET="$ACME_BUCKET" \
        BUCKET_ENDPOINT_URL="http://localhost:${MINIO_HOST_PORT}" \
        "$PY" "$TENANT_DIR/scripts/generate_claim_documents.py" --upload; then
     amber "   [!] claim documents were not seeded - the claims app will cite"

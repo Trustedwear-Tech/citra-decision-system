@@ -93,12 +93,12 @@ def upload(rows: List[Dict[str, Any]], docs: Dict[str, bytes]) -> int:
     import boto3
 
     env = _env()
-    # Defaults to the tenant's own prefix, as ingest_docs.py already does. An
-    # empty default put 1,013 claim documents at the ROOT of the shared bucket,
-    # beside dev/ (the Citra platform's own tree) — these are the BANK's records
-    # and belong under the bank's folder, not loose in Citra's namespace.
-    bucket = env["BUCKET_NAME"]
-    prefix = env.get("BUCKET_KEY_PREFIX") or "acme-bank"
+    # The BANK's bucket, not the platform's. ACME_BANK_BUCKET matches what the
+    # tenant MCP reads (mcp/docker-compose.yml) — if these two ever disagree the
+    # documents are written where nothing will look for them, so they share one
+    # variable and one default.
+    bucket = os.getenv("ACME_BANK_BUCKET") or "acme-bank-source"
+    prefix = os.getenv("ACME_BANK_BUCKET_PREFIX", "")
     # BUCKET_ENDPOINT_URL is what points boto3 at MinIO instead of AWS, and
     # path addressing is mandatory there — a virtual-host style request becomes
     # http://<bucket>.citra-minio:9000, a hostname that does not resolve.

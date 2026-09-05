@@ -110,7 +110,17 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
 
       # ── Object storage (signed /document_url handoffs) ───────────────
-      BUCKET_NAME: ${BUCKET_NAME:-demo-source-citra}
+      # ACME_BANK_BUCKET, deliberately NOT ${BUCKET_NAME}. This defaulted to
+      # `demo-source-citra` and never once applied: BUCKET_NAME is set in the
+      # root .env for the PLATFORM's bucket, so compose substituted that and
+      # every claim document landed in citra-documents beside Citra's own
+      # tree. These are the bank's system-of-record artefacts, referenced from
+      # the bank's own Postgres — in a real deployment they sit in the
+      # customer's bucket under the customer's credentials, and Citra's
+      # storage is somewhere else entirely. A shared bucket teaches the
+      # opposite, quietly. The SOP library legitimately stays platform-side:
+      # it is a Citra dept library, indexed in Citra's Milvus.
+      BUCKET_NAME: ${ACME_BANK_BUCKET:-acme-bank-source}
       BUCKET_REGION: ${BUCKET_REGION:-ap-south-1}
       BUCKET_ACCESS_KEY: ${BUCKET_ACCESS_KEY:-}
       BUCKET_SECRET_KEY: ${BUCKET_SECRET_KEY:-}
@@ -122,7 +132,8 @@ services:
       # on DNS. The host-published port is the one route that works here, and
       # it tracks MINIO_API_PORT so an override stays in step on both sides.
       BUCKET_ENDPOINT_URL: ${BUCKET_ENDPOINT_URL:-http://citra-minio:9000}
-      BUCKET_KEY_PREFIX: ${BUCKET_KEY_PREFIX:-acme-bank}
+      # No prefix: the BUCKET is the bank's, so keys are claims/<id>/<doc>.
+      BUCKET_KEY_PREFIX: ${ACME_BANK_BUCKET_PREFIX:-}
       DOCUMENT_URL_TTL_SECONDS: ${DOCUMENT_URL_TTL_SECONDS:-300}
 
       # ── Postgres (all 4 structured sources) ──────────────────────────

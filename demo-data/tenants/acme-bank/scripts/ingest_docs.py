@@ -79,10 +79,6 @@ INDUSTRY = "bfsi"
 SOURCE_ID = "acme_bank_policy_library"
 DEPT = "central_ops"
 
-# S3 / object-storage settings for the raw source artifacts (the "Open" button).
-S3_BUCKET = os.getenv("BUCKET_NAME", "demo-source-citra")
-S3_REGION = os.getenv("BUCKET_REGION", "ap-south-1")
-S3_PREFIX = os.getenv("BUCKET_KEY_PREFIX", "acme-bank")
 
 TEXT_EXTENSIONS = {".md", ".txt"}
 PDF_EXTENSION = ".pdf"
@@ -127,57 +123,22 @@ def _content_type_for(path: Path) -> str:
             ".pdf": "application/pdf"}.get(path.suffix.lower(), "application/octet-stream")
 
 
-def _s3_key_for(doc_path: str) -> str:
-    return f"{S3_PREFIX.strip('/')}/{SOURCE_ID}/{doc_path.lstrip('/')}"
-
-
-def _upload_to_bucket(docs: List[Path]) -> int:
-    access = os.getenv("BUCKET_ACCESS_KEY")
-    secret = os.getenv("BUCKET_SECRET_KEY")
-    if not (access and secret):
-        log.warning("S3 upload skipped: BUCKET_ACCESS_KEY / BUCKET_SECRET_KEY not set. "
-                    "RAG works; the runtime 'Open' button will 404 until re-run with keys.")
-        return 0
-    try:
-        import boto3
-        from botocore.client import Config as _BotoConfig
-    except ImportError:
-        log.warning("boto3 not installed; S3 upload skipped.")
-        return 0
-    endpoint_url = (os.getenv("BUCKET_ENDPOINT_URL") or "").strip() or None
-    # A custom endpoint means an S3-compatible service (MinIO), which serves
-    # path style. Virtual-hosted style would dial "<bucket>.<host>:<port>" and
-    # fail to resolve. AWS keeps virtual.
-    addressing_style = "path" if endpoint_url else "virtual"
-    client_kwargs: Dict[str, Any] = dict(
-        aws_access_key_id=access, aws_secret_access_key=secret, region_name=S3_REGION,
-        config=_BotoConfig(signature_version="s3v4",
-                           s3={"addressing_style": addressing_style}))
-    if endpoint_url:
-        client_kwargs["endpoint_url"] = endpoint_url
-    elif S3_REGION and S3_REGION != "us-east-1":
-        client_kwargs["endpoint_url"] = f"https://s3.{S3_REGION}.amazonaws.com"
-    import boto3 as _b
-    s3 = _b.client("s3", **client_kwargs)
-    uploaded = 0
-    for doc in docs:
-        doc_path = doc.relative_to(RAW_ROOT).as_posix()
-        key = _s3_key_for(doc_path)
-        try:
-            # SSE is an AWS-S3-ism: MinIO rejects it with NotImplemented
-            # ("KMS not configured") unless a KMS backend is wired up. Send it
-            # only against real S3 — same conditional as addressing_style above.
-            extra = {} if endpoint_url else {"ServerSideEncryption": "AES256"}
-            s3.put_object(Bucket=S3_BUCKET, Key=key, Body=doc.read_bytes(),
-                          ContentType=_content_type_for(doc), **extra)
-            log.info("  ↑ s3://%s/%s", S3_BUCKET, key)
-            uploaded += 1
-        except Exception as exc:  # noqa: BLE001
-            log.error("  ✗ upload failed for %s: %s", doc_path, exc)
-    log.info("Uploaded %d/%d documents to s3://%s/%s/%s/",
-             uploaded, len(docs), S3_BUCKET, S3_PREFIX, SOURCE_ID)
-    return uploaded
-
+# The direct-to-bucket upload lived here and is gone.
+#
+# It wrote each SOP a SECOND time, to {S3_PREFIX}/{SOURCE_ID}/{path}, so every
+# seed stored the same twelve files twice: once here and once through
+# _store_dept_original below, which also records them in Mongo `files`. Its
+# comment said it backed the runtime's "Open" button -- and it never could:
+#
+#   * nothing in the tree READS rag.s3_prefix (build_mcp_sources writes it,
+#     registry_models declares it, no resolver consumes it); and
+#   * the two disagreed anyway -- the ontology declares
+#     "bfsi/acme-bank/policy/" while this wrote "acme-bank/<source_id>/policy/",
+#     so an object stored here was not findable at the declared prefix.
+#
+# The Open button resolves through Citra-Service's dept-library route, by
+# (source_id, doc_path) against the `files` record _store_dept_original
+# creates. That is the copy that is actually read, so it is the only copy kept.
 
 def _extract_text(path: Path) -> str:
     """Extract text with the SAME helper the dept-library upload uses (uniform
@@ -342,10 +303,15 @@ def main() -> int:
         log.warning("No documents to ingest — nothing to do.")
         return 0
 
-    if not args.dry_run and not args.skip_upload:
-        _upload_to_bucket(docs)
+    # --upload-only and --skip-upload were about the direct-to-bucket copy that
+    # is gone. The originals are stored by _store_dept_original as part of the
+    # ingest itself, so there is no separate upload phase to run or skip. The
+    # flags are kept as accepted-and-ignored rather than removed, so an existing
+    # command line does not start failing; --upload-only now has nothing left to
+    # do and says so.
     if args.upload_only:
-        log.info("Upload-only mode complete. Shared collection left untouched.")
+        log.warning("--upload-only: originals are stored with the ingest now; "
+                    "there is no separate upload step. Nothing done.")
         return 0
 
     return asyncio.run(_run(docs, dry_run=args.dry_run))

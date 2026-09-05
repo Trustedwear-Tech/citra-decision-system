@@ -644,7 +644,6 @@ def policy_library() -> Dict[str, Any]:
         },
         "rag": {
             "milvus_collection": _shared_dept_collection(),
-            "s3_prefix": "bfsi/acme-bank/policy/",
         },
         "taxonomy": {
             "doc_types": [
