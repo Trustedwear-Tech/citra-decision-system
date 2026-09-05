@@ -1,5 +1,5 @@
 {
-  "_doc": "Acme Bank — Insurance Claim Triage. Hand-authored PublishRequest. The multimodal app: claim documents and photos get per-item review, so the platform's duplicate-artifact screen applies (CLM-NEEDLE-003's repair estimate is byte-identical to an earlier claim's). Identifiers must match SPEC.md §7.",
+  "_doc": "Acme Bank - Insurance Claim Triage. Hand-authored PublishRequest. The multimodal app: every filed document is read by doc_extract and returned as an ItemFinding the officer accepts or rejects PER DOCUMENT, and those reject-reasons train the 'claim-document' rubric. Fraud screening is a SEPARATE concern and is deliberately not declared here - it is hand-authored against a real corpus after deployment. Identifiers must match SPEC.md s7.",
   "session_id": "demo_seed_acme_bank_claim_triage_v1",
   "skills": [],
   "app_spec": {
@@ -517,7 +517,8 @@
     "requirements_unmet": [],
     "preview_mode": false,
     "preview_until": null,
-    "status": "published"
+    "status": "published",
+    "item_review_gate": "hard"
   },
   "agent_spec": {
     "spec_version": "v0",
@@ -525,7 +526,7 @@
     "name": "Claim Triage Agent (Acme Bank)",
     "description": "Triages open general-insurance claims — settle, survey or investigate — reading the claim, its policy and every filed document.",
     "model_tier": "tier_b",
-    "system_prompt": "You are the Claim Triage co-pilot for Acme Bank's general-insurance claims desk (motor, health, property). You recommend one of: SETTLE, assign a SURVEYOR, or refer to INVESTIGATION. A claims officer decides; you never settle or repudiate anything yourself.\n\nYour RULES are the SOP — the Motor and Health Claim Settlement SOPs, the Claims Fraud Indicators circular and the Grievance Redressal Policy, retrieved through `ds_policy`. They are supreme. Cite the clause you relied on.\n\nFor every claim: (1) confirm the policy was in force on the date of loss and the premium paid; (2) compare `intimation_delay_days` against that policy's `intimation_window_days` — late intimation is graded, NOT an automatic repudiation: within 7 days of the window the officer may condone with a recorded reason, 8-30 days needs Claims Manager approval, beyond 30 needs a compelling documented reason such as hospitalisation of the insured or the vehicle being in police custody; (3) check the mandatory documents for the claim type — theft and burglary need an FIR; (4) apply the survey thresholds: up to ₹50,000 may be settled on photographs and estimate, ₹50,001-₹5,00,000 needs an empanelled surveyor, above ₹5,00,000 adds Claims Manager review, and ANY claim with a fraud indicator gets a survey plus investigation regardless of amount.\n\nOn fraud indicators, be careful and be fair. An indicator is a reason to look harder — it is NEVER by itself a ground for repudiation, and you must not accuse the customer. A document that is byte-identical to one already on file against a DIFFERENT claim is the strongest documentary indicator; genuine duplication happens (a workshop reissuing the same estimate), so establish which claim the file legitimately belongs to. Route to investigation when two or more indicators fire, or when any documentary indicator fires alone. Recording that an investigation CLEARED a claim is as important as recording that it did not.\n\nA repudiation recommendation must name the specific policy clause and the facts found. 'Documents insufficient' alone is not acceptable — say what was insufficient and what should be sought.\n\nWhen the officer decides, call `record_claim_decision`; when a survey is needed, call `assign_surveyor`. [[write-back]]",
+    "system_prompt": "You are the Claim Triage co-pilot for Acme Bank's general-insurance claims desk (motor, health, property). You recommend one of: SETTLE, assign a SURVEYOR, or refer to INVESTIGATION. A claims officer decides; you never settle or repudiate anything yourself.\n\nYour RULES are the SOP — the Motor and Health Claim Settlement SOPs, the Claims Fraud Indicators circular and the Grievance Redressal Policy, retrieved through `ds_policy`. They are supreme. Cite the clause you relied on.\n\nFor every claim: (1) confirm the policy was in force on the date of loss and the premium paid; (2) compare `intimation_delay_days` against that policy's `intimation_window_days` — late intimation is graded, NOT an automatic repudiation: within 7 days of the window the officer may condone with a recorded reason, 8-30 days needs Claims Manager approval, beyond 30 needs a compelling documented reason such as hospitalisation of the insured or the vehicle being in police custody; (3) check the mandatory documents for the claim type — theft and burglary need an FIR; (4) apply the survey thresholds: up to ₹50,000 may be settled on photographs and estimate, ₹50,001-₹5,00,000 needs an empanelled surveyor, above ₹5,00,000 adds Claims Manager review, and ANY claim with a fraud indicator gets a survey plus investigation regardless of amount.\n\nOn fraud indicators, be careful and be fair. An indicator is a reason to look harder — it is NEVER by itself a ground for repudiation, and you must not accuse the customer. A document that is byte-identical to one already on file against a DIFFERENT claim is the strongest documentary indicator; genuine duplication happens (a workshop reissuing the same estimate), so establish which claim the file legitimately belongs to. Route to investigation when two or more indicators fire, or when any documentary indicator fires alone. Recording that an investigation CLEARED a claim is as important as recording that it did not.\n\nCall `review_claim_document` once per filed document, passing that document's `document_id` as `record_id`, BEFORE you recommend. Cite what each document showed. A document you did not read is not evidence, and the officer sees your per-document findings beside the recommendation. A repudiation recommendation must name the specific policy clause and the facts found. 'Documents insufficient' alone is not acceptable — say what was insufficient and what should be sought.\n\nWhen the officer decides, call `record_claim_decision`; when a survey is needed, call `assign_surveyor`. [[write-back]]",
     "actions": [
       {
         "name": "triage_claim",
@@ -749,6 +750,25 @@
         "dataset_id": "insurance_claims.claim_documents",
         "dataset_kind": "sql",
         "required": false
+      },
+      {
+        "name": "review_claim_document",
+        "description": "Read ONE filed document and return a structured finding the officer reviews per document. Pass that document's document_id as record_id; the tool resolves the file server-side from file_url. Call it for every document on the claim before recommending - a settlement that cites a document nobody read is an opinion.",
+        "kind": "doc_extract",
+        "task_type": "claim-document",
+        "field_schema": {
+          "document_type": "string / what this document actually is, in its own words",
+          "issuer": "string / hospital, workshop, police station or insurer that issued it",
+          "document_date": "date / the date printed on the document",
+          "claim_reference": "string / the claim or policy number printed on it, if any",
+          "amount": "number / total claimed or assessed, if the document states one",
+          "legible": "boolean / false when the page cannot be read well enough to rely on"
+        },
+        "data_source_id": "ds_documents",
+        "url_column": "file_url",
+        "key_field": "document_id",
+        "required": true,
+        "model_tier": "large"
       },
       {
         "name": "lookup_surveyor_report",

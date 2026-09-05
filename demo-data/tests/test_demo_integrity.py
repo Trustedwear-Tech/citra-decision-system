@@ -139,6 +139,76 @@ def test_uci_dataset_present_and_parseable():
 # fixture is not guarding anything; it is noise that trains people to ignore a
 # red suite. acme-bank is the only tenant that ships.
 
+def test_media_columns_have_an_item_tool():
+    """A dataset with media columns, bound by an app that declares no media tool.
+
+    This is the failure the claims app shipped with, and it is silent in every
+    direction. `claim_documents.file_url` carried `column_kind: document_url`,
+    the app bound the dataset, and no `doc_extract` was declared -- so the agent
+    read document METADATA (hashes, counts, types) and reasoned confidently about
+    documents it never opened, while the officer got no per-document card. The
+    app published clean, ran clean and cited documents nobody had read.
+
+    It cannot be a publish validator today: `column_kind` lives in the catalogue,
+    and the catalogue index is not plumbed into the publish path (main.py passes
+    `catalogue_index=None` -- the open T-03 TODO). A validator added there would
+    no-op and look like a guard. Here both halves are on disk, so the check is
+    real.
+
+    Deliberately not asserted: that fraud screening is declared. Document review
+    and fraud screening are separate concerns -- `doc_extract` reviews every
+    document, `consistency_check`/`fraud_synthesis` screen for reuse and are
+    hand-authored against a real corpus later.
+    """
+    import json as _json
+
+    src = ROOT / "tenants" / "acme-bank" / "mcp" / "sources.json"
+    if not src.exists():
+        pytest.skip("acme-bank sources.json not present")
+    raw = _json.loads(src.read_text(encoding="utf-8"))
+    sources = raw["sources"] if isinstance(raw, dict) else raw
+
+    MEDIA = {"document_url", "image_url", "file"}
+    #: dataset ref -> the media columns it declares
+    media_by_ref = {}
+    for s in sources:
+        for ds in s.get("datasets") or []:
+            cols = [c["name"] for c in (ds.get("columns") or [])
+                    if str(c.get("column_kind") or "") in MEDIA]
+            if cols:
+                media_by_ref[str(ds.get("id") or "")] = cols
+
+    if not media_by_ref:
+        pytest.skip("no media columns declared in the ontology")
+
+    ITEM_KINDS = {"doc_extract", "image_analyze"}
+    failures = []
+    for app in sorted((ROOT / "tenants" / "acme-bank" / "apps").glob("*.json")):
+        spec = _json.loads(app.read_text(encoding="utf-8"))
+        app_spec = spec.get("app_spec") or {}
+        agent = spec.get("agent_spec") or {}
+        bound = {ds.get("ref"): ds.get("id")
+                 for ds in (app_spec.get("data_sources") or [])}
+        hit = {ref: cols for ref, cols in media_by_ref.items() if ref in bound}
+        if not hit:
+            continue
+        kinds = {t.get("kind") for t in (agent.get("tools_v2") or [])}
+        if not (kinds & ITEM_KINDS):
+            failures.append(
+                f"{app.name} binds {sorted(hit)} whose media columns are "
+                f"{sorted(c for cs in hit.values() for c in cs)}, "
+                f"but declares no {sorted(ITEM_KINDS)} tool"
+            )
+
+    assert not failures, (
+        "an app binds a dataset with media columns and cannot read them:\n  "
+        + "\n  ".join(failures)
+        + "\nThe agent will reason over document METADATA and cite files it "
+          "never opened, and the officer gets no per-item review. Declare a "
+          "doc_extract / image_analyze tool bound to the media column."
+    )
+
+
 def test_every_app_has_at_least_one_starter_prompt_if_chat():
     """If an app has an agent_chat panel, it must seed at least one starter."""
     for path in sorted((ROOT / "apps").glob("*.json")):
