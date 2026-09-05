@@ -360,11 +360,35 @@ class Tools:
         return {"tables": out}
 
     def ask_user(self, question: str) -> Any:
-        print("\n  " + "\n  ".join(question.strip().splitlines()))
-        try:
-            ans = input("\n  your answer > ").strip()
-        except EOFError:
-            ans = ""
+        """Ask the operator, and let them get the question BACK.
+
+        These run to a screen or more — six at once is normal. A terminal
+        resize in MinTTY clears the scrollback, and the operator is then
+        staring at a bare "your answer >" with no way to see what was asked.
+        Seen live: the question was gone, the answer was typed blind, and
+        four of the six went unanswered.
+
+        So "?" reprints it, and the transcript path is shown — the wizard
+        tees every question to a file, and nobody knows that at the moment
+        they need it.
+        """
+        def _show() -> None:
+            print("\n  " + "\n  ".join(question.strip().splitlines()))
+            _log = os.environ.get("CITRA_SETUP_LOG", "")
+            _hint = "  (type ? to see this question again"
+            _hint += f"; it is also in {_log})" if _log else ")"
+            print("\n" + _hint)
+
+        _show()
+        while True:
+            try:
+                ans = input("\n  your answer > ").strip()
+            except EOFError:
+                ans = ""
+            if ans in ("?", "??", "again", "repeat"):
+                _show()
+                continue
+            break
         if _looks_like_a_credential(ans):
             print("")
             print("  [!] That looks like a connection string or a credential, so")
