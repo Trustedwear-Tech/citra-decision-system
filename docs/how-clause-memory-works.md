@@ -260,6 +260,112 @@ stops being applied, and nobody has to outrank anyone.
 
 ---
 
+## 8a. What happens as volume builds
+
+The single most misread part of the mechanism: ten rejections do not make ten
+rules.
+
+### Ten rejections make about three clauses
+
+The ten are **partitioned** by the two gates in §5. Officers reject for different
+reasons even on similar cases, so a realistic split is:
+
+    10 rejections
+      |- 4 about "late intimation needs manager approval"   -> cluster
+      |- 3 about "discharge summary illegible"              -> cluster
+      |- 2 about "amount exceeds surveyor assessment"       -> cluster
+      \- 1 one-off                                          -> no cluster
+
+Each group clearing size ≥ 2 and ≥ 6 content tokens authors **one** clause.
+
+**The leftovers are not discarded.** Corrections that do not cluster, and
+clusters too thin to author, are deliberately left unconsumed — *"if an officer
+later writes a real reason for the same lesson, these ride along as
+corroboration"*. A rejection made today can help form a clause weeks later when
+a second officer says the same thing. Only clusters that actually author or
+reinforce a clause are marked consumed.
+
+### The next rejection reinforces; it does not rewrite
+
+Every incoming cluster is checked against existing clauses **first**. On a match
+(similarity ≥ 0.5) the clause is reinforced — and **the text is never
+rewritten**. Only provenance, the officer list, `support_count`,
+`last_confirmed_at` and the match fingerprint widen.
+
+That is the anti-dilution invariant, and it is the whole reason the previous
+design was removed: an LLM rewriting one summary per correction meant every
+correction degraded the ones before it, and no rule could ever be blamed for a
+bad recommendation.
+
+**So a clause does not grow in text. It grows in support.**
+
+### Many opinions on the same facets
+
+Four outcomes, and the system never averages them:
+
+| situation | outcome |
+|---|---|
+| same lesson, different words (≥ 0.5) | reinforced — one clause, more officers |
+| genuinely different lesson, same facets | a second clause; both fire |
+| near-identical text (≥ 0.75), one scope a subset of the other | merged — the **more general** survives, `merged_from` keeps it reversible |
+| same field, opposing directions | both → `dissented`; suppressed, shown as a disagreement notice |
+
+Contradiction detection is deliberately narrow: two rules about one field on
+overlapping cases are *usually complementary*, and treating that as a clash
+would silence real knowledge.
+
+### Three counters, three different jobs
+
+- **`support_count`** — distinct officers; crossing 3 promotes candidate → active
+- **`fired` / `blamed`** — precision; below 0.7 over ≥ 10 firings → `underperforming`, stops firing
+- **dissent share** — ≥ 0.34 → `dissented`
+
+Steady state for a busy facet is a handful of clauses, each with several
+officers behind it, each carrying a live precision score, and any real
+disagreement parked rather than averaged away.
+
+---
+
+## 8b. Yes — several clauses inject on one case
+
+`scope_facets ⊆ case_facets` is a filter, not a picker. Every clause that
+matches is a candidate, then ranked and fitted into a **1000-word budget**.
+
+Clauses are split into three tiers first:
+
+| tier | statuses | cap |
+|---|---|---|
+| team judgements | `active` | budget only |
+| individual judgements | `candidate` | **3** (`MAX_INDIVIDUAL_JUDGEMENTS`) |
+| notices | `dissented`, `sop_conflict` | **2** dissent lines |
+
+**Tier is the primary key.** Every team judgement outranks every individual one,
+however specific the individual is — corroboration beats precision of scope.
+
+Within a tier the sort is `(scope_size DESC, score DESC)` — **specificity
+first**, and that ordering *is* an n-gram backoff. A thin
+`(theft ∧ photo ∧ us ∧ >25k)` cell falls through to `(theft ∧ photo)`, then
+`(theft)`, with no special-casing and no cold-start cliff.
+
+The tie-break score within a tier is
+
+    W_SUPPORT · log(1+support) + W_PRECISION · precision + W_RECENCY · recency
+
+so a well-supported, accurate, recently-confirmed clause outranks a stale one at
+the same specificity. An unproven clause uses a prior rather than a one-sample
+accident.
+
+Finally, **dedupe keeps the most specific survivor per (reason_code,
+contested_fields)** — a general clause is redundant once a narrower one on the
+same lesson fires. Across tiers this means a team judgement silently shadows an
+individual one on the same lesson, which is usually right: by the time a team
+judgement exists, the individual's evidence is normally already inside it.
+
+The injected clause ids are recorded on the run, which is what later makes
+`fired` and `blamed` countable.
+
+---
+
 ## 9. Known limits
 
 Stated plainly, because a mechanism whose limits are hidden gets trusted where
