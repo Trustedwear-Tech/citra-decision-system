@@ -828,6 +828,12 @@ if [ "$start_choice" = "2" ]; then
     exit 1
   else
     ck_mark ontology
+    # The MCP copies the registry in at generate time and loads it once at boot.
+    # A rebuilt ontology is therefore NOT picked up by a container that is
+    # already running -- and the step below would see it running and skip,
+    # leaving the builder reading the tables from before the rebuild while the
+    # wizard reported success. Recorded here so that step knows to recreate it.
+    _ontology_rebuilt=1
   fi
 
   hr; echo "$(b "Starting the platform")"
@@ -860,9 +866,14 @@ if [ "$start_choice" = "2" ]; then
   echo "sources.json, which stays reviewable and secret-free."
   echo
   MCP_SAFE_ORG="$(printf '%s' "$org_id" | tr '[:upper:]_' '[:lower:]-')"
-  if done_already source_mcp have_source_mcp; then
+  if [ "${_ontology_rebuilt:-0}" != "1" ] && done_already source_mcp have_source_mcp; then
     echo "  [ok] mcp-$MCP_SAFE_ORG is already running"
   else
+    if [ "${_ontology_rebuilt:-0}" = "1" ] && have_source_mcp; then
+      echo "  The ontology changed, so mcp-$MCP_SAFE_ORG is rebuilt rather than left"
+      echo "  running - it loads its registry once, at boot."
+      ck_drop source_mcp
+    fi
     # A REST source was introspected from a spec URL, not a connection string --
     # passing that as --conn would parse a hostname out of a document location
     # and write it as a database host.
