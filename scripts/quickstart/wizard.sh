@@ -827,8 +827,9 @@ if [ "$start_choice" = "2" ]; then
       echo "  $(b "Note") - the spec gives the wizard your resources and fields. It"
       echo "  does NOT give it how to CALL the API: base_url, the auth env_prefix"
       echo "  and options.invocation_template are yours to add afterwards, in"
-      echo "  sources.json (docs/sources-file.md s5.1). Until they are set, the"
-      echo "  builder can see the source and the runtime cannot call it."
+      echo "  sources.json (source-mcp-template/docs/sources-file.md s5.1). Until"
+      echo "  they are set, the builder sees the source and the runtime cannot"
+      echo "  call it."
       ;;
     *)
       echo "  Your connection string stays on this machine. It is never sent to a model."
