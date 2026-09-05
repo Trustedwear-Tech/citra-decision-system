@@ -905,7 +905,7 @@ if [ "$start_choice" = "2" ]; then
   echo "$(b "Sources are grouped under a DEPARTMENT id - a name for THIS group.")"
   echo
   echo "It does $(b "not") have to be a business function. One database usually"
-  echo "covers several - sales, operations and claims in one core system - and"
+  echo "covers several - sales, operations and service in one core system - and"
   echo "that is $(b "one") department, named after the system. Use separate ones only"
   echo "when the data, the SOPs and the people are genuinely separate."
   echo
@@ -927,7 +927,7 @@ if [ "$start_choice" = "2" ]; then
   # per function, so an operator with one core database covering sales, ops and
   # claims would split it into three, ending up with three MCPs over one schema
   # and a judgement learned in one invisible to the others.
-  dept_id="$(ask_required "Identifier for this group (lowercase, e.g. core-banking, crm, claims)" "core" valid_slug)"
+  dept_id="$(ask_required "Identifier for this group (lowercase, e.g. core-erp, crm, field-ops)" "core" valid_slug)"
   admin_email="$adm_email"
 
   step "building the ontology"
@@ -1085,9 +1085,9 @@ for d in (raw['sources'] if isinstance(raw,dict) else raw):
   echo
   echo "Your database says what IS TRUE. Your SOPs say what to DO about it:"
   echo
-  echo "  - when a loan can be approved, and what must be verified first"
-  echo "  - when a claim settles, when it needs a surveyor, when it is rejected"
-  echo "  - what makes an account NPA, what the KYC steps are"
+  echo "  - when a request can be approved, and what must be verified first"
+  echo "  - when a case escalates, when it needs a specialist, when it closes"
+  echo "  - what counts as overdue, and what the onboarding checks are"
   echo
   echo "Anything you would hand a new joiner and expect them to follow."
   echo "$(b "PDF, Word, Markdown or text.")"
