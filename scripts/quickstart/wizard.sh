@@ -902,20 +902,32 @@ if [ "$start_choice" = "2" ]; then
   # answers, and the org seeded here has to be the one the admin belongs to.
   echo "  Organisation: $org_id     admin: $adm_email"
   echo
-  echo "$(b "Your source is registered under a DEPARTMENT, not just the org.")"
-  echo "A department is the unit one MCP serves and one SOP library belongs to:"
-  echo "claims sources read alongside claims SOPs, lending alongside lending. One"
-  echo "organisation usually has several, each with its own officers, and a"
-  echo "judgement learned in one never leaks into another."
+  echo "$(b "Sources are grouped under a DEPARTMENT id - a name for THIS group.")"
   echo
-  echo "This wizard wires the $(b "first") one. Add the rest later by copying its"
-  echo "shape in sources.json - see docs/change-the-demo.md."
+  echo "It does $(b "not") have to be a business function. One database usually"
+  echo "covers several - sales, operations and claims in one core system - and"
+  echo "that is $(b "one") department, named after the system. Use separate ones only"
+  echo "when the data, the SOPs and the people are genuinely separate."
+  echo
+  echo "What the id decides:"
+  echo "  - which sources a single MCP serves"
+  echo "  - which SOP library is read alongside them"
+  echo "  - how far a judgement learned here can ever apply"
+  echo
+  echo "This wizard wires the $(b "first") group. Add more later in sources.json"
+  echo "- see docs/change-the-demo.md."
   echo
   # A slug, for the same reason org_id is one: it becomes part of the MCP
   # container name, the Milvus collection prefix and the catalogue scope. A
   # space or a capital here fails at `docker compose up`, several minutes and
   # one model-driven interview later.
-  dept_id="$(ask_required "First department id (lowercase, e.g. claims, ops)" "ops" valid_slug)"
+  #
+  # Examples deliberately lead with a SYSTEM name, not a business function.
+  # "claims, ops" taught the opposite of the truth: it read as one department
+  # per function, so an operator with one core database covering sales, ops and
+  # claims would split it into three, ending up with three MCPs over one schema
+  # and a judgement learned in one invisible to the others.
+  dept_id="$(ask_required "Identifier for this group (lowercase, e.g. core-banking, crm, claims)" "core" valid_slug)"
   admin_email="$adm_email"
 
   step "building the ontology"
