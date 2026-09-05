@@ -174,7 +174,7 @@ def _free_port(start: int = 8510) -> int:
     return start
 
 
-def _docker_network() -> str:
+def _docker_network(env_file: str = ".env") -> str:
     """The docker network a generated MCP joins — from the root .env.
 
     NOT hardcoded, and deliberately without a default. This repo runs on
@@ -196,7 +196,7 @@ def _docker_network() -> str:
     # hit exactly that with ACME_BANK_PG_PORT.
     net = (os.getenv("CITRA_DOCKER_NETWORK") or "").strip()
     if not net:
-        net = _envfile_get(".env", "CITRA_DOCKER_NETWORK").strip()
+        net = _envfile_get(env_file, "CITRA_DOCKER_NETWORK").strip()
     if not net:
         raise SystemExit(
             "CITRA_DOCKER_NETWORK is not set.\n"
@@ -208,9 +208,13 @@ def _docker_network() -> str:
 
 
 def _render(org: str, depts: List[str], port: int,
-            prefixes: Dict[str, Tuple[str, str]]) -> str:
+            prefixes: Dict[str, Tuple[str, str]], env_file: str = ".env") -> str:
     safe = org.lower().replace("_", "-")
-    network = _docker_network()
+    # The SAME file --env-file names. This read `.env` literally, so a run
+    # pointed at any other env file took its credentials from one file and its
+    # docker network from another -- and silently agreed with itself whenever
+    # both happened to exist.
+    network = _docker_network(env_file)
     conn_lines: List[str] = []
     for pfx, (kind, src) in sorted(prefixes.items()):
         conn_lines.append(f"      # source '{src}' ({kind}) — values come from the root .env")
@@ -423,7 +427,7 @@ def main() -> int:
             print(f"[ok] {note}")
 
     with open(out, "w", encoding="utf-8") as fh:
-        fh.write(_render(a.org, all_depts, port, prefixes))
+        fh.write(_render(a.org, all_depts, port, prefixes, a.env_file))
 
     print(f"[ok] wrote {out}")
     print(f"     org={a.org}  depts={','.join(all_depts)}  sources={len(docs)}  port={port}")

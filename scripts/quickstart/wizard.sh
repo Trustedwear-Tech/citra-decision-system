@@ -396,17 +396,28 @@ if [ "$FRESH" = "1" ]; then
   echo "    Docker volumes              Postgres, Mongo, Milvus, MinIO - all seeded data"
   echo "    my-source/sources.json      the ontology built by a previous run"
   echo "    deployments/<org>/mcp       the MCP generated for your own database"
+  echo "    the demo tenant             acme-bank's Postgres and its MCP"
   echo "  Apps, decisions, memory and uploaded SOPs all live in those volumes."
   echo
   if yes_no "Delete them and start from scratch?" "n"; then
     rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json" "$STATE_FILE"
     docker compose -f docker-compose.quickstart.yml down -v --remove-orphans 2>/dev/null || true
-    # The MCP for a custom database is its OWN compose project, so the `down`
-    # above never touched it. Left running it would survive the wipe, keep
-    # have_source_mcp answering yes, and serve a registry for volumes that no
-    # longer exist -- a container that looks healthy and is answering about a
-    # database the rest of the install has forgotten.
-    for _d in "$REPO_ROOT"/deployments/*/mcp/docker-compose.yml; do
+    # Every MCP is its OWN compose project, so the `down` above -- which names
+    # only docker-compose.quickstart.yml -- never touched any of them. That was
+    # measured: --fresh removed 20 containers and left citra-ds-acme-bank-postgres
+    # and its MCP running.
+    #
+    # For the DEMO that is not untidiness, it is a broken install that reports
+    # success. have_demo() counts rows in that surviving Postgres, so it still
+    # answers yes; --fresh deletes the checkpoint file, so the next run ADOPTS
+    # the demo as already seeded and offers "Seed it again? [n]". Meanwhile
+    # Mongo went with the wipe, taking the org, the users, the apps and the
+    # MCP's discovery registration. The operator lands on an empty screen having
+    # been told everything was already in place.
+    #
+    # For a custom database the same shape: a container that looks healthy,
+    # serving a registry for volumes that no longer exist.
+    for _d in "$REPO_ROOT"/deployments/*/mcp/docker-compose.yml               "$REPO_ROOT"/demo-data/tenants/*/mcp/docker-compose.yml; do
       [ -f "$_d" ] || continue
       docker compose -f "$_d" down -v --remove-orphans 2>/dev/null || true
     done
@@ -678,7 +689,10 @@ if [ "$start_choice" = "2" ]; then
   # inheriting that silently is what the comment above describes, an admin of
   # an org with nothing in it.
   cur_org="$(getkv ORG_ID)"; [ "$cur_org" = "citra-ai" ] && cur_org=""
-  org_id="$(ask_required "Organisation id (lowercase, no spaces, e.g. acme-bank)" "$cur_org" valid_slug)"
+  # NOT "e.g. acme-bank": that is the org the demo seeds into. Anyone who
+  # followed the example landed their own database in the demo's organisation,
+  # with two MCPs answering for one org and have_demo() keyed on it.
+  org_id="$(ask_required "Organisation id (lowercase, no spaces, e.g. northwind)" "$cur_org" valid_slug)"
 else
   # Not a free choice on the demo path: the demo's data, apps and officer
   # personas are all seeded into acme-bank, so an admin of any other org would
@@ -896,6 +910,16 @@ if [ "$start_choice" = "2" ]; then
     fi
     ck_mark source_mcp
   fi
+  # Read back rather than remembered from the run above: on a resume the block
+  # is skipped entirely and the port still has to appear in the summary.
+  MCP_PORT="$(grep -oE '"[0-9]+:8090"'       "$REPO_ROOT/deployments/$org_id/mcp/docker-compose.yml" 2>/dev/null       | head -1 | cut -d'"' -f2 | cut -d: -f1)"
+  # The env_prefix the interview chose -- it names the .env keys holding this
+  # source's credentials, and it is not guessable from the org id.
+  MCP_PFX="$("$PY" -c "import json,sys
+raw=json.load(open(sys.argv[1],encoding='utf-8'))
+for d in (raw['sources'] if isinstance(raw,dict) else raw):
+    p=((d.get('connection') or {}).get('env_prefix') or '').strip()
+    if p: print(p); break" "$REPO_ROOT/my-source/sources.json" 2>/dev/null || true)"
 
   # ---- The catalogue -------------------------------------------------------
   # Registration tells discovery the MCP EXISTS; the crawl is what reads its
@@ -1076,9 +1100,24 @@ fi
 echo
 echo "$(b "4. Look at the data while you use it")"
 echo "     Mongo     mongodb://127.0.0.1:27017   db citra    apps, decisions, clauses"
-echo "     Postgres  localhost:15444             acme_bank   the bank's own records"
 echo "     Milvus    localhost:19530                         SOP vectors"
 echo "     MinIO     http://localhost:9001                   uploaded files"
+# The system-of-record differs by path, and this used to print the DEMO's
+# Postgres either way -- so someone who had just connected their own database
+# was handed acme-bank's host, port and database name as though it were theirs.
+if [ "$start_choice" != "2" ]; then
+  echo "     Postgres  localhost:15444             acme_bank   the bank's own records"
+else
+  echo "     Your own database is where it always was - this install did not"
+  echo "     copy it. What it added is the MCP in front of it:"
+  echo "       MCP     http://localhost:${MCP_PORT:-<port>}/health   serves your tables to the builder"
+  echo "       compose deployments/$org_id/mcp/docker-compose.yml"
+  if [ -n "${MCP_PFX:-}" ]; then
+    echo "       credentials  ${MCP_PFX}_HOST / _PORT / _DB / _USER / _PASS in $(b ".env")"
+  else
+    echo "       credentials  the source's *_HOST / _PORT / _DB / _USER / _PASS keys in $(b ".env")"
+  fi
+fi
 echo "     Passwords for all of them are in $(b ".env")."
 echo
 echo "$(b "5. Useful from here")"
