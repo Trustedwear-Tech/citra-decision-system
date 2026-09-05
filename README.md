@@ -322,21 +322,17 @@ switchable off.
 
 ## Does it actually work?
 
-We tested it the way it would have to survive being tested: a set of real
-loan applications run twice under identical inputs, once with a learned
-judgement active and once without, alongside control files where the right
-behaviour is to do nothing at all.
+We wrote the evidence up as a credit-risk note rather than a claim in a
+README. It works through a case from retail underwriting where every
+documented gate passes and an experienced officer still says hold on —
+because what she is applying was never written down, and the record has no
+field for it.
 
-It fired where it belonged, stayed silent where it did not, and the effect
-was not the underlying model.
+From there: the controlled run we tested it with, the null result we found
+beside it, the economics, the objections we get asked, how to prove it on
+your own book, and a closing section on what the evidence does not cover.
 
-**Three of the four judgements we seeded did nothing at all** — they restated
-what the written policy already said, and the system can read the policy. We
-publish that because it is what makes the fourth believable, and because it
-draws the line: this is not a rulebook engine. It is the layer for what the
-rulebook never covered.
-
-→ [The experiment: method, results, the null result and the limits](https://github.com/Trustedwear-Tech/citra-decision-system/blob/main/docs/Citra-Decision-Memory-Credit-Note.pdf)
+→ **[Citra Decision Memory — Credit Note 01](https://github.com/Trustedwear-Tech/citra-decision-system/blob/main/docs/Citra-Decision-Memory-Credit-Note.pdf)**
 
 ---
 
