@@ -108,9 +108,19 @@ looks correct.
 2. `describe_tables` in BATCHES — pass many names at once, not one per call.
 3. `ask_user` whenever meaning is unclear. You have a limited number of tool
    rounds, so ask several things in one question rather than drip-feeding.
-4. Draft the registry, then `validate_draft` it. Fix what it reports and
-   validate again.
-5. `save` only once validation passes.
+4. Build the registry INCREMENTALLY. `put_source` for each source, then
+   `add_datasets` a few datasets at a time. The draft is held for you; you
+   never re-send what is already in it, and every edit returns an outline of
+   what the draft now contains.
+5. `validate_draft` with NO arguments to check the draft. Fix what it reports
+   by re-sending only the affected dataset through `add_datasets` — a dataset
+   with an id already in the draft REPLACES it. Then validate again.
+6. `save` with no arguments once validation passes.
+
+Send real JSON objects and arrays as tool arguments. Never a string containing
+JSON: escaping a whole registry by hand is where the typos come from, and a
+registry re-typed to fix two of them arrives with three new ones. Measured:
+eight rounds lost to `phsical_name`, `colums`, `tye`, `is_forgeign_key`.
 
 ## What you MUST ask about, never guess
 
@@ -232,6 +242,10 @@ it.
 ## Hard rules
 
 - Unknown keys are a BOOT FAILURE (`extra="forbid"`). Only fields in the schema.
+- Never re-send the whole registry to change part of it. `add_datasets`
+  replaces a dataset by id and `put_source` replaces a source by id — that is
+  what they are for. A full re-emission is both the slowest and the least
+  reliable way to fix one field.
 - Never put credentials in the file. Use `connection.env_prefix`.
 - NEVER ASK THE OPERATOR FOR A CONNECTION STRING, HOST, USER, PASSWORD OR
   ENV PREFIX. You already have database access: your tools connect for you
@@ -283,17 +297,52 @@ TOOLS = [
         "parameters": {"type": "object", "properties": {
             "question": {"type": "string"}}, "required": ["question"]}}},
     {"type": "function", "function": {
-        "name": "validate_draft",
-        "description": ("Validate a candidate sources.json. Returns hard problems that must be "
-                        "fixed, plus capability advisories describing what the file does NOT "
-                        "switch on."),
+        "name": "put_source",
+        "description": ("Add or replace ONE source in the draft — its identity and settings, "
+                        "with or without datasets. Adding a source_id that is already there "
+                        "replaces it. Build the registry with this and add_datasets rather "
+                        "than re-sending the whole file every time."),
         "parameters": {"type": "object", "properties": {
-            "sources_json": {"type": "string"}}, "required": ["sources_json"]}}},
+            "source": {"type": "object",
+                       "description": "One source object: source_id, type, org_id, dept_id, "
+                                      "name, description, connection, and optionally datasets."}},
+            "required": ["source"]}}},
+    {"type": "function", "function": {
+        "name": "add_datasets",
+        "description": ("Append datasets to a source already in the draft. A dataset whose id "
+                        "is already present is replaced, so this is also how you FIX one — "
+                        "re-send just that dataset, not the file."),
+        "parameters": {"type": "object", "properties": {
+            "source_id": {"type": "string"},
+            "datasets": {"type": "array", "items": {"type": "object"},
+                         "description": "Dataset objects to add to that source."}},
+            "required": ["source_id", "datasets"]}}},
+    {"type": "function", "function": {
+        "name": "drop_dataset",
+        "description": "Remove one dataset from the draft by its id. For when you added it in error.",
+        "parameters": {"type": "object", "properties": {
+            "source_id": {"type": "string"}, "dataset_id": {"type": "string"}},
+            "required": ["source_id", "dataset_id"]}}},
+    {"type": "function", "function": {
+        "name": "validate_draft",
+        "description": ("Validate the draft you have built up. Call it with NO arguments to "
+                        "check what put_source/add_datasets have accumulated. Returns hard "
+                        "problems that must be fixed, plus capability advisories describing "
+                        "what the file does NOT switch on."),
+        "parameters": {"type": "object", "properties": {
+            "sources": {"type": "array", "items": {"type": "object"},
+                        "description": "OPTIONAL — a whole registry as a JSON ARRAY of source "
+                                       "objects, replacing the draft. Send real JSON, never a "
+                                       "string containing JSON. Omit it to validate the draft."}},
+            "required": []}}},
     {"type": "function", "function": {
         "name": "save",
-        "description": "Write the final registry. Only call after validate_draft passes.",
+        "description": ("Write the final registry. Call with no arguments to save the draft. "
+                        "Only call after validate_draft passes."),
         "parameters": {"type": "object", "properties": {
-            "sources_json": {"type": "string"}}, "required": ["sources_json"]}}},
+            "sources": {"type": "array", "items": {"type": "object"},
+                        "description": "OPTIONAL — as for validate_draft."}},
+            "required": []}}},
 ]
 
 
@@ -321,6 +370,74 @@ def _looks_like_a_credential(text: str) -> bool:
 # a "\n" makes that count wrong, and the moment the answer wraps or is
 # pasted it overwrites the text already on screen. Print the blank line
 # first, keep the prompt itself short and on ONE line.
+#: Every property name the schema defines, at any level. Used only to guess
+#: what a near-miss key was meant to be.
+def _schema_vocabulary() -> set:
+    doc = json.loads((MCP / "schema" / "sources.schema.json").read_text(encoding="utf-8"))
+    vocab = set(doc.get("properties") or {})
+    for d in (doc.get("$defs") or doc.get("definitions") or {}).values():
+        vocab |= set(d.get("properties") or {})
+    return vocab
+
+
+#: Keys whose CHILDREN are user data, not schema fields - column names inside
+#: an input_schema, sample row values, connection wiring (extra="allow").
+_OPAQUE = {"properties", "sample_rows", "_sample_rows", "distinct_values",
+           "connection", "metadata", "examples", "required"}
+
+
+def _misspelt_keys(payload: Any, limit: int = 12) -> List[str]:
+    """Near-miss key names, as `phsical_name -> physical_name`."""
+    import difflib
+    vocab = _schema_vocabulary()
+    seen: List[str] = []
+
+    def walk(node: Any) -> None:
+        if len(seen) >= limit:
+            return
+        if isinstance(node, list):
+            for v in node:
+                walk(v)
+            return
+        if not isinstance(node, dict):
+            return
+        for k, v in node.items():
+            if isinstance(k, str) and k not in vocab and not k.startswith("_"):
+                near = difflib.get_close_matches(k, vocab, n=1, cutoff=0.8)
+                if near:
+                    msg = f"{k!r} -> {near[0]!r}?"
+                    if msg not in seen:
+                        seen.append(msg)
+            if k not in _OPAQUE:
+                walk(v)
+
+    walk(payload)
+    return seen
+
+
+def _json_error_context(text: str, e: "json.JSONDecodeError") -> str:
+    """The line that broke, with a caret under the character.
+
+    `Expecting ',' delimiter: line 1 column 8081` sent the model hunting: it
+    guessed "the issue might be around line 61", rewrote the whole registry,
+    and introduced new typos doing it. Showing the actual characters ends the
+    guessing.
+    """
+    lines = text.splitlines() or [text]
+    row = min(max(e.lineno - 1, 0), len(lines) - 1)
+    line = lines[row]
+    col = max(e.colno - 1, 0)
+    # One enormous line is the usual shape; window around the break.
+    lo = max(col - 60, 0)
+    hi = min(col + 60, len(line))
+    snippet = ("..." if lo else "") + line[lo:hi] + ("..." if hi < len(line) else "")
+    caret = " " * (len(snippet) - len(line[lo:hi]) - (3 if hi < len(line) else 0)
+                   + (col - lo)) + "^"
+    return (f"{e.msg} at line {e.lineno} column {e.colno}\n"
+            f"  {snippet}\n"
+            f"  {caret}")
+
+
 class Tools:
     """Every tool runs HERE. The model sees results, never the connection string."""
 
@@ -329,6 +446,14 @@ class Tools:
         self._cache: Dict[str, Any] = {}
         self.saved: str | None = None
         self.validated_ok = False
+        #: The draft the model builds up, so a two-field fix costs two fields
+        #: rather than the whole registry re-typed. Re-emitting 16 datasets to
+        #: correct a typo introduces fresh ones: measured, eight rounds burned
+        #: on `phsical_name`, `colums`, `tye`, `is_forgeign_key` and friends.
+        self.draft: List[Dict[str, Any]] = []
+        #: The last draft that PASSED. The round cap used to promise it saved
+        #: "the best draft so far" and then save nothing at all.
+        self.last_valid: str | None = None
 
     def list_tables(self) -> Any:
         import introspect_source as ins
@@ -421,9 +546,20 @@ class Tools:
         refuse to write it.
         """
         try:
-            json.loads(sources_json)
+            parsed = json.loads(sources_json)
         except json.JSONDecodeError as e:
-            return False, f"not valid JSON: {e}"
+            return False, "not valid JSON: " + _json_error_context(sources_json, e)
+        hints = _misspelt_keys(parsed)
+        if hints:
+            # An advisory, not a verdict -- the vocabulary is every property in
+            # the schema, so a key legal in one model looks legal everywhere.
+            # The real validator below still decides. This exists because
+            # `extra="forbid"` reports the bad key and not the good one, and a
+            # model that has just typed 15,000 tokens of JSON cannot see that
+            # `phsical_name` is missing an `i`.
+            hint_text = "possible typos: " + "; ".join(hints) + chr(10)
+        else:
+            hint_text = ""
         with tempfile.NamedTemporaryFile("w", suffix=".sources.json", delete=False,
                                          encoding="utf-8") as fh:
             fh.write(sources_json)
@@ -434,7 +570,7 @@ class Tools:
                                encoding="utf-8", errors="replace")
         finally:
             os.unlink(tmp)
-        return p.returncode == 0, (p.stdout or "") + (p.stderr or "")
+        return p.returncode == 0, hint_text + (p.stdout or "") + (p.stderr or "")
 
     #: Column names that almost always hold a location rather than a value.
     _LINK_NAME = re.compile(
@@ -484,12 +620,104 @@ class Tools:
                         flagged.append(f"{ds.get('id') or ds.get('physical_name')}.{name}")
         return flagged
 
-    def validate_draft(self, sources_json: str) -> Any:
-        ok, report = self.run_validator(sources_json)
-        self.validated_ok = ok
-        return {"valid": ok, "report": report}
+    @staticmethod
+    def _as_sources(value: Any) -> List[Dict[str, Any]]:
+        """Take what the model sent, however it chose to send it.
 
-    def save(self, sources_json: str) -> Any:
+        The tool schema asks for an array of objects. Providers still sometimes
+        serialise it as a string, and older transcripts carry `sources_json`,
+        so both are accepted -- but the string path is the one that corrupts,
+        and it is no longer what is asked for.
+        """
+        if isinstance(value, str):
+            value = json.loads(value)
+        if isinstance(value, dict):
+            value = value.get("sources") or [value]
+        if not isinstance(value, list):
+            raise ValueError(f"expected a list of sources, got {type(value).__name__}")
+        return value
+
+    def _draft_text(self) -> str:
+        return json.dumps(self.draft, indent=2, ensure_ascii=False)
+
+    def _index(self, source_id: str) -> int:
+        for i, src in enumerate(self.draft):
+            if src.get("source_id") == source_id:
+                return i
+        return -1
+
+    def put_source(self, source: Any) -> Any:
+        if isinstance(source, str):
+            source = json.loads(source)
+        if not isinstance(source, dict):
+            return {"error": "source must be one JSON object"}
+        sid = source.get("source_id")
+        if not sid:
+            return {"error": "source_id is required"}
+        source.setdefault("datasets", [])
+        i = self._index(sid)
+        if i < 0:
+            self.draft.append(source)
+        else:
+            self.draft[i] = source
+        return {"ok": True, "draft": self._outline()}
+
+    def add_datasets(self, source_id: str, datasets: Any) -> Any:
+        if isinstance(datasets, str):
+            datasets = json.loads(datasets)
+        if isinstance(datasets, dict):
+            datasets = [datasets]
+        i = self._index(source_id)
+        if i < 0:
+            return {"error": f"no source {source_id!r} in the draft — call put_source first",
+                    "draft": self._outline()}
+        have = self.draft[i].setdefault("datasets", [])
+        for d in datasets:
+            if not isinstance(d, dict):
+                return {"error": "each dataset must be a JSON object"}
+            at = next((j for j, e in enumerate(have) if e.get("id") == d.get("id")), -1)
+            if at < 0:
+                have.append(d)
+            else:
+                have[at] = d
+        return {"ok": True, "draft": self._outline()}
+
+    def drop_dataset(self, source_id: str, dataset_id: str) -> Any:
+        i = self._index(source_id)
+        if i < 0:
+            return {"error": f"no source {source_id!r} in the draft"}
+        before = len(self.draft[i].get("datasets") or [])
+        self.draft[i]["datasets"] = [d for d in (self.draft[i].get("datasets") or [])
+                                     if d.get("id") != dataset_id]
+        if len(self.draft[i]["datasets"]) == before:
+            return {"error": f"no dataset {dataset_id!r} in {source_id!r}",
+                    "draft": self._outline()}
+        return {"ok": True, "draft": self._outline()}
+
+    def _outline(self) -> Dict[str, List[str]]:
+        """What is in the draft now — ids only, so it costs almost nothing to
+        return on every edit and the model never has to ask."""
+        return {s.get("source_id", "?"): [d.get("id", "?") for d in (s.get("datasets") or [])]
+                for s in self.draft}
+
+    def validate_draft(self, sources: Any = None, sources_json: Any = None) -> Any:
+        try:
+            if sources is not None or sources_json is not None:
+                self.draft = self._as_sources(sources if sources is not None else sources_json)
+        except (json.JSONDecodeError, ValueError) as e:
+            return {"valid": False, "report": f"could not read what you sent: {e}"}
+        if not self.draft:
+            return {"valid": False,
+                    "report": "the draft is empty — call put_source/add_datasets first, "
+                              "or pass `sources`"}
+        text = self._draft_text()
+        ok, report = self.run_validator(text)
+        self.validated_ok = ok
+        if ok:
+            self.last_valid = text
+        return {"valid": ok, "report": report, "draft": self._outline()}
+
+    def save(self, sources: Any = None, sources_json: Any = None) -> Any:
         """Validate the EXACT bytes being saved, not a flag set by a past call.
 
         `validated_ok` is sticky: the model could validate draft A, then call
@@ -498,12 +726,21 @@ class Tools:
         that can be walked around is not a gate, so the validator runs again
         here on precisely what is about to be written.
         """
+        try:
+            if sources is not None or sources_json is not None:
+                self.draft = self._as_sources(sources if sources is not None else sources_json)
+        except (json.JSONDecodeError, ValueError) as e:
+            return {"error": f"could not read what you sent: {e}"}
+        if not self.draft:
+            return {"error": "the draft is empty — nothing to save"}
+        sources_json = self._draft_text()
         ok, report = self.run_validator(sources_json)
         self.validated_ok = ok
         if not ok:
             return {"error": "this draft does not validate — fix it and save again",
                     "report": report}
         self.saved = sources_json
+        self.last_valid = sources_json
         unmarked = self._unmarked_link_columns(sources_json)
         if unmarked:
             # Not a refusal: a link column that is genuinely not a file is a
@@ -924,7 +1161,7 @@ def main() -> int:
             if fn is None:
                 result: Any = {"error": f"no such tool {name}"}
             else:
-                print(f"  · {name}({', '.join(f'{k}={str(v)[:40]}' for k, v in a.items() if k != 'sources_json')})")
+                print(f"  · {name}({', '.join(f'{k}={str(v)[:40]}' for k, v in a.items() if k not in ('sources_json', 'sources', 'source', 'datasets'))})")
                 try:
                     result = fn(**a)
                 except TypeError as e:
@@ -935,13 +1172,23 @@ def main() -> int:
         if tools.saved:
             break
     else:
-        print(f"\n  Reached the {args.rounds}-round cap. Saving the best draft so far "
-              f"rather than losing the work.", file=sys.stderr)
+        print(f"\n  Reached the {args.rounds}-round cap without the agent saving.",
+              file=sys.stderr)
 
     print(f"\n  cost this run: ${total_cost:.4f}")
 
+    if not tools.saved and tools.last_valid:
+        # It never called save(), but something it built DID pass the real
+        # validator. Throwing that away costs another full interview and
+        # another round of model spend, so it is offered for confirmation
+        # exactly like a saved one -- said plainly, not smuggled through.
+        print("\n  The agent never called save, but its last draft passed the "
+              "validator.\n  Offering that draft rather than discarding the run.",
+              file=sys.stderr)
+        tools.saved = tools.last_valid
     if not tools.saved:
-        print("  The agent did not produce a validated registry. Nothing written.", file=sys.stderr)
+        print("  The agent did not produce a registry that validates. Nothing written.",
+              file=sys.stderr)
         return 1
 
     # -- the human confirms before anything lands ----------------------------

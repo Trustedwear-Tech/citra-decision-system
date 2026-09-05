@@ -184,8 +184,17 @@ their results.
 | `list_tables()` | table/collection names only | cheap first look |
 | `describe_tables(names[])` | columns, types, PK/FK, enum values, ranges, sample rows | **batched** — one round for many tables, not one per table |
 | `ask_user(question, options?)` | puts a question to the human, returns the answer | this is what makes it a conversation instead of a guess |
-| `validate_draft(json)` | runs `validate_sources.py` | returns hard problems **and** capability advisories, so the agent can self-correct |
-| `save(json)` | writes the file, ends the loop | refuses a draft that has not passed `validate_draft` |
+| `put_source(source)` | adds or replaces one source in a server-side draft | the registry is built up, not re-sent |
+| `add_datasets(source_id, datasets[])` | appends datasets; an existing id is replaced | **this is how a fix is made** — one dataset, not the whole file |
+| `drop_dataset(source_id, dataset_id)` | removes one dataset | for one added in error |
+| `validate_draft()` | runs `validate_sources.py` on the draft | returns hard problems **and** capability advisories, plus near-miss key hints and the line a JSON error is on |
+| `save()` | writes the file, ends the loop | re-validates the exact bytes; refuses a draft that does not pass |
+
+Every argument crosses as a real JSON object or array, never as a string
+containing JSON. Hand-escaping a whole registry is what produced `phsical_name`,
+`colums`, `tye` and `is_forgeign_key` in a measured run — and re-typing all
+sixteen datasets to correct two of them introduced three more, costing eight of
+twenty rounds.
 
 `describe_tables` is backed by the existing `introspect()` dispatch, which
 already covers PostgreSQL, MySQL, SQL Server, MongoDB, OData/SAP, Salesforce and
