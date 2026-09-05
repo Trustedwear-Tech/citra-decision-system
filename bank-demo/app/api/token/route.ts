@@ -21,7 +21,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const token = cookies().get("acme_citra_token")?.value;
+  // `cookies()` became async in Next 15 -- without the await this reads a
+  // Promise, `.get` is undefined, and every officer looks signed out.
+  const token = (await cookies()).get("acme_citra_token")?.value;
   if (!token) {
     // 401, not an empty 200: the card's onError should say "signed out", and a
     // blank token would surface as an unexplained empty card instead.

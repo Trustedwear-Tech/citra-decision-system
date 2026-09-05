@@ -22,7 +22,7 @@ websockets==13.1
 # Ed25519 key generation + signing for the gateway connect handshake.
 # OpenClaw's gateway requires a device-pairing signature on every WS
 # connect (per src/gateway/device-auth.ts buildDeviceAuthPayloadV3).
-cryptography==49.0.0
+cryptography==50.0.1
 
 # Future: JWT verification of the scoped token Citra-Service mints.
 pyjwt==2.13.0
@@ -39,7 +39,7 @@ pyjwt==2.13.0
 # We are well past 63, so the original reason is gone. Pinned to the version
 # weasyprint 68 actually wants, rather than unpinned, to keep the image
 # reproducible.
-weasyprint==68.0
+weasyprint==69.0
 pydyf==0.11.0
 openpyxl==3.1.5
 matplotlib==3.9.2
@@ -58,7 +58,7 @@ rank-bm25==0.2.2
 # Document extraction (PDF / DOCX / PPTX / XLSX / HTML).
 # OCR for scanned PDFs is delegated to the vision proxy (Qwen3-VL-32B).
 pdfminer.six==20231228
-pypdf==6.15.0
+pypdf==6.17.0
 pdfplumber==0.11.4
 python-docx==1.1.2
 python-pptx==1.0.2

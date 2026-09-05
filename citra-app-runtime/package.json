@@ -27,9 +27,20 @@
     "@types/node": "20.12.7",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.25.0",
     "eslint": "8.57.0",
     "eslint-config-next": "^15.5.21",
     "typescript": "5.4.5"
+  },
+  "//overrides": [
+    "next pins postcss to an exact version and carries sharp as an optional",
+    "dependency, so neither moves when next is patched -- postcss sat at 8.4.31",
+    "against advisories fixed in 8.5.23, and sharp at 0.34.5 against 0.35.0.",
+    "Overridden rather than bumping next, because next itself is not vulnerable",
+    "here: it was only the path npm attributes these two to."
+  ],
+  "overrides": {
+    "postcss": "^8.5.28",
+    "sharp": "^0.35.4"
   }
 }

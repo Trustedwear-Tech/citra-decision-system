@@ -9,13 +9,21 @@
     "start": "next start -p 4300"
   },
   "dependencies": {
-    "next": "14.2.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "next": "^15.5.21",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.18",
     "typescript": "^5.4.5"
+  },
+  "//overrides": [
+    "next pins postcss to an exact version, so patching next never moves it --",
+    "it sat at 8.4.31 against advisories fixed in 8.5.23. Same override as",
+    "citra-app-runtime; keep the two in step."
+  ],
+  "overrides": {
+    "postcss": "^8.5.28"
   }
 }
