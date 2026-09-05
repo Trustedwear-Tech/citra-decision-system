@@ -117,8 +117,26 @@ if [ -z "$(getenv LLM_API_KEY)" ]; then
 fi
 
 # -- 1. Start everything ------------------------------------------------------
-echo "-> starting all services (docker compose up -d)"
-$COMPOSE up -d
+# CITRA_COMPOSE_BUILD=1 adds --build. Set by `wizard.sh --fresh`, because
+# `down -v` removes containers and volumes but NOT images, so a "start over from
+# nothing" run came back up on whatever images happened to be on the machine.
+#
+# That is not only the two services whose source is baked in (citra-ui,
+# citra-app-runtime -- the other ten bind-mount theirs). DEPENDENCIES live in
+# the image for all twelve, so a changed requirements.txt or package.json is
+# invisible to a bind mount: the new code runs against the old libraries, which
+# fails further from the cause than a missing file would.
+#
+# Off by default. A plain `make start` is the everyday path and should not pay
+# for a rebuild it does not need.
+BUILD_FLAG=""
+if [ "${CITRA_COMPOSE_BUILD:-0}" = "1" ]; then
+  BUILD_FLAG="--build"
+  echo "-> rebuilding images first (--fresh)"
+fi
+echo "-> starting all services (docker compose up -d${BUILD_FLAG:+ --build})"
+# shellcheck disable=SC2086 # BUILD_FLAG is one optional token, not a list
+$COMPOSE up -d $BUILD_FLAG
 
 # -- 2. Wait for the core services --------------------------------------------
 wait_for() {

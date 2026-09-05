@@ -399,6 +399,9 @@ if [ "$FRESH" = "1" ]; then
   echo "    the demo tenant             acme-bank's Postgres and its MCP"
   echo "  Apps, decisions, memory and uploaded SOPs all live in those volumes."
   echo
+  echo "  It also REBUILDS every service image, so the clean install is not"
+  echo "  running yesterday's code. That is the slow part of --fresh."
+  echo
   if yes_no "Delete them and start from scratch?" "n"; then
     rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json" "$STATE_FILE"
     docker compose -f docker-compose.quickstart.yml down -v --remove-orphans 2>/dev/null || true
@@ -422,7 +425,14 @@ if [ "$FRESH" = "1" ]; then
       docker compose -f "$_d" down -v --remove-orphans 2>/dev/null || true
     done
     rm -rf "$REPO_ROOT/deployments"
-    echo "  [ok] local state removed"
+    # `down -v` takes containers and volumes; images survive it. So --fresh used
+    # to wipe every byte of data and then start the stack on whatever images were
+    # already built -- a clean install running old code, which is the hardest
+    # kind of stale to notice because nothing about it looks stale.
+    #
+    # start.sh reads this and adds --build.
+    export CITRA_COMPOSE_BUILD=1
+    echo "  [ok] local state removed; images will be rebuilt"
   else
     echo "  keeping what is there; continuing as a normal run"
   fi
