@@ -110,6 +110,27 @@ export const REASON_MAX = 500;
  *  reverse direction would be a cycle. */
 export const MIN_REASON_WORDS = 10;
 
+/** Past this, the correction stops clustering — so it is SAID, not enforced.
+ *
+ * Clause formation compares reasons with Jaccard over content tokens at a 0.34
+ * gate, and Jaccard is length-sensitive: longer prose adds mostly NON-shared
+ * tokens (amounts, dates, this-file nouns). Measured on the prod corpus (18
+ * corrections, 11-19 words, mean 14.4), of the 15 pairs that cluster today:
+ * 20 words leaves 7/15, 25 leaves 1/15, 30+ leaves none. So a careful 60-word
+ * explanation is recorded, never clustered, and never becomes a clause — with
+ * nothing on screen to say so.
+ *
+ * A WARNING, never a block. The same measurement rejected RAISING the floor
+ * because forcing length "converts blocked-vague into authored-vague", and the
+ * corollary holds: an officer with something long to say must still be able to
+ * say it. REASON_MAX (500 chars, ~85 words) protects the column, not this.
+ *
+ * Provisional: measured on seeded demo corrections with zero real officers
+ * behind it. The durable fix is to cluster on a normalised <=15-token gist
+ * instead of raw prose, which decouples officer prose length from clustering.
+ */
+export const SOFT_MAX_REASON_WORDS = 20;
+
 export function reasonWordCount(s: string): number {
   return (s || "").trim().split(/\s+/).filter(Boolean).length;
 }
@@ -392,12 +413,16 @@ export function ItemFindingReview({
                 style={{
                   alignSelf: "flex-end", fontSize: 11,
                   color: reasonWordCount(reason) < MIN_REASON_WORDS
+                    || reasonWordCount(reason) > SOFT_MAX_REASON_WORDS
                     ? "var(--citra-warning,#d97706)"
                     : "var(--citra-muted,#6b7280)",
                 }}
               >
+                {/* See PanelRenderer: "1/10" reads as a cap, not a floor. */}
                 {reasonWordCount(reason) < MIN_REASON_WORDS
-                  ? `${reasonWordCount(reason)}/${MIN_REASON_WORDS} words — say what the agent got wrong`
+                  ? `${MIN_REASON_WORDS - reasonWordCount(reason)} more word${MIN_REASON_WORDS - reasonWordCount(reason) === 1 ? "" : "s"} — say what the agent got wrong (${MIN_REASON_WORDS} minimum)`
+                  : reasonWordCount(reason) > SOFT_MAX_REASON_WORDS
+                  ? `${reasonWordCount(reason)} words — long reasons stop matching similar cases; keep to the one thing that was wrong`
                   : `${reasonWordCount(reason)} words · ${reason.length}/${REASON_MAX}`}
               </div>
               <div style={{ display: "flex", gap: 8 }}>

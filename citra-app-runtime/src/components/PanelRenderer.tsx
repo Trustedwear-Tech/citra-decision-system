@@ -19,7 +19,7 @@ import { KpiSparkline, KpiProgress } from "./KpiSparkline";
 import { usePanelData } from "@/lib/usePanelData";
 import { kpiFromServer, computeMetric, autoMetricIcon, type KpiResult } from "@/lib/kpi";
 import { badgeColorFor, formatCellText, progressFraction } from "@/lib/format";
-import { ItemFindingReview, REASON_MAX, MIN_REASON_WORDS, reasonWordCount,
+import { ItemFindingReview, REASON_MAX, MIN_REASON_WORDS, SOFT_MAX_REASON_WORDS, reasonWordCount,
          type ItemFinding } from "./ItemFindingReview";
 import ScorecardView from "./ScorecardView";
 import type { MapPoint } from "./LeafletMap";
@@ -2468,6 +2468,10 @@ function ReasonPicker({
 }) {
   const words = reasonWordCount(reason);
   const short = words < MIN_REASON_WORDS;
+  // Past the soft ceiling the correction is still recorded but stops
+  // clustering, so it never becomes a clause. Flagged, never blocked --
+  // see SOFT_MAX_REASON_WORDS in ItemFindingReview for the measurement.
+  const rambling = words > SOFT_MAX_REASON_WORDS;
   return (
     <>
       <textarea
@@ -2496,13 +2500,20 @@ function ReasonPicker({
         style={{
           alignSelf: "flex-end",
           fontSize: 11,
-          color: short
+          color: short || rambling
             ? "var(--citra-warning,#d97706)"
             : "var(--citra-muted,#6b7280)",
         }}
       >
+        {/* NOT "1/10". That reads as a CAP -- and the satisfied branch below
+            really does show a cap (`${reason.length}/${REASON_MAX}`), so the
+            same X/Y shape meant "limit" one moment and "floor" the next.
+            Officers read ten words as the most they may write. Count DOWN what
+            is still owed; no fraction appears while the rule is a minimum. */}
         {short
-          ? `${words}/${MIN_REASON_WORDS} words — say what the agent got wrong`
+          ? `${MIN_REASON_WORDS - words} more word${MIN_REASON_WORDS - words === 1 ? "" : "s"} — say what the agent got wrong (${MIN_REASON_WORDS} minimum)`
+          : rambling
+          ? `${words} words — long reasons stop matching similar cases; keep to the one thing that was wrong`
           : `${words} words · ${reason.length}/${REASON_MAX}`}
       </div>
     </>
