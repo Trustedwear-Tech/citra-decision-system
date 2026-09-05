@@ -489,7 +489,15 @@ def insurance_claims() -> Dict[str, Any]:
             _col("document_id", "string", "Document id — primary key.", pk=True),
             _col("claim_id", "string", "→ claims.claim_id."),
             _col("doc_type", "string", "fir | repair_estimate | invoice | discharge_summary | damage_photo | policy_copy."),
-            _col("file_url", "string", "Stored object location."),
+            # The media contract, not decoration. column_kind is what makes a
+            # column RESOLVABLE by /datasets/resolve-media and streamable by the
+            # MCP; without it the runtime holds a string it cannot open, and an
+            # app can cite a document nobody can read. artifact_role is left
+            # unset deliberately — it drives fraud screening, which stays off
+            # here until the corpus has enough genuinely distinct documents to
+            # avoid false reuse alarms.
+            dict(_col("file_url", "string", "Stored object location."),
+                 column_kind="document_url", mime_hint="application/pdf"),
             _col("uploaded_at", "datetime", "Upload timestamp."),
             _col("verified", "boolean", "Whether the document has been verified."),
             _col("content_sha256", "string", "Content hash — equal hashes mean identical bytes."),

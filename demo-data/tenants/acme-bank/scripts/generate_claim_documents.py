@@ -52,7 +52,8 @@ OUT_DIR = SCRIPT_DIR / "_generated_docs"
 SERVICE = REPO / "smart-app-service"
 sys.path.insert(0, str(SERVICE))
 
-PG = dict(host="localhost", port=5444, dbname="acme_bank",
+PG = dict(host="localhost", port=int(os.getenv("ACME_BANK_PG_PORT", "15444")),
+          dbname="acme_bank",
           user="acme_bank", password="acme_bank_demo_pw")
 
 #: The one duplicate the demo is built on: CLM-NEEDLE-003's repair estimate is

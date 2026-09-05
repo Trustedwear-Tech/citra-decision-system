@@ -141,7 +141,7 @@ if [ -d "$VENV/bin" ]; then PY="$VENV/bin/python"; else PY="$VENV/Scripts/python
 # -- 0. Validate the source registry BEFORE anything else ---------------------
 # RegistrySource is extra="forbid": one unknown key and the MCP hard-fails at
 # boot, several minutes into the seed. Catch it here instead.
-echo "-> [0/6] validating $TENANT_DIR/mcp/sources.json"
+echo "-> [0/8] validating $TENANT_DIR/mcp/sources.json"
 "$PY" source-mcp-template/validate_sources.py "$TENANT_DIR/mcp/sources.json" \
   || { echo "   [FAIL] sources.json is invalid - the MCP would refuse to boot." >&2; exit 1; }
 
@@ -163,7 +163,7 @@ PYEOF
 )"
 
 # -- 1. Org + departments + demo users ----------------------------------------
-echo "-> [1/6] seeding org + users ($TENANT)"
+echo "-> [1/8] seeding org + users ($TENANT)"
 "$PY" demo-data/scripts/seed_tenant.py --tenant "$TENANT" \
     --admin-token "$ADMIN_JWT" --user-service-url http://localhost:7004
 
@@ -173,7 +173,7 @@ echo "-> [1/6] seeding org + users ($TENANT)"
 # Previously this step pointed at the SHARED citra-postgres, which setup.sh has
 # already started, so the ordering was never exercised; correcting the target to
 # the tenant's own database exposed it as "connection refused on 15444".
-echo "-> [2/6] starting $TENANT's Postgres, then seeding it"
+echo "-> [2/8] starting $TENANT's Postgres, then seeding it"
 PG_SVC="citra-ds-$TENANT-postgres"
 docker compose --env-file "$REPO_ROOT/.env" -f "$TENANT_DIR/mcp/docker-compose.yml" up -d "$PG_SVC"
 
@@ -198,7 +198,7 @@ env "$PG_ENV=$PG_CONN" "$PY" "$TENANT_DIR/scripts/seed_postgres.py" --conn "$PG_
 # keys (LLM_API_KEY, EMBEDDING_*) actually reach the MCP's NL->SQL planner.
 # Without it the environment: block's :-defaults win over env_file and the
 # user's key never lands in the container.
-echo "-> [3/6] starting the demo MCP container (reads sources.json via SOURCES_FILE)"
+echo "-> [3/8] starting the demo MCP container (reads sources.json via SOURCES_FILE)"
 docker compose --env-file "$REPO_ROOT/.env" -f "$TENANT_DIR/mcp/docker-compose.yml" up -d --build
 
 echo "-> waiting for the MCP to register its sources with discovery"
@@ -226,7 +226,7 @@ fi
 
 # -- 4. Ingest the tenant's RAG documents (SOP library) into Milvus -----------
 if [ -f "$TENANT_DIR/scripts/ingest_docs.py" ] && [ -d "$TENANT_DIR/raw" ]; then
-  echo "-> [4/6] ingesting SOP documents into Milvus"
+  echo "-> [4/8] ingesting SOP documents into Milvus"
   # Runs INSIDE citra-service, not in the host seed venv. ingest_docs.py imports
   # Citra-Service application code (dept_library_store -> utils), which pulls in
   # fastapi, llama_index and the rest of that service's dependency tree — the
@@ -262,7 +262,35 @@ fi
 # -- 5. Build the data catalogue ----------------------------------------------
 # data-discovery runs a leader-gated crawl at startup, so the catalogue is
 # usually already populated by now. This is the explicit refresh.
-echo "-> [5/7] refreshing the data catalogue"
+# -- 4b. The claim documents the apps actually open ---------------------------
+# claim_documents rows shipped with a file_url pointing at objects that were
+# never uploaded: the generator existed, was careful, and nothing invoked it.
+# So the claims app could cite a document and the officer could not open it.
+#
+# Generation is deterministic (seeded per document_id) and self-checking: it
+# composes every document from randomised pools and compares EVERY pair with
+# the service's own simhash before uploading, so exactly one byte-identical
+# pair survives as the intended reused-estimate signal and nothing else lands
+# near-duplicate. It aborts rather than uploading a corpus that would make
+# every case look like document reuse.
+#
+# Host-side, not in a container: it talks to the tenant's Postgres on the
+# published port and to MinIO on ITS published port -- .env carries the
+# docker-network hostname, which does not resolve from here.
+if [ -f "$TENANT_DIR/scripts/generate_claim_documents.py" ]; then
+  echo "-> [5/8] generating and uploading claim documents"
+  MINIO_HOST_PORT="$(getenv MINIO_API_PORT)"; MINIO_HOST_PORT="${MINIO_HOST_PORT:-9002}"
+  if ! ACME_BANK_PG_PORT="$PG_PORT" \
+       BUCKET_ENDPOINT_URL="http://localhost:${MINIO_HOST_PORT}" \
+       "$PY" "$TENANT_DIR/scripts/generate_claim_documents.py" --upload; then
+    amber "   [!] claim documents were not seeded - the claims app will cite"
+    amber "       documents the officer cannot open. Re-run this step alone:"
+    amber "       BUCKET_ENDPOINT_URL=http://localhost:${MINIO_HOST_PORT} \\"
+    amber "         python $TENANT_DIR/scripts/generate_claim_documents.py --upload"
+  fi
+fi
+
+echo "-> [6/8] refreshing the data catalogue"
 # STOPS on failure. This used to warn and carry on, and every step after it was
 # then guaranteed to fail: publishing validates each data_source.ref against the
 # catalogue, so an empty catalogue rejects all four apps with
@@ -284,7 +312,7 @@ if ! JWT_SECRET="$JWT_SECRET" "$PY" scripts/quickstart/build_catalogue.py --org 
 fi
 
 # -- 6. Publish the Decision Apps ---------------------------------------------
-echo "-> [6/7] publishing Decision Apps"
+echo "-> [7/8] publishing Decision Apps"
 "$PY" demo-data/scripts/publish_apps.py \
     --smart-app-url http://localhost:9100 \
     --jwt-secret "$JWT_SECRET" \
@@ -303,7 +331,7 @@ echo "-> [6/7] publishing Decision Apps"
 # decisions answers grounding_refresh_required until its grounding is rebuilt.
 # On a fresh install there is nothing to rebuild it FROM, so that answer
 # is retried with promote_ungrounded.
-echo "-> [7/7] promoting the Decision Apps to prod"
+echo "-> [8/8] promoting the Decision Apps to prod"
 PROMOTE_JWT="$("$PY" - "$JWT_SECRET" "$ADMIN_EMAIL" "$TENANT" <<'PYEOF' | tr -d '\r'
 import sys, time, jwt
 secret, email, tenant = sys.argv[1], sys.argv[2], sys.argv[3]

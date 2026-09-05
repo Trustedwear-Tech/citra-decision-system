@@ -1217,7 +1217,9 @@
             "name": "file_url",
             "physical_name": "file_url",
             "type": "string",
-            "description": "Stored object location."
+            "description": "Stored object location.",
+            "column_kind": "document_url",
+            "mime_hint": "application/pdf"
           },
           {
             "name": "uploaded_at",

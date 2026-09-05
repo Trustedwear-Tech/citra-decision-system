@@ -31,6 +31,7 @@ the shell or written back.
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -39,21 +40,45 @@ import psycopg2
 SCRIPT_DIR = Path(__file__).resolve().parent
 TENANT_DIR = SCRIPT_DIR.parent
 ENV = TENANT_DIR / "mcp" / ".env"
+REPO_ENV = TENANT_DIR.parents[2] / ".env"
 
-PG = dict(host="localhost", port=5444, dbname="acme_bank",
-          user="acme_bank", password="acme_bank_demo_pw")
+# 5444 belongs to acme-power. This tenant publishes 15444 (mcp/docker-compose.yml),
+# and seed-demo.sh reads it from ACME_BANK_PG_PORT rather than a literal — a
+# hardcoded port here meant this script could only ever connect to a different
+# tenant's database, if anything at all.
+PG = dict(host="localhost", port=int(os.getenv("ACME_BANK_PG_PORT", "15444")),
+          dbname="acme_bank", user="acme_bank", password="acme_bank_demo_pw")
 
 
 def _env() -> Dict[str, str]:
+    """BUCKET_* from the tenant's mcp/.env, falling back to the repo root .env.
+
+    mcp/.env is a deployment artefact and does not exist in a fresh clone, so
+    requiring it made this script unrunnable for anyone who had not already set
+    up a tenant MCP by hand. The wizard writes BUCKET_* to the root .env, which
+    is where every other quickstart script reads them from.
+    """
     out: Dict[str, str] = {}
-    for line in ENV.read_text(encoding="utf-8").splitlines():
-        if line.startswith("BUCKET_") and "=" in line:
-            k, v = line.split("=", 1)
-            out[k.strip()] = v.strip()
+    # The environment wins over both files. .env carries the value services use
+    # ON the docker network (http://citra-minio:9000), which does not resolve
+    # from the host — so a host-side run needs to point at the published port
+    # without editing a file every other service reads.
+    for k, v in os.environ.items():
+        if k.startswith("BUCKET_") and v.strip():
+            out[k] = v.strip()
+    for path in (ENV, REPO_ENV):
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith("BUCKET_") and "=" in line:
+                k, v = line.split("=", 1)
+                out.setdefault(k.strip(), v.strip())
     missing = [k for k in ("BUCKET_NAME", "BUCKET_REGION", "BUCKET_ACCESS_KEY",
                            "BUCKET_SECRET_KEY") if not out.get(k)]
     if missing:
-        raise SystemExit(f"mcp/.env is missing {missing}")
+        raise SystemExit(
+            f"missing {missing} — set them in {ENV} or {REPO_ENV} "
+            "(the wizard writes them to the root .env)")
     return out
 
 
@@ -68,11 +93,23 @@ def upload(rows: List[Dict[str, Any]], docs: Dict[str, bytes]) -> int:
     import boto3
 
     env = _env()
-    bucket, prefix = env["BUCKET_NAME"], env.get("BUCKET_KEY_PREFIX", "")
+    # Defaults to the tenant's own prefix, as ingest_docs.py already does. An
+    # empty default put 1,013 claim documents at the ROOT of the shared bucket,
+    # beside dev/ (the Citra platform's own tree) — these are the BANK's records
+    # and belong under the bank's folder, not loose in Citra's namespace.
+    bucket = env["BUCKET_NAME"]
+    prefix = env.get("BUCKET_KEY_PREFIX") or "acme-bank"
+    # BUCKET_ENDPOINT_URL is what points boto3 at MinIO instead of AWS, and
+    # path addressing is mandatory there — a virtual-host style request becomes
+    # http://<bucket>.citra-minio:9000, a hostname that does not resolve.
+    endpoint = (env.get("BUCKET_ENDPOINT_URL") or "").strip() or None
     s3 = boto3.client(
         "s3", region_name=env["BUCKET_REGION"],
         aws_access_key_id=env["BUCKET_ACCESS_KEY"],
         aws_secret_access_key=env["BUCKET_SECRET_KEY"],
+        endpoint_url=endpoint,
+        config=__import__("botocore.config", fromlist=["Config"]).Config(
+            s3={"addressing_style": "path"}) if endpoint else None,
     )
     meta = {r["document_id"]: r for r in rows}
     print(f"\nuploading {len(docs)} object(s) to s3://{bucket}/{prefix}")
