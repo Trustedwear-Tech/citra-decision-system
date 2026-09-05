@@ -961,14 +961,31 @@ def main() -> int:
                 bits.append("artifacts: " + ", ".join(sorted(set(roles))))
             print(f"      - {d.get('id')}  {'| ' + '; '.join(bits) if bits else ''}")
 
+    # Anything that is not y/n is RE-ASKED, never read as "no". The interview
+    # asks fewer questions than people answer -- six were asked in two batches
+    # and three answers were typed -- and a terminal holds the extra line in
+    # its buffer until something reads it. That something was this prompt: the
+    # leftover line landed on it, scored as "not y", and threw away a validated
+    # registry the operator had just spent ten minutes and real money building.
     if args.yes:
         ok = True
     else:
-        try:
+        ok = False
+        while True:
             print("")
-            ok = input(f"  Write this to {out}? (y/n) ").strip().lower() in ("y", "yes")
-        except EOFError:
-            ok = False
+            try:
+                ans = input(f"  Write this to {out}? (y/n) ").strip().lower()
+            except EOFError:
+                break  # no terminal at all - decline, as before
+            if ans in ("y", "yes"):
+                ok = True
+                break
+            if ans in ("n", "no"):
+                break
+            print(f"  Please answer y or n -- I read {ans[:60]!r}.")
+            print("  (If that was meant for an earlier question, it arrived after "
+                  "the interview\n   had ended. Nothing is lost; answer y to save "
+                  "the registry above.)")
     if not ok:
         print("  Not written.")
         return 1
