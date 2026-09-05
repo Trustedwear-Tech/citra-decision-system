@@ -115,6 +115,8 @@ looks correct.
 5. `validate_draft` with NO arguments to check the draft. Fix what it reports
    by re-sending only the affected dataset through `add_datasets` — a dataset
    with an id already in the draft REPLACES it. Then validate again.
+   Passing `sources` to `validate_draft` checks that registry WITHOUT touching
+   the draft, so trying a small piece never costs you what you have built.
 6. `save` with no arguments once validation passes.
 
 Send real JSON objects and arrays as tool arguments. Never a string containing
@@ -382,8 +384,12 @@ def _schema_vocabulary() -> set:
 
 #: Keys whose CHILDREN are user data, not schema fields - column names inside
 #: an input_schema, sample row values, connection wiring (extra="allow").
+#: `connection` is deliberately NOT here. It is extra="allow", so `env_prefx`
+#: passes every check and then the MCP finds no credentials under that name --
+#: the silent kind of wrong. Checked against the real registry: no false
+#: positives, and it catches env_prefx -> env_prefix.
 _OPAQUE = {"properties", "sample_rows", "_sample_rows", "distinct_values",
-           "connection", "metadata", "examples", "required"}
+           "metadata", "examples", "required"}
 
 
 def _misspelt_keys(payload: Any, limit: int = 12) -> List[str]:
@@ -701,21 +707,42 @@ class Tools:
                 for s in self.draft}
 
     def validate_draft(self, sources: Any = None, sources_json: Any = None) -> Any:
+        """Validate, and NEVER change the draft.
+
+        This used to replace the draft with whatever it was handed. The failure
+        that is imported: a model that has built up ten datasets tries a small
+        piece on its own -- "let me validate a minimal version first" is what it
+        actually did in the run this came from -- and the ten datasets are gone,
+        silently, with a `valid: true` in reply. Validation reads; only save and
+        the two edit tools write.
+        """
+        passed: Any = None
         try:
             if sources is not None or sources_json is not None:
-                self.draft = self._as_sources(sources if sources is not None else sources_json)
+                passed = self._as_sources(sources if sources is not None else sources_json)
         except (json.JSONDecodeError, ValueError) as e:
             return {"valid": False, "report": f"could not read what you sent: {e}"}
-        if not self.draft:
+
+        if passed is not None:
+            text, scope = json.dumps(passed, indent=2, ensure_ascii=False), "what you passed"
+        elif self.draft:
+            text, scope = self._draft_text(), "the draft"
+        else:
             return {"valid": False,
                     "report": "the draft is empty — call put_source/add_datasets first, "
                               "or pass `sources`"}
-        text = self._draft_text()
+
         ok, report = self.run_validator(text)
         self.validated_ok = ok
         if ok:
             self.last_valid = text
-        return {"valid": ok, "report": report, "draft": self._outline()}
+        out: Dict[str, Any] = {"valid": ok, "report": report,
+                               "validated": scope, "draft": self._outline()}
+        if passed is not None:
+            out["note"] = ("the draft was NOT changed — this checked only what you passed. "
+                           "Use put_source/add_datasets to change the draft, or save(sources=...) "
+                           "to commit this registry instead of it.")
+        return out
 
     def save(self, sources: Any = None, sources_json: Any = None) -> Any:
         """Validate the EXACT bytes being saved, not a flag set by a past call.
@@ -771,6 +798,20 @@ class Tools:
         except Exception:  # noqa: BLE001
             pass
         return str(exc)
+
+
+def _arg_bit(key: str, value: Any) -> str:
+    """One tool argument, summarised for the screen.
+
+    A whole registry printed raw is a screenful of JSON; excluded entirely it
+    printed `put_source()` and said nothing about WHICH source. Show the id and
+    the count instead."""
+    if isinstance(value, list):
+        return f"{key}[{len(value)}]"
+    if isinstance(value, dict):
+        ident = value.get("source_id") or value.get("id") or value.get("name")
+        return f"{key}={ident}" if ident else f"{key}={{{len(value)} fields}}"
+    return f"{key}={str(value)[:40]}"
 
 
 def _tokens(messages: List[Dict]) -> int:
@@ -1161,7 +1202,7 @@ def main() -> int:
             if fn is None:
                 result: Any = {"error": f"no such tool {name}"}
             else:
-                print(f"  · {name}({', '.join(f'{k}={str(v)[:40]}' for k, v in a.items() if k not in ('sources_json', 'sources', 'source', 'datasets'))})")
+                print(f"  · {name}({', '.join(_arg_bit(k, v) for k, v in a.items())})")
                 try:
                     result = fn(**a)
                 except TypeError as e:
