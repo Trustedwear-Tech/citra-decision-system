@@ -231,6 +231,11 @@ it.
 
 - Unknown keys are a BOOT FAILURE (`extra="forbid"`). Only fields in the schema.
 - Never put credentials in the file. Use `connection.env_prefix`.
+- NEVER ASK THE OPERATOR FOR A CONNECTION STRING, HOST, USER, PASSWORD OR
+  ENV PREFIX. You already have database access: your tools connect for you
+  and the operator was promised those details never reach you. If a tool
+  fails, say what failed and retry or ask about the DATA, never about how
+  to reach it. An answer that contains credentials is withheld from you.
 - `write_actions` is opt-in, exactly like `fraud_screening`. Absent means the
   dataset is READ-ONLY — no write path exists for it, not a disabled one. Never
   add one the user did not ask for, and never widen an `input_schema` beyond the
@@ -290,6 +295,25 @@ TOOLS = [
 ]
 
 
+#: Shapes that mean "the operator just pasted a credential". The script holds
+#: the connection string and the model never sees it -- that invariant is kept
+#: on THIS side, by never putting it in a prompt or a tool argument. It can
+#: still be broken from the other side: when a tool fails the model reasonably
+#: asks "how should I reach it -- do you have a connection string?", and an
+#: operator who answers helpfully puts the credential into the transcript
+#: themselves. Seen live after a typo'd --kind made every tool call fail.
+_SECRET_SHAPE = re.compile(
+    r"(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|mssql|oracle|redis|https?)://\S*:\S*@"
+    r"|(?:password|passwd|pwd|secret|api[_-]?key|token)\s*[=:]\s*\S+"
+    r"|\bDSN\s*=|\bUser\s*Id\s*=|\bIntegrated\s*Security\s*=",
+    re.I,
+)
+
+
+def _looks_like_a_credential(text: str) -> bool:
+    return bool(_SECRET_SHAPE.search(text or ""))
+
+
 class Tools:
     """Every tool runs HERE. The model sees results, never the connection string."""
 
@@ -341,6 +365,18 @@ class Tools:
             ans = input("\n  your answer > ").strip()
         except EOFError:
             ans = ""
+        if _looks_like_a_credential(ans):
+            print("")
+            print("  [!] That looks like a connection string or a credential, so")
+            print("      it was NOT sent to the model. This script already holds")
+            print("      your connection details and runs every query itself --")
+            print("      the model only ever sees results. If it asked you for")
+            print("      them, it asked for something it does not need.")
+            return {"answer": "(withheld: the operator's answer contained "
+                              "credentials. You already have database access "
+                              "through your tools. Never ask for a connection "
+                              "string, host, user or password. Retry the tool "
+                              "call instead.)"}
         return {"answer": ans or "(no answer — decide sensibly and say what you assumed)"}
 
     @staticmethod
