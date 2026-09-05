@@ -224,8 +224,8 @@ curl -fsSL https://get.docker.com | sh          # Docker Engine + Compose v2
 sudo usermod -aG docker "$USER" && newgrp docker
 sudo apt install -y python3 python3-venv python3-pip curl make   # Debian/Ubuntu
 
-curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.6.0.tar.gz | tar xz
-cd citra-decision-system-0.6.0
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.6.1.tar.gz | tar xz
+cd citra-decision-system-0.6.1
 make wizard
 ```
 
@@ -240,8 +240,8 @@ xcode-select --install                          # provides make
 brew install python                             # 3.9+ with venv
 # Docker Desktop: https://www.docker.com/products/docker-desktop (includes Compose v2)
 
-curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.6.0.tar.gz | tar xz
-cd citra-decision-system-0.6.0
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.6.1.tar.gz | tar xz
+cd citra-decision-system-0.6.1
 make wizard
 ```
 
@@ -255,8 +255,8 @@ installer runs in.
 Then open **Git Bash** — not PowerShell, not Command Prompt:
 
 ```bash
-curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.6.0.tar.gz | tar xz
-cd citra-decision-system-0.6.0
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.6.1.tar.gz | tar xz
+cd citra-decision-system-0.6.1
 ./scripts/quickstart/wizard.sh
 ```
 
