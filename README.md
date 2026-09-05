@@ -322,28 +322,21 @@ switchable off.
 
 ## Does it actually work?
 
-We ran nineteen agent-sourced loan applications twice — identical inputs, one
-learned judgement on, then off — plus control files from other channels where
-the correct behaviour is to do nothing.
+We tested it the way it would have to survive being tested: a set of real
+loan applications run twice under identical inputs, once with a learned
+judgement active and once without, alongside control files where the right
+behaviour is to do nothing at all.
 
-| | |
-|---|---|
-| **14 vs 1** | a verification check was raised on 14 files with memory on, 1 with it off |
-| **19 of 19** | applied on every file it was meant for |
-| **0 of 2** | never fired on a control file |
-| **p = 0.0005** | odds of that being luck: about 1 in 2,000 |
+It fired where it belonged, stayed silent where it did not, and the effect
+was not the underlying model.
 
-It fires where it belongs, stays silent where it does not, and the effect is
-not the underlying model.
-
-**Three of the four judgements we seeded did nothing at all.** Switched off,
-the system reached exactly the same conclusion — because all three restated
-something the written policy already said, and the system can read the policy.
-We publish that because it is what makes the fourth believable, and because it
+**Three of the four judgements we seeded did nothing at all** — they restated
+what the written policy already said, and the system can read the policy. We
+publish that because it is what makes the fourth believable, and because it
 draws the line: this is not a rulebook engine. It is the layer for what the
 rulebook never covered.
 
-→ [The full experiment, including the null result](https://github.com/Trustedwear-Tech/citra-decision-system/tree/main/docs/Descision-System-Memory)
+→ [The experiment: method, results, the null result and the limits](https://github.com/Trustedwear-Tech/citra-decision-system/blob/main/docs/Citra-Decision-Memory-Credit-Note.pdf)
 
 ---
 
@@ -376,7 +369,7 @@ rulebook never covered.
 | [Architecture](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Architecture) | Services, data flow, what talks to what |
 | [Governance and the sandbox](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Governance-and-the-sandbox) | Policy gates, approvals, isolation |
 | [Why this exists](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Why-this-exists) | The argument: why a fine-tune does not close it |
-| [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/tree/main/docs/Descision-System-Memory) | Method, results, the null result, limits |
+| [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/blob/main/docs/Citra-Decision-Memory-Credit-Note.pdf) | Method, results, the null result, limits |
 | [Configuration](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Configuration) | Every environment variable |
 | [Operations](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Operations) | Running it, upgrading, backups |
 | [Troubleshooting](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Troubleshooting) | When something will not start |
