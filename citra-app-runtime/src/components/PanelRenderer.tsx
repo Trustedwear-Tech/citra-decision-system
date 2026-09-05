@@ -3060,17 +3060,26 @@ function RunResultModal({
           )}
           {!isPending && (result.writeEvents?.length ?? 0) > 0 && (
             <div className="rr-section">
-              {/* "Applied" is ONLY a committed write (kind=perform_action,
-                  status=ok). A dry-run STAGED intent (kind=perform_action_plan)
-                  on a failed/blocked run never committed — labelling it
-                  "Applied" told the officer a mutation happened when the run
-                  was in fact blocked (seen live with the evidence gate). */}
+              {/* "Applied" is ONLY a committed write. A staged PLAN on a failed or
+                    blocked run never committed, and calling it "Applied" tells the
+                    officer a mutation happened when it did not.
+
+                    Match the "_plan" SUFFIX, not one literal. The runtime emits TWO
+                    staged kinds -- perform_action_plan and mcp_action_plan -- and this
+                    knew only the first, so a blocked claim decision
+                    (kind=mcp_action_plan, dry_run=false, result.ok=true) rendered as
+                    "Applied changes (1 of 1)" while insurance_claims.claims was
+                    untouched and decision_records held nothing. The bias is
+                    deliberate: calling a commit "staged" understates and is
+                    recoverable; calling a block "Applied" is the officer being told
+                    the opposite of the truth. */}
               {(() => {
                 const evts = result.writeEvents ?? [];
+                const isPlan = (k?: string) => !!k && k.endsWith("_plan");
                 const applied = evts.filter(
-                  (w) => w.status === "ok" && w.kind !== "perform_action_plan",
+                  (w) => w.status === "ok" && !isPlan(w.kind),
                 ).length;
-                const allStaged = evts.every((w) => w.kind === "perform_action_plan");
+                const allStaged = evts.every((w) => isPlan(w.kind));
                 return (
                   <div className="rr-section-head">
                     {allStaged
@@ -3080,7 +3089,7 @@ function RunResultModal({
                 );
               })()}
               {(result.writeEvents ?? []).map((w, i) => {
-                const staged = w.kind === "perform_action_plan";
+                const staged = !!w.kind && w.kind.endsWith("_plan");
                 const okw = w.status === "ok";
                 const errDetail =
                   !okw && w.result
