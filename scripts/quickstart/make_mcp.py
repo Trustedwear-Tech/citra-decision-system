@@ -90,6 +90,82 @@ def _envfile_get(path: str, key: str, default: str = "") -> str:
     return default
 
 
+def _envfile_set(path: str, pairs: List[Tuple[str, str]]) -> List[str]:
+    """Upsert KEY=VALUE into the root .env, in place. Returns the keys written.
+
+    The MCP reads its source credentials from the environment, never from
+    sources.json (which is reviewable and must stay secret-free). Something has
+    to put them there, and until now nothing did: the generated compose carried
+    empty placeholders and the operator was told to hand-edit them. That is the
+    one step between "ontology built" and "a catalogue anyone can query", so it
+    is done here rather than left as an instruction.
+
+    Existing keys are REPLACED, not appended -- a second run that appended would
+    leave two lines for one key, and the loser is decided by parse order, which
+    differs between docker-compose and python-dotenv.
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except FileNotFoundError:
+        lines = []
+    written: List[str] = []
+    for key, val in pairs:
+        line = f"{key}={val}"
+        for i, existing in enumerate(lines):
+            st = existing.strip()
+            if st and not st.startswith("#") and st.split("=", 1)[0].strip() == key:
+                lines[i] = line
+                break
+        else:
+            lines.append(line)
+        written.append(key)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines).rstrip("\n") + "\n")
+    return written
+
+
+#: Addresses that mean "this machine" to the person typing them, and "this
+#: container" to the MCP -- the single most common way a working connection
+#: string produces an MCP that cannot reach the database.
+_LOOPBACK = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+_DEFAULT_PORT = {"postgres": "5432", "postgresql": "5432", "mysql": "3306",
+                 "mariadb": "3306", "sqlserver": "1433", "mssql": "1433"}
+
+
+def _parse_conn(conn: str, kind: str, prefix: str, db_type: str) -> Tuple[List[Tuple[str, str]], str]:
+    """Split a connection string into the exact vars this source's connector reads.
+
+    Returns (pairs, note). Mirrors _env_block -- if the two ever disagree the
+    MCP boots with a variable nobody set, so they are edited together.
+    """
+    p = prefix.upper()
+    u = _url.urlparse(conn.strip())
+    note = ""
+
+    if kind == "mongodb":
+        return [(f"{p}_URI", conn.strip()),
+                (f"{p}_DB", _url.unquote(u.path or "").lstrip("/"))], note
+
+    host = u.hostname or ""
+    if host.lower() in _LOOPBACK:
+        # The compose this script writes declares
+        # extra_hosts: host.docker.internal:host-gateway, so this resolves to
+        # the machine running docker -- which is where a published port lives,
+        # whether the database is on the host or in another container.
+        note = (f"host {host!r} is loopback INSIDE a container, so it was stored as "
+                f"'host.docker.internal' - the MCP reaches your database through the "
+                f"port it publishes on this machine.")
+        host = "host.docker.internal"
+
+    port = str(u.port or _DEFAULT_PORT.get(db_type.lower(), ""))
+    return [(f"{p}_HOST", host),
+            (f"{p}_PORT", port),
+            (f"{p}_DB", _url.unquote(u.path or "").lstrip("/")),
+            (f"{p}_USER", _url.unquote(u.username or "")),
+            (f"{p}_PASS", _url.unquote(u.password or ""))], note
+
+
 def _free_port(start: int = 8510) -> int:
     for p in range(start, start + 300):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -137,10 +213,18 @@ def _render(org: str, depts: List[str], port: int,
     network = _docker_network()
     conn_lines: List[str] = []
     for pfx, (kind, src) in sorted(prefixes.items()):
-        conn_lines.append(f"      # source '{src}' ({kind}) — fill in real credentials:")
+        conn_lines.append(f"      # source '{src}' ({kind}) — values come from the root .env")
         for var, default, comment in _env_block(pfx, kind):
             c = f"   # {comment}" if comment else ""
-            conn_lines.append(f'      {var}: "{default}"{c}')
+            # A PASS-THROUGH, never a literal. These used to be emitted as
+            # `VAR: ""`, and an `environment:` entry OVERRIDES `env_file`, so a
+            # credential correctly present in .env was blanked out by this very
+            # block -- the MCP then failed require_env and looked like the .env
+            # was wrong. `:?` makes a missing one fail at `up` time, naming the
+            # variable, instead of 40s later inside the container.
+            ref = (f"${{{var}:-{default}}}" if default
+                   else f"${{{var}:?missing from .env - set it, or re-run make_mcp.py --conn}}")
+            conn_lines.append(f'      {var}: "{ref}"{c}')
     conn_block = "\n".join(conn_lines) or "      # (no env_prefix sources found)"
     dept_csv = ",".join(depts)
     return f"""# Custom MCP for org '{org}' — generated by scripts/make_mcp.py.
@@ -216,7 +300,7 @@ services:
       BUCKET_ACCESS_KEY: ${{BUCKET_ACCESS_KEY:-minioadmin}}
       BUCKET_SECRET_KEY: ${{BUCKET_SECRET_KEY:-minioadmin}}
 
-      # ── Source connection credentials (FILL THESE IN) ────────────────
+      # ── Source connection credentials (from the root .env) ───────────
 {conn_block}
     healthcheck:
       test: ["CMD-SHELL", "python -c \\"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8090/health',timeout=4).status==200 else 1)\\""]
@@ -245,6 +329,10 @@ def main() -> int:
                          "demo-data/tenants/<org>/mcp/sources.json)")
     ap.add_argument("--port", type=int, default=0, help="host port (default: first free from 8510)")
     ap.add_argument("--out", default="", help="compose path (default: deployments/<org>/mcp/docker-compose.yml)")
+    ap.add_argument("--conn", default="",
+                    help="connection string for the source — parsed into the {PFX}_* vars "
+                         "and written to the root .env. Never stored in sources.json.")
+    ap.add_argument("--env-file", default=".env", help="root .env to write credentials into")
     ap.add_argument("--up", action="store_true", help="docker compose up -d --build after generating")
     a = ap.parse_args()
 
@@ -291,20 +379,67 @@ def main() -> int:
 
     port = a.port or _free_port()
     out = a.out or os.path.join("deployments", a.org, "mcp", "docker-compose.yml")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    out_dir = os.path.dirname(out)
+    os.makedirs(out_dir, exist_ok=True)
+
+    # The compose mounts ./sources.json -- a path relative to ITSELF, not to
+    # --sources. When the registry lives anywhere else (the wizard writes
+    # my-source/sources.json) docker finds no file at that path and silently
+    # creates a DIRECTORY there; the MCP then dies on "SOURCES_FILE is a
+    # directory", pointing at the container rather than at the missing copy.
+    # So the registry is copied in, and the copy is what the container reads.
+    registry_dst = os.path.join(out_dir, "sources.json")
+    if os.path.abspath(registry_dst) != os.path.abspath(src_path):
+        import shutil
+        shutil.copyfile(src_path, registry_dst)
+        print(f"[ok] copied registry -> {registry_dst}")
+
+    # Credentials into .env BEFORE the compose is rendered, so a `--conn --up`
+    # in one command cannot start a container against variables that do not
+    # exist yet.
+    env_written: List[str] = []
+    if a.conn:
+        if len(prefixes) != 1:
+            print(f"[FAIL] --conn needs exactly ONE source to attribute it to; "
+                  f"this registry has {len(prefixes)} env_prefix values "
+                  f"({', '.join(sorted(prefixes)) or 'none'}).")
+            print("       Guessing which source a credential belongs to would put "
+                  "the wrong password on the wrong system.")
+            print("       Set the {PFX}_* variables in .env by hand instead.")
+            return 2
+        pfx = next(iter(prefixes))
+        kind = prefixes[pfx][0]
+        db_type = ((docs[0].get("connection") or {}).get("type") or "").lower()
+        pairs, note = _parse_conn(a.conn, kind, pfx, db_type)
+        missing = [k for k, v in pairs if not v and not k.endswith("_PORT")]
+        if missing:
+            print(f"[FAIL] the connection string did not yield {', '.join(missing)}.")
+            print(f"       Parsed from: {a.conn.split('@')[-1] if '@' in a.conn else a.conn}")
+            print("       Expected something like "
+                  "postgresql://user:pass@host:5432/dbname")
+            return 2
+        env_written = _envfile_set(a.env_file, pairs)
+        if note:
+            print(f"[ok] {note}")
+
     with open(out, "w", encoding="utf-8") as fh:
         fh.write(_render(a.org, all_depts, port, prefixes))
 
     print(f"[ok] wrote {out}")
     print(f"     org={a.org}  depts={','.join(all_depts)}  sources={len(docs)}  port={port}")
     print(f"     registry: {src_path}  ->  mounted read-only at /app/sources.json")
-    print(f"     connection env to fill: {', '.join(sorted(prefixes)) or '(none)'}")
-    print("     -> fill the *_HOST/_USER/_PASS (etc.) placeholders with real credentials, then:")
-    print(f"       docker compose --env-file .env -f {out} up -d --build")
+    if env_written:
+        print(f"     credentials -> {a.env_file}: {', '.join(env_written)}")
+        print("     (the compose references them; the values never enter sources.json)")
+    else:
+        print(f"     connection env to fill: {', '.join(sorted(prefixes)) or '(none)'}")
+        print(f"     -> set the *_HOST/_USER/_PASS (etc.) vars in {a.env_file}, then:")
+    print(f"       docker compose --env-file {a.env_file} -f {out} up -d --build")
 
     if a.up:
         print("[..] docker compose up -d --build")
-        rc = subprocess.run(["docker", "compose", "--env-file", ".env", "-f", out, "up", "-d", "--build"]).returncode
+        rc = subprocess.run(["docker", "compose", "--env-file", a.env_file,
+                             "-f", out, "up", "-d", "--build"]).returncode
         if rc != 0:
             print("[FAIL] docker compose up failed")
             return rc

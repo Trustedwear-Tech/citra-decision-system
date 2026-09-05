@@ -143,3 +143,13 @@ Citra-UI/sha1.txt
 **/deploy.yml
 **/DEPLOY-CHECKLIST.md
 **/docker-compose.aws.yml
+
+# --- per-install wizard output, never someone else's to inherit -------------
+# my-source/sources.json is the ontology built for THIS operator's database and
+# deployments/<org>/mcp is the MCP generated to serve it (compose + a copy of
+# that ontology). Both name one machine's org, ports and tables. Committing
+# either would ship one installation's data model to everyone who clones, and
+# the next `make wizard` would find a checkpoint-less file already in place and
+# adopt it as though the operator had built it.
+my-source/sources.json
+deployments/

@@ -175,6 +175,11 @@ have_admin()    { [ -n "$(getkv ADMIN_EMAIL)" ] && [ -n "$(getkv ADMIN_PASSWORD)
 have_stores()   { _running '^citra-mongodb$'; }
 have_services() { _running 'citra-service'; }
 have_ontology() { [ -s "$REPO_ROOT/my-source/sources.json" ]; }
+# The MCP that fronts YOUR database. Checked by container rather than by the
+# generated compose file existing: the file is written before `up`, so a
+# generate that then failed to start would otherwise read as done and the
+# catalogue would be crawled against an MCP that is not there.
+have_source_mcp() { _running "^mcp-${MCP_SAFE_ORG:-__unset__}$"; }
 have_demo()     {
   docker exec citra-ds-acme-bank-postgres psql -U acme_bank -d acme_bank -tAc \
     'select count(*) from customers' 2>/dev/null | tr -d '[:space:]' | grep -qE '^[1-9]'
@@ -390,11 +395,22 @@ if [ "$FRESH" = "1" ]; then
   echo "    .env                        every secret and setting, including your API key"
   echo "    Docker volumes              Postgres, Mongo, Milvus, MinIO - all seeded data"
   echo "    my-source/sources.json      the ontology built by a previous run"
+  echo "    deployments/<org>/mcp       the MCP generated for your own database"
   echo "  Apps, decisions, memory and uploaded SOPs all live in those volumes."
   echo
   if yes_no "Delete them and start from scratch?" "n"; then
     rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json" "$STATE_FILE"
     docker compose -f docker-compose.quickstart.yml down -v --remove-orphans 2>/dev/null || true
+    # The MCP for a custom database is its OWN compose project, so the `down`
+    # above never touched it. Left running it would survive the wipe, keep
+    # have_source_mcp answering yes, and serve a registry for volumes that no
+    # longer exist -- a container that looks healthy and is answering about a
+    # database the rest of the install has forgotten.
+    for _d in "$REPO_ROOT"/deployments/*/mcp/docker-compose.yml; do
+      [ -f "$_d" ] || continue
+      docker compose -f "$_d" down -v --remove-orphans 2>/dev/null || true
+    done
+    rm -rf "$REPO_ROOT/deployments"
     echo "  [ok] local state removed"
   else
     echo "  keeping what is there; continuing as a normal run"
@@ -812,6 +828,91 @@ if [ "$start_choice" = "2" ]; then
       --org-id "$org_id" --dept "$dept_id" --admin "$admin_email" \
       --sources "$REPO_ROOT/my-source/sources.json" --yes \
     || { echo "  [FAIL] organisation not created - the catalogue would be unreachable." >&2; exit 1; }
+
+  # ---- An MCP in front of YOUR database -------------------------------------
+  # sources.json describes the database; it does not SERVE it. Every read the
+  # builder and the agents make goes through a source MCP, and until one is
+  # running and registered with discovery, the catalogue is empty -- the
+  # ontology looks built and nothing can query it.
+  step "starting the MCP for your database"
+  hr; echo "$(b "Putting an MCP in front of your database")"
+  echo
+  echo "The ontology describes your database. It does not serve it. Reads go"
+  echo "through an MCP: one container, built from source-mcp-template, that"
+  echo "loads the ontology you just approved and registers itself with the"
+  echo "discovery service so the builder can find your tables."
+  echo
+  echo "$(b "Your credentials go to the .env on this machine") - never into"
+  echo "sources.json, which stays reviewable and secret-free."
+  echo
+  MCP_SAFE_ORG="$(printf '%s' "$org_id" | tr '[:upper:]_' '[:lower:]-')"
+  if done_already source_mcp have_source_mcp; then
+    echo "  [ok] mcp-$MCP_SAFE_ORG is already running"
+  else
+    # A REST source was introspected from a spec URL, not a connection string --
+    # passing that as --conn would parse a hostname out of a document location
+    # and write it as a database host.
+    mcp_args=(--org "$org_id" --depts "$dept_id"
+              --sources "$REPO_ROOT/my-source/sources.json"
+              --env-file "$ENV_FILE")
+    case "$db_kind" in
+      rest|api|openapi|swagger)
+        echo "  A REST source has no connection string. The MCP is generated now;"
+        echo "  set its ${db_kind}_* auth vars in .env before it can call anything." ;;
+      *) mcp_args+=(--conn "$db_conn") ;;
+    esac
+    if ! "$PY" "$REPO_ROOT/scripts/quickstart/make_mcp.py" "${mcp_args[@]}" --up; then
+      echo >&2
+      red "  [FAIL] the MCP for your database did not start."
+      echo "         Without it the catalogue stays empty and the builder has" >&2
+      echo "         nothing to build against. Check the compose it wrote:" >&2
+      echo "           deployments/$org_id/mcp/docker-compose.yml" >&2
+      exit 1
+    fi
+
+    # Registration is what makes the source reachable, and the MCP logs a
+    # startup banner whether or not it succeeded -- so the banner is not the
+    # signal. Wait for the per-tool marker, and treat any failure line as fatal
+    # (seed-demo.sh learned this from a cross-network DNS failure that logged
+    # "ready" while every registration failed and the catalogue stayed at 0).
+    echo "  waiting for it to register its sources with discovery"
+    _mcp_compose="$REPO_ROOT/deployments/$org_id/mcp/docker-compose.yml"
+    _reg=0
+    for _ in $(seq 1 40); do
+      _logs="$(docker compose --env-file "$ENV_FILE" -f "$_mcp_compose" logs 2>&1)"
+      if printf '%s' "$_logs" | grep -qE "\[REGISTRATION\] Registered tool:" \
+           && ! printf '%s' "$_logs" | grep -qE "\[REGISTRATION\] Failed to register"; then
+        echo "  [ok] sources registered with discovery"; _reg=1; break
+      fi
+      sleep 2
+    done
+    if [ "$_reg" != 1 ]; then
+      echo >&2
+      red "  [FAIL] the MCP did not register within 80s."
+      echo "         Its tables would be invisible to the builder, and every app" >&2
+      echo "         built against them would fail 'source_not_found'." >&2
+      echo "           docker compose -f $_mcp_compose logs" >&2
+      exit 1
+    fi
+    ck_mark source_mcp
+  fi
+
+  # ---- The catalogue -------------------------------------------------------
+  # Registration tells discovery the MCP EXISTS; the crawl is what reads its
+  # datasets into the catalogue the builder actually queries. data-discovery
+  # crawls at startup, which for this path is BEFORE the MCP existed, so
+  # without this the catalogue is empty however healthy everything looks.
+  step "building the data catalogue"
+  hr; echo "$(b "Reading your tables into the catalogue")"
+  if ! JWT_SECRET="$(getkv JWT_SECRET)" \
+        "$PY" "$REPO_ROOT/scripts/quickstart/build_catalogue.py" --org "$org_id"; then
+    echo >&2
+    red "  [FAIL] the catalogue crawl failed."
+    echo "         The builder binds every app to a catalogue dataset, so with an" >&2
+    echo "         empty catalogue nothing can be built. Re-run just this step:" >&2
+    echo "           JWT_SECRET=... $PY scripts/quickstart/build_catalogue.py --org $org_id" >&2
+    exit 1
+  fi
 
   # ---- SOPs: the rules half of the product ----------------------------------
   # Connecting a database gives the agent facts. SOPs give it RULES -- what your
