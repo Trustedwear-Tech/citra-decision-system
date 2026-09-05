@@ -314,6 +314,11 @@ def _looks_like_a_credential(text: str) -> bool:
     return bool(_SECRET_SHAPE.search(text or ""))
 
 
+# A newline INSIDE an input() prompt breaks line editing on Windows/MinTTY:
+# readline counts the prompt width to know which column the cursor is in,
+# a "\n" makes that count wrong, and the moment the answer wraps or is
+# pasted it overwrites the text already on screen. Print the blank line
+# first, keep the prompt itself short and on ONE line.
 class Tools:
     """Every tool runs HERE. The model sees results, never the connection string."""
 
@@ -382,7 +387,8 @@ class Tools:
         _show()
         while True:
             try:
-                ans = input("\n  your answer > ").strip()
+                print("")
+                ans = input("  your answer > ").strip()
             except EOFError:
                 ans = ""
             if ans in ("?", "??", "again", "repeat"):
@@ -691,7 +697,8 @@ def main() -> int:
             if tools.saved:
                 break
             try:
-                reply = input("\n  your answer > ").strip()
+                print("")
+                reply = input("  your answer > ").strip()
             except EOFError:
                 reply = ""
             if not reply:
@@ -757,7 +764,8 @@ def main() -> int:
         ok = True
     else:
         try:
-            ok = input(f"\n  Write this to {out}? (y/n) ").strip().lower() in ("y", "yes")
+            print("")
+            ok = input(f"  Write this to {out}? (y/n) ").strip().lower() in ("y", "yes")
         except EOFError:
             ok = False
     if not ok:
