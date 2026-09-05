@@ -138,8 +138,12 @@ decision**:
   proves the scope is real rather than the system becoming generally more
   cautious.
 
-That pair is also the honest version of the experiment in the credit note:
-14 vs 1 with memory on versus off, 19/19 correctly targeted, 0/2 on controls.
+That pair is also the honest version of the experiment in the credit note.
+The figures are deliberately NOT repeated here: they were restated in this
+plan and in the README and the wiki, and a number kept in four places drifts
+in three of them. They live in one place now --
+[The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/The-experiment),
+alongside the null result and what the run does not show.
 
 ### Measured, 2026-08-24
 
