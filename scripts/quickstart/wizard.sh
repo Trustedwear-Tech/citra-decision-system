@@ -432,6 +432,35 @@ if [ "$FRESH" = "1" ]; then
       printf '%s\n' "$_out" | tail -3 | sed 's/^/      /' >&2
       _wipe_failed=1
     }
+    # NOTHING TO WIPE is not a failure. compose interpolates ${VAR} from .env
+    # while PARSING, so on a first run in a fresh clone -- no .env, nothing ever
+    # started -- every `down` dies on "required variable MONGODB_PASSWORD is
+    # missing a value". The previous shape called that fatal, so --fresh could
+    # not run at all on a clean checkout, which is exactly where a new operator
+    # reaches for it.
+    #
+    # The guard exists to stop a wipe SILENTLY FAILING over live data. With no
+    # .env AND no containers there is no live data for it to protect. Containers
+    # WITHOUT a .env is the one case still worth stopping for: something is
+    # running and compose cannot be used to remove it, so a person must.
+    _skip_wipe=0
+    _proj="$(basename "$REPO_ROOT" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')"
+    _running_n="$(docker ps -aq --filter "label=com.docker.compose.project=$_proj" 2>/dev/null | wc -l | tr -d ' ')"
+    if [ ! -f "$ENV_FILE" ]; then
+      if [ "${_running_n:-0}" = "0" ]; then
+        echo "  [ok] nothing to remove - no .env and no containers from this"
+        echo "       checkout. --fresh has nothing to do on a first run."
+        _skip_wipe=1
+      else
+        echo >&2
+        red "  [FAIL] $_running_n container(s) run from this checkout but .env is"
+        echo "         gone, so compose cannot parse the project to stop them." >&2
+        echo "         Remove them by hand, then re-run:" >&2
+        echo "           docker compose -f docker-compose.quickstart.yml down -v" >&2
+        exit 1
+      fi
+    fi
+    if [ "$_skip_wipe" != "1" ]; then
     _down docker-compose.quickstart.yml
     # Every MCP is its OWN compose project, so the `down` above -- which names
     # only docker-compose.quickstart.yml -- never touched any of them. For the
@@ -442,6 +471,7 @@ if [ "$FRESH" = "1" ]; then
       [ -f "$_d" ] || continue
       _down "$_d"
     done
+    fi
     if [ "$_wipe_failed" = "1" ]; then
       echo >&2
       red "  [FAIL] --fresh could not remove everything, so it removed nothing."
