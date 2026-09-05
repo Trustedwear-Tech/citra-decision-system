@@ -757,6 +757,32 @@ class Tools:
         return {s.get("source_id", "?"): [d.get("id", "?") for d in (s.get("datasets") or [])]
                 for s in self.draft}
 
+    @staticmethod
+    def _strip_screening(srcs: List[Dict[str, Any]]) -> List[str]:
+        """Remove `fraud_screening` and `artifact_role`, wherever they appear.
+
+        Neither is ever authored by an interview: screening fingerprints real
+        bytes across a whole corpus, and whether it finds fraud or cries wolf
+        depends on how alike the customer's documents already are -- which
+        nobody can know before the documents exist. It is hand-authored against
+        the real corpus after deployment and verified there.
+
+        The prompt says this three times, and a live run still wrote
+        `"fraud_screening": {"applies": false}` onto two datasets. Functionally
+        that is off; as a record it says screening was considered and
+        configured, which is the thing that must not be true. So it is removed
+        here rather than asked for -- and SAID, never silently.
+        """
+        removed: List[str] = []
+        for src in srcs:
+            for ds in (src.get("datasets") or []):
+                if ds.pop("fraud_screening", None) is not None:
+                    removed.append(f"fraud_screening on {ds.get('id')}")
+                for col in (ds.get("columns") or []):
+                    if col.pop("artifact_role", None) is not None:
+                        removed.append(f"artifact_role on {ds.get('id')}.{col.get('name')}")
+        return removed
+
     def _samples_for(self, ds: dict) -> list:
         """Rows this script pulled for that table when it introspected it."""
         key = ds.get("physical_name") or (ds.get("id") or "").split(".")[-1]
@@ -863,6 +889,14 @@ class Tools:
             return {"error": f"could not read what you sent: {e}"}
         if not self.draft:
             return {"error": "the draft is empty — nothing to save"}
+
+        removed = self._strip_screening(self.draft)
+        if removed:
+            print("\n  [!] removed from the registry before saving: "
+                  + ", ".join(removed))
+            print("      Screening is never configured by this interview — it is "
+                  "authored by hand\n      against your real documents after "
+                  "deployment, and tested there.")
         sources_json = self._draft_text()
         ok, report = self.run_validator(sources_json)
         self.validated_ok = ok
@@ -871,6 +905,12 @@ class Tools:
                     "report": report}
         self.saved = sources_json
         self.last_valid = sources_json
+        if removed:
+            return {"saved": True,
+                    "removed": removed,
+                    "note": "fraud_screening and artifact_role are never written by this "
+                            "interview and were removed. Do not add them back. Say so to "
+                            "the user in your summary. Stop calling tools now."}
         unmarked = self._unmarked_link_columns(sources_json)
         if unmarked:
             # Not a refusal: a link column that is genuinely not a file is a
