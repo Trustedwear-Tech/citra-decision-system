@@ -471,6 +471,23 @@ def verify(docs: Dict[str, bytes]) -> int:
     a corpus that would cry fraud. Returns the number of problems."""
     from fraud_checks import hamming_hex, pdf_text, sha256_hex, simhash64
 
+    # pdf_text() imports pypdf inside a try/except and returns None when it is
+    # not installed -- indistinguishable, downstream, from a PDF that genuinely
+    # has no text layer. Every document then reads as "thin" and this function
+    # reports the CORPUS as broken when the truth is a missing dependency in
+    # whichever interpreter is running it. That happened on a real --fresh seed:
+    # 1013 perfectly good documents, all reported unfingerprintable, upload
+    # refused, empty bucket. Probe once, up front, and say the true thing.
+    try:
+        import pypdf  # noqa: F401
+    except ImportError:
+        print("  FAIL - pypdf is not installed in this interpreter, so no PDF's")
+        print("         text can be read and EVERY document would be reported as")
+        print("         having too little text. That is a fault in this environment,")
+        print("         not in the corpus. Install it and re-run:")
+        print(f"           {sys.executable} -m pip install pypdf")
+        return 1
+
     by_sha: Dict[str, List[str]] = {}
     sims: Dict[str, str] = {}
     thin = []

@@ -136,7 +136,14 @@ fi
 if [ -d "$VENV/bin" ]; then PY="$VENV/bin/python"; else PY="$VENV/Scripts/python"; fi
 "$PY" -m pip -q install --upgrade pip >/dev/null 2>&1 || true
 "$PY" -m pip -q install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3 >/dev/null 2>&1 || \
-  "$PY" -m pip install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3
+  # pypdf is not optional. generate_claim_documents.py verifies the corpus it
+  # just built with the SERVICE's own fingerprinting, and fraud_checks.pdf_text
+  # imports pypdf inside a try/except that returns None on ImportError. Without
+  # it every document reads as having no text layer, the verifier reports
+  # "1013 document(s) have too little text to fingerprint" -- which is false --
+  # and refuses to upload. The claims app then cites documents that were never
+  # filed. Measured: a full --fresh seed produced an empty bucket this way.
+  "$PY" -m pip install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3 pypdf
 
 # -- 0. Validate the source registry BEFORE anything else ---------------------
 # RegistrySource is extra="forbid": one unknown key and the MCP hard-fails at
