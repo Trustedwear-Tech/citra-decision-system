@@ -414,9 +414,20 @@ if [ "$FRESH" = "1" ]; then
     # data still there and adopted it as already seeded. Measured: a --fresh
     # answered `y` left every container running with 5 hours of uptime.
     _wipe_failed=0
+    # --env-file, because the per-tenant and per-org composes live in their OWN
+    # directories: compose looks for .env NEXT TO the file it was given, finds
+    # none there, and dies interpolating MCP_API_KEY. seed-demo.sh passes it for
+    # exactly this reason. The quickstart compose does not need it -- .env is in
+    # the working directory -- but passing it everywhere is one less rule.
+    #
+    # Guarded on existence: --env-file pointing at a missing file is itself an
+    # error, and a FIRST --fresh, before any .env has been written, is a normal
+    # thing to do.
+    _envarg=()
+    [ -f "$ENV_FILE" ] && _envarg=(--env-file "$ENV_FILE")
     _down() {
       local _out
-      if _out="$(docker compose -f "$1" down -v --remove-orphans 2>&1)"; then return 0; fi
+      if _out="$(docker compose ${_envarg[@]+"${_envarg[@]}"} -f "$1" down -v --remove-orphans 2>&1)"; then return 0; fi
       red "  [!] could not bring down $1"
       printf '%s\n' "$_out" | tail -3 | sed 's/^/      /' >&2
       _wipe_failed=1
