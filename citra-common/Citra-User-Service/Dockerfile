@@ -7,7 +7,14 @@
 # the License at http://www.apache.org/licenses/LICENSE-2.0
 
 # syntax=docker/dockerfile:1
-FROM node:22-bullseye-slim
+# Bookworm (Debian 12), not bullseye (11). Bullseye is oldstable: its security
+# pool drops superseded packages, and the index baked into the image then points
+# at versions that no longer exist. Every build of this service failed with
+#   E: Failed to fetch .../libperl5.32_5.32.1-4+deb11u5_amd64.deb  404 Not Found
+# on two different CDN nodes -- not a blip, and it only gets worse as bullseye
+# ages. This was the one image in the tree still on 11; every other service is
+# already on a bookworm-based python:3.11-slim or Alpine.
+FROM node:22-bookworm-slim
 
 # Build-time arg to mark environment (prod/test)
 ARG APP_ENV=prod
