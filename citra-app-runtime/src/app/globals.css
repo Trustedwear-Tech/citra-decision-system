@@ -1528,7 +1528,13 @@ a.dt-doc-title:hover { color: var(--citra-primary); }
   background: #fff;
   border-radius: 14px;
   width: 100%;
-  max-width: 840px;
+  /* 840 -> 1260 (1.5x). The recommendation modal carries the agent's reasoning,
+     a per-item review card per document, and the staged write's fields. At 840
+     the reasoning wrapped every few words and each document card became a tall
+     column of narrow rows, so an officer scrolled instead of reading. Still
+     under .app-shell's 1240 + its 26px padding, so it does not out-dent the
+     page it sits over, and the mobile rule below still takes it to 100%. */
+  max-width: 1260px;
   max-height: 86vh;
   overflow: hidden;
   display: flex;

@@ -2324,6 +2324,18 @@ function EditableProposedWrite({
 
   return (
     <div>
+      {/* Nothing else on this card says these fields can be TYPED IN, and
+          editing one is the whole override path -- the strongest correction the
+          system records. Without this line an officer who disagrees reaches for
+          Reject, which writes nothing and leaves the case undecided. Stated
+          once, above the fields, where the choice is actually made. */}
+      {editable.length > 0 && (
+        <div style={{ fontSize: 11, color: "var(--citra-muted, #6b7280)",
+                      margin: "2px 0 8px" }}>
+          These values are the agent&apos;s proposal and can be edited. Change any
+          of them to overrule it, then Apply — you will be asked why.
+        </div>
+      )}
       {editable.map((f) => {
         const cur = (f.name in value ? value[f.name] : payload[f.name]) as unknown;
         const fOpts = opts[f.name] ?? [];
@@ -3236,7 +3248,7 @@ function RunResultModal({
                       }
                       onClick={() => decide("reject")}
                     >
-                      {busy === "reject" ? "Discarding…" : "Confirm — discard proposal"}
+                      {busy === "reject" ? "Rejecting…" : "Confirm — reject recommendation"}
                     </button>
                     <button
                       type="button"
@@ -3307,11 +3319,18 @@ function RunResultModal({
                     type="button"
                     className="q-btn q-btn-danger"
                     disabled={busy != null}
-                    title={"Discard the agent's proposal — nothing is written to "
-                           + "the record. Your reason teaches the app."}
+                    title={"Reject the agent's RECOMMENDATION, not the case. "
+                           + "Nothing is written to the record and the case stays "
+                           + "open. To decide it differently, edit the values above "
+                           + "and Apply instead."}
                     onClick={() => { setActionErr(null); setShowReject(true); }}
                   >
-                    Discard proposal
+                    {/* Was "Discard proposal", which reads as a verdict ON THE CASE.
+                        When the agent proposes a rejection, "discard" parses as a
+                        double negative and nobody can tell whether the case ends up
+                        rejected. It does not -- this button writes nothing. Name what
+                        the button acts on. */}
+                    Reject recommendation
                   </button>
                   {/* Cancel = dismiss without deciding (audited as cancelled); both
                       leave the source untouched but record differently. */}
@@ -3327,9 +3346,10 @@ function RunResultModal({
                   </button>
                   <div style={{ width: "100%", fontSize: 11,
                                 color: "var(--citra-muted, #6b7280)" }}>
-                    Apply writes to the record · Discard writes nothing and
-                    teaches the app · Decide later writes nothing and teaches
-                    nothing
+                    Apply writes to the record — edit a value first to overrule
+                    the agent · Reject recommendation writes nothing, leaves the
+                    case open, and teaches the app · Decide later writes nothing
+                    and teaches nothing
                   </div>
                   {actionErr && (
                     <div style={{ color: "#dc2626", fontSize: 12, width: "100%" }}>
