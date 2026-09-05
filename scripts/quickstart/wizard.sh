@@ -403,34 +403,48 @@ if [ "$FRESH" = "1" ]; then
   echo "  running yesterday's code. That is the slow part of --fresh."
   echo
   if yes_no "Delete them and start from scratch?" "n"; then
-    rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json" "$STATE_FILE"
-    docker compose -f docker-compose.quickstart.yml down -v --remove-orphans 2>/dev/null || true
+    # ORDER MATTERS: containers and volumes first, .env LAST.
+    #
+    # compose interpolates ${VAR} from .env while PARSING the file, so a `down`
+    # run after .env has been deleted dies with
+    #   required variable MONGODB_PASSWORD is missing a value
+    # before it removes anything. .env used to be deleted on the line above
+    # this one, and the error went to /dev/null under a `|| true` -- so --fresh
+    # printed "local state removed", removed nothing, and the next run found the
+    # data still there and adopted it as already seeded. Measured: a --fresh
+    # answered `y` left every container running with 5 hours of uptime.
+    _wipe_failed=0
+    _down() {
+      local _out
+      if _out="$(docker compose -f "$1" down -v --remove-orphans 2>&1)"; then return 0; fi
+      red "  [!] could not bring down $1"
+      printf '%s\n' "$_out" | tail -3 | sed 's/^/      /' >&2
+      _wipe_failed=1
+    }
+    _down docker-compose.quickstart.yml
     # Every MCP is its OWN compose project, so the `down` above -- which names
-    # only docker-compose.quickstart.yml -- never touched any of them. That was
-    # measured: --fresh removed 20 containers and left citra-ds-acme-bank-postgres
-    # and its MCP running.
-    #
-    # For the DEMO that is not untidiness, it is a broken install that reports
-    # success. have_demo() counts rows in that surviving Postgres, so it still
-    # answers yes; --fresh deletes the checkpoint file, so the next run ADOPTS
-    # the demo as already seeded and offers "Seed it again? [n]". Meanwhile
-    # Mongo went with the wipe, taking the org, the users, the apps and the
-    # MCP's discovery registration. The operator lands on an empty screen having
-    # been told everything was already in place.
-    #
-    # For a custom database the same shape: a container that looks healthy,
-    # serving a registry for volumes that no longer exist.
+    # only docker-compose.quickstart.yml -- never touched any of them. For the
+    # DEMO that is not untidiness: have_demo() counts rows in the surviving
+    # Postgres, so a later run adopts it as seeded while Mongo, and with it the
+    # org, the users and the apps, went with the wipe.
     for _d in "$REPO_ROOT"/deployments/*/mcp/docker-compose.yml               "$REPO_ROOT"/demo-data/tenants/*/mcp/docker-compose.yml; do
       [ -f "$_d" ] || continue
-      docker compose -f "$_d" down -v --remove-orphans 2>/dev/null || true
+      _down "$_d"
     done
+    if [ "$_wipe_failed" = "1" ]; then
+      echo >&2
+      red "  [FAIL] --fresh could not remove everything, so it removed nothing."
+      echo "         Carrying on would install over live data and report success," >&2
+      echo "         which is the failure this check exists to prevent. Fix the" >&2
+      echo "         error above, or bring the stack down by hand:" >&2
+      echo "           docker compose -f docker-compose.quickstart.yml down -v" >&2
+      exit 1
+    fi
+    # Only now, once the containers that need it are gone.
+    rm -f "$ENV_FILE" "$REPO_ROOT/my-source/sources.json" "$STATE_FILE"
     rm -rf "$REPO_ROOT/deployments"
-    # `down -v` takes containers and volumes; images survive it. So --fresh used
-    # to wipe every byte of data and then start the stack on whatever images were
-    # already built -- a clean install running old code, which is the hardest
-    # kind of stale to notice because nothing about it looks stale.
-    #
-    # start.sh reads this and adds --build.
+    # `down -v` takes containers and volumes; images survive it. start.sh reads
+    # this and adds --build, so a clean install is not running old code.
     export CITRA_COMPOSE_BUILD=1
     echo "  [ok] local state removed; images will be rebuilt"
   else
