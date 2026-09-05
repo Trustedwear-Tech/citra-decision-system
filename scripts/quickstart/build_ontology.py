@@ -35,7 +35,6 @@ guided path, not the only one.
 from __future__ import annotations
 
 import argparse
-import contextlib
 import json
 import os
 import re
@@ -47,7 +46,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MCP = REPO_ROOT / "source-mcp-template"
@@ -617,13 +616,13 @@ def _fill_read_via(srcs: list) -> int:
     return filled
 
 
-@contextlib.contextmanager
-def _thinking(label: str):
-    """Show that a round trip to the model is in flight.
+class _Waiting:
+    """A live indicator for the gap before the model says anything.
 
-    One round can take a minute on a wide schema, and the screen used to say
-    nothing at all while it did - indistinguishable from a hang, so people
-    ctrl-C a session that was working.
+    Time to first token can be a minute on a wide schema, and the screen used
+    to say nothing at all while it passed - indistinguishable from a hang, so
+    people ctrl-C a session that was working. Once tokens start arriving the
+    thinking itself is the indicator, so this stops.
 
     Two shapes, because there are two ways this is run. Standalone, stderr is a
     terminal and gets a spinner that erases itself. Under the wizard both
@@ -632,42 +631,194 @@ def _thinking(label: str):
     every couple of seconds, which survives the pipe, appears live on screen,
     and reads as one ordinary line in the log.
     """
-    stop = threading.Event()
-    tty = sys.stderr.isatty()
-    frames = "|/-\\"
-    if tty:
-        stream, tick = sys.stderr, 0.12
-    else:
-        stream, tick = sys.stdout, 2.0
-        stream.write(f"  . {label} ")
-        stream.flush()
-    t0 = time.monotonic()
 
-    def spin() -> None:
+    def __init__(self, label: str) -> None:
+        self.label = label
+        self.tty = sys.stderr.isatty()
+        self._stop = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+        self._t0 = time.monotonic()
+
+    def start(self) -> "_Waiting":
+        self._t0 = time.monotonic()
+        if not self.tty:
+            sys.stdout.write(f"  . {self.label} ")
+            sys.stdout.flush()
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._thread.start()
+        return self
+
+    def _spin(self) -> None:
+        frames = "|/-\\"
+        stream = sys.stderr if self.tty else sys.stdout
+        tick = 0.12 if self.tty else 2.0
         i = 0
-        while not stop.wait(tick):
-            if tty:
-                stream.write(f"\r  {frames[i % 4]} {label}  {time.monotonic() - t0:.0f}s")
+        while not self._stop.wait(tick):
+            if self.tty:
+                stream.write(f"\r  {frames[i % 4]} {self.label}  "
+                             f"{time.monotonic() - self._t0:.0f}s")
             else:
                 stream.write(".")
             stream.flush()
             i += 1
 
-    t = threading.Thread(target=spin, daemon=True)
-    t.start()
-    try:
-        yield
-    finally:
-        stop.set()
-        t.join(timeout=1)
-        if tty:
+    def stop(self) -> None:
+        """Idempotent - the first token calls it, and so does the finally."""
+        if self._thread is None:
+            return
+        self._stop.set()
+        self._thread.join(timeout=1)
+        self._thread = None
+        if self.tty:
             # Blank the line with spaces rather than an ANSI erase - this runs
             # in MinTTY, cmd.exe and PowerShell, and spaces work in all three.
-            stream.write("\r" + " " * 60 + "\r")
+            sys.stderr.write("\r" + " " * 60 + "\r")
+            sys.stderr.flush()
         else:
-            stream.write(f" {time.monotonic() - t0:.0f}s\n")
-        stream.flush()
+            sys.stdout.write(f" {time.monotonic() - self._t0:.0f}s\n")
+            sys.stdout.flush()
 
+
+class _Wrapped:
+    """Print text that arrives a few characters at a time, wrapped and indented.
+
+    Reasoning streams in token-sized pieces with no line structure of its own.
+    Written straight through it is one enormous line the terminal hard-wraps at
+    column zero, lining up with nothing else the wizard prints. This holds back
+    the trailing partial word and breaks between words instead.
+    """
+
+    def __init__(self, indent: str = "    ", width: int = 78) -> None:
+        self.indent = indent
+        self.width = width
+        self._buf = ""
+        self._col = 0
+
+    def feed(self, text: str) -> None:
+        self._buf += text
+        parts = re.split(r"(\s+)", self._buf)
+        # The last piece may be half a word - hold it until more arrives.
+        self._buf = parts.pop() if parts and not parts[-1].isspace() else ""
+        self._emit(parts)
+
+    def _emit(self, parts: List[str]) -> None:
+        for tok in parts:
+            if not tok:
+                continue
+            if tok.isspace():
+                if "\n" in tok:
+                    sys.stdout.write("\n" + self.indent)
+                    self._col = len(self.indent)
+                elif self._col > len(self.indent):
+                    sys.stdout.write(" ")
+                    self._col += 1
+                continue
+            if self._col == 0:
+                sys.stdout.write(self.indent)
+                self._col = len(self.indent)
+            elif self._col + len(tok) > self.width:
+                sys.stdout.write("\n" + self.indent)
+                self._col = len(self.indent)
+            sys.stdout.write(tok)
+            self._col += len(tok)
+        sys.stdout.flush()
+
+    def close(self) -> None:
+        # Emit the held-back word DIRECTLY. Handing it back to feed() would
+        # just re-buffer it as an unterminated word and lose it - which it did.
+        tail, self._buf = self._buf, ""
+        if tail:
+            self._emit([tail])
+        if self._col:
+            sys.stdout.write("\n")
+        self._col = 0
+        sys.stdout.flush()
+
+
+class _LLMError(RuntimeError):
+    """An error the provider reported inside a 200 response."""
+
+
+def _stream_round(url: str, key: str, body: Dict[str, Any],
+                  label: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """One round trip, streamed, printing what the model is thinking as it thinks it.
+
+    Reasoning models emit their thinking as `reasoning` deltas (some providers
+    call it `reasoning_content`) alongside the answer. Non-streaming they are
+    thrown away, and the screen shows nothing for a minute and then a finished
+    decision. Streamed, the operator sees WHICH table it is reading and why it
+    is about to ask what it asks - the part worth watching, because that is
+    where a wrong ontology comes from.
+
+    Returns the assembled assistant message and the usage block in the same
+    shape the non-streaming call returned, so the caller is unchanged.
+    """
+    body = dict(body, stream=True, stream_options={"include_usage": True})
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                 headers={"Authorization": f"Bearer {key}",
+                                          "Content-Type": "application/json"})
+    said: List[str] = []
+    calls: Dict[int, Dict[str, Any]] = {}
+    usage: Dict[str, Any] = {}
+    out: Optional[_Wrapped] = None
+    mode = ""
+    wait = _Waiting(label).start()
+    try:
+        resp = urllib.request.urlopen(req, timeout=600)
+        for raw in resp:
+            line = raw.decode("utf-8", "replace").strip()
+            # Blank lines and `: OPENROUTER PROCESSING` keep-alives are framing.
+            if not line or not line.startswith("data:"):
+                continue
+            data = line[5:].strip()
+            if data == "[DONE]":
+                break
+            chunk = json.loads(data)
+            if chunk.get("error"):
+                raise _LLMError(str(chunk["error"]))
+            if chunk.get("usage"):
+                usage = chunk["usage"]
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+            delta = choices[0].get("delta") or {}
+            thought = delta.get("reasoning") or delta.get("reasoning_content") or ""
+            spoken = delta.get("content") or ""
+            if spoken:
+                said.append(spoken)
+            for kind, text in (("think", thought), ("say", spoken)):
+                if not text:
+                    continue
+                if kind != mode:
+                    wait.stop()
+                    if out is not None:
+                        out.close()
+                    if kind == "think":
+                        print(f"  {label} - thinking")
+                        out = _Wrapped(indent="    ")
+                    else:
+                        out = _Wrapped(indent="  ")
+                    mode = kind
+                out.feed(text)
+            for tc in delta.get("tool_calls") or []:
+                slot = calls.setdefault(int(tc.get("index") or 0),
+                                        {"id": "", "type": "function",
+                                         "function": {"name": "", "arguments": ""}})
+                if tc.get("id"):
+                    slot["id"] = tc["id"]
+                fn = tc.get("function") or {}
+                # Both arrive in pieces; the name usually whole, arguments never.
+                slot["function"]["name"] += fn.get("name") or ""
+                slot["function"]["arguments"] += fn.get("arguments") or ""
+    finally:
+        wait.stop()
+        if out is not None:
+            out.close()
+
+    msg: Dict[str, Any] = {"role": "assistant", "content": "".join(said)}
+    if calls:
+        msg["tool_calls"] = [calls[i] for i in sorted(calls)]
+    return msg, usage
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
@@ -721,27 +872,21 @@ def main() -> int:
 
         body = {"model": args.model, "messages": messages, "tools": TOOLS,
                 "max_tokens": MAX_OUTPUT_TOKENS}
-        req = urllib.request.Request(f"{base}/chat/completions",
-                                     data=json.dumps(body).encode(),
-                                     headers={"Authorization": f"Bearer {key}",
-                                              "Content-Type": "application/json"})
         try:
-            with _thinking(f"asking the model (round {rnd}/{args.rounds})"):
-                resp = json.loads(urllib.request.urlopen(req, timeout=600).read())
+            msg, usage = _stream_round(f"{base}/chat/completions", key, body,
+                                       f"round {rnd}/{args.rounds}")
         except urllib.error.HTTPError as e:
             print(f"  LLM call failed: HTTP {e.code} {e.read().decode()[:300]}", file=sys.stderr)
             return 1
-        if resp.get("error"):
-            print(f"  LLM error: {resp['error']}", file=sys.stderr)
+        except _LLMError as e:
+            print(f"  LLM error: {e}", file=sys.stderr)
             return 1
 
-        usage = resp.get("usage") or {}
         total_cost += float(usage.get("cost") or 0)
-        msg = resp["choices"][0]["message"]
+        # The reasoning is printed as it streams and deliberately NOT kept: it is
+        # for the operator to watch, and handing a model its own thinking back as
+        # conversation is not something every provider accepts.
         messages.append(msg)
-
-        if msg.get("content"):
-            print(f"  {msg['content'].strip()[:1500]}")
 
         calls = msg.get("tool_calls") or []
         if not calls:
