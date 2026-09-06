@@ -317,7 +317,7 @@
             "tool_buttons": [],
             "type": "detail",
             "linked_to": "app_queue",
-            "id_field": null,
+            "id_field": "application_id",
             "layout": "profile",
             "header_fields": [
               "application_id",

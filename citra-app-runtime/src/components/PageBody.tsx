@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { AgentSpec, AppSpec, Page, Panel, PageKind } from "@/types/spec";
-import PanelRenderer from "@/components/PanelRenderer";
+import PanelRenderer, { PanelSelectionProvider } from "@/components/PanelRenderer";
 import Icon from "@/components/Icon";
 
 interface Props {
@@ -56,6 +56,7 @@ export default function PageBody({
   const panels = page.panels;
 
   return (
+    <PanelSelectionProvider>
     <section
       className={`app-page app-page-${layout}${isDashboard ? " app-page-dashboard" : ""}`}
       data-page-id={page.id}
@@ -105,6 +106,7 @@ export default function PageBody({
         </div>
       )}
     </section>
+    </PanelSelectionProvider>
   );
 }
 

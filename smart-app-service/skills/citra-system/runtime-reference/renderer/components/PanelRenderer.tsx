@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties, createContext, useContext, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -1297,6 +1297,43 @@ type RunResult = {
  *  could drift in which fields they carry (planned writes, item findings, cited
  *  precedents), and a field missing here is silently missing from the decision.
  */
+/** What a queue on this page has selected, for the panels linked to it.
+ *  `DetailPanel.linked_to` names a queue; the queue publishes its selected
+ *  row here (split view: the highlighted row, else the first on the page),
+ *  and the linked detail resolves its record from that row. The URL's ?id=
+ *  still wins when present, so embed pages keep working unchanged. */
+type PanelSelection = {
+  rows: Record<string, Record<string, unknown> | null>;
+  select: (panelId: string, row: Record<string, unknown> | null) => void;
+};
+const PanelSelectionContext = createContext<PanelSelection>({ rows: {}, select: () => {} });
+
+export function PanelSelectionProvider({ children }: { children: React.ReactNode }) {
+  const [rows, setRows] = useState<Record<string, Record<string, unknown> | null>>({});
+  const select = useCallback((panelId: string, row: Record<string, unknown> | null) => {
+    setRows((m) => (m[panelId] === row ? m : { ...m, [panelId]: row }));
+  }, []);
+  const value = useMemo(() => ({ rows, select }), [rows, select]);
+  return <PanelSelectionContext.Provider value={value}>{children}</PanelSelectionContext.Provider>;
+}
+
+/** The value that identifies a row, the way the service picks it when the
+ *  spec sets no `id_field`: record_id, id, then *_id, *_no, *_number,
+ *  *_code, else the first column. Mirrors panel_data._ID_FIELD_PATTERNS so
+ *  the runtime and the service agree on which column is "the id". */
+function idValueOfRow(row: Record<string, unknown>, explicit?: string | null): string | null {
+  const cols = Object.keys(row);
+  const pick = (c: string | undefined) =>
+    c != null && row[c] != null && String(row[c]) !== "" ? String(row[c]) : null;
+  if (explicit) return pick(explicit);
+  for (const re of [/^record_id$/i, /^id$/i, /_id$/i, /_no$/i, /_number$/i, /_code$/i]) {
+    const c = cols.find((k) => re.test(k));
+    const v = pick(c);
+    if (v != null) return v;
+  }
+  return pick(cols[0]);
+}
+
 function runResultFromBody(
   b: Record<string, unknown>,
   meta: { rowKey: string; rowTitle: string; label: string; slug: string },
@@ -1450,6 +1487,11 @@ function QueuePanelView({
   // Split (master-detail) view: the selected row key. Defaults to the first
   // row of the current page once data lands.
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  // The row this queue currently "has" for its linked panels. Set during
+  // render by the split view (a ref, so no setState in render) and published
+  // by the effect below whenever the selection or the rows change.
+  const selectedRowRef = useRef<Record<string, unknown> | null>(null);
+  const panelSelection = useContext(PanelSelectionContext);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [sortCol, setSortCol] = useState<string | null>(panel.default_sort?.column ?? null);
@@ -1590,6 +1632,17 @@ function QueuePanelView({
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, slug, panel.id, titleCol]);
+
+  // Publish the selected row to the panels linked to this queue. Outside the
+  // split view nothing is highlighted, so the first row on the page stands in
+  // (the same fallback the split view uses), and a linked detail is never
+  // left asking the service for "no record".
+  useEffect(() => {
+    const rows = (data?.rows ?? []) as Record<string, unknown>[];
+    const row = selectedRowRef.current ?? rows[0] ?? null;
+    panelSelection.select(panel.id, row);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey, data, panel.id]);
 
   const searchCols = panel.searchable_columns?.length ? panel.searchable_columns : cols;
 
@@ -2117,6 +2170,7 @@ function QueuePanelView({
         const sel =
           paged.find((r, i) => rowKey(r, i) === selectedKey) ?? paged[0];
         const selIdx = paged.indexOf(sel);
+        selectedRowRef.current = sel ?? null;
         return (
           <div className="q-split">
             <div className="q-split-list" role="listbox">
@@ -3928,7 +3982,13 @@ function DetailPanelView({
   slug: string;
   pageParams: Record<string, string>;
 }) {
-  const recordId = pageParams?.id ?? pageParams?.record_id ?? null;
+  // Record identity: the URL first (embed pages pass it in), else the row
+  // the linked queue has selected, matched on the spec's id_field or the
+  // same auto-detected id column the service would use.
+  const selection = useContext(PanelSelectionContext);
+  const linkedRow = panel.linked_to ? selection.rows[panel.linked_to] ?? null : null;
+  const linkedId = linkedRow ? idValueOfRow(linkedRow, panel.id_field ?? null) : null;
+  const recordId = pageParams?.id ?? pageParams?.record_id ?? linkedId ?? null;
   const router = useRouter();
   const [reload, setReload] = useState(0);
   const { loading, error, data } = useDetailData(slug, panel.id, recordId, reload);
