@@ -135,15 +135,30 @@ if ! venv_ok; then
 fi
 if [ -d "$VENV/bin" ]; then PY="$VENV/bin/python"; else PY="$VENV/Scripts/python"; fi
 "$PY" -m pip -q install --upgrade pip >/dev/null 2>&1 || true
-"$PY" -m pip -q install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3 >/dev/null 2>&1 || \
-  # pypdf is not optional. generate_claim_documents.py verifies the corpus it
-  # just built with the SERVICE's own fingerprinting, and fraud_checks.pdf_text
-  # imports pypdf inside a try/except that returns None on ImportError. Without
-  # it every document reads as having no text layer, the verifier reports
-  # "1013 document(s) have too little text to fingerprint" -- which is false --
-  # and refuses to upload. The claims app then cites documents that were never
-  # filed. Measured: a full --fresh seed produced an empty bucket this way.
-  "$PY" -m pip install requests pyjwt faker "psycopg2-binary>=2.9" "pymilvus>=2.4" openai boto3 pypdf
+# pypdf is not optional, and it is IN this list rather than after a `||`.
+# It used to sit on the failure branch of the quiet install above, so it was
+# installed only when that install FAILED -- i.e. never, on a normal run.
+# Without it generate_claim_documents.py's verifier reads every PDF as having
+# no text layer (fraud_checks.pdf_text imports pypdf in a try/except that
+# returns None), reports "1013 document(s) have too little text to
+# fingerprint" -- which is false -- and refuses to upload. The claims app
+# then cites documents the officer cannot open. Measured twice: a full
+# --fresh seed produced an empty bucket this way, and so did this machine.
+if ! "$PY" -m pip -q install requests pyjwt faker "psycopg2-binary>=2.9" \
+       "pymilvus>=2.4" openai boto3 pypdf >/dev/null 2>&1; then
+  # Retry loudly, so the operator sees which package could not be fetched
+  # rather than a step that fails much later for no visible reason.
+  "$PY" -m pip install requests pyjwt faker "psycopg2-binary>=2.9" \
+    "pymilvus>=2.4" openai boto3 pypdf
+fi
+if ! "$PY" -c "import pypdf" >/dev/null 2>&1; then
+  red "[FAIL] pypdf is missing from the seed venv ($VENV)."
+  echo "       The claim-document verifier needs it to read a PDF's text" >&2
+  echo "       layer. Without it the corpus is judged unreadable and never" >&2
+  echo "       uploaded, and the claims app cites documents nobody can open." >&2
+  echo "         $PY -m pip install pypdf" >&2
+  exit 1
+fi
 
 # -- 0. Validate the source registry BEFORE anything else ---------------------
 # RegistrySource is extra="forbid": one unknown key and the MCP hard-fails at
@@ -293,18 +308,70 @@ if [ -f "$TENANT_DIR/scripts/generate_claim_documents.py" ]; then
   if ! MSYS_NO_PATHCONV=1 docker exec citra-minio sh -c \
         "mc alias set local http://localhost:9000 \"$(getenv BUCKET_ACCESS_KEY)\" \"$(getenv BUCKET_SECRET_KEY)\" >/dev/null 2>&1 && \
          mc mb -p local/$ACME_BUCKET >/dev/null 2>&1"; then
-    amber "   [!] could not create the bank's bucket '$ACME_BUCKET' - skipping documents."
+    red "[FAIL] could not create the bank's bucket '$ACME_BUCKET' in MinIO."
+    echo "       Every claim document upload lands here; without it the claims" >&2
+    echo "       app cites documents the officer cannot open. Check MinIO is up" >&2
+    echo "       (docker ps | grep citra-minio) and that BUCKET_ACCESS_KEY /" >&2
+    echo "       BUCKET_SECRET_KEY in .env are the ones it was started with." >&2
+    exit 1
   fi
   MINIO_HOST_PORT="$(getenv MINIO_API_PORT)"; MINIO_HOST_PORT="${MINIO_HOST_PORT:-9002}"
   if ! ACME_BANK_PG_PORT="$PG_PORT" \
        ACME_BANK_BUCKET="$ACME_BUCKET" \
        BUCKET_ENDPOINT_URL="http://localhost:${MINIO_HOST_PORT}" \
        "$PY" "$TENANT_DIR/scripts/generate_claim_documents.py" --upload; then
-    amber "   [!] claim documents were not seeded - the claims app will cite"
-    amber "       documents the officer cannot open. Re-run this step alone:"
-    amber "       BUCKET_ENDPOINT_URL=http://localhost:${MINIO_HOST_PORT} \\"
-    amber "         python $TENANT_DIR/scripts/generate_claim_documents.py --upload"
+    red "[FAIL] the claim documents were not generated or uploaded."
+    echo "       The claims app opens every filed document per case; with an" >&2
+    echo "       empty bucket it cites documents the officer cannot open, and" >&2
+    echo "       the read-before-write gate refuses the decision. Re-run alone:" >&2
+    echo "         BUCKET_ENDPOINT_URL=http://localhost:${MINIO_HOST_PORT} \\" >&2
+    echo "           $PY $TENANT_DIR/scripts/generate_claim_documents.py --upload" >&2
+    exit 1
   fi
+
+  # PROVE it, every run. The step above has reported success over an empty
+  # bucket before -- the uploader can only report what it believes it sent,
+  # and a wrong endpoint or a silently-refused credential looks the same from
+  # inside it. So the seed asks the two stores directly: are the objects in
+  # the bucket, and do the rows point at them? Both, or the seed stops.
+  #
+  # This also makes a re-run self-checking rather than merely idempotent: on
+  # a normal (non---fresh) seed over an already-good install this is the check
+  # that says so, and on one whose documents have gone missing it is the check
+  # that catches it instead of the officer.
+  _obj_count="$(MSYS_NO_PATHCONV=1 docker exec citra-minio sh -c \
+      "mc alias set local http://localhost:9000 \"$(getenv BUCKET_ACCESS_KEY)\" \"$(getenv BUCKET_SECRET_KEY)\" >/dev/null 2>&1 && \
+       mc ls --recursive local/$ACME_BUCKET 2>/dev/null | wc -l" | tr -d "[:space:]")"
+  # Counted through the seed venv, where psycopg2 is already installed: no psql
+  # on the host and no container name to guess, just the same host:published
+  # port the uploader itself used a moment ago.
+  _row_count="$(ACME_BUCKET="$ACME_BUCKET" ACME_BANK_PG_PORT="$PG_PORT" "$PY" - <<'PYEOF' 2>/dev/null | tr -d '[:space:]'
+import os, psycopg2
+c = psycopg2.connect(host="localhost", port=int(os.environ["ACME_BANK_PG_PORT"]),
+                     dbname="acme_bank", user="acme_bank", password="acme_bank_demo_pw")
+cur = c.cursor()
+cur.execute("select count(*) from claim_documents where file_url like %s",
+            ("s3://" + os.environ["ACME_BUCKET"] + "/%",))
+print(cur.fetchone()[0])
+PYEOF
+)"
+  if [ -z "$_obj_count" ] || [ "$_obj_count" -eq 0 ] 2>/dev/null; then
+    red "[FAIL] bucket '$ACME_BUCKET' is empty after the upload step."
+    echo "       The uploader reported success, so this is the store " >&2
+    echo "       disagreeing with it -- usually a wrong BUCKET_ENDPOINT_URL or" >&2
+    echo "       a credential MinIO refused. Nothing downstream is usable: the" >&2
+    echo "       claims app would cite documents that are not there." >&2
+    exit 1
+  fi
+  if [ -z "$_row_count" ] || [ "$_row_count" -eq 0 ] 2>/dev/null; then
+    red "[FAIL] no claim_documents row points at bucket '$ACME_BUCKET'."
+    echo "       $_obj_count object(s) were uploaded, but the rows still point" >&2
+    echo "       somewhere else, so the app cannot reach any of them. The" >&2
+    echo "       uploader rewrites file_url as its last step; it did not get" >&2
+    echo "       there. Re-run it against the tenant database on port $PG_PORT." >&2
+    exit 1
+  fi
+  echo "   [ok] $_obj_count object(s) in '$ACME_BUCKET'; $_row_count row(s) point at them"
 fi
 
 echo "-> [6/8] refreshing the data catalogue"
