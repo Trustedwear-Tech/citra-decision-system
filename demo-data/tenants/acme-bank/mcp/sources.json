@@ -299,7 +299,12 @@
                 },
                 "status": {
                   "type": "string",
-                  "description": "approved | rejected | under_review."
+                  "description": "approved | rejected | under_review.",
+                  "enum": [
+                    "approved",
+                    "rejected",
+                    "under_review"
+                  ]
                 },
                 "decision_reason": {
                   "type": "string",
@@ -838,7 +843,14 @@
                 },
                 "channel": {
                   "type": "string",
-                  "description": "call | sms | whatsapp | field | legal."
+                  "description": "call | sms | whatsapp | field | legal.",
+                  "enum": [
+                    "call",
+                    "sms",
+                    "whatsapp",
+                    "field",
+                    "legal"
+                  ]
                 },
                 "attempted_at": {
                   "type": "string",
@@ -846,7 +858,15 @@
                 },
                 "outcome": {
                   "type": "string",
-                  "description": "ptp | no_contact | dispute | refused | paid | wrong_number."
+                  "description": "ptp | no_contact | dispute | refused | paid | wrong_number.",
+                  "enum": [
+                    "ptp",
+                    "no_contact",
+                    "dispute",
+                    "refused",
+                    "paid",
+                    "wrong_number"
+                  ]
                 },
                 "ptp_date": {
                   "type": "string",
@@ -1130,7 +1150,12 @@
                 },
                 "status": {
                   "type": "string",
-                  "description": "approved | rejected | settled."
+                  "description": "approved | rejected | settled.",
+                  "enum": [
+                    "approved",
+                    "rejected",
+                    "settled"
+                  ]
                 },
                 "approved_amount": {
                   "type": "number",

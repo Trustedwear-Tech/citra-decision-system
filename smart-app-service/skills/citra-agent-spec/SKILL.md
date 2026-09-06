@@ -377,14 +377,34 @@ never changes. If the goal is "review and decide", a write tool is
 almost always required — a Smart App that only *recommends* is rarely
 what the BA asked for.
 
-#### `editable_fields` — let the officer OVERRIDE the recommendation
+#### `editable_fields` — the officer MUST be able to overrule the recommendation
 
-When the BA says *"the agent should recommend, but the officer can change
-the assignee / priority before applying"*, add **`editable_fields`** to the
-`mcp_action` tool. In the plan-then-apply modal these payload fields render
-as controls (the LLM's value is the **default**); the officer can change them;
-Apply re-validates the edited payload via `dry_run` and audits the delta.
-Each `editable_fields[].name` MUST be a property in the tool's `input_schema`.
+**Every `mcp_action` declares `editable_fields`. This is not something the BA
+opts into.** A write the officer can only approve or cancel verbatim is a
+rubber stamp: when the recommendation is wrong their only moves are "reject and
+re-run" or "type it into the core system by hand", and neither is recorded as
+the override it was. Publish refuses an `mcp_action` with no `editable_fields`
+(rule **E-05**), and refuses one whose DISPOSITION — `status`, `decision`,
+`outcome`, `verdict`, or any `enum` field — is not editable with a `select`
+and an options list.
+
+In the plan-then-apply modal these payload fields render as controls (the
+LLM's value is the **default**); the officer can change them; Apply
+re-validates the edited payload via `dry_run` and audits the delta under the
+officer's name. Each `editable_fields[].name` MUST be a property in the tool's
+`input_schema`.
+
+What to declare, for a decision-recording write:
+- the disposition → `"control": "select"` + `static` options mirroring the
+  allowed values (the input_schema's enum, or the values its description lists);
+- the justification (`*_reason`, `notes`, `remarks`) → `"control": "textarea"`
+  (E-04: an officer who flips the verdict must be able to change the sentence
+  that justifies it);
+- an amount the officer may adjust → `"control": "currency"` (or `number`);
+- an assignment target (officer, surveyor, agent) → `select` with
+  `data_source` options from a declared dataset, never a hardcoded list.
+Leave out only the row key (`application_id`, `claim_id`) and the fields the
+server fills from the token and the clock (`x-citra-fill: actor | now`).
 
 ```jsonc
 "editable_fields": [
@@ -418,9 +438,10 @@ never show up). Use **`static`** ONLY for a genuinely fixed, SOP-defined enum
 `data_source`. Do **not** copy the catalogue's `distinct_values` preview into a
 `static` list — that preview is a sampled, capped hint, not the source of truth.
 
-`control` may be omitted (inferred from the input_schema field type). Omit
-`editable_fields` entirely for actions the officer should only approve/cancel
-verbatim — undeclared fields are not editable, so the modal stays read-only.
+`control` may be omitted (inferred from the input_schema field type).
+Undeclared fields are not editable — the modal shows them as *Locked (set by
+the agent)* — which is right for the row key and the server-filled audit
+fields, and wrong for anything the officer decides.
 
 > **A declared editable field with NO resolvable `options` renders LOCKED, not
 > free-text.** Governed override is allow-list-only by design — an officer can

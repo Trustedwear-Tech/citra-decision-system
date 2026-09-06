@@ -416,7 +416,15 @@ def validate_editable_fields(app_spec, agent_spec) -> List[Dict[str, Any]]:
         with a value_column (else the combo renders empty);
       * E-03 — an editable ENUM field must ship a static options list mirroring
         the enum (else it renders LOCKED — governed override is allow-list-only,
-        never free text — and the officer cannot flip the verdict).
+        never free text — and the officer cannot flip the verdict);
+      * E-05 — override is NOT opt-in. A write the officer can only approve or
+        cancel verbatim is not a governed decision, it is a rubber stamp: the
+        officer's alternative to a wrong recommendation becomes "reject and
+        re-run" or "type it into the core system by hand", and neither is
+        recorded as the override it was. So every mcp_action must declare
+        editable_fields covering what the officer decides, and the
+        DISPOSITION (status / decision / outcome / verdict, or any enum field)
+        must be among them with an options list to pick from.
     Closes "if it publishes, it renders/enforces" for the override feature.
     """
     if agent_spec is None:
@@ -429,13 +437,81 @@ def validate_editable_fields(app_spec, agent_spec) -> List[Dict[str, Any]]:
         if getattr(tool, "kind", None) != "mcp_action":
             continue
         ef = getattr(tool, "editable_fields", None) or []
-        if not ef:
-            continue
         props_map = (
             (getattr(tool, "input_schema", None) or {}).get("properties") or {}
         )
         props = set(props_map.keys())
         tname = getattr(tool, "name", "?")
+
+        # ── E-05: the officer must be able to overrule what this write records.
+        # "Decidable" = a payload field that is neither server-filled
+        # (x-citra-fill: the actor / the clock) nor the row key. The registry
+        # lists the target's key first in `required` (application_id, claim_id,
+        # lead_id); that convention is what we read, and its limit is honest —
+        # an action whose first required field is not the key gets one extra
+        # candidate, never a missed one.
+        _required = list((getattr(tool, "input_schema", None) or {}).get("required") or [])
+        _key = _required[0] if _required else None
+        _decidable = [
+            p for p in props
+            if not (props_map.get(p) or {}).get("x-citra-fill") and p != _key
+        ]
+        _DISPOSITION = ("status", "decision", "outcome", "disposition", "verdict", "result")
+        _disposition = next(
+            (p for p in sorted(_decidable) if p.lower() in _DISPOSITION), None
+        ) or next(
+            (p for p in sorted(_decidable)
+             if isinstance((props_map.get(p) or {}).get("enum"), list)
+             and (props_map.get(p) or {}).get("enum")),
+            None,
+        )
+        _ef_names = {getattr(f, "name", None) for f in ef}
+        if _decidable and not ef:
+            _want = _disposition or sorted(_decidable)[0]
+            out.append({
+                "rule_id": "E-05",
+                "location": f"agent_spec.tools_v2[{tname}].editable_fields",
+                "reason": (
+                    f"this write records {sorted(_decidable)} but declares no "
+                    f"editable_fields, so the officer can only approve or cancel "
+                    f"the agent's values verbatim. Override is not optional: "
+                    f"declare editable_fields covering at least '{_want}'"
+                    + (" (control: 'select' with a static options list of the "
+                       "allowed values)" if _disposition else "")
+                    + " so a wrong recommendation can be corrected in place and "
+                      "recorded as an override."
+                ),
+            })
+        elif _disposition and _disposition not in _ef_names:
+            out.append({
+                "rule_id": "E-05",
+                "location": f"agent_spec.tools_v2[{tname}].editable_fields",
+                "reason": (
+                    f"'{_disposition}' is the disposition this write records, "
+                    f"but it is not officer-editable while {sorted(_ef_names)} "
+                    f"are. The verdict is the one field an officer most needs "
+                    f"to flip; add '{_disposition}' with control 'select' and a "
+                    f"static options list of the allowed values."
+                ),
+            })
+        elif _disposition:
+            _fs = next((f for f in ef if getattr(f, "name", None) == _disposition), None)
+            _opts = getattr(_fs, "options", None) if _fs is not None else None
+            _ctl = getattr(_fs, "control", None) if _fs is not None else None
+            if _opts is None and _ctl not in ("select", "radio"):
+                out.append({
+                    "rule_id": "E-05",
+                    "location": f"agent_spec.tools_v2[{tname}].editable_fields[{_disposition}]",
+                    "reason": (
+                        f"'{_disposition}' is officer-editable but has no options "
+                        f"to pick from, so the officer would type a verdict "
+                        f"free-hand. Give it control 'select' and a static options "
+                        f"list of the allowed values (the write's input_schema "
+                        f"describes them)."
+                    ),
+                })
+        if not ef:
+            continue
 
         # E-04 — if the officer can change the DECISION, they must also be able
         # to change the sentence that justifies it.

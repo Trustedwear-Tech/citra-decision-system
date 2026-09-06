@@ -466,15 +466,47 @@
             },
             "decided_by": {
               "type": "string",
-              "description": "Deciding officer."
+              "description": "Deciding officer.",
+              "x-citra-fill": "actor"
             },
             "decided_at": {
               "type": "string",
-              "description": "ISO timestamp of the decision."
+              "description": "Set by the server at the moment of the write.",
+              "x-citra-fill": "now"
             }
           }
         },
-        "editable_fields": []
+        "editable_fields": [
+          {
+            "name": "status",
+            "label": "Decision",
+            "control": "select",
+            "help": "Overrule the agent's credit decision",
+            "options": {
+              "kind": "static",
+              "values": [
+                {
+                  "value": "approved",
+                  "label": "Approved"
+                },
+                {
+                  "value": "rejected",
+                  "label": "Rejected"
+                },
+                {
+                  "value": "under_review",
+                  "label": "Under Review"
+                }
+              ]
+            }
+          },
+          {
+            "name": "decision_reason",
+            "label": "Decision reason",
+            "control": "textarea",
+            "help": "Shown to the customer and the auditor — say why, in your words"
+          }
+        ]
       }
     ],
     "mcps": [],

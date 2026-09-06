@@ -821,15 +821,53 @@
             },
             "decided_by": {
               "type": "string",
-              "description": "Deciding officer."
+              "description": "Deciding officer.",
+              "x-citra-fill": "actor"
             },
             "decided_at": {
               "type": "string",
-              "description": "ISO timestamp."
+              "description": "Set by the server at the moment of the write.",
+              "x-citra-fill": "now"
             }
           }
         },
-        "editable_fields": []
+        "editable_fields": [
+          {
+            "name": "status",
+            "label": "Decision",
+            "control": "select",
+            "help": "Overrule the agent's claim decision",
+            "options": {
+              "kind": "static",
+              "values": [
+                {
+                  "value": "approved",
+                  "label": "Approved"
+                },
+                {
+                  "value": "rejected",
+                  "label": "Rejected"
+                },
+                {
+                  "value": "settled",
+                  "label": "Settled"
+                }
+              ]
+            }
+          },
+          {
+            "name": "approved_amount",
+            "label": "Approved amount (INR)",
+            "control": "currency",
+            "help": "Adjust the settlement amount"
+          },
+          {
+            "name": "rejection_reason",
+            "label": "Rejection reason",
+            "control": "textarea",
+            "help": "Required when repudiating — the sentence the claimant reads"
+          }
+        ]
       }
     ]
   }

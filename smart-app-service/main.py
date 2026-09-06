@@ -2377,10 +2377,12 @@ async def publish_app(
     if _b:
         _raise_layer_b(
             "E-01",
-            "editable_fields must reference real input_schema fields, declared "
-            "data sources, and — for enum fields — a static options list "
-            "mirroring the enum (else the override renders LOCKED). See each "
-            "error's reason for the exact fix.",
+            "every mcp_action must let the officer overrule what it records "
+            "(E-05: editable_fields is not optional, and the disposition needs a "
+            "select with options); declared fields must reference real "
+            "input_schema fields, declared data sources, and — for enum fields "
+            "— a static options list mirroring the enum (else the override "
+            "renders LOCKED). See each error's reason for the exact fix.",
             _b,
         )
     _b = validate_direct_write_buttons_confirm(layer_b_app, layer_b_agent)

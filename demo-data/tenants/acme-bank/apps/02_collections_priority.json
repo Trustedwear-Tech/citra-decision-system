@@ -625,7 +625,88 @@
             }
           }
         },
-        "editable_fields": []
+        "editable_fields": [
+          {
+            "name": "outcome",
+            "label": "Outcome",
+            "control": "select",
+            "options": {
+              "kind": "static",
+              "values": [
+                {
+                  "value": "ptp",
+                  "label": "Ptp"
+                },
+                {
+                  "value": "no_contact",
+                  "label": "No Contact"
+                },
+                {
+                  "value": "dispute",
+                  "label": "Dispute"
+                },
+                {
+                  "value": "refused",
+                  "label": "Refused"
+                },
+                {
+                  "value": "paid",
+                  "label": "Paid"
+                },
+                {
+                  "value": "wrong_number",
+                  "label": "Wrong Number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "channel",
+            "label": "Channel",
+            "control": "select",
+            "options": {
+              "kind": "static",
+              "values": [
+                {
+                  "value": "call",
+                  "label": "Call"
+                },
+                {
+                  "value": "sms",
+                  "label": "Sms"
+                },
+                {
+                  "value": "whatsapp",
+                  "label": "Whatsapp"
+                },
+                {
+                  "value": "field",
+                  "label": "Field"
+                },
+                {
+                  "value": "legal",
+                  "label": "Legal"
+                }
+              ]
+            }
+          },
+          {
+            "name": "ptp_date",
+            "label": "Promise-to-pay date",
+            "control": "date",
+            "help": "When outcome is ptp"
+          },
+          {
+            "name": "ptp_amount",
+            "label": "Promised amount (INR)",
+            "control": "currency"
+          },
+          {
+            "name": "notes",
+            "label": "Officer note",
+            "control": "textarea"
+          }
+        ]
       }
     ]
   }

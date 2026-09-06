@@ -1433,6 +1433,25 @@ def _validate_payload(action: WriteAction, payload: Dict[str, Any]) -> None:
             status_code=422,
             detail=f"Missing required fields for action {action.id!r}: {missing}",
         )
+    # An `enum` on a property is the registry's statement of the only values
+    # the system of record accepts (a status lifecycle, a channel code). It is
+    # the one shape check cheap enough to do without a schema library, and the
+    # one whose absence corrupts data silently: a model proposing "approve"
+    # for a column that holds "approved" would otherwise be written as-is.
+    props = schema.get("properties") or {}
+    bad = {
+        k: payload[k] for k, spec in props.items()
+        if isinstance(spec, dict) and isinstance(spec.get("enum"), list) and spec["enum"]
+        and k in payload and payload[k] is not None and payload[k] not in spec["enum"]
+    }
+    if bad:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Action {action.id!r}: value(s) outside the declared enum: "
+                + "; ".join(f"{k}={v!r} (allowed: {props[k]['enum']})" for k, v in bad.items())
+            ),
+        )
 
 
 def _validate_action(action: WriteAction, req: ExecuteActionRequest, kind: DatasetKind) -> None:
