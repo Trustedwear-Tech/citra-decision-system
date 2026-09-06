@@ -299,3 +299,79 @@ def test_promote_carries_value_semantics_and_organization(env):
     assert prod["value_semantics"]["field_operations.theft_cases"][
         "definition_version"] == "feed00000001"
     assert prod["organization"]["short_name"] == "Acme Power"
+
+
+# ── case-signature gate (CS-04) on the copy that ships ────────────────────
+# Publish enforces CS-04 on the way INTO test; a hand-edit on the test copy can
+# change the families afterwards, and promote copies whatever the test copy
+# holds. So promote checks the SOURCE it is about to copy.
+_SIG_FACETS = [
+    {"family": "loss_type", "kind": "enum", "from_column": "loss_type",
+     "values": ["collision", "theft"]},
+    {"family": "amount_band", "kind": "band", "from_column": "claim_amount",
+     "edges": [1000, 25000]},
+]
+
+
+def _seed_signed(env, slug, *, confirmed):
+    """A NOT-grounded test app (so the grounding gate stays out of the way)
+    declaring two facet families, confirmed or not."""
+    agent_id = f"agent_{slug.replace('-', '_')}"
+    doc = _app_doc(slug, agent_id, grounded=False)
+    doc["app_spec"]["case_signature"] = {
+        "version": 1, "facets": list(_SIG_FACETS),
+        "confirmed_families": ["amount_band", "loss_type"] if confirmed else [],
+    }
+    env["main"]._db["test_smartapp_apps"].docs.append(doc)
+    env["main"]._db["test_smartapp_agents"].docs.append(_agent_doc(agent_id, grounded=False))
+    return doc
+
+
+def test_unconfirmed_signature_blocks_promote(env):
+    _seed_signed(env, "signed-app", confirmed=False)
+    r = _promote(env["client"], "signed-app")
+    assert r.status_code == 409, r.text
+    detail = r.json()["detail"]
+    assert detail["code"] == "CS-04"
+    assert detail["errors"][0]["code"] == "case_signature_unconfirmed"
+    # Nothing reached prod.
+    assert env["apps"].docs == []
+
+
+def test_confirmed_signature_promotes(env):
+    _seed_signed(env, "signed-app", confirmed=True)
+    r = _promote(env["client"], "signed-app")
+    assert r.status_code == 200, r.text
+    assert [d["slug"] for d in env["apps"].docs] == ["signed-app"]
+
+
+def test_confirm_env_test_writes_the_test_copy(env):
+    """The Promote sheet confirms the TEST copy of an app that also exists in
+    prod. Without env=test the slug resolves to prod and the confirmation lands
+    on the doc the promote is about to overwrite."""
+    _seed_signed(env, "signed-app", confirmed=False)
+    # A prod copy too, so store resolution would pick prod.
+    prod = _app_doc("signed-app", "agent_signed_app", grounded=False)
+    prod["app_spec"]["case_signature"] = {
+        "version": 1, "facets": list(_SIG_FACETS), "confirmed_families": []}
+    env["apps"].docs.append(prod)
+
+    hdr = {"Authorization": f"Bearer {_mint_admin()}"}
+    r = env["client"].post("/apps/signed-app/case-signature/confirm?env=test",
+                           json={"families": ["loss_type", "amount_band"]}, headers=hdr)
+    assert r.status_code == 200, r.text
+    test_doc = next(d for d in env["main"]._db["test_smartapp_apps"].docs if d["slug"] == "signed-app")
+    assert test_doc["app_spec"]["case_signature"]["confirmed_families"] == ["amount_band", "loss_type"]
+    assert test_doc["app_spec"]["case_signature"]["confirmed_by"] == "cmd-asha"
+    # Prod untouched.
+    assert prod["app_spec"]["case_signature"]["confirmed_families"] == []
+    # And that same test copy now promotes.
+    assert _promote(env["client"], "signed-app").status_code == 200
+
+
+def test_env_param_is_validated(env):
+    _seed_signed(env, "signed-app", confirmed=True)
+    hdr = {"Authorization": f"Bearer {_mint_admin()}"}
+    assert env["client"].get("/apps/signed-app?env=staging", headers=hdr).status_code == 400
+    # env=test on a slug with no test copy is a 404, not a silent prod read.
+    assert env["client"].get("/apps/nope?env=test", headers=hdr).status_code == 404

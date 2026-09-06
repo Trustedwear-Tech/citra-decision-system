@@ -106,6 +106,272 @@ function draftToFacet(d) {
   }
   return base;
 }
+
+// ── The signature card ───────────────────────────────────────────────────────
+// One component for every place the BA meets this gate: the Spec panel, and
+// the Promote-to-Prod sheet — where CS-04 would otherwise surface as an error
+// code. Self-contained: reads the app, shows what runs (values, groupings,
+// bands), edits it in place, saves through the validated spec path, confirms.
+function CaseSignatureCard({ slug, env, canEdit, colors, initialOpen = true, onChanged, onStatus }) {
+  const [appSpec, setAppSpec] = useState(null);
+  const [agentSpec, setAgentSpec] = useState(null);
+  const [open, setOpen] = useState(initialOpen);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [edit, setEdit] = useState(null);           // null, or an array of drafts
+  const [draftNew, setDraftNew] = useState({ family: '', kind: 'enum', from_column: '' });
+
+  const refresh = useCallback(async () => {
+    if (!slug) return null;
+    const d = await SmartAppService.getApp(slug, env);
+    setAppSpec(d?.app_spec || null);
+    setAgentSpec(d?.agent_spec || null);
+    return d;
+  }, [slug, env]);
+
+  useEffect(() => {
+    let live = true;
+    setErr('');
+    refresh().catch((e) => { if (live) setErr(e?.message || 'Could not load the app.'); });
+    return () => { live = false; };
+  }, [refresh]);
+
+  const sig = useMemo(() => {
+    const cs = appSpec?.case_signature;
+    const facets = (cs && cs.facets) || [];
+    const families = facets.map((f) => f && f.family).filter(Boolean).sort();
+    const confirmed = (cs?.confirmed_families || []).slice().sort();
+    const confirmedBy = cs?.confirmed_by || '';
+    // "Confirmed" means the confirmed list IS the declared list — exactly what
+    // CS-04 checks at publish. Who confirmed it is shown when known; it is not
+    // a condition, or the badge would refuse what the gate lets through.
+    const ok = families.length > 0 && JSON.stringify(confirmed) === JSON.stringify(families);
+    const stale = !ok && confirmed.length > 0;
+    return { facets, families, confirmedBy, stale, ok };
+  }, [appSpec]);
+
+  useEffect(() => {
+    if (appSpec && onStatus) onStatus({ families: sig.families.length, confirmed: sig.ok, stale: sig.stale });
+  }, [appSpec, sig, onStatus]);
+
+  const columns = useMemo(() => {
+    const dir = appSpec?.dataset_directory || [];
+    const primary = (appSpec?.data_sources || [])[0]?.ref;
+    const entry = dir.find((x) => x && x.dataset_id === primary) || dir[0];
+    return ((entry && entry.columns) || []).map((c) => ({ name: c.name, type: c.type }));
+  }, [appSpec]);
+
+  const confirm = useCallback(async () => {
+    if (!slug || !sig.families.length) return;
+    setBusy(true); setErr('');
+    try {
+      await SmartAppService.confirmCaseSignature(slug, sig.families, env);
+      await refresh();
+      if (onChanged) onChanged();
+    } catch (e) {
+      setErr(e?.message || 'Could not record the confirmation.');
+    } finally {
+      setBusy(false);
+    }
+  }, [slug, env, sig.families, refresh, onChanged]);
+
+  const save = useCallback(async () => {
+    if (!edit || !appSpec) return;
+    setBusy(true); setErr('');
+    try {
+      const facets = edit.map(draftToFacet).filter((f) => f.family);
+      const app_spec = { ...appSpec, case_signature: { ...(appSpec.case_signature || { version: 1 }), facets } };
+      await SmartAppService.saveSpec(slug, { app_spec, agent_spec: agentSpec }, env);
+      setEdit(null);
+      await refresh();
+      if (onChanged) onChanged();
+    } catch (e) {
+      setErr(e?.message || 'Save failed (the signature was rejected by validation).');
+    } finally {
+      setBusy(false);
+    }
+  }, [edit, appSpec, agentSpec, slug, env, refresh, onChanged]);
+
+  if (!appSpec && !err) return null;
+  if (!sig.facets.length && !err) return null;
+
+  const inp = { borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12 };
+  return (
+    <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+      <TouchableOpacity
+        onPress={() => setOpen((o) => !o)}
+        style={{ paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+      >
+        <Ionicons name={open ? 'chevron-down' : 'chevron-forward'} size={14} color={colors.textSecondary} />
+        <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>
+          What this app learns by ({sig.families.length})
+        </Text>
+        {sig.ok ? (
+          <Text style={{ color: '#059669', fontSize: 11 }} numberOfLines={1}>{sig.confirmedBy ? `confirmed by ${sig.confirmedBy}` : 'confirmed'}</Text>
+        ) : (
+          <Text style={{ color: '#d97706', fontSize: 11 }}>{sig.stale ? 'changed since confirmed' : 'not confirmed'}</Text>
+        )}
+      </TouchableOpacity>
+      {open && (
+        <View style={{ paddingHorizontal: 10, paddingBottom: 10, gap: 8 }}>
+          {!!err && <Text style={{ color: '#dc2626', fontSize: 12 }}>{err}</Text>}
+          <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+            When an officer corrects this app and says why, the lesson is reused on later cases that
+            look the same — and only those. "Look the same" is decided by these columns, their values,
+            and these bands. If a value or a band edge below is not how your policy thinks, the app will
+            group cases wrongly and what it learns will not fire where it should.
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {sig.facets.map((f, i) => (
+              <View key={i} style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, maxWidth: 320 }}>
+                <Text style={{ color: colors.text, fontSize: 12 }}>{String(f.family || '').replace(/_/g, ' ')}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{f.kind}{f.from_column ? ` · ${f.from_column}` : ''}</Text>
+                <Text style={{ color: colors.text, fontSize: 10, marginTop: 2 }}>{facetDetail(f)}</Text>
+              </View>
+            ))}
+          </View>
+          {canEdit && !edit && (
+            <TouchableOpacity
+              onPress={() => setEdit(sig.facets.map(facetToDraft))}
+              style={[styles.footerBtnGhost, { borderColor: colors.border, alignSelf: 'flex-start' }]}
+            >
+              <Ionicons name="create-outline" size={14} color={colors.text} />
+              <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Edit values and bands</Text>
+            </TouchableOpacity>
+          )}
+          {!!edit && (
+            <View style={{ gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10 }}>
+              {edit.map((d, i) => (
+                <View key={i} style={{ gap: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', flex: 1 }}>
+                      {String(d.family || '').replace(/_/g, ' ')} · {d.kind}{d.from_column ? ` · ${d.from_column}` : ''}
+                    </Text>
+                    <TouchableOpacity onPress={() => setEdit(edit.filter((_, j) => j !== i))}>
+                      <Text style={{ color: '#dc2626', fontSize: 11 }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {d.kind === 'enum' && (
+                    <>
+                      <TextInput
+                        value={d.values}
+                        onChangeText={(t) => setEdit(edit.map((x, j) => (j === i ? { ...x, values: t } : x)))}
+                        placeholder="values, comma separated — e.g. dealer, branch, digital"
+                        placeholderTextColor={colors.textSecondary}
+                        style={inp}
+                      />
+                      <TextInput
+                        value={d.value_map}
+                        onChangeText={(t) => setEdit(edit.map((x, j) => (j === i ? { ...x, value_map: t } : x)))}
+                        placeholder={'groupings, one per line — e.g.\ndsa = dealer\nagent = dealer'}
+                        placeholderTextColor={colors.textSecondary}
+                        multiline
+                        style={[inp, { minHeight: 48 }]}
+                      />
+                    </>
+                  )}
+                  {d.kind === 'band' && (
+                    <TextInput
+                      value={d.edges}
+                      onChangeText={(t) => setEdit(edit.map((x, j) => (j === i ? { ...x, edges: t } : x)))}
+                      placeholder="band edges, low to high — e.g. 500000, 1000000, 2500000"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="numeric"
+                      style={inp}
+                    />
+                  )}
+                </View>
+              ))}
+              <View style={{ gap: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Add a column the decision turns on</Text>
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                  <TextInput
+                    value={draftNew.family}
+                    onChangeText={(t) => setDraftNew({ ...draftNew, family: t })}
+                    placeholder="name, e.g. sourcing channel"
+                    placeholderTextColor={colors.textSecondary}
+                    style={[inp, { minWidth: 160 }]}
+                  />
+                  {['enum', 'band', 'presence'].map((k) => (
+                    <TouchableOpacity
+                      key={k}
+                      onPress={() => setDraftNew({ ...draftNew, kind: k })}
+                      style={[styles.footerBtnGhost, { borderColor: draftNew.kind === k ? '#2563eb' : colors.border }]}
+                    >
+                      <Text style={[styles.footerBtnGhostText, { color: draftNew.kind === k ? '#2563eb' : colors.text }]}>
+                        {k === 'enum' ? 'a set of values' : k === 'band' ? 'a number in bands' : 'present or not'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                  {columns.slice(0, 40).map((c) => (
+                    <TouchableOpacity
+                      key={c.name}
+                      onPress={() => setDraftNew({ ...draftNew, from_column: c.name })}
+                      style={{ borderWidth: 1, borderColor: draftNew.from_column === c.name ? '#2563eb' : colors.border, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}
+                    >
+                      <Text style={{ color: colors.text, fontSize: 10 }}>{c.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  {!columns.length && (
+                    <TextInput
+                      value={draftNew.from_column}
+                      onChangeText={(t) => setDraftNew({ ...draftNew, from_column: t })}
+                      placeholder="column name"
+                      placeholderTextColor={colors.textSecondary}
+                      style={[inp, { minWidth: 160 }]}
+                    />
+                  )}
+                </View>
+                <TouchableOpacity
+                  disabled={!draftNew.family.trim() || !draftNew.from_column.trim()}
+                  onPress={() => {
+                    setEdit([...edit, facetToDraft({ family: draftNew.family, kind: draftNew.kind, from_column: draftNew.from_column })]);
+                    setDraftNew({ family: '', kind: 'enum', from_column: '' });
+                  }}
+                  style={[styles.footerBtnGhost, { borderColor: colors.border, alignSelf: 'flex-start', opacity: (!draftNew.family.trim() || !draftNew.from_column.trim()) ? 0.5 : 1 }]}
+                >
+                  <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Add</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity onPress={save} disabled={busy} style={[styles.footerBtnGhost, { borderColor: '#2563eb', opacity: busy ? 0.6 : 1 }]}>
+                  <Text style={[styles.footerBtnGhostText, { color: '#2563eb' }]}>{busy ? 'Saving…' : 'Save signature'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setEdit(null)} style={[styles.footerBtnGhost, { borderColor: colors.border }]}>
+                  <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                Saving is checked against the data: a value the column has never held is refused.
+                After saving, confirm the list again.
+              </Text>
+            </View>
+          )}
+          {sig.stale && (
+            <Text style={{ color: '#d97706', fontSize: 11 }}>
+              {sig.confirmedBy ? `${sig.confirmedBy} confirmed` : 'Someone confirmed'} a different list.
+              Promotion will be refused until someone confirms the current one.
+            </Text>
+          )}
+          {canEdit && !edit && (
+            <TouchableOpacity
+              onPress={confirm}
+              disabled={busy}
+              style={[styles.footerBtnGhost, { borderColor: '#2563eb', alignSelf: 'flex-start', opacity: busy ? 0.6 : 1 }]}
+            >
+              <Ionicons name="checkmark-circle-outline" size={14} color="#2563eb" />
+              <Text style={[styles.footerBtnGhostText, { color: '#2563eb' }]}>
+                {busy ? 'Recording…' : sig.ok ? 'Re-confirm' : 'Confirm these'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
 import authService from '../services/authService';
 import OperationsControlScreen from './OperationsControlScreen';
 import { highestAdminScopeForCurrentUser } from '../services/adminScope';
@@ -380,16 +646,11 @@ export default function PowerAppsScreen({
   const [testError, setTestError] = useState('');
 
   // Spec viewer / editor (view → copy → edit → save)
-  const [sigBusy, setSigBusy] = useState(false);
-  const [sigOpen, setSigOpen] = useState(true);
   const [specApp, setSpecApp] = useState(null);
   const [specAppText, setSpecAppText] = useState('');
   const [specAgentText, setSpecAgentText] = useState('');
   const [specTab, setSpecTab] = useState('app');     // 'app' | 'agent'
   const [specEditing, setSpecEditing] = useState(false);
-  // Case-signature editor: null when closed, else an array of drafts.
-  const [sigEdit, setSigEdit] = useState(null);
-  const [sigNew, setSigNew] = useState({ family: '', kind: 'enum', from_column: '' });
   const [specSaving, setSpecSaving] = useState(false);
   const [specLoading, setSpecLoading] = useState(false);
   const [specError, setSpecError] = useState('');
@@ -449,48 +710,7 @@ export default function PowerAppsScreen({
     runLint(item.slug, false);   // static review fires immediately, alongside the spec
   }, [runLint]);
 
-  // ── Case signature: the facet families, in plain language ────────────────
-  //
-  // These decide the SCOPE of every judgement the app learns — a clause fires
-  // only if its scope is a subset of the case's facets. They were authored by
-  // the builder agent and, before CS-04, nobody was ever required to look at
-  // them; the only way to see them at all was to read them out of the spec
-  // JSON. Read from specAppText so it always reflects what is on screen,
-  // including straight after a save.
-  const caseSig = useMemo(() => {
-    try {
-      const sig = (JSON.parse(specAppText || '{}') || {}).case_signature;
-      const facets = (sig && sig.facets) || [];
-      if (!facets.length) return null;
-      const families = facets.map((f) => f && f.family).filter(Boolean).sort();
-      const confirmed = (sig.confirmed_families || []).slice().sort();
-      return {
-        facets,
-        families,
-        confirmedBy: sig.confirmed_by || '',
-        confirmedAt: sig.confirmed_at || '',
-        // Stale when someone confirmed a DIFFERENT list — the confirmation
-        // describes a spec that no longer exists, which is exactly what CS-04
-        // rejects at publish.
-        stale: !!sig.confirmed_by && JSON.stringify(confirmed) !== JSON.stringify(families),
-      };
-    } catch { return null; }
-  }, [specAppText]);
 
-  const confirmSig = useCallback(async () => {
-    if (!specApp || !caseSig) return;
-    setSigBusy(true); setSpecError('');
-    try {
-      await SmartAppService.confirmCaseSignature(specApp.slug, caseSig.families);
-      const d = await SmartAppService.getApp(specApp.slug);
-      setSpecAppText(JSON.stringify(d?.app_spec || {}, null, 2));
-      load();
-    } catch (e) {
-      setSpecError(e?.message || 'Could not record the confirmation.');
-    } finally {
-      setSigBusy(false);
-    }
-  }, [specApp, caseSig, load]);
 
   // Validate + persist the edited spec, then refresh the list.
   const persistSpec = useCallback(async (app_spec, agent_spec) => {
@@ -513,6 +733,18 @@ export default function PowerAppsScreen({
     }
   }, [specApp, load, runLint]);
 
+  // The card saves and confirms on its own; the JSON on screen must follow.
+  const reloadSpecText = useCallback(async () => {
+    if (!specApp) return;
+    try {
+      const d = await SmartAppService.getApp(specApp.slug);
+      setSpecAppText(JSON.stringify(d?.app_spec || {}, null, 2));
+      if (d?.agent_spec) setSpecAgentText(JSON.stringify(d.agent_spec, null, 2));
+    } catch (e) {
+      setSpecError(e?.message || 'Could not reload the spec.');
+    }
+  }, [specApp]);
+
   const saveSpec = useCallback(async () => {
     let app_spec, agent_spec = null;
     try {
@@ -527,32 +759,7 @@ export default function PowerAppsScreen({
 
   // Columns of the primary dataset, for adding a facet. The directory is on
   // the app_spec the screen already holds; primary = the first data source.
-  const sigColumns = useMemo(() => {
-    try {
-      const spec = JSON.parse(specAppText || '{}') || {};
-      const dir = spec.dataset_directory || [];
-      const primary = (spec.data_sources || [])[0]?.ref;
-      const entry = dir.find((e) => e && e.dataset_id === primary) || dir[0];
-      return ((entry && entry.columns) || []).map((c) => ({ name: c.name, type: c.type }));
-    } catch { return []; }
-  }, [specAppText]);
 
-  const saveSig = useCallback(async () => {
-    if (!sigEdit) return;
-    let app_spec, agent_spec = null;
-    try {
-      app_spec = JSON.parse(specAppText);
-      agent_spec = specAgentText.trim() ? JSON.parse(specAgentText) : null;
-    } catch (e) {
-      setSpecError('Invalid JSON: ' + (e?.message || e));
-      return;
-    }
-    const facets = sigEdit.map(draftToFacet).filter((f) => f.family);
-    app_spec.case_signature = { ...(app_spec.case_signature || { version: 1 }), facets };
-    // Saving changes the list; CS-04 will ask for a fresh confirmation.
-    const ok = await persistSpec(app_spec, agent_spec);
-    if (ok) setSigEdit(null);
-  }, [sigEdit, specAppText, specAgentText, persistSpec]);
 
   useEffect(() => {
     if (visible) load();
@@ -1401,6 +1608,18 @@ export default function PowerAppsScreen({
               · v{item.version}
             </Text>
             <AudienceBadge audience={item.audience} colors={colors} />
+            {item.learns_by_families > 0 && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 6,
+                paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, borderWidth: 1,
+                borderColor: item.signature_confirmed ? colors.border : '#D97706',
+              }}>
+                <Ionicons name="layers-outline" size={10} color={item.signature_confirmed ? colors.textSecondary : '#D97706'} />
+                <Text style={{ fontSize: 10, fontWeight: '600', color: item.signature_confirmed ? colors.textSecondary : '#D97706' }} numberOfLines={1}>
+                  learns by {item.learns_by_families} · {item.signature_confirmed ? 'confirmed' : 'not confirmed'}
+                </Text>
+              </View>
+            )}
             {item.headless && (
               <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: colors.border, marginLeft: 6 }}>
                 <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: '600' }}>API · headless</Text>
@@ -1809,6 +2028,9 @@ export default function PowerAppsScreen({
         app={promoting}
         theme={colors}
         promote
+        // A confirm/edit inside the sheet changes the row badge, so refresh the list
+        // even if the BA then cancels instead of promoting.
+        onSignatureChanged={load}
         onClose={() => setPromoting(null)}
         onApplied={async (result) => {
           const it = promoting;
@@ -1918,200 +2140,14 @@ export default function PowerAppsScreen({
                 </ScrollView>
               )}
             </View>
-            {!!caseSig && (
-              <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
-                <TouchableOpacity
-                  onPress={() => setSigOpen((v) => !v)}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10 }}
-                >
-                  <Ionicons name={sigOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={colors.textSecondary} />
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>
-                    What this app learns by ({caseSig.families.length})
-                  </Text>
-                  <View style={{ flex: 1 }} />
-                  {caseSig.confirmedBy && !caseSig.stale ? (
-                    <Text style={{ color: '#059669', fontSize: 11 }} numberOfLines={1}>
-                      confirmed by {caseSig.confirmedBy}
-                    </Text>
-                  ) : (
-                    <Text style={{ color: '#d97706', fontSize: 11 }}>
-                      {caseSig.stale ? 'changed since confirmed' : 'not confirmed'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                {sigOpen && (
-                  <View style={{ paddingHorizontal: 10, paddingBottom: 10, gap: 8 }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
-                      When an officer corrects this app and says why, the lesson is reused on
-                      later cases that look the same — and only those. "Look the same" is
-                      decided by these columns, their values, and these bands. If a value or
-                      a band edge below is not how your policy thinks, the app will group
-                      cases wrongly and what it learns will not fire where it should.
-                    </Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                      {caseSig.facets.map((f, i) => (
-                        <View
-                          key={i}
-                          style={{
-                            borderWidth: 1, borderColor: colors.border, borderRadius: 6,
-                            paddingHorizontal: 8, paddingVertical: 4, maxWidth: 320,
-                          }}
-                        >
-                          <Text style={{ color: colors.text, fontSize: 12 }}>
-                            {String(f.family || '').replace(/_/g, ' ')}
-                          </Text>
-                          <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                            {f.kind}{f.from_column ? ` · ${f.from_column}` : ''}
-                          </Text>
-                          <Text style={{ color: colors.text, fontSize: 10, marginTop: 2 }}>
-                            {facetDetail(f)}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                    {!!specApp?.can_edit && !sigEdit && (
-                      <TouchableOpacity
-                        onPress={() => setSigEdit(caseSig.facets.map(facetToDraft))}
-                        style={[styles.footerBtnGhost, { borderColor: colors.border, alignSelf: 'flex-start' }]}
-                      >
-                        <Ionicons name="create-outline" size={14} color={colors.text} />
-                        <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Edit values and bands</Text>
-                      </TouchableOpacity>
-                    )}
-                    {!!sigEdit && (
-                      <View style={{ gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10 }}>
-                        {sigEdit.map((d, i) => (
-                          <View key={i} style={{ gap: 4 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                              <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', flex: 1 }}>
-                                {String(d.family || '').replace(/_/g, ' ')} · {d.kind}{d.from_column ? ` · ${d.from_column}` : ''}
-                              </Text>
-                              <TouchableOpacity onPress={() => setSigEdit(sigEdit.filter((_, j) => j !== i))}>
-                                <Text style={{ color: '#dc2626', fontSize: 11 }}>Remove</Text>
-                              </TouchableOpacity>
-                            </View>
-                            {d.kind === 'enum' && (
-                              <>
-                                <TextInput
-                                  value={d.values}
-                                  onChangeText={(t) => setSigEdit(sigEdit.map((x, j) => (j === i ? { ...x, values: t } : x)))}
-                                  placeholder="values, comma separated — e.g. dealer, branch, digital"
-                                  placeholderTextColor={colors.textSecondary}
-                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12 }}
-                                />
-                                <TextInput
-                                  value={d.value_map}
-                                  onChangeText={(t) => setSigEdit(sigEdit.map((x, j) => (j === i ? { ...x, value_map: t } : x)))}
-                                  placeholder={'groupings, one per line — e.g.\ndsa = dealer\nagent = dealer'}
-                                  placeholderTextColor={colors.textSecondary}
-                                  multiline
-                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12, minHeight: 48 }}
-                                />
-                              </>
-                            )}
-                            {d.kind === 'band' && (
-                              <TextInput
-                                value={d.edges}
-                                onChangeText={(t) => setSigEdit(sigEdit.map((x, j) => (j === i ? { ...x, edges: t } : x)))}
-                                placeholder="band edges, low to high — e.g. 500000, 1000000, 2500000"
-                                placeholderTextColor={colors.textSecondary}
-                                keyboardType="numeric"
-                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12 }}
-                              />
-                            )}
-                          </View>
-                        ))}
-                        <View style={{ gap: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                          <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Add a column the decision turns on</Text>
-                          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                            <TextInput
-                              value={sigNew.family}
-                              onChangeText={(t) => setSigNew({ ...sigNew, family: t })}
-                              placeholder="name, e.g. sourcing channel"
-                              placeholderTextColor={colors.textSecondary}
-                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12, minWidth: 160 }}
-                            />
-                            {['enum', 'band', 'presence'].map((k) => (
-                              <TouchableOpacity
-                                key={k}
-                                onPress={() => setSigNew({ ...sigNew, kind: k })}
-                                style={[styles.footerBtnGhost, { borderColor: sigNew.kind === k ? '#2563eb' : colors.border }]}
-                              >
-                                <Text style={[styles.footerBtnGhostText, { color: sigNew.kind === k ? '#2563eb' : colors.text }]}>
-                                  {k === 'enum' ? 'a set of values' : k === 'band' ? 'a number in bands' : 'present or not'}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                            {(sigColumns.length ? sigColumns : []).slice(0, 40).map((c) => (
-                              <TouchableOpacity
-                                key={c.name}
-                                onPress={() => setSigNew({ ...sigNew, from_column: c.name })}
-                                style={{ borderWidth: 1, borderColor: sigNew.from_column === c.name ? '#2563eb' : colors.border, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}
-                              >
-                                <Text style={{ color: colors.text, fontSize: 10 }}>{c.name}</Text>
-                              </TouchableOpacity>
-                            ))}
-                            {!sigColumns.length && (
-                              <TextInput
-                                value={sigNew.from_column}
-                                onChangeText={(t) => setSigNew({ ...sigNew, from_column: t })}
-                                placeholder="column name"
-                                placeholderTextColor={colors.textSecondary}
-                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12, minWidth: 160 }}
-                              />
-                            )}
-                          </View>
-                          <TouchableOpacity
-                            disabled={!sigNew.family.trim() || !sigNew.from_column.trim()}
-                            onPress={() => {
-                              setSigEdit([...sigEdit, facetToDraft({ family: sigNew.family, kind: sigNew.kind, from_column: sigNew.from_column })]);
-                              setSigNew({ family: '', kind: 'enum', from_column: '' });
-                            }}
-                            style={[styles.footerBtnGhost, { borderColor: colors.border, alignSelf: 'flex-start', opacity: (!sigNew.family.trim() || !sigNew.from_column.trim()) ? 0.5 : 1 }]}
-                          >
-                            <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Add</Text>
-                          </TouchableOpacity>
-                        </View>
-                        <View style={{ flexDirection: 'row', gap: 8 }}>
-                          <TouchableOpacity onPress={saveSig} disabled={specSaving} style={[styles.footerBtnGhost, { borderColor: '#2563eb', opacity: specSaving ? 0.6 : 1 }]}>
-                            <Text style={[styles.footerBtnGhostText, { color: '#2563eb' }]}>{specSaving ? 'Saving…' : 'Save signature'}</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => setSigEdit(null)} style={[styles.footerBtnGhost, { borderColor: colors.border }]}>
-                            <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Cancel</Text>
-                          </TouchableOpacity>
-                        </View>
-                        <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                          Saving is checked against the data: a value the column has never held is
-                          refused. After saving, confirm the list again.
-                        </Text>
-                      </View>
-                    )}
-                    {caseSig.stale && (
-                      <Text style={{ color: '#d97706', fontSize: 11 }}>
-                        {caseSig.confirmedBy} confirmed a different list. Publishing will be
-                        rejected (CS-04) until someone confirms the current one.
-                      </Text>
-                    )}
-                    {!!specApp?.can_edit && (
-                      <TouchableOpacity
-                        onPress={confirmSig}
-                        disabled={sigBusy}
-                        style={[styles.footerBtnGhost, {
-                          borderColor: '#2563eb', alignSelf: 'flex-start', opacity: sigBusy ? 0.6 : 1,
-                        }]}
-                      >
-                        <Ionicons name="checkmark-circle-outline" size={14} color="#2563eb" />
-                        <Text style={[styles.footerBtnGhostText, { color: '#2563eb' }]}>
-                          {sigBusy ? 'Recording…'
-                            : caseSig.confirmedBy && !caseSig.stale ? 'Re-confirm' : 'Confirm these'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-              </View>
+            {!!specApp?.slug && (
+              <CaseSignatureCard
+                slug={specApp.slug}
+                canEdit={!!specApp?.can_edit}
+                colors={colors}
+                initialOpen
+                onChanged={reloadSpecText}
+              />
             )}
             <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, gap: 10 }}>
               {!!specError && <Text style={{ color: '#dc2626' }}>{specError}</Text>}
@@ -2956,7 +2992,7 @@ function AudienceBadge({ audience, colors }) {
   );
 }
 
-function AudiencePickerModal({ visible, app, theme, onClose, onApplied, promote = false }) {
+function AudiencePickerModal({ visible, app, theme, onClose, onApplied, promote = false, onSignatureChanged }) {
   const colors = theme || DEFAULT_THEME;
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState([]);
@@ -2982,6 +3018,10 @@ function AudiencePickerModal({ visible, app, theme, onClose, onApplied, promote 
   // few-shot memory as part of promote (default) or ship without it.
   const grounded = !!(promote && app?.grounded);
   const [groundingChoice, setGroundingChoice] = useState('refresh'); // 'refresh' | 'skip'
+  // From the signature card: {families, confirmed, stale}. A decision app
+  // with an unconfirmed signature cannot be promoted — CS-04 would refuse it
+  // at the server anyway; this says so before the button is pressed.
+  const [sigStatus, setSigStatus] = useState(null);
   const [freshness, setFreshness] = useState(null); // {never_refreshed, last_refreshed_at, sample_count}
 
   useEffect(() => {
@@ -3018,7 +3058,8 @@ function AudiencePickerModal({ visible, app, theme, onClose, onApplied, promote 
 
   // In promote mode any picked value is valid (including === current — the
   // action is "ship to prod"); in audience mode only a CHANGE applies.
-  const canApply = !!picked && (promote || picked !== current);
+  const sigBlocks = promote && !!sigStatus && sigStatus.families > 0 && !sigStatus.confirmed;
+  const canApply = !!picked && (promote || picked !== current) && !sigBlocks;
 
   const apply = async () => {
     if (!canApply) return;
@@ -3332,6 +3373,21 @@ function AudiencePickerModal({ visible, app, theme, onClose, onApplied, promote 
                     </TouchableOpacity>
                   );
                 })}
+              </View>
+            )}
+            {/* The signature is the promote gate the BA can act on here, not an
+                error code after pressing the button. */}
+            {promote && !loading && !!app?.slug && (
+              <View style={{ marginTop: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }}>
+                {/* env="test": the sheet promotes the TEST copy, and a promoted
+                    slug otherwise resolves to prod — the confirmation would land
+                    on the doc the promote is about to overwrite. */}
+                <CaseSignatureCard slug={app.slug} env="test" canEdit colors={colors} initialOpen onStatus={setSigStatus} onChanged={onSignatureChanged} />
+                {sigBlocks && (
+                  <Text style={{ color: '#B45309', fontSize: 11, paddingHorizontal: 10, paddingBottom: 8 }}>
+                    Confirm the list above to enable Promote to Prod.
+                  </Text>
+                )}
               </View>
             )}
           </ScrollView>

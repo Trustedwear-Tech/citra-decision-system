@@ -4506,6 +4506,10 @@ class AppSummary(BaseModel):
     # Whether the app is grounded on history (agent carries a grounding
     # contract). The UI shows a manual "Refresh grounding" action only when
     # true. Stamped on the doc at publish so the list needs no agent lookup.
+    # Row badge: how many facet families the app learns by, and whether a
+    # person confirmed the current list (None = no signature declared).
+    learns_by_families: int = 0
+    signature_confirmed: Optional[bool] = None
     grounded: bool = False
     # Whether the ontology enabled fraud screening for this app (a bound dataset
     # opted into fraud_screening → the autowire wired a consistency_check with

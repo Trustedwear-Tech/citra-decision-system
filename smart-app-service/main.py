@@ -66,6 +66,7 @@ import automation_control
 from pymongo.errors import OperationFailure
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic import ValidationError as PydanticValidationError
+from types import SimpleNamespace
 
 from auth import (
     JWTAuthMiddleware,
@@ -84,6 +85,7 @@ from capabilities import get_capabilities
 from config import Settings, get_settings
 from models import (
     AUDIENCE_RANK,
+    CaseSignature,
     AgentSpec,
     AppDetailResponse,
     EmbedSpecResponse,
@@ -425,6 +427,37 @@ async def _bind_app_env(slug: str) -> str:
         env = await resolve_app_environment(slug)
     set_current_env(env)
     return env
+
+
+async def _bind_requested_env(slug: str, env: Optional[str]) -> str:
+    """Bind the environment a BA-tool request NAMES, or fall back to store.
+
+    Store resolution is prod-first, so once an app has been promoted its slug
+    means the prod copy. The Promote sheet reviews what is ABOUT to ship — the
+    test copy — and a confirmation recorded on the prod doc would be overwritten
+    by the very promote it was meant to gate. So the sheet says ``env=test``.
+
+    Not a free choice: ``test`` binds only when a test copy of THIS slug exists
+    (else 404, fail-closed), and the handler's own ownership checks still run
+    against the doc found there. ``prod`` (or nothing) keeps today's behaviour.
+    """
+    if env in (None, ""):
+        return await _bind_app_env(slug)
+    if env == "prod":
+        set_current_env("prod")
+        return "prod"
+    if env != "test":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            detail="env must be 'test' or 'prod'")
+    if _db is None or not get_settings().test_environment_available:
+        raise HTTPException(status.HTTP_404_NOT_FOUND,
+                            detail="no test environment is configured")
+    test_apps = _db[_test_collection_name(get_settings().apps_collection)]
+    if await test_apps.find_one({"slug": slug}, {"_id": 1}) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND,
+                            detail=f"'{slug}' has no test copy")
+    set_current_env("test")
+    return "test"
 
 
 def get_smart_app_records_col() -> AsyncIOMotorCollection:
@@ -1290,6 +1323,19 @@ def _pod_reachable_url(url: str) -> str:
     )
 
 
+def _signature_confirmed(sig: Optional[dict]) -> Optional[bool]:
+    """None when there is no signature; else whether the confirmed family list
+    is the declared one -- the same comparison CS-04 makes at publish."""
+    if not isinstance(sig, dict) or not (sig.get("facets") or []):
+        return None
+    declared = sorted({str(f.get("family")) for f in sig.get("facets") or [] if isinstance(f, dict) and f.get("family")})
+    seen = sorted({str(x) for x in (sig.get("confirmed_families") or [])})
+    # Families only, exactly as CS-04 judges it. `confirmed_by` is who, not
+    # whether: a seeded app confirms by writing the list and names nobody, and
+    # the badge must not call "unconfirmed" what the gate lets through.
+    return seen == declared
+
+
 def _summary(
     doc: dict, settings: Settings, *, caller: Optional[dict] = None
 ) -> AppSummary:
@@ -1336,6 +1382,10 @@ def _summary(
         deployed_at=doc.get("deployed_at"),
         url=_runtime_url(doc["slug"], settings),
         audience=spec.get("audience") or "owner",
+        # What the app learns by, for the row badge: how many facet families,
+        # and whether a person has confirmed the current list (CS-04).
+        learns_by_families=len(((spec.get("case_signature") or {}).get("facets")) or []),
+        signature_confirmed=_signature_confirmed(spec.get("case_signature")),
         grounded=bool(doc.get("grounded")),
         fraud_enabled=bool(doc.get("fraud_enabled")),
         headless=bool(spec.get("headless")),
@@ -4444,6 +4494,40 @@ async def promote_to_prod(
             detail="not authorised to promote this app",
         )
 
+    # ── Case-signature gate (CS-04) ─────────────────────────────────────────
+    # Publish enforces CS-04 on the way INTO test, but a hand-edit on the test
+    # copy can change the families afterwards, and promote copies whatever the
+    # test copy holds. The families decide what every learned judgement will
+    # ever apply to, so the copy that ships is checked here, not only in the
+    # sheet that calls this route.
+    # Only the signature is re-validated here. Promote never re-ran the whole
+    # AppSpec on the source, and starting to would turn a rule added since the
+    # app was published into a promote failure that has nothing to do with the
+    # families -- that is publish's job, on the way in.
+    _sig_raw = (src.get("app_spec") or {}).get("case_signature")
+    _cs04: List[Dict[str, Any]] = []
+    if _sig_raw:
+        try:
+            _sig_model = CaseSignature.model_validate(_sig_raw)
+        except PydanticValidationError as e:
+            logger.error("[promote] %s: stored case_signature fails validation: %s", slug, e)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"code": "case_signature_invalid",
+                        "message": f"the test copy's case_signature no longer validates: {e}"},
+            )
+        _cs04 = validate_case_signature_confirmed(SimpleNamespace(case_signature=_sig_model))
+    if _cs04:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "CS-04",
+                "message": ("the facet families of this app's test copy are not "
+                            "confirmed — review and confirm them before promoting."),
+                "errors": _cs04,
+            },
+        )
+
     # ── Grounding gate ──────────────────────────────────────────────────────
     # A grounded app learns from historical decisions; if its few-shot memory was
     # never refreshed (or is stale), it would go live in prod running degraded —
@@ -4994,11 +5078,15 @@ async def list_apps(
 
 
 @app.get("/apps/{slug}", response_model=AppDetailResponse)
-async def get_app(slug: str, request: Request) -> AppDetailResponse:
+async def get_app(
+    slug: str, request: Request,
+    env: Optional[str] = Query(None, description="'test' to read the test copy of a promoted app"),
+) -> AppDetailResponse:
     user_id = get_secure_user_id(request)
     user_tenant = get_tenant_id(request)
-    # Resolve test↔prod by store before any collection access (see _bind_app_env).
-    env = await _bind_app_env(slug)
+    # Resolve test↔prod by store before any collection access (see _bind_app_env),
+    # unless the caller names the test copy (see _bind_requested_env).
+    env = await _bind_requested_env(slug, env)
     apps = get_apps_col()
     agents = get_agents_col()
 
@@ -5120,7 +5208,10 @@ async def _reconcile_case_signature(
 
 
 @app.put("/apps/{slug}/spec", response_model=AppDetailResponse)
-async def save_app_spec(slug: str, payload: dict, request: Request) -> AppDetailResponse:
+async def save_app_spec(
+    slug: str, payload: dict, request: Request,
+    env: Optional[str] = Query(None, description="'test' to edit the test copy of a promoted app"),
+) -> AppDetailResponse:
     """Review-and-edit: persist a hand-edited ``app_spec`` (+ optional
     ``agent_spec``) for an EXISTING app. Validates exactly like publish (Pydantic
     is the sole validator), PRESERVES server identity (slug / tenant_id /
@@ -5131,7 +5222,7 @@ async def save_app_spec(slug: str, payload: dict, request: Request) -> AppDetail
     """
     user_id = get_secure_user_id(request)
     user_tenant = get_tenant_id(request)
-    _spec_env = await _bind_app_env(slug)
+    _spec_env = await _bind_requested_env(slug, env)
     apps = get_apps_col()
     agents = get_agents_col()
 
@@ -5379,7 +5470,10 @@ async def save_app_spec(slug: str, payload: dict, request: Request) -> AppDetail
 
 
 @app.post("/apps/{slug}/case-signature/confirm")
-async def confirm_case_signature(slug: str, payload: dict, request: Request) -> Dict[str, Any]:
+async def confirm_case_signature(
+    slug: str, payload: dict, request: Request,
+    env: Optional[str] = Query(None, description="'test' to confirm the test copy of a promoted app"),
+) -> Dict[str, Any]:
     """Record that a human reviewed this app's facet families (CS-04).
 
     Exists so confirming does not mean hand-editing a JSON blob. The UI shows
@@ -5392,7 +5486,7 @@ async def confirm_case_signature(slug: str, payload: dict, request: Request) -> 
     moved underneath it, and it is the same comparison CS-04 makes at publish.
     """
     user_id = get_secure_user_id(request)
-    _env = await _bind_app_env(slug)
+    _env = await _bind_requested_env(slug, env)
     apps = get_apps_col()
     app_doc = await apps.find_one({"slug": slug})
     if not app_doc or not _can_render_app(app_doc, request):

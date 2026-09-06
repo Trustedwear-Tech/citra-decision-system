@@ -447,14 +447,17 @@ class SmartAppService {
     );
   }
 
-  async getApp(slug) {
-    return this._fetch(`/apps/${encodeURIComponent(slug)}`);
+  // env: 'test' reads the TEST copy of an app that also exists in prod (the
+  // server resolves a promoted slug to prod otherwise). Used by the Promote
+  // sheet, which reviews what is about to ship, not what shipped last time.
+  async getApp(slug, env) {
+    return this._fetch(`/apps/${encodeURIComponent(slug)}${env ? `?env=${encodeURIComponent(env)}` : ''}`);
   }
 
   // Save a hand-edited spec for an existing app. body: { app_spec, agent_spec? }.
   // Server validates (Pydantic) + preserves identity (slug/tenant/agent/owner).
-  async saveSpec(slug, body) {
-    return this._fetch(`/apps/${encodeURIComponent(slug)}/spec`, {
+  async saveSpec(slug, body, env) {
+    return this._fetch(`/apps/${encodeURIComponent(slug)}/spec${env ? `?env=${encodeURIComponent(env)}` : ''}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body || {}),
@@ -465,8 +468,8 @@ class SmartAppService {
   // CS-04). The SERVER decides who confirmed, from the token — we only send
   // the list we actually displayed, so a stale screen cannot certify a spec
   // that has moved underneath it.
-  async confirmCaseSignature(slug, families) {
-    return this._fetch(`/apps/${encodeURIComponent(slug)}/case-signature/confirm`, {
+  async confirmCaseSignature(slug, families, env) {
+    return this._fetch(`/apps/${encodeURIComponent(slug)}/case-signature/confirm${env ? `?env=${encodeURIComponent(env)}` : ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ families: families || [] }),
