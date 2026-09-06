@@ -192,12 +192,32 @@
           "default": null,
           "title": "Description"
         },
+        "evaluates": {
+          "anyOf": [
+            {
+              "maxLength": 120,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evaluates"
+        },
         "field_schema": {
           "additionalProperties": {
             "type": "string"
           },
           "description": "Optional fields to surface on the finding {name: 'type/desc'} (e.g. {'credit_score':'number'}).",
           "title": "Field Schema",
+          "type": "object"
+        },
+        "input_map": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Input Map",
           "type": "object"
         },
         "kind": {
@@ -1860,6 +1880,18 @@
           ],
           "title": "Kind",
           "type": "string"
+        },
+        "lookup_inputs": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lookup Inputs"
         },
         "name": {
           "description": "Stable identifier referenced by the agent's system prompt.",

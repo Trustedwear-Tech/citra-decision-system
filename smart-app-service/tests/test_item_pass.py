@@ -23,7 +23,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from evidence_guard import Anchor, ReadLedger, evidence_violations
+from evidence_guard import Anchor, ReadLedger, evidence_violations, required_lookup_violations
 from item_pass import cache_key, coverage_from_timeline, run_item_pass
 
 
@@ -184,3 +184,99 @@ def test_unbound_media_tools_are_left_to_the_model():
         anchors=_ANCHORS, anchor_row=None, action_name="a", auth_header=None, ledger=ledger,
         correlation_id="r5"))
     assert out.findings == [] and out.coverage == {} and ledger.expected_items == {}
+
+
+# ── API checks ──────────────────────────────────────────────────────────────
+
+_API_DISPATCH = {
+    "bureau_credit": {"kind": "mcp", "name": "bureau_credit", "source_id": "bureau", "tool_name": "credit_score",
+                      "dataset_id": "bureau.credit_score", "dataset_kind": "rest", "required": True,
+                      "lookup_inputs": {"required": ["pan"], "properties": {"pan": {"type": "string"}}}},
+    "credit_check": {"kind": "check_evaluate", "name": "credit_check", "task_type": "credit-check",
+                     "evaluates": "bureau_credit", "input_map": {"pan": "applicant_pan"}},
+}
+_API_AGENT = _Spec(tools_v2=[
+    _Tool(kind="mcp", name="bureau_credit", dataset_id="bureau.credit_score", dataset_kind="rest", required=True),
+    _Tool(kind="check_evaluate", name="credit_check", task_type="credit-check", evaluates="bureau_credit"),
+])
+_LOAN = [Anchor(field="application_id", value="APP-9")]
+_LOAN_ROW = {"application_id": "APP-9", "applicant_pan": "ABCDE1234F", "amount": 250000}
+
+
+@pytest.mark.asyncio
+async def test_an_api_check_is_run_by_the_runtime_with_the_records_own_values():
+    ledger = ReadLedger()
+    ledger.note_record_read(rows=[_LOAN_ROW])
+    calls = []
+
+    async def _dispatch(**kw):
+        calls.append((kw["tool_name"], kw["arguments"]))
+        if kw["tool_name"] == "bureau_credit":
+            return {"rows": [{"credit_score": 712, "score_band": "good"}]}
+        return {"item_id": kw["arguments"]["item_id"], "item_type": "credit-check", "modality": "api",
+                "fields": {"credit_score": 712}, "recommendation": "pass", "confidence": 0.8,
+                "rationale": "above the 700 floor", "citations": []}
+
+    with patch("tools_v2_dispatch.dispatch_tools_v2_call", new=_dispatch):
+        out = await run_item_pass(
+            settings=_settings(), agent_spec=_API_AGENT, app_spec=_Spec(tools_v2=[]), dispatch_table=_API_DISPATCH,
+            anchors=_LOAN, anchor_row=_LOAN_ROW, action_name="decide_loan", auth_header=None,
+            ledger=ledger, correlation_id="a1",
+        )
+    # the lookup ran with the PAN read off the record through input_map, then the check judged its row
+    assert calls[0] == ("bureau_credit", {"filters": {"pan": "ABCDE1234F"}})
+    assert calls[1][0] == "credit_check" and calls[1][1]["data"] == {"credit_score": 712, "score_band": "good"}
+    assert calls[1][1]["item_id"] == "credit-check" and "APP-9" in calls[1][1]["query"]
+    assert [f["item_id"] for f in out.findings] == ["credit-check"]
+    assert out.coverage["credit_check"] == {"expected": 1, "produced": 1, "missing": [], "error": None}
+    # the runtime's own call satisfies the required-lookup gate and the check gate
+    assert required_lookup_violations(planned_writes=[{"tool": "w"}], anchors=_LOAN, ledger=ledger,
+                                      agent_spec=_API_AGENT) == []
+    assert evidence_violations(planned_writes=[{"tool": "w"}], anchors=_LOAN, ledger=ledger,
+                               agent_spec=_API_AGENT) == []
+    assert "bureau_credit for {'pan': 'ABCDE1234F'}" in out.block
+
+
+@pytest.mark.asyncio
+async def test_a_missing_input_column_blocks_with_the_column_named():
+    ledger = ReadLedger()
+    ledger.note_record_read(rows=[{"application_id": "APP-9"}])
+    with patch("tools_v2_dispatch.dispatch_tools_v2_call", new=AsyncMock()) as disp:
+        await run_item_pass(
+            settings=_settings(), agent_spec=_API_AGENT, app_spec=_Spec(tools_v2=[]), dispatch_table=_API_DISPATCH,
+            anchors=_LOAN, anchor_row={"application_id": "APP-9"}, action_name="a", auth_header=None,
+            ledger=ledger, correlation_id="a2",
+        )
+    disp.assert_not_called()
+    unmet = evidence_violations(planned_writes=[{"tool": "w"}], anchors=_LOAN, ledger=ledger, agent_spec=_API_AGENT)
+    assert unmet and "applicant_pan" in unmet[0] and "'pan'" in unmet[0]
+
+
+@pytest.mark.asyncio
+async def test_a_failed_lookup_leaves_the_check_unreviewed_and_the_gate_says_so():
+    ledger = ReadLedger()
+    ledger.note_record_read(rows=[_LOAN_ROW])
+    with patch("tools_v2_dispatch.dispatch_tools_v2_call",
+               new=AsyncMock(return_value={"error": "bureau returned 503"})):
+        out = await run_item_pass(
+            settings=_settings(), agent_spec=_API_AGENT, app_spec=_Spec(tools_v2=[]), dispatch_table=_API_DISPATCH,
+            anchors=_LOAN, anchor_row=_LOAN_ROW, action_name="a", auth_header=None,
+            ledger=ledger, correlation_id="a3",
+        )
+    assert out.coverage["credit_check"]["missing"] == ["credit-check"] and "503" in out.coverage["credit_check"]["error"]
+    unmet = evidence_violations(planned_writes=[{"tool": "w"}], anchors=_LOAN, ledger=ledger, agent_spec=_API_AGENT)
+    assert any("1 of 1 items were never reviewed by credit_check" in u for u in unmet)
+    # the lookup never ran either - that gate fires too, on its own
+    assert required_lookup_violations(planned_writes=[{"tool": "w"}], anchors=_LOAN, ledger=ledger,
+                                      agent_spec=_API_AGENT)
+
+
+def test_a_required_check_the_pass_never_reached_is_a_violation():
+    # ITEM_PASS_MODE=off and the model never called it: no expectation, no finding
+    ledger = ReadLedger()
+    ledger.note_record_read(rows=[_LOAN_ROW])
+    ledger.note_lookup_read(tool_name="bureau_credit")
+    unmet = evidence_violations(planned_writes=[{"tool": "w"}], anchors=_LOAN, ledger=ledger, agent_spec=_API_AGENT)
+    assert unmet and "required check 'credit_check'" in unmet[0]
+    ledger.note_item_finding(tool_name="credit_check", item_id="credit-check")  # the model did judge it
+    assert evidence_violations(planned_writes=[{"tool": "w"}], anchors=_LOAN, ledger=ledger, agent_spec=_API_AGENT) == []

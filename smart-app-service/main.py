@@ -180,6 +180,7 @@ from publish_validators import (
     validate_no_delete_verbs,
     validate_mcp_action_has_input_schema,
     validate_required_lookup_is_bound,
+    validate_check_evaluates_a_bound_lookup,
     validate_tool_sources_resolvable,
     validate_update_has_identifier,
 )
@@ -2368,6 +2369,17 @@ async def publish_app(
             "W-09",
             "a required:true mcp lookup must be bound (set dataset_id + "
             "dataset_kind) so the read-before-write gate can anchor it.",
+            _b,
+        )
+    # A-01 runs here and NOT in the stateless pre-check: the autowire above
+    # fills `evaluates` in when the app has one REST lookup, and a check that
+    # relies on that default must not be rejected before it ran.
+    _b = validate_check_evaluates_a_bound_lookup(layer_b_agent)
+    if _b:
+        _raise_layer_b(
+            "A-01",
+            "every check_evaluate must name the bound mcp lookup it judges "
+            "(evaluates) so the runtime runs the check for the case itself.",
             _b,
         )
     _b = validate_internal_audience(layer_b_app)

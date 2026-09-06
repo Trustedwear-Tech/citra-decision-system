@@ -60,7 +60,16 @@ application approve/reject is the record-level Apply/`/approve`, and
 reviewed. Per-item and overall are linked by `correlation_id`; the parent's
 settled outcome is stamped back onto every item (one-directional).
 
-### API/SoR checks (today)
+### API/SoR checks (built 2026-09-06)
+A `check_evaluate` tool names the lookup it judges (`evaluates`). The runtime's
+item pass runs that lookup with the case's own values (`input_map` when the
+column names differ), judges the row it returns, and records one expected item
+per check; a required lookup that was never judged blocks the write like an
+unreviewed document. Publish (A-01) rejects a check without `evaluates`; the
+autowire sets it when the app has exactly one REST lookup. What follows is the
+state this replaced.
+
+### API/SoR checks (before)
 `mcp` returns raw rows, `rag` returns semantic hits, `consistency_check` returns
 `{mismatches, summary, …}` explicitly labelled *"EVIDENCE for the officer — cite
 it; do not auto-reject."* None enter `item_findings`; all fold into the single

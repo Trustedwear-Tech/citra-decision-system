@@ -1016,6 +1016,17 @@ class CheckEvaluateTool(_AgentToolBase):
         description="Optional: load the ENTIRE SOP doc at this path instead of top-k passages.",
     )
 
+    #: The bound ``mcp`` read tool (its ``name``) whose result this check
+    #: judges. The RUNTIME runs that lookup with the case's own values and
+    #: judges the result itself, before the model reasons - the check is not
+    #: a model decision. Publish (A-01) requires it; the autowire fills it in
+    #: when the app has exactly one REST lookup.
+    evaluates: Optional[str] = Field(default=None, max_length=120)
+    #: ``{lookup input: anchor-record column}`` when the names differ - the
+    #: bureau wants ``pan``, the application row calls it ``applicant_pan``.
+    #: An input not listed here is read from the column of the same name.
+    input_map: Dict[str, str] = Field(default_factory=dict)
+
 
 class PaymentProofCheck(BaseModel):
     """E4 payment-proof verification config, autowired from sources.json

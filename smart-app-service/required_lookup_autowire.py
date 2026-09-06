@@ -88,4 +88,24 @@ def autowire_required_lookups(agent_spec: Any, catalogue: Any) -> int:
                 "[required-autowire] dataset %r is mandatory_when_used — defaulted "
                 "tool %r required=true", ds_id, _tool_attr(tool, "name"),
             )
+    # A check that names no lookup is a model decision: the agent fetches what
+    # it likes and judges that. With exactly one bound REST lookup in the app
+    # there is only one reading, so take it. None, or two or more, is for the
+    # builder to say - A-01 rejects the spec and lists them.
+    tools = list(getattr(agent_spec, "tools_v2", None) or [])
+    rest_lookups = []
+    for t in tools:
+        if _tool_attr(t, "kind") != "mcp" or not _tool_attr(t, "dataset_id"):
+            continue
+        _kind = _tool_attr(t, "dataset_kind") or (by_ref.get(_tool_attr(t, "dataset_id")) or {}).get("kind")
+        if str(_kind or "").lower() == "rest":
+            rest_lookups.append(_tool_attr(t, "name"))
+    for tool in tools:
+        if _tool_attr(tool, "kind") != "check_evaluate" or _tool_attr(tool, "evaluates"):
+            continue
+        if len(rest_lookups) == 1:
+            _tool_set(tool, "evaluates", rest_lookups[0])
+            changed += 1
+            logger.info("[required-autowire] check %r evaluates the app's only REST "
+                        "lookup %r", _tool_attr(tool, "name"), rest_lookups[0])
     return changed

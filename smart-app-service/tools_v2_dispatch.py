@@ -1272,6 +1272,14 @@ def _default_description(entry: Dict[str, Any]) -> str:
             "context + what to extract/verify. Call once per document."
         )
     if kind == "check_evaluate":
+        if entry.get("evaluates"):
+            return (
+                f"The '{entry.get('task_type')}' check has ALREADY been run for this case by "
+                f"the runtime ({entry.get('evaluates')} fetched with the case's own values, "
+                "then judged); its finding is under ITEMS ALREADY REVIEWED. Reason over "
+                "that finding. Call this only to judge a DIFFERENT data object. Args: "
+                "{data, query, item_id?}."
+            )
         return (
             f"Judge ONE '{entry.get('task_type')}' API/SoR check result against the "
             "policy + learned rubric and return a STRUCTURED per-check finding "

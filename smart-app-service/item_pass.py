@@ -163,6 +163,74 @@ async def _enumerate_items(
     return rows, None
 
 
+CHECK_KIND = "check_evaluate"
+
+
+def _rows(res: Any) -> list:
+    """The row list a read tool's result carries, whatever its shape."""
+    if isinstance(res, list):
+        return res
+    if isinstance(res, dict):
+        for k in ("rows", "results", "data", "records", "items"):
+            v = res.get(k)
+            if isinstance(v, list):
+                return v
+    return []
+
+
+def lookup_inputs_for(
+    lookup_entry: Dict[str, Any], anchors: Sequence[Any], anchor_row: Optional[Dict[str, Any]],
+    input_map: Dict[str, str],
+) -> tuple[Dict[str, Any], Optional[str]]:
+    """The ``filters`` the runtime gives a lookup, from the case's own values.
+
+    A REST lookup declares its inputs (``lookup_inputs``, copied from the
+    dataset at publish); each is read from the anchor record's column of the
+    same name, or the column ``input_map`` names. A keyed table read with no
+    declared inputs is filtered on the anchor itself. ``(filters, error)``.
+    """
+    li = lookup_entry.get("lookup_inputs")
+    kind = str(lookup_entry.get("dataset_kind") or "").lower()
+    if kind == "rest" and isinstance(li, dict):
+        names = [r for r in (li.get("required") or []) if isinstance(r, str)]
+        if not names:
+            names = [k for k in (li.get("properties") or {}) if isinstance(k, str)]
+    elif input_map:
+        names = list(input_map.keys())
+    else:
+        return {anchors[0].field: anchors[0].value}, None
+    row = anchor_row if isinstance(anchor_row, dict) else {}
+    by_field = {a.field: a.value for a in anchors}
+    filters: Dict[str, Any] = {}
+    for p in names:
+        col = input_map.get(p, p)
+        val = row.get(col, by_field.get(col))
+        if val is None or (isinstance(val, str) and not val.strip()):
+            return {}, (
+                f"the record has no value in {col!r} to fill lookup input {p!r}"
+                + (" - set input_map on the check to name the column that holds it"
+                   if col == p else "")
+            )
+        filters[p] = val
+    return filters, None
+
+
+def _fail_enumeration(out: "ItemPassResult", ledger: Any, tname: str, correlation_id: str, err: str) -> None:
+    logger.error("[RUN %s] item pass: %s could not be run - %s", correlation_id, tname, err)
+    ledger.note_enumeration_failed(tname, err)
+    out.coverage[tname] = {"expected": 0, "produced": 0, "missing": [], "error": err}
+    out.timeline.append({"step": "item_pass", "status": "error", "tool": tname, "detail": err})
+
+
+def _fail_item(out: "ItemPassResult", lines: List[str], tname: str, item_id: str,
+               correlation_id: str, why: str) -> None:
+    logger.error("[RUN %s] item pass: %s(%s) produced no finding - %s", correlation_id, tname, item_id, why)
+    lines.append(f"- {tname} on {item_id}: FAILED - {why[:160]}")
+    out.coverage[tname] = {"expected": 1, "produced": 0, "missing": [item_id], "error": why[:300]}
+    out.timeline.append({"step": "item_pass", "status": "partial", "tool": tname,
+                         "expected": 1, "produced": 0, "missing": [item_id], "detail": why[:300]})
+
+
 async def run_item_pass(
     *,
     settings: Any,
@@ -267,6 +335,80 @@ async def run_item_pass(
             "tool": tname, "expected": len(keys), "produced": len(produced),
             "missing": missing, **({"detail": out.coverage[tname]["error"]} if over_cap else {}),
         })
+
+    # API CHECKS. A check_evaluate tool that names the lookup it judges
+    # (`evaluates`) is run by the runtime too: the lookup with the case's own
+    # values, then the check on what came back. One item per check. A check
+    # without `evaluates` is left to the model - and rejected at publish (A-01).
+    for tname, entry in dispatch_table.items():
+        if not isinstance(entry, dict) or entry.get("kind") != CHECK_KIND:
+            continue
+        ev = entry.get("evaluates")
+        if not ev:
+            continue
+        item_id = str(entry.get("task_type") or tname)
+        ledger.note_expected_items(tname, [item_id])
+
+        look = dispatch_table.get(ev)
+        if not isinstance(look, dict) or look.get("kind") != "mcp":
+            _fail_enumeration(out, ledger, tname, correlation_id,
+                              f"check {tname!r} evaluates {ev!r}, which is not an mcp read tool in this app")
+            continue
+        filters, err = lookup_inputs_for(look, anchors, anchor_row, entry.get("input_map") or {})
+        if err:
+            _fail_enumeration(out, ledger, tname, correlation_id, err)
+            continue
+
+        largs = {"filters": filters}
+        try:
+            lres = await dispatch_tools_v2_call(
+                settings=settings, agent_spec=agent_spec, app_spec=app_spec,
+                dispatch_table=dispatch_table, tool_name=ev, arguments=largs,
+                auth_header=auth_header,
+            )
+        except Exception as exc:  # noqa: BLE001 - surfaced on the item, never swallowed
+            lres = {"error": f"lookup raised: {exc}"}
+        if isinstance(lres, dict) and lres.get("error"):
+            _fail_item(out, lines, tname, item_id, correlation_id,
+                       f"lookup {ev} failed - {lres['error']}")
+            continue
+        out.cache[cache_key(ev, largs)] = lres
+        rows = _rows(lres)
+        # The runtime ran the mandatory lookup for this case: the required-lookup
+        # gate is satisfied by the runtime's own call, keyed on the case.
+        ledger.note_record_read(args=largs, rows=rows)
+        ledger.note_lookup_read(tool_name=ev)
+        data = rows[0] if rows and isinstance(rows[0], dict) else None
+        if not data:
+            _fail_item(out, lines, tname, item_id, correlation_id,
+                       f"lookup {ev} returned no row for {filters}")
+            continue
+
+        cargs = {"data": data, "query": ctx, "item_id": item_id}
+        try:
+            cres = await dispatch_tools_v2_call(
+                settings=settings, agent_spec=agent_spec, app_spec=app_spec,
+                dispatch_table=dispatch_table, tool_name=tname, arguments=cargs,
+                auth_header=auth_header,
+            )
+        except Exception as exc:  # noqa: BLE001
+            cres = {"error": f"check raised: {exc}"}
+        out.cache[cache_key(tname, cargs)] = cres
+        f = finding_from_tool_result(cres)
+        if f is None:
+            why = (cres or {}).get("error") if isinstance(cres, dict) else "no finding"
+            _fail_item(out, lines, tname, item_id, correlation_id, str(why))
+            continue
+        ledger.note_item_finding(tool_name=tname, item_id=item_id)
+        out.findings.append(f)
+        lines.append(
+            f"- {tname} ({ev} for {filters}): {f.get('recommendation') or 'no verdict'} "
+            f"(confidence {float(f.get('confidence') or 0):.0%}) - "
+            f"{str(f.get('rationale') or '')[:200]}"
+        )
+        out.coverage[tname] = {"expected": 1, "produced": 1, "missing": [], "error": None}
+        out.timeline.append({"step": "item_pass", "status": "ok", "tool": tname,
+                             "expected": 1, "produced": 1, "missing": []})
 
     if lines:
         out.block = (

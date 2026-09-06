@@ -282,6 +282,37 @@ def required_lookup_violations(
     return unmet
 
 
+def required_check_tools(agent_spec: Any) -> List[Any]:
+    """``check_evaluate`` tools whose lookup (``evaluates``) is REQUIRED.
+
+    The ontology's word (``mandatory_when_used`` on the dataset, autowired to
+    ``required`` on the lookup) is what makes the check itself mandatory: a
+    bureau pull the policy demands must also be JUDGED, per case, before the
+    decision commits - not just fetched.
+    """
+    tools = list(getattr(agent_spec, "tools_v2", None) or [])
+    required_lookups = {getattr(t, "name", None) for t in required_lookup_tools(agent_spec)}
+    return [t for t in tools
+            if getattr(t, "kind", None) == "check_evaluate"
+            and getattr(t, "evaluates", None) in required_lookups]
+
+
+def _coverage_unmet(tname: str, ledger: ReadLedger) -> Optional[str]:
+    """None when the runtime set no expectation for this tool; '' when every
+    expected item produced a finding; else the reason, naming the items."""
+    if tname in ledger.enumeration_errors:
+        return (f"{tname}: the runtime could not enumerate this record's items, so "
+                f"coverage is unknown - {ledger.enumeration_errors[tname]}")
+    if tname not in ledger.expected_items:
+        return None
+    expected = ledger.expected_items[tname]
+    missing = sorted(expected - ledger.item_findings_produced.get(tname, set()))
+    if not missing:
+        return ""
+    return (f"{len(missing)} of {len(expected)} items were never reviewed by "
+            f"{tname}: {', '.join(missing[:8])}" + (" ..." if len(missing) > 8 else ""))
+
+
 def evidence_violations(
     *,
     planned_writes: List[Dict[str, Any]],
@@ -321,22 +352,10 @@ def evidence_violations(
         # anchor rule below could only ever prove 'opened at least one', and on
         # a child table (documents keyed by document_id, writes anchored on
         # claim_id) could not prove even that.
-        if tname in ledger.enumeration_errors:
-            unmet.append(
-                f"{tname}: the runtime could not enumerate this record's items, so "
-                f"coverage is unknown - {ledger.enumeration_errors[tname]}"
-            )
-            continue
-        if tname in ledger.expected_items:
-            expected = ledger.expected_items[tname]
-            produced = ledger.item_findings_produced.get(tname, set())
-            missing = sorted(expected - produced)
-            if missing:
-                unmet.append(
-                    f"{len(missing)} of {len(expected)} items were never reviewed by "
-                    f"{tname}: {', '.join(missing[:8])}"
-                    + (" ..." if len(missing) > 8 else "")
-                )
+        _cov = _coverage_unmet(tname, ledger)
+        if _cov is not None:
+            if _cov:
+                unmet.append(_cov)
             continue
         if not ledger.media_covers(tname, anchor_values):
             kind = getattr(tool, "kind", "media")
@@ -345,6 +364,20 @@ def evidence_violations(
                 f"under review — the agent staged a write without looking at the "
                 f"bound evidence"
             )
+
+    # Required API checks: the runtime ran the lookup and the check for this
+    # case (item_pass.py) and set the expectation; with the pass off, a finding
+    # the model produced counts. Neither means the check never ran.
+    for tool in required_check_tools(agent_spec):
+        tname = getattr(tool, "name", None) or "?"
+        _cov = _coverage_unmet(tname, ledger)
+        if _cov is None and not ledger.item_findings_produced.get(tname):
+            unmet.append(
+                f"required check {tname!r} ({getattr(tool, 'evaluates', '?')}) was never "
+                f"run for the record under review - the mandatory lookup was not judged"
+            )
+        elif _cov:
+            unmet.append(_cov)
 
     return unmet
 

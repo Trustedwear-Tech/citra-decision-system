@@ -730,6 +730,70 @@ def validate_required_lookup_is_bound(agent_spec) -> List[Dict[str, Any]]:
     return out
 
 
+# ── A-01 ────────────────────────────────────────────────────────────────
+def validate_check_evaluates_a_bound_lookup(agent_spec) -> List[Dict[str, Any]]:
+    """Every ``check_evaluate`` tool names the bound lookup it judges.
+
+    The runtime runs an API check itself (item_pass.py): the lookup with the
+    case's own values, then the check on what came back, one reviewable item
+    per check. It can only do that when the check says WHICH lookup -
+    ``evaluates`` naming a bound ``mcp`` read tool in the same spec. A check
+    without it is a model decision: the agent fetches what it likes, or
+    nothing, and the officer sees a verdict or no card at all.
+
+    Runs at publish, AFTER the autowire (which fills ``evaluates`` in when the
+    app has exactly one REST lookup), so the stateless pre-check must not run
+    it - it would reject a spec that publish accepts.
+    """
+    if agent_spec is None:
+        return []
+    tools = list(_iter_tools_v2(agent_spec))
+    lookups = {getattr(t, "name", None): t for t in tools if getattr(t, "kind", None) == "mcp"}
+    bound = [n for n, t in lookups.items() if getattr(t, "dataset_id", None)]
+    out: List[Dict[str, Any]] = []
+    for tool in tools:
+        if getattr(tool, "kind", None) != "check_evaluate":
+            continue
+        name = getattr(tool, "name", "?")
+        loc = f"agent_spec.tools_v2[{name}].evaluates"
+        ev = getattr(tool, "evaluates", None)
+        if not ev:
+            out.append({"rule_id": "A-01", "location": loc, "reason": (
+                f"check {name!r} names no lookup (evaluates unset), so WHICH data it "
+                "judges would be the model's decision and the runtime cannot run the "
+                "check for the case. Set evaluates to the bound mcp read tool whose "
+                "result it judges"
+                + (f" - one of {bound}." if bound else
+                   " - this spec has no bound mcp read tool; declare the lookup first."))})
+            continue
+        lt = lookups.get(ev)
+        if lt is None:
+            out.append({"rule_id": "A-01", "location": loc, "reason": (
+                f"check {name!r} evaluates {ev!r}, which is not an mcp read tool in this "
+                f"spec. The mcp read tools are {sorted(k for k in lookups if k)}.")})
+            continue
+        if not getattr(lt, "dataset_id", None):
+            out.append({"rule_id": "A-01", "location": loc, "reason": (
+                f"check {name!r} evaluates {ev!r}, but that lookup is not bound to a "
+                "dataset (dataset_id unset), so the runtime cannot run it keyed on the "
+                "case. Bind the lookup (dataset_id + dataset_kind from the catalogue).")})
+            continue
+        if str(getattr(lt, "dataset_kind", None) or "").lower() == "semantic":
+            out.append({"rule_id": "A-01", "location": loc, "reason": (
+                f"check {name!r} evaluates {ev!r}, a semantic (RAG) dataset, which has "
+                "no keyed read to run for a case. Point it at a structured or REST lookup.")})
+            continue
+        li = getattr(lt, "lookup_inputs", None)
+        im = getattr(tool, "input_map", None) or {}
+        if im and isinstance(li, dict) and isinstance(li.get("properties"), dict):
+            unknown = sorted(k for k in im if k not in li["properties"])
+            if unknown:
+                out.append({"rule_id": "A-01", "location": f"agent_spec.tools_v2[{name}].input_map", "reason": (
+                    f"check {name!r} maps inputs {unknown} that lookup {ev!r} does not take; "
+                    f"its inputs are {sorted(li['properties'])}.")})
+    return out
+
+
 # ── S-01 ────────────────────────────────────────────────────────────────
 def validate_internal_audience(app_spec) -> List[Dict[str, Any]]:
     """Audience must be one of: owner | team:<sa> | dept:<id> | org.

@@ -305,7 +305,7 @@ Two governance details worth knowing before you build against it:
   hash of the writes as you displayed them; echo it back on approve and a plan
   that changed in between is rejected with a 409 rather than quietly
   committed.
-- **Every document and image is reviewed by the runtime, not by the model.**
+- **Every document, image and API check is reviewed by the runtime, not by the model.**
   Before the agent reasons, the runtime lists the items that belong to the case
   and reviews each one; the card heading reads "3 of 5" when any were missed,
   and a write is blocked until all are reviewed. `ITEM_PASS_MODE=off` returns

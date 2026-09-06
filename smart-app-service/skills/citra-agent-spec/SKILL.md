@@ -193,10 +193,15 @@ Narrate as you go per [`AGENTS.md`](../../AGENTS.md). Agent design is one of the
       is Aadhaar / PAN in India, SSN / driver's-license verification in the US.
       ("Credit check looks good [accept/reject], identity match looks good
       [accept/reject]" + one overall application approve/reject)?
-        → Add a `check_evaluate` tool **(one per check `task_type`)** fed by the
-          `mcp` read for that API: the agent calls the `mcp` read (e.g.
-          `bureau.credit`), then passes its result as `data` to `check_evaluate`,
-          which returns a STRUCTURED `ItemFinding` (modality `api`) the officer
+        → Add a `check_evaluate` tool **(one per check `task_type`)** that names
+          the `mcp` read for that API in **`evaluates`** (the lookup tool's `name`;
+          publish rejects a check without it, A-01). The RUNTIME runs the check
+          for every case itself — the lookup with the record's own values (each
+          declared input read from the anchor record's column of the same name,
+          or the column `input_map` names), then the check on what came back —
+          before the agent reasons. The agent does NOT fetch-then-judge; it
+          reasons over the finding. `check_evaluate`
+          returns a STRUCTURED `ItemFinding` (modality `api`) the officer
           accepts/rejects PER CHECK — and reject-reasons train that check's
           `(api, task_type)` rubric, exactly like image/doc findings. Give each
           check a DISTINCT, region-neutral `task_type` (`credit-check`,
@@ -208,9 +213,9 @@ Narrate as you go per [`AGENTS.md`](../../AGENTS.md). Agent design is one of the
             * `mode="rule"` + `rule_expr` (e.g. `"credit_score >= 700"`) — for a
               fixed-threshold check; NO LLM call, and a broken rule fails to
               `flag` (manual review), never a silent pass.
-          In `system_prompt`, mandate the sequence: read the API via its `mcp`
-          tool → call the matching `check_evaluate` with the result → after all
-          checks, give the overall recommendation. Do NOT reuse `consistency_check`
+          In `system_prompt`, say that every declared check has been run for the
+          case and is listed under ITEMS ALREADY REVIEWED: weigh those findings,
+          then give the overall recommendation. Do NOT reuse `consistency_check`
           for this (that's record↔artifact fraud screening, not per-API review).
     - If you added ANY `image_analyze`/`doc_extract`/`check_evaluate` tool → **ask
       the BA** for the per-item review gate and set `item_review_gate` on the
