@@ -122,6 +122,11 @@ export default function MemoryScreen({ visible, onClose, theme, initialSlug = nu
   // confirmation and result on this screen renders in the DOM instead.
   const [notice, setNotice] = useState(null);   // {tone:'info'|'error', text}
   const [armedRetire, setArmedRetire] = useState(null);  // clause_id, 6s window
+  // Retired / superseded judgements are kept (their corrections stay on record
+  // and a re-teach brings them back) but they are not knowledge the app uses,
+  // so they live under a fold, dimmed, never mixed with the live list.
+  const [showRetired, setShowRetired] = useState(false);
+  const RETIRED_STATUSES = ['retired', 'superseded'];
   const armTimer = useRef(null);
   useEffect(() => () => { if (armTimer.current) clearTimeout(armTimer.current); }, []);
 
@@ -548,7 +553,7 @@ export default function MemoryScreen({ visible, onClose, theme, initialSlug = nu
           </View>
         )}
 
-        {tab === 'clauses' && !loading && clauses && clauses.map((c) => (
+        {tab === 'clauses' && !loading && clauses && clauses.filter((c) => !RETIRED_STATUSES.includes(c.status)).map((c) => (
           <TouchableOpacity
             key={c.clause_id}
             onPress={() => openProvenance(c.clause_id)}
@@ -574,6 +579,10 @@ export default function MemoryScreen({ visible, onClose, theme, initialSlug = nu
                     ? 'stopped — someone disagreed, waiting on a decision'
                     : c.status === 'underperforming'
                     ? 'withdrawn — your team kept overruling it'
+                    : c.status === 'retired'
+                    ? 'retired — not used; teaching it again brings it back'
+                    : c.status === 'superseded'
+                    ? 'superseded — a newer judgement replaced it'
                     : c.status}
                 </Text>
               )}
@@ -604,6 +613,35 @@ export default function MemoryScreen({ visible, onClose, theme, initialSlug = nu
             </Text>
           </TouchableOpacity>
         ))}
+
+        {tab === 'clauses' && !loading && clauses && clauses.some((c) => RETIRED_STATUSES.includes(c.status)) && (
+          <View style={{ marginTop: 14 }}>
+            <TouchableOpacity onPress={() => setShowRetired((v) => !v)} hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
+              <Ionicons name={showRetired ? 'chevron-down' : 'chevron-forward'} size={14} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 }}>
+                Retired ({clauses.filter((c) => RETIRED_STATUSES.includes(c.status)).length}) — no longer used
+              </Text>
+            </TouchableOpacity>
+            {showRetired && clauses.filter((c) => RETIRED_STATUSES.includes(c.status)).map((c) => (
+              <TouchableOpacity
+                key={c.clause_id}
+                onPress={() => openProvenance(c.clause_id)}
+                style={[styles.card, { borderColor: colors.border, backgroundColor: colors.surface, opacity: 0.6 }]}
+              >
+                <Text style={{ color: colors.text, fontSize: 13, lineHeight: 19, textDecorationLine: 'line-through' }}>
+                  {c.text}
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 6 }}>
+                  {c.status === 'superseded'
+                    ? 'superseded — a newer judgement replaced it'
+                    : 'retired — not used; the corrections behind it are kept, so teaching it again brings it back'}
+                  {' · '}tap to see why
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {tab === 'clauses' && !loading && clauses && clauses.length === 0 && (
           <Text style={{ color: colors.textSecondary }}>
