@@ -1264,6 +1264,23 @@ type RunResult = {
    *  server-side in code from the declared weights — the officer sees the same
    *  totals the ledger records, and the same ones the Decision API returns. */
   scorecard?: FactorScorecard;
+  /** The agent's own receipts: the SOP passages, tool facts and documents it
+   *  says it relied on (the `citations` block of its audit JSON). These were
+   *  returned on every run and never parsed here, so the card showed WHAT
+   *  was decided and never WHAT IT RESTED ON. */
+  citations?: Array<Record<string, unknown>>;
+  /** Every tool call the run made - name, ok/error, a bounded digest. "What
+   *  did it actually check?" answered from the run, not inferred. */
+  toolCalls?: Array<{ tool?: string; status?: string; digest?: string }>;
+  /** Policy libraries whose passages were put in front of the model. */
+  sopSources?: string[];
+  /** Past cases consulted (grounding samples), before any policy retrieval. */
+  retrievalCount?: number | null;
+  /** Officer-facing sentences the server derived from the run timeline: the
+   *  agent hit its step limit, proposed a write without reviewing evidence,
+   *  ran out of budget. Rendered above everything else - a run that stopped
+   *  early must not look like one that finished. */
+  notices?: Array<{ level?: string; code?: string; text?: string }>;
 };
 
 /** Map a status / decision string to one of the badge tone names. */
@@ -1317,6 +1334,18 @@ function runResultFromBody(
       ? (b.cited_clauses as RunResult["citedClauses"])
       : undefined,
     scorecard: (b.scorecard ?? undefined) as FactorScorecard | undefined,
+    citations: Array.isArray(b.citations)
+      ? (b.citations as Array<Record<string, unknown>>)
+      : undefined,
+    toolCalls: Array.isArray((b.references as Record<string, unknown> | undefined)?.tool_calls)
+      ? ((b.references as Record<string, unknown>).tool_calls as RunResult["toolCalls"])
+      : undefined,
+    sopSources: Array.isArray(b.sop_sources) ? (b.sop_sources as string[]) : undefined,
+    retrievalCount:
+      typeof (b.references as Record<string, unknown> | undefined)?.retrieval_count === "number"
+        ? ((b.references as Record<string, number>).retrieval_count)
+        : undefined,
+    notices: Array.isArray(b.notices) ? (b.notices as RunResult["notices"]) : undefined,
   };
 }
 
@@ -1705,6 +1734,19 @@ function QueuePanelView({
       citedClauses: Array.isArray(rec.cited_clauses)
         ? (rec.cited_clauses as RunResult["citedClauses"])
         : undefined,
+      scorecard: (rec.scorecard ?? undefined) as FactorScorecard | undefined,
+      itemFindings: Array.isArray(rec.item_findings)
+        ? (rec.item_findings as ItemFinding[])
+        : undefined,
+      citations: Array.isArray(rec.citations)
+        ? (rec.citations as Array<Record<string, unknown>>)
+        : undefined,
+      toolCalls: Array.isArray(rec.tool_calls)
+        ? (rec.tool_calls as RunResult["toolCalls"])
+        : undefined,
+      sopSources: Array.isArray(rec.sop_sources) ? (rec.sop_sources as string[]) : undefined,
+      retrievalCount: typeof rec.retrieval_count === "number" ? rec.retrieval_count : undefined,
+      notices: Array.isArray(rec.notices) ? (rec.notices as RunResult["notices"]) : undefined,
     };
     setModal(result);
   }
@@ -2592,6 +2634,112 @@ function TeamJudgements({
   );
 }
 
+/** Sentences the server derived from the run's timeline that change how the
+ *  rest of this card should be read. Level drives the colour only. */
+function RunNotices({ notices }: { notices?: RunResult["notices"] }) {
+  const list = (notices ?? []).filter((n) => n && n.text);
+  if (!list.length) return null;
+  const line = (level?: string) =>
+    level === "error"
+      ? "var(--citra-danger, #dc2626)"
+      : level === "info"
+      ? "var(--citra-border, #e5e7eb)"
+      : "var(--citra-warning, #d97706)";
+  return (
+    <div className="rr-section" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {list.map((n, i) => (
+        <div
+          key={n.code ?? i}
+          role="status"
+          style={{
+            borderLeft: `3px solid ${line(n.level)}`,
+            padding: "6px 10px",
+            fontSize: 12.5,
+            color: "var(--citra-text, #374151)",
+          }}
+        >
+          {n.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** What the recommendation rested on: the agent's own citations, the tools it
+ *  called, the policy libraries it read, the past cases it consulted. Every line
+ *  comes from the run - nothing here is inferred. Renders nothing when the run
+ *  recorded nothing, rather than a heading over an empty list. */
+function EvidenceUsed({
+  citations,
+  toolCalls,
+  sopSources,
+  pastCases,
+}: {
+  citations?: Array<Record<string, unknown>>;
+  toolCalls?: RunResult["toolCalls"];
+  sopSources?: string[];
+  pastCases: number;
+}) {
+  const cites = (citations ?? []).filter((c) => c && typeof c === "object");
+  const calls = toolCalls ?? [];
+  const sops = sopSources ?? [];
+  if (!cites.length && !calls.length && !sops.length && !pastCases) return null;
+
+  // One line per tool NAME, with a count and how many of those calls failed.
+  const byTool = new Map<string, { n: number; failed: number }>();
+  for (const c of calls) {
+    const k = String(c.tool ?? "tool");
+    const e = byTool.get(k) ?? { n: 0, failed: 0 };
+    e.n += 1;
+    if (c.status === "error") e.failed += 1;
+    byTool.set(k, e);
+  }
+  const str = (v: unknown) => (v == null ? "" : String(v));
+  const muted = { color: "var(--citra-muted, #6b7280)" } as const;
+
+  return (
+    <div className="rr-section">
+      <div className="rr-section-head">What the agent relied on</div>
+      {cites.length > 0 && (
+        <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 12.5 }}>
+          {cites.map((c, i) => {
+            const kind = str(c.type ?? c.kind ?? c.source);
+            const ref = str(c.ref ?? c.clause ?? c.title ?? c.source_id ?? c.doc_id);
+            const detail = str(c.detail ?? c.quote ?? c.text ?? c.note);
+            const url = typeof c.source_url === "string" ? c.source_url : undefined;
+            return (
+              <li key={i} style={{ marginBottom: 3 }}>
+                {kind && <span style={muted}>{kind} </span>}
+                {ref && <strong>{ref}</strong>}
+                {detail && <span>{ref || kind ? " — " : ""}{detail}</span>}
+                {url && (
+                  <>
+                    {" "}
+                    <a href={url} target="_blank" rel="noreferrer">open ›</a>
+                  </>
+                )}
+                {!kind && !ref && !detail && !url && <code>{JSON.stringify(c)}</code>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div style={{ ...muted, fontSize: 11.5, marginTop: cites.length ? 6 : 4, display: "flex", flexDirection: "column", gap: 2 }}>
+        {byTool.size > 0 && (
+          <div>
+            Checked:{" "}
+            {[...byTool.entries()]
+              .map(([k, v]) => `${k}${v.n > 1 ? ` ×${v.n}` : ""}${v.failed ? ` (${v.failed} failed)` : ""}`)
+              .join(" · ")}
+          </div>
+        )}
+        {sops.length > 0 && <div>Policy read: {sops.join(", ")}</div>}
+        {pastCases > 0 && <div>{pastCases} past case{pastCases === 1 ? "" : "s"} consulted</div>}
+      </div>
+    </div>
+  );
+}
+
 /** Read-only strip of the case signature the model saw. */
 function FacetStrip({ facets }: { facets: string[] }) {
   if (!facets.length) return null;
@@ -2873,6 +3021,24 @@ function RunResultModal({
             </div>
           </div>
           {result.error && <div className="error">{result.error}</div>}
+          {/* Anything that makes the rest of this card incomplete goes FIRST.
+              A run that hit its step cap before reading every document used
+              to render identically to one that finished. */}
+          <RunNotices notices={result.notices} />
+          {/* The reasons, directly under the verdict. They used to sit below
+              the per-item list - with four documents, below the fold. */}
+          {result.reasoning && (
+            <div className="rr-section">
+              <div className="rr-section-head">Reasoning</div>
+              <Markdown content={result.reasoning} />
+            </div>
+          )}
+          <EvidenceUsed
+            citations={result.citations}
+            toolCalls={result.toolCalls}
+            sopSources={result.sopSources}
+            pastCases={result.retrievalCount ?? 0}
+          />
           {/* The declared rubric, between the verdict and the per-item review.
               Supporting detail for the recommendation — never a replacement for
               the reasons, and never a second screen the officer has to
@@ -2932,12 +3098,6 @@ function RunResultModal({
                   />
                 );
               })}
-            </div>
-          )}
-          {result.reasoning && (
-            <div className="rr-section">
-              <div className="rr-section-head">Reasoning</div>
-              <Markdown content={result.reasoning} />
             </div>
           )}
           {/* Precedent receipts — the past cases the AI relied on (≈) or

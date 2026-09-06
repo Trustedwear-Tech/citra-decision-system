@@ -7733,6 +7733,11 @@ def _build_audit_doc(
         "audit_missing": audit_missing,
         "outputs": response.outputs,
         "timeline": response.timeline,
+        # Officer-facing sentences derived from the timeline, and the policy
+        # libraries consulted - the same derivation the staged row stores, so
+        # the card reads one field on both paths.
+        "notices": run_notices(response.timeline),
+        "sop_sources": _sop_sources(response.references),
         "error": response.error,
         "model": response.model,
         "usage": response.usage,
@@ -10758,6 +10763,70 @@ async def _flag_sop_drift(slug: str, factor_ids: List[str]) -> None:
         logger.warning("[SCORECARD] could not flag SOP drift for %s: %s", slug, exc)
 
 
+#: Timeline steps an OFFICER has to know about. The timeline is an engineering
+#: trail and is not rendered on the decision card, so these were invisible: a
+#: run that hit its step cap before reading every document looked exactly like
+#: one that finished. Each becomes one plain sentence, on the live response and
+#: on the staged row alike, so the two paths cannot disagree.
+def run_notices(timeline: Any) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for step in (timeline or []):
+        if not isinstance(step, dict):
+            continue
+        name = str(step.get("step") or "")
+        status = str(step.get("status") or "")
+        detail = step.get("detail")
+        if isinstance(detail, (list, tuple)):
+            detail = "; ".join(str(d) for d in detail if d)
+        detail = (str(detail).strip() if detail else "")
+        if name == "tool_loop" and status == "error":
+            out.append({"level": "warning", "code": "step_limit", "text": (
+                "The agent reached its step limit before it finished. Some "
+                "documents or checks may not have been reviewed - treat the "
+                "evidence below as possibly incomplete.")})
+        elif name in ("evidence_gate", "evidence_gate_autoprocess") and status == "would_block":
+            out.append({"level": "warning", "code": "evidence_unreviewed", "text": (
+                "The agent proposed a write without reviewing all the evidence "
+                "it is about" + (f": {detail}" if detail else "."))})
+        elif name in ("evidence_gate", "evidence_gate_autoprocess") and status == "blocked":
+            out.append({"level": "error", "code": "evidence_blocked", "text": (
+                "A write was blocked because the agent had not reviewed the "
+                "evidence it is about" + (f": {detail}" if detail else "."))})
+        elif name == "clause_citation_guard" and status == "dropped":
+            out.append({"level": "info", "code": "citation_dropped", "text": (
+                "The agent claimed to use a team judgement it was never shown; "
+                "that claim was removed from the receipt.")})
+        elif name == "token_budget":
+            out.append({"level": "warning", "code": "token_budget", "text": (
+                "The agent ran out of budget and was made to conclude from "
+                "what it already had.")})
+        elif name == "empty_result" and detail:
+            out.append({"level": "warning", "code": "empty_result", "text": detail})
+    return out
+
+
+def _sop_sources(references: Any) -> List[str]:
+    """Policy libraries whose passages were put in front of the model."""
+    seen: List[str] = []
+    for r in ((references or {}).get("few_shot_samples") or []):
+        if isinstance(r, dict) and r.get("kind") == "rag_prefetch" and r.get("source_id"):
+            sid = str(r["source_id"])
+            if sid not in seen:
+                seen.append(sid)
+    return seen
+
+
+def _plain_list(items: Any) -> List[Dict[str, Any]]:
+    """Pydantic models or dicts -> dicts. Anything else is dropped, not guessed."""
+    out: List[Dict[str, Any]] = []
+    for it in (items or []):
+        if hasattr(it, "model_dump"):
+            out.append(it.model_dump())
+        elif isinstance(it, dict):
+            out.append(it)
+    return out
+
+
 async def _stage_recommendation(
     *,
     response: RunResponse,
@@ -10836,6 +10905,13 @@ async def _stage_recommendation(
         cited_clauses=list(getattr(response, "cited_clauses", None) or []),
         case_facets=list((response.references or {}).get("case_facets") or []),
         signature_version=(response.references or {}).get("signature_version"),
+        # The rest of what the live card shows. Persisted here or the queue
+        # card silently shows less than the run knew.
+        item_findings=_plain_list(getattr(response, "item_findings", None)),
+        citations=_plain_list(getattr(response, "citations", None)),
+        tool_calls=_plain_list((response.references or {}).get("tool_calls")),
+        sop_sources=_sop_sources(response.references),
+        notices=run_notices(getattr(response, "timeline", None)),
         status="pending_review",
         assignable_to=assignable_to,
         created_at=now,

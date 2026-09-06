@@ -53,6 +53,32 @@ export interface ItemFinding {
  *  plain string. `record_ref` may be dataset-qualified (`dataset:KEY`), so show
  *  the bare key, which is what the officer sees everywhere else in the app.
  *  An unrecognised shape yields "" and is dropped rather than stringified. */
+/** How much of the document the agent actually read. The runtime writes
+ *  pages_read / pages_total / truncated_chars / encoding_lossy onto the
+ *  finding's citation precisely so a half-read policy cannot pass for a
+ *  fully-read one - and until now nothing rendered them. */
+function coverageNotes(citations: ItemFinding["citations"]): Array<{ text: string; warn: boolean }> {
+  const out: Array<{ text: string; warn: boolean }> = [];
+  for (const c of citations ?? []) {
+    if (!c || typeof c !== "object") continue;
+    const total = typeof c.pages_total === "number" ? c.pages_total : undefined;
+    const read = typeof c.pages_read === "number" ? c.pages_read : undefined;
+    const images = typeof c.images === "number" ? c.images : undefined;
+    if (total !== undefined && read !== undefined && read < total) {
+      out.push({ text: `Read ${read} of ${total} pages — ${total - read} not seen`, warn: true });
+    } else if (total !== undefined && total > 0) {
+      out.push({ text: `Read all ${total} page${total === 1 ? "" : "s"}${images ? " as images" : ""}`, warn: false });
+    }
+    if (typeof c.truncated_chars === "number" && c.truncated_chars > 0) {
+      out.push({ text: `Text cut short — ${c.truncated_chars.toLocaleString()} characters not read`, warn: true });
+    }
+    if (c.encoding_lossy === true) {
+      out.push({ text: "Some characters could not be decoded; extracted values may be affected", warn: true });
+    }
+  }
+  return out;
+}
+
 function priorRefLabel(ref: unknown): string {
   if (typeof ref === "string") return ref;
   if (ref && typeof ref === "object") {
@@ -324,6 +350,18 @@ export function ItemFindingReview({
               <code>{finding.recommendation}</code>
             </div>
           ) : null}
+          {(() => {
+            const notes = coverageNotes(finding.citations);
+            return notes.length > 0 ? (
+              <div style={{ fontSize: 11.5, marginBottom: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                {notes.map((n, i) => (
+                  <span key={i} style={{ color: n.warn ? "var(--citra-warning, #d97706)" : "var(--citra-muted, #6b7280)" }}>
+                    {n.text}
+                  </span>
+                ))}
+              </div>
+            ) : null;
+          })()}
           <table style={{ fontSize: 12, borderCollapse: "collapse", marginBottom: 6 }}>
             <tbody>
               {Object.entries(finding.fields || {}).map(([k, v]) => (

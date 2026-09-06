@@ -4853,6 +4853,17 @@ class WorkflowStagingRow(BaseModel):
     cited_clauses: List[Dict[str, Any]] = Field(default_factory=list)
     case_facets: List[str] = Field(default_factory=list)
     signature_version: Optional[int] = None
+    #: What the officer's card needs to show the recommendation FAITHFULLY
+    #: when opened from the queue. All of it was on the live /run response
+    #: and lost at staging, so a queued card showed the verdict and the
+    #: reasons but not the documents reviewed, the sources cited, what was
+    #: checked, or that the agent ran out of steps before finishing.
+    #: Digests and receipts only -- never raw rows.
+    item_findings: List[Dict[str, Any]] = Field(default_factory=list)
+    citations: List[Dict[str, Any]] = Field(default_factory=list)
+    tool_calls: List[Dict[str, Any]] = Field(default_factory=list)
+    sop_sources: List[str] = Field(default_factory=list)
+    notices: List[Dict[str, Any]] = Field(default_factory=list)
     status: WorkflowStagingStatus = "pending_je_review"
     assignable_to: Dict[str, Any] = Field(
         default_factory=dict,

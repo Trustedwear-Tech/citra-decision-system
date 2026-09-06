@@ -199,6 +199,20 @@ async def _resolve_workflow_staging_rows(
             # no re-score — and so the grade shown is exactly the one the ledger
             # will record.
             "scorecard": r.get("scorecard"),
+            # Everything else the live card shows and this one silently did not:
+            # the judgements the model saw and the facets it saw them through
+            # (on the row since clause memory landed, never copied to the card),
+            # the documents it reviewed, what it cited and checked, and any
+            # notice that it stopped early.
+            "cited_clauses": r.get("cited_clauses") or [],
+            "case_facets": r.get("case_facets") or [],
+            "injected_clause_ids": r.get("injected_clause_ids") or [],
+            "retrieval_count": r.get("retrieval_count"),
+            "item_findings": r.get("item_findings") or [],
+            "citations": r.get("citations") or [],
+            "tool_calls": r.get("tool_calls") or [],
+            "sop_sources": r.get("sop_sources") or [],
+            "notices": r.get("notices") or [],
         }
         project_scorecard_columns(r)
         rows.append(r)
@@ -1932,7 +1946,10 @@ async def _attach_staged_recommendations(
              "llm_reasoning": 1, "llm_evidence_summary": 1,
              "planned_writes": 1, "cited_precedents": 1, "status": 1,
              "workflow_execution_id": 1, "case_natural_key": 1,
-             "created_at": 1},
+             "created_at": 1, "scorecard": 1, "cited_clauses": 1,
+             "case_facets": 1, "injected_clause_ids": 1, "retrieval_count": 1,
+             "item_findings": 1, "citations": 1, "tool_calls": 1,
+             "sop_sources": 1, "notices": 1},
         ).sort("created_at", -1).limit(200).to_list(length=200)
     except Exception as exc:  # noqa: BLE001 — enrich failure must not kill the panel
         logger.warning("[panel] staged-recommendation join failed: %s", exc)
@@ -1961,6 +1978,23 @@ async def _attach_staged_recommendations(
                     f"{s.get('workflow_execution_id')}:{s.get('case_natural_key')}"
                 ),
                 "plan_hash": compute_plan_hash(s.get("planned_writes") or []),
+                # Same set as the queue projection above; this join used to
+                # hand the card even less (no scorecard either).
+                "scorecard": s.get("scorecard"),
+                # Everything else the live card shows and this one silently did not:
+                # the judgements the model saw and the facets it saw them through
+                # (on the row since clause memory landed, never copied to the card),
+                # the documents it reviewed, what it cited and checked, and any
+                # notice that it stopped early.
+                "cited_clauses": s.get("cited_clauses") or [],
+                "case_facets": s.get("case_facets") or [],
+                "injected_clause_ids": s.get("injected_clause_ids") or [],
+                "retrieval_count": s.get("retrieval_count"),
+                "item_findings": s.get("item_findings") or [],
+                "citations": s.get("citations") or [],
+                "tool_calls": s.get("tool_calls") or [],
+                "sop_sources": s.get("sop_sources") or [],
+                "notices": s.get("notices") or [],
             }
             break  # newest-first → first hit is the latest recommendation
 
