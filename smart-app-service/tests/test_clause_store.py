@@ -277,13 +277,29 @@ def test_render_block_carries_clause_ids_for_the_blame_edge():
     block = cs.render_block([{"clause_id": "C-034", "text": "Do X.",
                               "support_count": 4, "status": "active"}])
     assert "[C-034]" in block and "team judgement — 4 officers" in block
-    assert "cite the ids" in block
+    assert "citing" in block
     # and the hierarchy is stated where the model reads it (J1)
     assert "RULES (the SOP) are SUPREME" in block
 
 
 def test_empty_selection_renders_nothing():
     assert cs.render_block([], []) == ""
+
+
+def test_render_block_says_what_a_conflict_is_and_is_not():
+    """The model read "the SOP does not mention this" as "the SOP forbids
+    this" and reported a judgement that asked for MORE care as overridden by
+    rule (acme-bank: "SOP §8 does not mandate this field; judgement
+    overridden"). The header now defines conflict as breaking a rule, says
+    silence is not a rule, and tells the model to hold when a judgement asks
+    for something the record cannot show."""
+    block = cs.render_block([{"clause_id": "C-002", "text": "Check the employer.",
+                              "support_count": 1, "status": "candidate"}])
+    assert "only if following it would break the rule" in block
+    assert "silent on, is NOT a conflict" in block
+    assert "hold or refer" in block and '"applied"' in block
+    # still lean: the header is paid on every run
+    assert len(block.split()) < 100
 
 
 # ── precision ────────────────────────────────────────────────────────────────

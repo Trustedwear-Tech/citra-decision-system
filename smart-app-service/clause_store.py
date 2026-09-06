@@ -883,16 +883,25 @@ def render_block(
     # The authority hierarchy, stated where the model reads it (doctrine:
     # sop-rules-officer-judgement-plan §0 — SOP is king; these are JUDGEMENTS).
     head = header or (
-        "JUDGEMENTS learned from this app's officers — their experience, "
-        "covering what the rules/SOP do not spell out."
+        "JUDGEMENTS learned from this app's officers, covering what the "
+        "SOP does not spell out."
     )
     lines = [
         head,
-        "Your RULES (the SOP) are SUPREME: a judgement can never override a "
-        "rule. If a judgement conflicts with a rule, FOLLOW THE RULE and cite "
-        'the judgement with relation "overrode_by_rule" so the team can '
-        "review it. Apply the judgements that fit this case; cite the ids you "
-        "relied on.",
+        # What "conflict" means is spelled out, because the model was reading
+        # "the SOP does not mention this" as "the SOP forbids this" and
+        # reporting a judgement that asks for MORE care as overridden by rule.
+        # Observed on acme-bank: "SOP §8 does not mandate this field; the SOP
+        # is supreme; judgement overridden" -- on a judgement whose whole point
+        # was the check the SOP is silent about.
+        # Every word here is paid on every run (test_reports_the_real_prompt_cost
+        # holds the whole block under a 100-word mean), so this is as short as
+        # the distinction allows.
+        "RULES (the SOP) are SUPREME, but a judgement conflicts with a rule "
+        "only if following it would break the rule; more care, or a check "
+        "the SOP is silent on, is NOT a conflict. On a real conflict follow "
+        'the rule, citing "overrode_by_rule". If a judgement asks for what '
+        'the record cannot show, hold or refer, citing "applied".',
     ]
     # Mentioned ONLY when the app actually wires the tool. Telling a model to
     # call a tool it does not have wastes tokens on every run and invites a
