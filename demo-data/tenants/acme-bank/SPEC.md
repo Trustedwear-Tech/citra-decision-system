@@ -12,7 +12,7 @@
 
 Single source of truth for the `acme-bank` demo tenant. Every script, source
 definition, Decision App and persona below MUST use the exact identifiers in
-this file. Mirrors the structure of `demo-data/tenants/acme-power/`.
+this file.
 
 India-flavoured BFSI demo: retail lending, collections, general insurance
 claims, and a sales dashboard. Synthetic data shaped to how an Indian bank +
@@ -48,9 +48,8 @@ Plan and rationale: `docs/acme-bank-demo-plan.md`.
 | Faker locale | `en_IN` |
 | Currency | INR (`NUMERIC(14,2)`) |
 
-**Single-org platform.** `data-discovery-service` pins `ORG_ID` to one org.
-Bringing acme-bank up means acme-power comes down — see the cut-over in
-`docs/acme-bank-demo-plan.md` §7.5. Do not run both.
+**Single-org platform.** `data-discovery-service` pins `ORG_ID` to one org:
+acme-bank. See `docs/acme-bank-demo-plan.md` §7.5 for the bring-up order.
 
 ---
 
@@ -459,9 +458,8 @@ Each chunk tagged `industry=bfsi`, `source_id=acme_bank_policy_library`,
 **Ingested and verified 2026-07-28** — ~7,800 words, 12 chunks in
 `mcp_dept_libraries`, retrieval scoped by `org_id` (an acme-bank-filtered
 search returns only acme-bank chunks). Documents of this length produce **one
-chunk each** under the platform's 2048-token splitter; acme-power's corpus
-behaves identically (13 docs → 13 chunks), so a whole document is the unit of
-retrieval here. Citations still carry `doc_path`.
+chunk each** under the platform's 2048-token splitter, so a whole document is
+the unit of retrieval here. Citations still carry `doc_path`.
 
 ### The deliberate gap — do not "fix" it
 
@@ -566,8 +564,8 @@ Personas are placeholders without passwords — reached through
 3. `docker compose up -d --build citra-ds-mcp-demo-acme-bank` → `:18504/health` must list 5 sources
 4. `python scripts/ingest_docs.py` (Citra-Service venv; needs an embedding endpoint)
 5. `python ../../scripts/seed_tenant.py --tenant acme-bank` (needs Citra-User-Service)
-6. **Cut-over**: `ORG_ID=acme-bank` on data-discovery, restart, `POST /crawl/run`
-   — this takes acme-power down; see `docs/acme-bank-demo-plan.md` §7.5
+6. `ORG_ID=acme-bank` on data-discovery, restart, `POST /crawl/run`
+   — see `docs/acme-bank-demo-plan.md` §7.5
 7. Author the 4 apps via the builder (1–3 with `case_signature`)
 8. `python scripts/seed_memory.py --apply` — demo judgements, formed from evidence
 9. `python scripts/acme_bank_e2e.py` — the middleware test, must pass
@@ -582,5 +580,4 @@ Personas are placeholders without passwords — reached through
   assignment exists as a write action but is not itself a Decision App.
 - **Every identifier is masked in the data itself**, not just in the UI — the
   demo must be safe on a projector.
-- **One org at a time.** acme-bank replaces acme-power; it does not run
-  alongside it.
+- **One org at a time.** acme-bank is the only demo org.

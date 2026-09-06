@@ -42,9 +42,9 @@ for user, dept, want in (("collections-mum@acme-bank-demo.citra.ai", "collection
     r = httpx.get(f"{SA}/apps", headers={"Authorization": f"Bearer {t}"},
                   params={"scope": "all", "limit": 50}, timeout=60)
     slugs = [a.get("slug") for a in ((r.json() or {}).get("apps") or [])]
-    leaked = [s for s in slugs if "acme-power" in (s or "")]
-    check(f"{dept} officer sees {want}", want in slugs and not leaked,
-          f"HTTP {r.status_code} sees={slugs} leaked={leaked or 'none'}")
+    foreign = [s for s in slugs if s and not s.startswith("acme-bank-")]
+    check(f"{dept} officer sees {want}", want in slugs and not foreign,
+          f"HTTP {r.status_code} sees={slugs} foreign={foreign or 'none'}")
 
 # panel data actually flows from the prod MCP
 r = httpx.get(f"{SA}/apps/acme-bank-collections-priority/data/priority_worklist",

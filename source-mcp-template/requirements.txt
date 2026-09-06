@@ -8,7 +8,7 @@
 # Core
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
-pydantic>=2.7.0
+pydantic==2.13.5
 pydantic-settings>=2.3.0
 # NL→SQL plan cache + few-shot store (plan_cache.py). Fail-open: absent/down
 # Redis just disables caching, never breaks a query.

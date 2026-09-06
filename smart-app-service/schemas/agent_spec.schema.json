@@ -72,6 +72,7 @@
         "input_schema": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -123,6 +124,7 @@
         "output_schema": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -223,9 +225,6 @@
         "kind": {
           "const": "check_evaluate",
           "default": "check_evaluate",
-          "enum": [
-            "check_evaluate"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -346,7 +345,7 @@
         "gps_radius_km": {
           "anyOf": [
             {
-              "minimum": 0.0,
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -424,9 +423,6 @@
         "kind": {
           "const": "code_exec",
           "default": "code_exec",
-          "enum": [
-            "code_exec"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -568,9 +564,6 @@
         "kind": {
           "const": "consistency_check",
           "default": "consistency_check",
-          "enum": [
-            "consistency_check"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -856,9 +849,6 @@
         "kind": {
           "const": "doc_extract",
           "default": "doc_extract",
-          "enum": [
-            "doc_extract"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -1200,9 +1190,6 @@
         "kind": {
           "const": "fraud_synthesis",
           "default": "fraud_synthesis",
-          "enum": [
-            "fraud_synthesis"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -1272,6 +1259,7 @@
           "title": "Evaluation Verdict"
         },
         "filters": {
+          "additionalProperties": true,
           "description": "Predicate for the pull (e.g. {'status': 'closed'}). Applied to the SELECT WHERE.",
           "title": "Filters",
           "type": "object"
@@ -1404,6 +1392,7 @@
           "type": "string"
         },
         "source_profile_baseline": {
+          "additionalProperties": true,
           "description": "The /builder/history-quality 'signals' captured at build time.",
           "title": "Source Profile Baseline",
           "type": "object"
@@ -1502,9 +1491,6 @@
         "kind": {
           "const": "image_analyze",
           "default": "image_analyze",
-          "enum": [
-            "image_analyze"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -1663,9 +1649,6 @@
         "kind": {
           "const": "llm",
           "default": "llm",
-          "enum": [
-            "llm"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -1723,9 +1706,6 @@
         "kind": {
           "const": "lookup_judgement",
           "default": "lookup_judgement",
-          "enum": [
-            "lookup_judgement"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -1780,6 +1760,7 @@
           "type": "array"
         },
         "input_schema": {
+          "additionalProperties": true,
           "description": "JSON Schema of the write action's payload, copied verbatim from the catalogue write_actions[].input_schema.",
           "title": "Input Schema",
           "type": "object"
@@ -1787,9 +1768,6 @@
         "kind": {
           "const": "mcp_action",
           "default": "mcp_action",
-          "enum": [
-            "mcp_action"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -1875,15 +1853,13 @@
         "kind": {
           "const": "mcp",
           "default": "mcp",
-          "enum": [
-            "mcp"
-          ],
           "title": "Kind",
           "type": "string"
         },
         "lookup_inputs": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -1974,9 +1950,6 @@
         "kind": {
           "const": "neighbor_samples",
           "default": "neighbor_samples",
-          "enum": [
-            "neighbor_samples"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -2069,6 +2042,7 @@
         "filter": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -2237,7 +2211,7 @@
         },
         "window_days": {
           "default": 7.0,
-          "minimum": 0.0,
+          "minimum": 0,
           "title": "Window Days",
           "type": "number"
         }
@@ -2263,7 +2237,7 @@
         },
         "amount_tolerance_pct": {
           "default": 1.0,
-          "minimum": 0.0,
+          "minimum": 0,
           "title": "Amount Tolerance Pct",
           "type": "number"
         },
@@ -2389,6 +2363,7 @@
       "description": "A side-effect to perform after a run resolves (approve / reject /\nauto-decision). Each entry is a tool call into a registered MCP — never\narbitrary code. The runtime resolves ``tool`` against the executing\nagent's tool list; unknown tools are surfaced as a gap.",
       "properties": {
         "args": {
+          "additionalProperties": true,
           "title": "Args",
           "type": "object"
         },
@@ -2495,9 +2470,6 @@
         "kind": {
           "const": "rag",
           "default": "rag",
-          "enum": [
-            "rag"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -2582,6 +2554,7 @@
         "output_schema": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -2644,9 +2617,6 @@
         "kind": {
           "const": "validate_form",
           "default": "validate_form",
-          "enum": [
-            "validate_form"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -2769,7 +2739,7 @@
         },
         "tolerance_pct": {
           "default": 1.0,
-          "minimum": 0.0,
+          "minimum": 0,
           "title": "Tolerance Pct",
           "type": "number"
         },
@@ -2813,9 +2783,6 @@
         "kind": {
           "const": "vision_ocr",
           "default": "vision_ocr",
-          "enum": [
-            "vision_ocr"
-          ],
           "title": "Kind",
           "type": "string"
         },
@@ -2875,6 +2842,7 @@
     "hitl_policy": {
       "anyOf": [
         {
+          "additionalProperties": true,
           "type": "object"
         },
         {
@@ -2887,6 +2855,7 @@
     "input_schema": {
       "anyOf": [
         {
+          "additionalProperties": true,
           "type": "object"
         },
         {
@@ -2963,9 +2932,6 @@
     "spec_version": {
       "const": "v0",
       "default": "v0",
-      "enum": [
-        "v0"
-      ],
       "title": "Spec Version",
       "type": "string"
     },

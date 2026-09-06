@@ -222,7 +222,7 @@ export default function EditUserModal({ visible, user, onClose, onSaved }) {
                 style={styles.input}
                 value={orgId}
                 onChangeText={setOrgId}
-                placeholder="e.g. acme-cement"
+                placeholder="e.g. acme-bank"
                 autoCapitalize="none"
               />
             ) : (

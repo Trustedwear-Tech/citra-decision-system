@@ -9,9 +9,9 @@
 """
 Seed the Acme Bank policy library into the SHARED dept-library collection.
 
-Adapted from the acme-power ingester, deliberately by copy: the chunking, the
-embedding provider and the shared-collection resolution stay byte-identical to
-the path that is known to work, so this tenant cannot silently drift from it.
+The chunking, the embedding provider and the shared-collection resolution
+follow the platform's own ingestion path exactly, so this tenant cannot
+silently drift from it.
 
 Dept SOP/policy libraries all share ONE Milvus collection
 (`<prefix>_dept_libraries`), isolated by the scalar-indexed `org_id` + `dept` +

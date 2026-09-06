@@ -12,8 +12,7 @@
 # /app/sources.json (SOURCES_FILE) and publishes those sources to discovery on
 # boot. There is no import step — regenerate the file and restart this service.
 #
-# Explicit project name so this cannot collide with the acme-power /
-# acme-cement / bihar-gov demo stacks.
+# Explicit project name so this cannot collide with another demo stack.
 #
 # Prereqs:
 #   1. docker compose up -d citra-ds-acme-bank-postgres
@@ -52,7 +51,6 @@ services:
     depends_on:
       - citra-ds-acme-bank-postgres
     ports:
-      # 8503 is acme-power's.
       - "18504:8090"
     networks:
       - citra-network
@@ -183,8 +181,8 @@ services:
       POSTGRES_DB: acme_bank
       POSTGRES_USER: acme_bank
       POSTGRES_PASSWORD: acme_bank_demo_pw
-    # 5443 belongs to acme-power. Dedicated container + dedicated port: at
-    # cut-over acme-power's container is destroyed without touching this one.
+    # Dedicated container + dedicated port, so no other Postgres on the host
+    # is touched.
     ports:
       - "15444:5432"
     volumes:

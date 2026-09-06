@@ -10,8 +10,7 @@
 Seed the officer corrections that give the `acme-bank` demo tenant a LEARNED
 MEMORY, then let the real consolidation pass turn them into judgements.
 
-Adapted from the acme-power script, and it keeps that script's two hard rules
-because both were learned the expensive way.
+It keeps two hard rules, because both were learned the expensive way.
 
 What this does NOT do:
     It never writes a judgement. Clauses are formed by `consolidation` from the

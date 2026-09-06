@@ -8,7 +8,7 @@
 
 r"""Middleware / data-plane E2E for the Acme Bank demo tenant.
 
-Mirrors acme_power_e2e.py and extends it: as well as the MCP data plane, it
+As well as the MCP data plane, it
 checks the pieces this tenant exists to demonstrate — the catalogue the builder
 searches, the SOP corpus every app grounds on, and the case_signature that
 decides whether an app can learn at all.

@@ -20,12 +20,12 @@ the tenant catalogue, designs the agent + UI (+ workflow), and publishes.
 Usage (from anywhere; needs `pip install pyjwt requests`):
 
   python build_via_builder.py --kinds app,workflow \
-      --tenant bihar-gov --org bihar-gov --dept urban_dev \
+      --tenant acme-bank --org acme-bank --dept lending \
       --goal "<plain-language goal>"
 
-  # use the built-in Bihar grievance+workflow example goal:
+  # use the built-in Acme Bank loan-decision + workflow example goal:
   python build_via_builder.py --kinds app,workflow \
-      --tenant bihar-gov --org bihar-gov --dept urban_dev
+      --tenant acme-bank --org acme-bank --dept lending
 
 Env vars:
   SMART_APP_URL   smart-app-service base URL   (default http://127.0.0.1:9100)
@@ -58,24 +58,26 @@ _DEFAULT_SECRET = (
     "cb60cea3a8654cdf8c6998395abdcfebd5211d7888fe65b579e96c898971c7"
 )
 
-# Built-in example: a Bihar grievance app *paired with a workflow* — the
-# workflow auto-triages the clear-cut cases, the app queues the rest.
+# Built-in example: an Acme Bank loan-decision app *paired with a workflow* -
+# the workflow clears the clear-cut applications, the app queues the rest.
 _EXAMPLE_GOAL = (
-    "Build a Civic Grievance Auto-Triage solution for the Urban Development "
-    "Department, Government of Bihar, in TWO parts. "
-    "(1) A WORKFLOW that runs when a citizen grievance is lodged: it reads "
-    "the grievance, and when the category is unambiguous (e.g. road_repair, "
-    "street_light, drainage) it auto-routes the grievance to the owning "
-    "department and stamps the SLA from the Civic Grievance Redressal "
-    "Charter — no human needed. Grievances that are ambiguous, span "
-    "departments, or look high-priority/public-safety are left un-routed for "
-    "an officer. "
-    "(2) A Smart App for the officer: a queue of ONLY the grievances the "
-    "workflow could not auto-route, where the officer reviews each one with "
-    "AI assistance (cited charter clause) and routes it; routing must be "
-    "written back to the source system. "
-    "Data source: the urban_grievances dept-MCP. Policy: govt_policy_library. "
-    "You have full latitude on UI and workflow design — make sensible "
+    "Build a Dealer-Sourced Loan Decision solution for the Lending department "
+    "of Acme Bank, in TWO parts. "
+    "(1) A WORKFLOW that runs when a dealer-sourced loan application lands: it "
+    "reads the application, and when the bureau pull and the documents are "
+    "clearly within the credit policy it marks the application ready for "
+    "sanction and stamps the turnaround time from the policy - no human "
+    "needed. Applications with a thin file, a bureau flag, a dealer with a "
+    "poor track record, or an amount above the policy band are left "
+    "undecided for an officer. "
+    "(2) A Smart App for the credit officer: a queue of ONLY the applications "
+    "the workflow could not clear, where the officer reviews each one with AI "
+    "assistance (cited policy clause, every document and bureau check "
+    "reviewed as its own item) and records the decision; the decision must "
+    "be written back to the source system. "
+    "Data sources: the loan_origination dept-MCP (loan_applications, "
+    "bureau_pulls, customers). Policy: acme_bank_policy_library. "
+    "You have full latitude on UI and workflow design - make sensible "
     "recommendations and proceed without waiting on me; only stop if "
     "genuinely blocked. Build and publish it."
 )
@@ -120,12 +122,12 @@ def _post(url: str, token: str, body: dict, *, timeout: float = 120.0):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--goal", default=_EXAMPLE_GOAL,
-                    help="Plain-language build goal (default: the Bihar grievance+workflow example).")
+                    help="Plain-language build goal (default: the Acme Bank loan-decision + workflow example).")
     ap.add_argument("--kinds", default="app,workflow",
                     help="Comma list of build kinds: app, dashboard, workflow. Include 'workflow' to run Phase W.")
-    ap.add_argument("--tenant", default="bihar-gov")
-    ap.add_argument("--org", default="bihar-gov")
-    ap.add_argument("--dept", default="urban_dev",
+    ap.add_argument("--tenant", default="acme-bank")
+    ap.add_argument("--org", default="acme-bank")
+    ap.add_argument("--dept", default="lending",
                     help="Comma list of dept ids the caller belongs to (drives MCP visibility).")
     ap.add_argument("--user", default="rohit@trustedweartech.com")
     ap.add_argument("--smart-app-url", default=os.getenv("SMART_APP_URL", "http://127.0.0.1:9100"))

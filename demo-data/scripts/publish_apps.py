@@ -86,7 +86,7 @@ def main() -> int:
     ap.add_argument("--smart-app-url", default=os.getenv(
         "SMART_APP_SERVICE_URL", "http://localhost:9100"))
     ap.add_argument("--jwt-secret", default=os.getenv("JWT_SECRET", "test-only-not-for-prod"))
-    ap.add_argument("--tenant-id", default="acme-cement",
+    ap.add_argument("--tenant-id", default="acme-bank",
                     help="Tenant id; apps are read from tenants/<tenant-id>/apps/ unless --apps-dir overrides")
     ap.add_argument("--apps-dir", default=None,
                     help="Override path to apps folder (defaults to tenants/<tenant-id>/apps/)")

@@ -69,9 +69,6 @@
         },
         "type": {
           "const": "agent_chat",
-          "enum": [
-            "agent_chat"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -160,9 +157,6 @@
         "on_miss": {
           "const": "recommend",
           "default": "recommend",
-          "enum": [
-            "recommend"
-          ],
           "title": "On Miss",
           "type": "string"
         },
@@ -264,6 +258,7 @@
           "type": "array"
         },
         "query": {
+          "additionalProperties": true,
           "title": "Query",
           "type": "object"
         },
@@ -294,9 +289,6 @@
         },
         "type": {
           "const": "calendar",
-          "enum": [
-            "calendar"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -480,6 +472,7 @@
           "type": "array"
         },
         "query": {
+          "additionalProperties": true,
           "title": "Query",
           "type": "object"
         },
@@ -531,9 +524,6 @@
         },
         "type": {
           "const": "chart",
-          "enum": [
-            "chart"
-          ],
           "title": "Type",
           "type": "string"
         },
@@ -753,6 +743,7 @@
         "filter": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -908,9 +899,6 @@
         },
         "type": {
           "const": "dashboard",
-          "enum": [
-            "dashboard"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -934,6 +922,7 @@
           "type": "array"
         },
         "filters": {
+          "additionalProperties": true,
           "title": "Filters",
           "type": "object"
         },
@@ -1264,6 +1253,7 @@
           "type": "string"
         },
         "args": {
+          "additionalProperties": true,
           "description": "Constant inputs merged on top of the record. Use for a value the action's input_schema requires but the record has no column for. Keys here override record keys of the same name.",
           "title": "Args",
           "type": "object"
@@ -1439,9 +1429,6 @@
         },
         "type": {
           "const": "detail",
-          "enum": [
-            "detail"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -1638,9 +1625,6 @@
         },
         "type": {
           "const": "document_view",
-          "enum": [
-            "document_view"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -2075,8 +2059,8 @@
         "weight": {
           "anyOf": [
             {
-              "exclusiveMinimum": 0.0,
-              "maximum": 1000.0,
+              "exclusiveMinimum": 0,
+              "maximum": 1000,
               "type": "number"
             },
             {
@@ -2193,9 +2177,6 @@
         },
         "type": {
           "const": "filter_bar",
-          "enum": [
-            "filter_bar"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -2417,6 +2398,7 @@
         "schema_inline": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -2467,9 +2449,6 @@
         },
         "type": {
           "const": "form",
-          "enum": [
-            "form"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -2588,8 +2567,8 @@
         "min": {
           "anyOf": [
             {
-              "maximum": 100.0,
-              "minimum": 0.0,
+              "maximum": 100,
+              "minimum": 0,
               "type": "number"
             },
             {
@@ -2695,9 +2674,6 @@
         },
         "type": {
           "const": "hero",
-          "enum": [
-            "hero"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -2802,6 +2778,7 @@
           "type": "array"
         },
         "query": {
+          "additionalProperties": true,
           "title": "Query",
           "type": "object"
         },
@@ -2827,9 +2804,6 @@
         },
         "type": {
           "const": "map",
-          "enum": [
-            "map"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -2898,9 +2872,6 @@
         },
         "type": {
           "const": "markdown",
-          "enum": [
-            "markdown"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -3073,9 +3044,6 @@
         },
         "type": {
           "const": "notice",
-          "enum": [
-            "notice"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -3093,6 +3061,7 @@
       "description": "One feed in a notification centre — a FULLY builder-defined attention\nlist. The platform does NOT hardcode what a notification is: a feed reads\nany ``data_source`` with any ``filters`` predicate and maps catalogue columns\nto the item's title/subtitle. (The one built-in is ``kind='approvals'``,\nwhich reads the platform's reviewer inbox — not a data_source.)",
       "properties": {
         "filters": {
+          "additionalProperties": true,
           "description": "predicate selecting which rows are notable — ANY condition, with columns DERIVED FROM THE DATASET CATALOGUE (no fixed names). Mongo- style operators are supported ({col:{'$lt':x}}, {'$gte'}, {'$in':[…]}, bare equality). For time-relative conditions use the tokens {now}, {now-<N><unit>}, {now+<N><unit>} (unit = s|m|h|d|w), e.g. an overdue feed = {<due column>: {'$lt': '{now}'}}; a 'stale > 48h' feed = {<opened column>: {'$lt': '{now-48h}'}}.",
           "title": "Filters",
           "type": "object"
@@ -3258,9 +3227,6 @@
         },
         "type": {
           "const": "notifications",
-          "enum": [
-            "notifications"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -3317,6 +3283,7 @@
         "filter": {
           "anyOf": [
             {
+              "additionalProperties": true,
               "type": "object"
             },
             {
@@ -3623,6 +3590,7 @@
           "title": "Agent Action"
         },
         "args": {
+          "additionalProperties": true,
           "description": "Constant inputs merged into the agent_action call on top of the clicked row. Use this to supply a value the action's input_schema requires but the queue has no column for (e.g. a fixed record_type / category discriminator). Keys here override row keys of the same name.",
           "title": "Args",
           "type": "object"
@@ -3800,6 +3768,7 @@
           "type": "array"
         },
         "query": {
+          "additionalProperties": true,
           "title": "Query",
           "type": "object"
         },
@@ -3851,9 +3820,6 @@
         },
         "type": {
           "const": "queue",
-          "enum": [
-            "queue"
-          ],
           "title": "Type",
           "type": "string"
         },
@@ -4153,9 +4119,6 @@
         },
         "type": {
           "const": "stat_strip",
-          "enum": [
-            "stat_strip"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -4451,6 +4414,7 @@
           "type": "array"
         },
         "query": {
+          "additionalProperties": true,
           "title": "Query",
           "type": "object"
         },
@@ -4493,9 +4457,6 @@
         },
         "type": {
           "const": "timeline",
-          "enum": [
-            "timeline"
-          ],
           "title": "Type",
           "type": "string"
         }
@@ -4515,6 +4476,7 @@
       "description": "A panel button that invokes a `tools_v2` tool directly, bypassing\nthe LLM. Use for deterministic side-effects where the BA already\nknows the tool name and its arguments don't need natural-language\nreasoning (e.g. \"Refresh\", \"Submit for Approval\", \"Verify Policy\").\n\nThe runtime gates each click on:\n  1. ``tool_name`` exists in ``agent_spec.tools_v2``\n  2. ``tool_name`` is listed in *this* panel's ``tool_buttons[]``\n     (a leaked /apps/{slug}/tool/{name} call cannot escape the\n     panel's allowlist)\n  3. The user's JWT passes the standard panel ``permissions`` check",
       "properties": {
         "args": {
+          "additionalProperties": true,
           "description": "Static / templated arguments forwarded to the tool. Field references like ``{form.policy_number}`` are resolved by the renderer from the panel's current state before POST.",
           "title": "Args",
           "type": "object"
@@ -4581,6 +4543,7 @@
           "type": "string"
         },
         "args": {
+          "additionalProperties": true,
           "description": "Args passed to the poll tool. Use '$last_cursor' as a placeholder.",
           "title": "Args",
           "type": "object"
@@ -4657,6 +4620,7 @@
           "type": "string"
         },
         "input_template": {
+          "additionalProperties": true,
           "description": "Template applied to each new row to produce the action's inputs. Use '$row.<path>' to reference fields on the row.",
           "title": "Input Template",
           "type": "object"
@@ -4891,9 +4855,6 @@
       "const": "app",
       "default": "app",
       "description": "Artefact kind. 'app' = a Power AI App with an agent (one or more pages; any page may set page.kind='dashboard' for the executive KPI/chart + hero-brief treatment — a 'dashboard' is just an app whose primary page is a dashboard page). The legacy 'dashboard' kind is retired and coerced to this shape.",
-      "enum": [
-        "app"
-      ],
       "title": "Kind",
       "type": "string"
     },
@@ -5075,9 +5036,6 @@
     "spec_version": {
       "const": "v0",
       "default": "v0",
-      "enum": [
-        "v0"
-      ],
       "title": "Spec Version",
       "type": "string"
     },

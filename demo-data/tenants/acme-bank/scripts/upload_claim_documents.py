@@ -42,10 +42,9 @@ TENANT_DIR = SCRIPT_DIR.parent
 ENV = TENANT_DIR / "mcp" / ".env"
 REPO_ENV = TENANT_DIR.parents[2] / ".env"
 
-# 5444 belongs to acme-power. This tenant publishes 15444 (mcp/docker-compose.yml),
-# and seed-demo.sh reads it from ACME_BANK_PG_PORT rather than a literal — a
-# hardcoded port here meant this script could only ever connect to a different
-# tenant's database, if anything at all.
+# This tenant publishes 15444 (mcp/docker-compose.yml), and seed-demo.sh reads
+# it from ACME_BANK_PG_PORT rather than a literal — a hardcoded port here meant
+# this script could only ever connect to a different database, if anything.
 PG = dict(host="localhost", port=int(os.getenv("ACME_BANK_PG_PORT", "15444")),
           dbname="acme_bank", user="acme_bank", password="acme_bank_demo_pw")
 

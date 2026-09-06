@@ -135,6 +135,17 @@ def env(monkeypatch: pytest.MonkeyPatch):
     importlib.reload(_main)
     import grounding_runs as _gr
 
+    # The precondition asks the catalogue whether the grounding dataset holds
+    # decision history. Answer it here: these tests are about the freshness
+    # gate, and reaching a live catalogue from a unit test failed both ways -
+    # 502 (unreachable) on the host, 401 (test-minted token) inside Docker.
+    import catalogue_client as _cc
+
+    async def _fake_entry(**_kw):
+        return {"dataset_id": "field_operations.theft_cases",
+                "decision_history": {"is_decision_record": True}}
+    monkeypatch.setattr(_cc, "fetch_catalogue_entry", _fake_entry)
+
     db = _MemDB()
     apps = _MemCol()   # prod apps
     agents = _MemCol()  # prod agents

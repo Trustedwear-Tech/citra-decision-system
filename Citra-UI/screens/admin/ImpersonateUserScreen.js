@@ -10,7 +10,7 @@
  * ImpersonateUserScreen — super_admin "Login as demo persona" picker.
  *
  * This is the demo workflow. Citra is sold as a platform; we provision a
- * demo tenant (acme-cement, etc.) per prospective customer with realistic
+ * demo tenant (acme-bank) per prospective customer with realistic
  * personas + data seeded by demo-data/. A Citra super_admin opens this
  * screen, picks a persona inside the prospect's tenant, and walks them
  * through their own company's experience.

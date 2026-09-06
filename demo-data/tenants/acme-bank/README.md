@@ -11,13 +11,12 @@
 # Acme Bank & Insurance — demo tenant
 
 India-flavoured BFSI demo: retail lending, collections, general insurance
-claims, and a sales dashboard. Replaces `acme-power` as the running demo — the
-platform serves **one org at a time**.
+claims, and a sales dashboard. The platform serves **one org at a time**, and
+this is the org.
 
 - **Contract:** [`SPEC.md`](SPEC.md) — identifiers, schema, sources, apps,
   personas, bring-up order. Every script must follow it exactly.
-- **Plan and rationale:** [`../../../docs/acme-bank-demo-plan.md`](../../../docs/acme-bank-demo-plan.md),
-  including the acme-power cut-over.
+- **Plan and rationale:** [`../../../docs/acme-bank-demo-plan.md`](../../../docs/acme-bank-demo-plan.md).
 
 ## Status
 
@@ -90,11 +89,10 @@ acme-bank/
 
 ## Two things that are easy to get wrong
 
-**One org at a time.** `data-discovery-service` pins `ORG_ID` to a single org.
-Bringing acme-bank up is a cut-over, not an addition: acme-power is
-deregistered and its data deleted. Sequence and rollback are in the plan §7.5 —
-follow it in order, because the crawler re-files a live registration and a dead
-registration over deleted data breaks the builder.
+**One org at a time.** `data-discovery-service` pins `ORG_ID` to a single org:
+acme-bank. The bring-up order is in the plan §7.5 — follow it in order, because
+the crawler re-files a live registration and a dead registration over deleted
+data breaks the builder.
 
 **Apps 1–3 must ship with `case_signature`.** Without one, officer corrections
 are stored *uncoded*, and consolidation can only ever use uncoded corrections to
