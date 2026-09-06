@@ -1800,7 +1800,6 @@ async def _snapshot_prior_version(
     )
 
 
-@app.post("/publish", response_model=PublishResponse)
 async def _facet_vocabulary_against_catalogue(
     app_spec, *, settings, auth_header: Optional[str], tenant_id: str,
 ):
@@ -1852,6 +1851,7 @@ async def _facet_vocabulary_against_catalogue(
     return advisories + more, errors
 
 
+@app.post("/publish", response_model=PublishResponse)
 async def publish_app(
     payload: PublishRequest,
     request: Request,
@@ -5296,6 +5296,27 @@ async def save_app_spec(slug: str, payload: dict, request: Request) -> AppDetail
         logger.warning(
             "[spec-edit] %s saved with %d PRE-EXISTING rule violation(s): %s",
             slug, len(_now_bad), sorted({f"{k[0]}:{k[1]}" for k in _now_bad}))
+    # CS-06 -- the same data check publish runs, so the signature editor's save
+    # is refused here for a value the column has never held, rather than
+    # accepted now and rejected at publish. Deliberately NOT ratcheted: a raw
+    # value that does not exist is a typo whether or not the previous spec
+    # carried one, and the editor is where it gets fixed.
+    _adv6, _b6 = await _facet_vocabulary_against_catalogue(
+        app_spec_obj, settings=get_settings(),
+        auth_header=(request.headers.get("authorization")
+                     or request.headers.get("Authorization")),
+        tenant_id=user_tenant or "")
+    if _b6:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "CS-06",
+                "message": ("a facet declares a value the data has never held — "
+                            "every case would derive __unknown for that family and "
+                            "no judgement could be scoped by it."),
+                "errors": _b6,
+            },
+        )
 
     # Snapshot the version we're superseding BEFORE mutating app_doc in place,
     # while the live agent doc still holds the old agent_spec.
