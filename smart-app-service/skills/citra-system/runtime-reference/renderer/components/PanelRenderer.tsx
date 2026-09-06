@@ -2758,37 +2758,67 @@ function EvidenceUsed({
   );
 }
 
-/** Read-only strip of the case signature the model saw. */
+/** The case signature the model saw - the CATEGORY BAND the app learns under.
+ *
+ *  A correction typed on this card is filed under these facets and comes back
+ *  on every future case that shares them. That makes this the single most
+ *  consequential thing on the screen for anyone about to disagree with the
+ *  agent, and it rendered as grey chips near the bottom, pending runs only.
+ *  Now: first, highlighted, on every card - and when an app declares no
+ *  signature it says so, because then a correction teaches EVERY case. */
 function FacetStrip({ facets }: { facets: string[] }) {
-  if (!facets.length) return null;
+  const accent = "var(--citra-primary, #2563eb)";
+  const soft = "var(--citra-primary-bg, #eff6ff)";
   return (
     <div className="rr-section">
-      <div className="rr-section-head">This case</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-        {facets.map((f) => {
-          const [family, ...rest] = String(f).split(":");
-          const value = rest.join(":");
-          return (
-            <span
-              key={f}
-              title={`${family} = ${value}`}
-              style={{
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: 999,
-                border: "1px solid var(--citra-border, #e5e7eb)",
-                color: "var(--citra-muted, #6b7280)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {prettyKey(family)}: {value || "—"}
-            </span>
-          );
-        })}
-      </div>
-      <div style={{ fontSize: 11, color: "var(--citra-muted, #6b7280)", marginTop: 6 }}>
-        Anything you teach here comes back on cases like these — and only those.
-      </div>
+      <div className="rr-section-head">Learning scope</div>
+      {facets.length > 0 ? (
+        <>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+            {facets.map((f) => {
+              const [family, ...rest] = String(f).split(":");
+              const raw = rest.join(":");
+              // The runtime writes `family:__unknown` when it could not derive a
+              // value. Say "unknown" - never a blank that reads as "no facet".
+              const unknown = raw === "__unknown" || raw === "";
+              return (
+                <span
+                  key={f}
+                  title={unknown ? `${family}: could not be derived for this case` : `${family} = ${raw}`}
+                  style={{
+                    fontSize: 12,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: `1px ${unknown ? "dashed" : "solid"} ${unknown ? "var(--citra-border, #e5e7eb)" : accent}`,
+                    background: unknown ? "transparent" : soft,
+                    color: unknown ? "var(--citra-muted, #6b7280)" : "var(--citra-text, #111827)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{ color: "var(--citra-muted, #6b7280)" }}>{prettyKey(family)}: </span>
+                  <strong style={{ fontWeight: 600 }}>{unknown ? "unknown" : raw}</strong>
+                </span>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11.5, color: "var(--citra-muted, #6b7280)", marginTop: 6 }}>
+            Anything you teach here comes back on cases with these facets — and only those.
+          </div>
+        </>
+      ) : (
+        <div
+          style={{
+            marginTop: 6,
+            fontSize: 12.5,
+            padding: "6px 10px",
+            borderLeft: "3px solid var(--citra-warning, #d97706)",
+            color: "var(--citra-text, #374151)",
+          }}
+        >
+          This app declares no case signature, so it has no learning scope: anything you
+          teach here applies to <strong>every</strong> case it handles.
+        </div>
+      )}
     </div>
   );
 }
@@ -3043,6 +3073,7 @@ function RunResultModal({
               A run that hit its step cap before reading every document used
               to render identically to one that finished. */}
           <RunNotices notices={result.notices} />
+          <FacetStrip facets={result.caseFacets ?? []} />
           {/* The reasons, directly under the verdict. They used to sit below
               the per-item list - with four documents, below the fold. */}
           {result.reasoning && (
@@ -3205,9 +3236,7 @@ function RunResultModal({
             </details>
           )}
           {/* The decision block. Everything from here down is what the officer
-              ACTS on. The facet strip stays here because it shows the scope a
-              correction typed below would teach. */}
-          {isPending && <FacetStrip facets={result.caseFacets ?? []} />}
+              ACTS on. */}
           {isPending && plannedWrites.length > 0 && (
             <div className="rr-section">
               <div className="rr-section-head">
