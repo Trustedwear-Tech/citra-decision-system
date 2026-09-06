@@ -7828,6 +7828,9 @@ def _build_audit_doc(
         # the card reads one field on both paths.
         "notices": run_notices(response.timeline),
         "sop_sources": _sop_sources(response.references),
+        # Per-tool item coverage - expected vs reviewed - from the run's own
+        # timeline, so the staged row derives the same numbers.
+        "item_coverage": _item_coverage(response.timeline),
         "error": response.error,
         "model": response.model,
         "usage": response.usage,
@@ -10892,6 +10895,16 @@ def run_notices(timeline: Any) -> List[Dict[str, Any]]:
                 "what it already had.")})
         elif name == "empty_result" and detail:
             out.append({"level": "warning", "code": "empty_result", "text": detail})
+        elif name == "item_pass" and status in ("error", "partial"):
+            tool = str(step.get("tool") or "an item tool")
+            missing = [str(m) for m in (step.get("missing") or [])]
+            if missing:
+                out.append({"level": "warning", "code": "items_unreviewed", "text": (
+                    f"{len(missing)} of {step.get('expected')} items were never reviewed "
+                    f"by {tool}: {', '.join(missing[:8])}" + (" ..." if len(missing) > 8 else ""))})
+            elif detail:
+                out.append({"level": "warning", "code": "items_unknown", "text": (
+                    f"{tool}: {detail}")})
     return out
 
 
@@ -10904,6 +10917,11 @@ def _sop_sources(references: Any) -> List[str]:
             if sid not in seen:
                 seen.append(sid)
     return seen
+
+
+def _item_coverage(timeline: Any) -> Dict[str, Any]:
+    from item_pass import coverage_from_timeline
+    return coverage_from_timeline(timeline)
 
 
 def _plain_list(items: Any) -> List[Dict[str, Any]]:
@@ -11002,6 +11020,7 @@ async def _stage_recommendation(
         tool_calls=_plain_list((response.references or {}).get("tool_calls")),
         sop_sources=_sop_sources(response.references),
         notices=run_notices(getattr(response, "timeline", None)),
+        item_coverage=_item_coverage(getattr(response, "timeline", None)),
         status="pending_review",
         assignable_to=assignable_to,
         created_at=now,

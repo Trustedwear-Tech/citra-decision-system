@@ -863,6 +863,18 @@
           "title": "Name",
           "type": "string"
         },
+        "parent_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Key"
+        },
         "required": {
           "default": true,
           "description": "When True (default) AND this tool is record-bound (data_source_id set), the read-before-write guard REQUIRES the agent to extract from this document for the record under review before any write is staged — a write without it fails loud. Set False to make the extraction discretionary.",
@@ -1482,6 +1494,18 @@
           "pattern": "^[a-z][a-z0-9_.]*$",
           "title": "Name",
           "type": "string"
+        },
+        "parent_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Key"
         },
         "required": {
           "default": true,

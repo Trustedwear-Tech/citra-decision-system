@@ -40,7 +40,13 @@ approve/reject, exactly the way analyzed **images/documents** already do in
 ## Background: how it works today
 
 ### Images/docs (the pattern to mirror)
-`image_analyze`/`doc_extract` are called **once per artifact** by the main agent.
+`image_analyze`/`doc_extract` are called **once per artifact by the runtime**
+(`item_pass.py`, before the agent reasons): every row of the bound item dataset
+whose `parent_key` equals the case anchor is dispatched, the findings go to the
+agent as evidence and to the officer as cards, and the evidence gate checks
+coverage by id — "2 of 5 items were never reviewed" blocks the write, and so
+does an item list the runtime could not read. Item review was a model decision
+until 2026-09-06; the agent may still call the tools, and a repeat call dedupes.
 Each returns an `ItemFinding` (`item_id, subject, recommendation, confidence,
 rationale, citations`). The runtime collects these into
 `RunResponse.item_findings` (only for those two kinds —

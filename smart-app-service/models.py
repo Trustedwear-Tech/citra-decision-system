@@ -802,6 +802,13 @@ class ImageAnalyzeTool(_AgentToolBase):
     key_field: Optional[str] = Field(
         default=None, description="Key column of the dataset (for the 1-row keyed read by record_id)."
     )
+    #: The column on this tool's dataset that names the PARENT record - the one
+    #: the decision is anchored on (e.g. ``claim_id`` on claim_documents). The
+    #: runtime's item pass filters on it to enumerate every item that belongs
+    #: to the case, then reviews each one itself. Defaults to the anchor field
+    #: name, which is right whenever the child table carries the parent key
+    #: under the same name; set it when it does not.
+    parent_key: Optional[str] = Field(default=None)
     required: bool = Field(
         default=True,
         description=(
@@ -900,6 +907,13 @@ class DocExtractTool(_AgentToolBase):
     key_field: Optional[str] = Field(
         default=None, description="Key column of the dataset (for the 1-row keyed read by record_id)."
     )
+    #: The column on this tool's dataset that names the PARENT record - the one
+    #: the decision is anchored on (e.g. ``claim_id`` on claim_documents). The
+    #: runtime's item pass filters on it to enumerate every item that belongs
+    #: to the case, then reviews each one itself. Defaults to the anchor field
+    #: name, which is right whenever the child table carries the parent key
+    #: under the same name; set it when it does not.
+    parent_key: Optional[str] = Field(default=None)
     required: bool = Field(
         default=True,
         description=(
@@ -4871,6 +4885,7 @@ class WorkflowStagingRow(BaseModel):
     tool_calls: List[Dict[str, Any]] = Field(default_factory=list)
     sop_sources: List[str] = Field(default_factory=list)
     notices: List[Dict[str, Any]] = Field(default_factory=list)
+    item_coverage: Dict[str, Any] = Field(default_factory=dict)
     status: WorkflowStagingStatus = "pending_je_review"
     assignable_to: Dict[str, Any] = Field(
         default_factory=dict,

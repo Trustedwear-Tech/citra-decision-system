@@ -169,7 +169,10 @@ Narrate as you go per [`AGENTS.md`](../../AGENTS.md). Agent design is one of the
           the officer accepts / rejects PER ITEM, and reject-reasons train that
           `task_type`'s rubric. **Record-bind** them — set `data_source_id` +
           `url_column` + `key_field` so the agent passes a short `record_id`, NEVER a
-          raw/signed URL (a copied signed URL corrupts → 403). When an SOP governs the
+          raw/signed URL (a copied signed URL corrupts → 403). The RUNTIME then reviews
+          every bound item of the case itself before the agent reasons (filtering the
+          item dataset on `parent_key`, default = the anchor field name) — set
+          `parent_key` when the child table names the case differently. When an SOP governs the
           judgment, set `sop_source` (the policy/SOP RAG corpus id) so the TOOL fetches +
           caches the live SOP itself — do NOT seed criteria in Mongo. Read
           `citra-agent-spec/references/image-analyze.md`.

@@ -384,6 +384,14 @@ class Settings(BaseSettings):
     required_reads_mode: str = (
         os.getenv("REQUIRED_READS_MODE", "enforce").lower()
     )
+    # Deterministic item pass (item_pass.py): the RUNTIME enumerates every
+    # document / image that belongs to the case and reviews each one before
+    # the model reasons. "enforce" runs it; "off" leaves item review to the
+    # model's tool calls, which is how three of five documents got reviewed
+    # with nothing saying so. The cap bounds a record with hundreds of
+    # attachments; past it the run says which were not reviewed.
+    item_pass_mode: str = os.getenv("ITEM_PASS_MODE", "enforce").lower()
+    item_pass_max_items: int = int(os.getenv("ITEM_PASS_MAX_ITEMS", "25"))
     # Publish-time derivation of Action.anchor_read from the catalogue.
     # "enforce" (default): derive the anchor, and FAIL the publish if an action
     # mutates a keyed record it can't anchor (unguardable write). "warn": derive

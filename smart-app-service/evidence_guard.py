@@ -96,6 +96,14 @@ class ReadLedger:
     # record — no id match needed (and it would be circular: the same read
     # feeds ``seen_values`` too).
     lookup_tools_ran: Set[str] = field(default_factory=set)
+    # Per-item COVERAGE (item_pass.py). ``expected_items[tool]`` is the set of
+    # item keys that belong to the anchor record - enumerated by the runtime,
+    # never by the model. ``enumeration_errors[tool]`` records that the runtime
+    # could NOT enumerate them, which is a failed check, not a pass. Findings
+    # produced per tool are in ``item_findings_produced``.
+    expected_items: Dict[str, Set[str]] = field(default_factory=dict)
+    enumeration_errors: Dict[str, str] = field(default_factory=dict)
+    item_findings_produced: Dict[str, Set[str]] = field(default_factory=dict)
 
     # ── accumulation (called from the runtime tool loop) ────────────────────
     def note_record_read(
@@ -128,6 +136,23 @@ class ReadLedger:
             # A media review also proves that record was 'seen' — so a record
             # whose ONLY read is its photo still satisfies the record check.
             self.seen_values.add(rid)
+
+    def note_expected_items(self, tool_name: str, keys: Iterable[str]) -> None:
+        """The runtime enumerated these items for the anchor record."""
+        s = self.expected_items.setdefault(tool_name, set())
+        for k in keys:
+            n = _norm(k)
+            if n is not None:
+                s.add(n)
+
+    def note_enumeration_failed(self, tool_name: str, why: str) -> None:
+        self.enumeration_errors[tool_name] = why
+
+    def note_item_finding(self, *, tool_name: str, item_id: Optional[str]) -> None:
+        """An item tool produced a finding - runtime-driven or model-driven."""
+        n = _norm(item_id)
+        if tool_name and n is not None:
+            self.item_findings_produced.setdefault(tool_name, set()).add(n)
 
     def note_lookup_read(self, *, tool_name: str) -> None:
         """Record that a bound mcp read tool ran SUCCESSFULLY this run.
@@ -291,6 +316,28 @@ def evidence_violations(
 
     for tool in required_media_tools(agent_spec):
         tname = getattr(tool, "name", None) or getattr(tool, "kind", "?")
+        # COVERAGE first. When the runtime enumerated this tool's items for the
+        # anchor (item_pass.py), the test is every item reviewed, by id - the
+        # anchor rule below could only ever prove 'opened at least one', and on
+        # a child table (documents keyed by document_id, writes anchored on
+        # claim_id) could not prove even that.
+        if tname in ledger.enumeration_errors:
+            unmet.append(
+                f"{tname}: the runtime could not enumerate this record's items, so "
+                f"coverage is unknown - {ledger.enumeration_errors[tname]}"
+            )
+            continue
+        if tname in ledger.expected_items:
+            expected = ledger.expected_items[tname]
+            produced = ledger.item_findings_produced.get(tname, set())
+            missing = sorted(expected - produced)
+            if missing:
+                unmet.append(
+                    f"{len(missing)} of {len(expected)} items were never reviewed by "
+                    f"{tname}: {', '.join(missing[:8])}"
+                    + (" ..." if len(missing) > 8 else "")
+                )
+            continue
         if not ledger.media_covers(tname, anchor_values):
             kind = getattr(tool, "kind", "media")
             unmet.append(

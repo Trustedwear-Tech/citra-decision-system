@@ -3066,6 +3066,34 @@ async def execute_run(
     # model that re-issues an identical read across turns gets the cached result
     # instead of a fresh 3–30s NL→SQL round-trip. Reads only; writes never cached.
     _tool_result_cache: Dict[str, Any] = {}
+    # DETERMINISTIC ITEM PASS - the runtime reviews every document and image
+    # that belongs to this case BEFORE the model reasons, through the same
+    # dispatcher the model would use. Findings become evidence in the prompt,
+    # seed the cache so a repeat call dedupes, and set the EXPECTED items the
+    # coverage gate checks at plan time. Item review is no longer a decision
+    # the model makes.
+    if str(getattr(settings, "item_pass_mode", "enforce")).lower() != "off" and anchors:
+        from item_pass import run_item_pass
+        try:
+            _pass = await run_item_pass(
+                settings=settings, agent_spec=agent_spec, app_spec=app_spec,
+                dispatch_table=tools_v2_dispatch_table, anchors=anchors,
+                anchor_row=anchor_row if isinstance(anchor_row, dict) else None,
+                action_name=str(getattr(action, "name", "") or ""),
+                auth_header=auth_header, ledger=ledger, correlation_id=correlation_id,
+            )
+        except Exception as exc:  # noqa: BLE001 - loud, and the gate then reports unknown coverage
+            logger.exception("[RUN %s] item pass failed", correlation_id)
+            timeline.append({"step": "item_pass", "status": "error", "detail": str(exc)[:300]})
+        else:
+            item_findings.extend(_pass.findings)
+            _tool_result_cache.update(_pass.cache)
+            timeline.extend(_pass.timeline)
+            if _pass.block:
+                messages.append({"role": "system", "content": _pass.block})
+            if _pass.coverage:
+                logger.info("[RUN %s] item pass: %s", correlation_id,
+                            {k: (v["produced"], v["expected"]) for k, v in _pass.coverage.items()})
     try:
         assistant_msg: Dict[str, Any] = {}
         # One-shot in-loop retry for the evidence gate: when the model tries to
@@ -3511,6 +3539,10 @@ async def execute_run(
                                 )
                             }
                         )
+                        # The coverage gate counts findings per tool, whoever
+                        # asked for them.
+                        ledger.note_item_finding(
+                            tool_name=tname, item_id=str(tool_result.get("item_id")))
                     # mcp_action tools are catalogue-pinned writes — record
                     # them in the timeline and write_events so the audit row
                     # carries the full intent + outcome of each LLM-issued

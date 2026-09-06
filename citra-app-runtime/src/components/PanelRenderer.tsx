@@ -1281,6 +1281,10 @@ type RunResult = {
    *  ran out of budget. Rendered above everything else - a run that stopped
    *  early must not look like one that finished. */
   notices?: Array<{ level?: string; code?: string; text?: string }>;
+  /** Per-tool item coverage from the runtime's deterministic item pass:
+   *  how many documents/images belong to this case, how many were reviewed,
+   *  and which were not. The heading reads "3 of 5" from this. */
+  itemCoverage?: Record<string, { expected?: number; produced?: number; missing?: string[]; error?: string | null }>;
 };
 
 /** Map a status / decision string to one of the badge tone names. */
@@ -1346,6 +1350,9 @@ function runResultFromBody(
         ? ((b.references as Record<string, number>).retrieval_count)
         : undefined,
     notices: Array.isArray(b.notices) ? (b.notices as RunResult["notices"]) : undefined,
+    itemCoverage: b.item_coverage && typeof b.item_coverage === "object"
+      ? (b.item_coverage as RunResult["itemCoverage"])
+      : undefined,
   };
 }
 
@@ -1747,6 +1754,9 @@ function QueuePanelView({
       sopSources: Array.isArray(rec.sop_sources) ? (rec.sop_sources as string[]) : undefined,
       retrievalCount: typeof rec.retrieval_count === "number" ? rec.retrieval_count : undefined,
       notices: Array.isArray(rec.notices) ? (rec.notices as RunResult["notices"]) : undefined,
+      itemCoverage: rec.item_coverage && typeof rec.item_coverage === "object"
+        ? (rec.item_coverage as RunResult["itemCoverage"])
+        : undefined,
     };
     setModal(result);
   }
@@ -3109,7 +3119,17 @@ function RunResultModal({
           {itemFindings.length > 0 && (
             <div className="rr-section">
               <div className="rr-section-head">
-                Per-item review ({itemFindings.length})
+                Per-item review (
+                {(() => {
+                  // "3 of 5": the runtime enumerated 5, reviewed 3. Without the
+                  // denominator a skipped document is invisible.
+                  const cov = Object.values(result.itemCoverage ?? {});
+                  const expected = cov.reduce((n, c) => n + (c?.expected ?? 0), 0);
+                  return expected > itemFindings.length
+                    ? `${itemFindings.length} of ${expected}`
+                    : String(itemFindings.length);
+                })()}
+                )
                 {gateActive && (
                   <span
                     style={{

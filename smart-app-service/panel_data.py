@@ -213,6 +213,7 @@ async def _resolve_workflow_staging_rows(
             "tool_calls": r.get("tool_calls") or [],
             "sop_sources": r.get("sop_sources") or [],
             "notices": r.get("notices") or [],
+            "item_coverage": r.get("item_coverage") or {},
         }
         project_scorecard_columns(r)
         rows.append(r)
@@ -1949,7 +1950,7 @@ async def _attach_staged_recommendations(
              "created_at": 1, "scorecard": 1, "cited_clauses": 1,
              "case_facets": 1, "injected_clause_ids": 1, "retrieval_count": 1,
              "item_findings": 1, "citations": 1, "tool_calls": 1,
-             "sop_sources": 1, "notices": 1},
+             "sop_sources": 1, "notices": 1, "item_coverage": 1},
         ).sort("created_at", -1).limit(200).to_list(length=200)
     except Exception as exc:  # noqa: BLE001 — enrich failure must not kill the panel
         logger.warning("[panel] staged-recommendation join failed: %s", exc)
@@ -1995,6 +1996,7 @@ async def _attach_staged_recommendations(
                 "tool_calls": s.get("tool_calls") or [],
                 "sop_sources": s.get("sop_sources") or [],
                 "notices": s.get("notices") or [],
+                "item_coverage": s.get("item_coverage") or {},
             }
             break  # newest-first → first hit is the latest recommendation
 

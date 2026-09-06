@@ -767,7 +767,7 @@
         "data_source_id": "ds_documents",
         "url_column": "file_url",
         "key_field": "document_id",
-        "required": false,
+        "required": true,
         "model_tier": "large"
       },
       {

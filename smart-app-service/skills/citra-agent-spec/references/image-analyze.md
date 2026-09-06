@@ -136,6 +136,17 @@ the record instead:
 - The tool then exposes a single **`record_id`** arg — the agent passes the SHORT id,
   and the tool reads the URL from the record server-side (blob refs are presigned
   there too). The LLM never sees the URL.
+- **The runtime reviews every item itself — item review is not a model decision.**
+  Before the agent reasons, the runtime's item pass lists every row of the bound
+  dataset that belongs to the case and calls the tool once per row, through the
+  same dispatcher; the findings reach the agent as evidence and the officer as
+  per-item cards, and the card heading reads "3 of 5" when any were not
+  reviewed. It filters the item dataset on **`parent_key`** — the column that
+  names the case (e.g. `claim_id` on `claim_documents`). It defaults to the
+  action's anchor field name, which is right whenever the child table carries
+  the parent key under the same name; set `parent_key` when it does not. When
+  the runtime cannot list the items (no such column, read failed) the write is
+  blocked with that reason — unknown coverage is not a pass.
 
 Only fall back to a direct `image_url`/`document_url` for headless/API callers that
 genuinely supply a fetchable URL themselves.

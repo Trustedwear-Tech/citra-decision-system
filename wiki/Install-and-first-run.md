@@ -305,6 +305,12 @@ Two governance details worth knowing before you build against it:
   hash of the writes as you displayed them; echo it back on approve and a plan
   that changed in between is rejected with a 409 rather than quietly
   committed.
+- **Every document and image is reviewed by the runtime, not by the model.**
+  Before the agent reasons, the runtime lists the items that belong to the case
+  and reviews each one; the card heading reads "3 of 5" when any were missed,
+  and a write is blocked until all are reviewed. `ITEM_PASS_MODE=off` returns
+  item review to the model's own tool calls; `ITEM_PASS_MAX_ITEMS` (default 25)
+  bounds a case with hundreds of attachments.
 - **Per-item review is server-enforced.** When an app's `item_review_gate` is
   `hard`, every non-case `item_finding` must be dispositioned via
   `POST /apps/{slug}/items/{item_id}/feedback` before approve will succeed --
