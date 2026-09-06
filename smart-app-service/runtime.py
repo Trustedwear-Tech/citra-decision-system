@@ -2584,6 +2584,13 @@ def _build_anchor_query(kind: str, dataset_id: str, key_field: str, key_value: A
     return None
 
 
+def _item_coverage(timeline: Any) -> Dict[str, Any]:
+    """Per-tool expected-vs-reviewed, read back off the run's own timeline so
+    the response and the staged row cannot disagree."""
+    from item_pass import coverage_from_timeline
+    return coverage_from_timeline(timeline)
+
+
 def _rows_from_tool_result(res: Any) -> Optional[list]:
     """Best-effort extract the row list from a read tool's result (any shape).
 
@@ -2811,6 +2818,7 @@ async def execute_run(
             status="failed",
             outputs={},
             timeline=timeline,
+        item_coverage=_item_coverage(timeline),
             error=str(exc),
             trace_id=trace_id,
         )
@@ -3762,6 +3770,7 @@ async def execute_run(
             status="failed",
             outputs={},
             timeline=timeline,
+        item_coverage=_item_coverage(timeline),
             error=str(e),
             references=run_references,
             write_events=write_events,
@@ -3901,6 +3910,7 @@ async def execute_run(
                     status="failed",
                     outputs={},
                     timeline=timeline,
+        item_coverage=_item_coverage(timeline),
                     error=(
                         "the agent staged a decision without reviewing the "
                         "evidence it is about: " + "; ".join(_blocking)
@@ -3933,6 +3943,7 @@ async def execute_run(
             status="pending_approval",
             outputs={"text": human_text},
             timeline=timeline,
+        item_coverage=_item_coverage(timeline),
             decision=decision,
             reasoning=reasoning,
             citations=citations,
@@ -3979,6 +3990,7 @@ async def execute_run(
             status="failed",
             outputs={},
             timeline=timeline,
+        item_coverage=_item_coverage(timeline),
             error=_err,
             references=run_references,
             write_events=write_events,
@@ -3992,6 +4004,7 @@ async def execute_run(
         status="completed",
         outputs={"text": human_text},
         timeline=timeline,
+        item_coverage=_item_coverage(timeline),
         decision=decision,
         reasoning=reasoning,
         citations=citations,

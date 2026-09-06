@@ -4780,6 +4780,17 @@ class RunResponse(BaseModel):
     # the LLM emitted and the (capped) MCP response — forensic ground truth
     # so an auditor can reconstruct what the LLM actually mutated without
     # having to replay the run.
+    # Per-tool item coverage from the runtime's deterministic item pass:
+    # {tool: {expected, produced, missing, error}}. The card's "Per-item
+    # review (3 of 5)" heading reads the denominator here, so a run that
+    # skipped an item says so on the officer's own screen and not only in
+    # the audit row.
+    item_coverage: Dict[str, Any] = Field(default_factory=dict)
+    # Officer-facing warnings derived from the timeline (items unreviewed,
+    # a truncated read, an empty result). Same list the queue card shows.
+    notices: List[Dict[str, Any]] = Field(default_factory=list)
+    # The SOP documents the run actually cited, for the evidence block.
+    sop_sources: List[Dict[str, Any]] = Field(default_factory=list)
     write_events: List[Dict[str, Any]] = Field(default_factory=list)
     usage: Dict[str, Any] = Field(default_factory=dict)
     model: Optional[str] = None

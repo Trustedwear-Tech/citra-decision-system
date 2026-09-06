@@ -8620,6 +8620,12 @@ async def run_app(
         # "proposed") so the officer's later accept/reject stamps a row that
         # already carries the model's verdict + artifact identity. Derived
         # store — loud-but-non-fatal (item_records logs on failure).
+        # The officer's card reads these off the run response on the
+        # run-it-now path, exactly as it reads them off the staged row when
+        # the case comes from the queue. Derived from the same timeline, so
+        # the two paths cannot show different warnings for one run.
+        response.notices = run_notices(response.timeline)
+        response.sop_sources = _sop_sources(response.references)
         _ifs = getattr(response, "item_findings", None)
         if _ifs:
             from item_records import persist_item_findings
