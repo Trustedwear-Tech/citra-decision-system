@@ -356,7 +356,13 @@ def infer_scope(
         return []
     common: Optional[Set[str]] = None
     for c in cluster:
-        f = set(c.get("case_facets") or [])
+        # The officer may have said which facets the lesson is about
+        # (scope_facets, a subset of the case's facets chosen on the run
+        # card). When they did, that is the set to intersect; when they did
+        # not, the whole signature is, as before. One correction whose officer
+        # unticked everything but the sourcing channel therefore yields a
+        # judgement scoped to the channel alone, instead of to that one file.
+        f = set(c.get("scope_facets") or c.get("case_facets") or [])
         common = f if common is None else (common & f)
     common = common or set()
     # Drift tokens can never be scoped — the alarm must stay diagnostic.

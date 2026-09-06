@@ -4410,6 +4410,15 @@ class ApproveRequest(BaseModel):
     #: no longer influences anything. See CaseSignature.reason_codes.
     reason_code: Optional[str] = Field(default=None, max_length=40)
     contested_fields: Optional[List[str]] = None
+    # WHICH facets the lesson is about. The run card shows the case's facets
+    # (its learning scope); the officer unticks the ones that do not matter to
+    # this correction. The server keeps only facets the case actually carries,
+    # so a client cannot widen a lesson beyond the case it was made on; an
+    # empty or absent list means "all of them" (today's behaviour). The chosen
+    # set is what consolidation intersects when it scopes the judgement, so an
+    # officer who says "this is about the sourcing channel, not the product"
+    # gets a judgement that fires on every file from that channel.
+    scope_facets: Optional[List[str]] = None
     # Integrity check (display==commit): the content hash of the proposal the
     # officer was shown (RunResponse.plan_hash). When present, approve verifies
     # it equals the CURRENT staged plan's hash and rejects (409) if the plan

@@ -2776,7 +2776,17 @@ function EvidenceUsed({
  *  agent, and it rendered as grey chips near the bottom, pending runs only.
  *  Now: first, highlighted, on every card - and when an app declares no
  *  signature it says so, because then a correction teaches EVERY case. */
-function FacetStrip({ facets }: { facets: string[] }) {
+function FacetStrip({
+  facets,
+  selected,
+  onToggle,
+}: {
+  facets: string[];
+  /** Facets the officer has kept for the lesson. Undefined = not selectable (read-only strip). */
+  selected?: Set<string>;
+  onToggle?: (facet: string) => void;
+}) {
+  const selectable = !!selected && !!onToggle;
   const accent = "var(--citra-primary, #2563eb)";
   const soft = "var(--citra-primary-bg, #eff6ff)";
   return (
@@ -2791,28 +2801,52 @@ function FacetStrip({ facets }: { facets: string[] }) {
               // The runtime writes `family:__unknown` when it could not derive a
               // value. Say "unknown" - never a blank that reads as "no facet".
               const unknown = raw === "__unknown" || raw === "";
+              // A chip the officer can turn off. An unknown facet is never
+              // part of a lesson (the fold drops drift tokens), so it stays
+              // read-only however the strip is used.
+              const canToggle = selectable && !unknown;
+              const on = !selected || selected.has(f);
+              const Tag: "button" | "span" = canToggle ? "button" : "span";
               return (
-                <span
+                <Tag
                   key={f}
-                  title={unknown ? `${family}: could not be derived for this case` : `${family} = ${raw}`}
+                  type={canToggle ? "button" : undefined}
+                  onClick={canToggle ? () => onToggle!(f) : undefined}
+                  aria-pressed={canToggle ? on : undefined}
+                  title={
+                    unknown
+                      ? `${family}: could not be derived for this case`
+                      : canToggle
+                        ? `${family} = ${raw} — ${on ? "part of the lesson (click to leave it out)" : "left out of the lesson (click to include)"}`
+                        : `${family} = ${raw}`
+                  }
                   style={{
                     fontSize: 12,
                     padding: "4px 10px",
                     borderRadius: 999,
-                    border: `1px ${unknown ? "dashed" : "solid"} ${unknown ? "var(--citra-border, #e5e7eb)" : accent}`,
-                    background: unknown ? "transparent" : soft,
+                    border: `1px ${unknown || !on ? "dashed" : "solid"} ${unknown ? "var(--citra-border, #e5e7eb)" : accent}`,
+                    background: unknown || !on ? "transparent" : soft,
                     color: unknown ? "var(--citra-muted, #6b7280)" : "var(--citra-text, #111827)",
                     whiteSpace: "nowrap",
+                    cursor: canToggle ? "pointer" : "default",
+                    opacity: on ? 1 : 0.55,
+                    textDecoration: on ? "none" : "line-through",
+                    font: "inherit",
                   }}
                 >
+                  {canToggle && (
+                    <span aria-hidden="true" style={{ marginRight: 5 }}>{on ? "☑" : "☐"}</span>
+                  )}
                   <span style={{ color: "var(--citra-muted, #6b7280)" }}>{prettyKey(family)}: </span>
                   <strong style={{ fontWeight: 600 }}>{unknown ? "unknown" : raw}</strong>
-                </span>
+                </Tag>
               );
             })}
           </div>
           <div style={{ fontSize: 11.5, color: "var(--citra-muted, #6b7280)", marginTop: 6 }}>
-            Anything you teach here comes back on cases with these facets — and only those.
+            {selectable
+              ? "Anything you teach here comes back on cases with the ticked facets — and only those. Untick a facet the lesson is not about; keep at least one."
+              : "Anything you teach here comes back on cases with these facets — and only those."}
           </div>
         </>
       ) : (
@@ -2874,6 +2908,17 @@ function RunResultModal({
   // WHY the officer rejects/changes a recommendation — sent as decision_reason
   // so the model can learn the correction (the self-improving signal).
   const [reason, setReason] = useState("");
+  // Which of the case's facets the lesson is about. Starts as all of them
+  // (the fold's old behaviour); the officer unticks what does not matter.
+  const [scopeOff, setScopeOff] = useState<Set<string>>(new Set());
+  const allFacets = (result.caseFacets ?? []).filter((f) => !String(f).endsWith(":__unknown"));
+  const scopeKept = allFacets.filter((f) => !scopeOff.has(f));
+  const toggleScope = (f: string) =>
+    setScopeOff((prev) => {
+      const next = new Set(prev);
+      if (next.has(f)) next.delete(f); else next.add(f);
+      return next;
+    });
   // WHICH KIND of wrong — the officer's pick from the app's closed taxonomy.
   // This is the half of the correction that aggregates; the free text is the
   // half a human reads. Required (when the app declares codes) on reject.
@@ -2944,6 +2989,17 @@ function RunResultModal({
     }
     // Reject requires a reason — same contract as the per-item review, and it
     // is the signal the model learns the correction from.
+    // A lesson about no facet at all is a rule for every file; that belongs in
+    // the SOP, not in memory. Refuse before the reason check so the message
+    // names the actual problem.
+    if (decision !== "cancel" && allFacets.length > 0 && scopeKept.length === 0
+        && (decision === "reject" || hasOverrides)) {
+      setActionErr(
+        "Keep at least one facet ticked under Learning scope — a lesson about "
+        + "no facet would apply to every file, and that is a rule for the SOP.",
+      );
+      return;
+    }
     if (decision === "reject" && reasonWordCount(reason) < MIN_REASON_WORDS) {
       setActionErr(
         `Write at least ${MIN_REASON_WORDS} words — a correction the app can `
@@ -2984,13 +3040,15 @@ function RunResultModal({
               // WHY the officer changed it — fed back to the model so it learns
               // the correction (the self-improving signal).
               decision_reason: reason.trim() || undefined,
-
+              // WHICH facets the lesson is about (the ticked chips). Sent only
+              // when the officer narrowed it; absent = all, as before.
+              scope_facets: hasOverrides && scopeKept.length < allFacets.length ? scopeKept : undefined,
             }
           : {
               decision,
               note: reason.trim() || (decision === "cancel" ? "user cancelled" : "user rejected"),
               decision_reason: reason.trim() || undefined,
-
+              scope_facets: decision === "reject" && scopeKept.length < allFacets.length ? scopeKept : undefined,
             };
       const res = await runtimeFetch(
         `/api/apps/${encodeURIComponent(result.slug)}/approve/${encodeURIComponent(result.correlationId)}`,
@@ -3083,7 +3141,11 @@ function RunResultModal({
               A run that hit its step cap before reading every document used
               to render identically to one that finished. */}
           <RunNotices notices={result.notices} />
-          <FacetStrip facets={result.caseFacets ?? []} />
+          <FacetStrip
+            facets={result.caseFacets ?? []}
+            selected={new Set(scopeKept)}
+            onToggle={toggleScope}
+          />
           {/* The reasons, directly under the verdict. They used to sit below
               the per-item list - with four documents, below the fold. */}
           {result.reasoning && (

@@ -204,6 +204,7 @@ async def record_correction(
     correlation_id: Optional[str] = None,
     case_ref: Optional[Dict[str, Any]] = None,
     case_facets: Optional[List[str]] = None,
+    scope_facets: Optional[List[str]] = None,
     signature_version: Optional[int] = None,
     reason_code: Optional[str] = None,
     reason_inferred: bool = False,
@@ -265,6 +266,17 @@ async def record_correction(
         facets = _clean_str_list(case_facets, cap=64)
         facets, rejected_facets = _guard_facets(
             facets, await declared_families(app_slug, tenant_id), app_slug=app_slug)
+        # The officer's chosen scope: only facets the case carries survive, so
+        # a client cannot file a lesson under a facet the case never had. An
+        # empty choice is not "everything" -- it is recorded as no choice and
+        # the fold falls back to the full facet set, exactly as before.
+        chosen = [f for f in _clean_str_list(scope_facets, cap=64) if f in facets]
+        if scope_facets and not chosen:
+            log.warning(
+                "[CORRECTIONS] %s/%s: scope_facets %r shares nothing with the "
+                "case's facets %r -- recorded as no choice",
+                tenant_id, app_slug, scope_facets, facets,
+            )
 
         cid = new_correction_id()
         doc: Dict[str, Any] = {
@@ -278,6 +290,7 @@ async def record_correction(
             # The signature AT DECISION TIME, frozen. Never recomputed — a later
             # ontology edit must not silently rewrite what past cases looked like.
             "case_facets": facets,
+            "scope_facets": chosen or None,
             "signature_version": signature_version,
             "officer": officer,
             "officer_role": officer_role,

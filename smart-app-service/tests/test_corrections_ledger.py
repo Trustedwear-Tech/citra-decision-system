@@ -370,3 +370,31 @@ def test_fold_survives_a_ledger_outage(monkeypatch):
         tenant_id="t", app_slug="app", actor="o@x",
         reason="theft over 25k needs a police report",
         reason_code="evidence_insufficient")) is False
+
+
+# ── the officer's chosen scope ───────────────────────────────────────────────
+def test_chosen_scope_is_kept_only_where_the_case_carries_it(col):
+    asyncio.run(cx.record_correction(
+        tenant_id="t", app_slug="app", modality="record", task_type="decision",
+        event="reject", reason_text="x",
+        case_facets=["product:personal", "sourcing_channel:branch", "income_proof:present"],
+        # one real choice, one facet the case never had (a client cannot widen a lesson)
+        scope_facets=["income_proof:present", "sourcing_channel:dsa"]))
+    d = col.docs[0]
+    assert d["scope_facets"] == ["income_proof:present"]
+    assert d["case_facets"] == ["income_proof:present", "product:personal", "sourcing_channel:branch"]
+
+
+def test_no_choice_records_none_not_everything(col):
+    asyncio.run(cx.record_correction(
+        tenant_id="t", app_slug="app", modality="record", task_type="decision",
+        event="reject", reason_text="x", case_facets=["product:personal"]))
+    assert col.docs[0]["scope_facets"] is None
+
+
+def test_a_choice_that_shares_nothing_with_the_case_is_recorded_as_no_choice(col):
+    asyncio.run(cx.record_correction(
+        tenant_id="t", app_slug="app", modality="record", task_type="decision",
+        event="reject", reason_text="x", case_facets=["product:personal"],
+        scope_facets=["sourcing_channel:dsa"]))
+    assert col.docs[0]["scope_facets"] is None

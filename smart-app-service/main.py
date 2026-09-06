@@ -9747,6 +9747,7 @@ async def _approve_workflow_staging(
                     contested_fields=payload.contested_fields,
                     case_ref=_case_ref_of(row),
                     case_facets=row.get("case_facets"),
+                    scope_facets=payload.scope_facets,
                     signature_version=row.get("signature_version"),
                     injected_clause_ids=row.get("injected_clause_ids"),
                     cited_clause_ids=[
@@ -9998,6 +9999,7 @@ async def _approve_workflow_staging(
                 contested_fields=payload.contested_fields,
                 case_ref=_case_ref_of(row),
                 case_facets=row.get("case_facets"),
+                scope_facets=payload.scope_facets,
                 signature_version=row.get("signature_version"),
                 injected_clause_ids=row.get("injected_clause_ids"),
                 cited_clause_ids=[
