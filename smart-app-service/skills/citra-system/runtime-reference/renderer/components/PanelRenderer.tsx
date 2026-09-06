@@ -2637,7 +2637,16 @@ function TeamJudgements({
 /** Sentences the server derived from the run's timeline that change how the
  *  rest of this card should be read. Level drives the colour only. */
 function RunNotices({ notices }: { notices?: RunResult["notices"] }) {
-  const list = (notices ?? []).filter((n) => n && n.text);
+  // The evidence gate emits one step per write; three writes about the same
+  // missing document would say it three times.
+  const seen = new Set<string>();
+  const list = (notices ?? []).filter((n) => {
+    if (!n || !n.text) return false;
+    const key = `${n.code ?? ""}|${n.text}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   if (!list.length) return null;
   const line = (level?: string) =>
     level === "error"
@@ -2674,11 +2683,15 @@ function EvidenceUsed({
   toolCalls,
   sopSources,
   pastCases,
+  hasPrecedentChips,
 }: {
   citations?: Array<Record<string, unknown>>;
   toolCalls?: RunResult["toolCalls"];
   sopSources?: string[];
   pastCases: number;
+  /** When the precedent chips render, their heading carries the consulted
+   *  count; saying it here too would be the same number twice. */
+  hasPrecedentChips: boolean;
 }) {
   const cites = (citations ?? []).filter((c) => c && typeof c === "object");
   const calls = toolCalls ?? [];
@@ -2705,13 +2718,16 @@ function EvidenceUsed({
           {cites.map((c, i) => {
             const kind = str(c.type ?? c.kind ?? c.source);
             const ref = str(c.ref ?? c.clause ?? c.title ?? c.source_id ?? c.doc_id);
-            const detail = str(c.detail ?? c.quote ?? c.text ?? c.note);
+            // A citation's quote can be a whole paragraph. Show enough to place
+            // it; the full text is on hover.
+            const fullDetail = str(c.detail ?? c.quote ?? c.text ?? c.note);
+            const detail = fullDetail.length > 220 ? fullDetail.slice(0, 217).trimEnd() + "…" : fullDetail;
             const url = typeof c.source_url === "string" ? c.source_url : undefined;
             return (
               <li key={i} style={{ marginBottom: 3 }}>
                 {kind && <span style={muted}>{kind} </span>}
                 {ref && <strong>{ref}</strong>}
-                {detail && <span>{ref || kind ? " — " : ""}{detail}</span>}
+                {detail && <span title={fullDetail !== detail ? fullDetail : undefined}>{ref || kind ? " — " : ""}{detail}</span>}
                 {url && (
                   <>
                     {" "}
@@ -2729,12 +2745,14 @@ function EvidenceUsed({
           <div>
             Checked:{" "}
             {[...byTool.entries()]
-              .map(([k, v]) => `${k}${v.n > 1 ? ` ×${v.n}` : ""}${v.failed ? ` (${v.failed} failed)` : ""}`)
+              .map(([k, v]) => `${prettyKey(k)}${v.n > 1 ? ` ×${v.n}` : ""}${v.failed ? ` (${v.failed} failed)` : ""}`)
               .join(" · ")}
           </div>
         )}
         {sops.length > 0 && <div>Policy read: {sops.join(", ")}</div>}
-        {pastCases > 0 && <div>{pastCases} past case{pastCases === 1 ? "" : "s"} consulted</div>}
+        {pastCases > 0 && !hasPrecedentChips && (
+          <div>{pastCases} past case{pastCases === 1 ? "" : "s"} consulted — none cited</div>
+        )}
       </div>
     </div>
   );
@@ -3038,6 +3056,7 @@ function RunResultModal({
             toolCalls={result.toolCalls}
             sopSources={result.sopSources}
             pastCases={result.retrievalCount ?? 0}
+            hasPrecedentChips={(result.citedPrecedents?.length ?? 0) > 0}
           />
           {/* The declared rubric, between the verdict and the per-item review.
               Supporting detail for the recommendation — never a replacement for
@@ -3101,13 +3120,53 @@ function RunResultModal({
             </div>
           )}
           {/* Precedent receipts — the past cases the AI relied on (≈) or
-              deliberately deviated from (≠). Trust surface: the officer sees
-              WHICH history backs the recommendation, not just that some does. */}
-          {outputEntries.length > 0 && (
+              deliberately deviated from (≠), and the judgements the team taught
+              that were in front of it. Evidence, not actions - so they sit with
+              the evidence, not beside the buttons. */}
+          {(result.citedPrecedents?.length ?? 0) > 0 && (
             <div className="rr-section">
               <div className="rr-section-head">
-                {isPending ? "Agent narrative" : "Result"}
+                Based on past cases ({result.citedPrecedents!.length}
+                {(result.retrievalCount ?? 0) > result.citedPrecedents!.length
+                  ? ` cited of ${result.retrievalCount} consulted`
+                  : ""})
               </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                {result.citedPrecedents!.map((p, i) => (
+                  <span
+                    key={`${p.decision_id}-${i}`}
+                    className="chip"
+                    title={p.note ?? undefined}
+                    style={{
+                      border: "1px solid var(--citra-border, #e5e7eb)",
+                      borderRadius: 12,
+                      padding: "3px 10px",
+                      fontSize: 12,
+                      background:
+                        p.relation === "differs"
+                          ? "var(--citra-warn-bg, #fffbeb)"
+                          : "var(--citra-ok-bg, #f0fdf4)",
+                    }}
+                  >
+                    {p.relation === "differs" ? "≠" : "≈"} {p.decision_id}
+                    {p.note ? ` — ${p.note}` : ""}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <TeamJudgements clauses={result.citedClauses ?? []} />
+          {/* The agent's full prose write-up. It restates the reasoning, the
+              document findings and the citations already on this card, and it
+              was the longest block on the screen. Kept in full - the detail is
+              sometimes the point - but closed by default, so the officer reads
+              the card and opens the essay only if they want it. */}
+          {outputEntries.length > 0 && (
+            <details className="rr-section">
+              <summary className="rr-section-head" style={{ cursor: "pointer" }}>
+                {isPending ? "Full agent write-up" : "Full result"}
+                {outputEntries.length > 1 ? ` (${outputEntries.length} parts)` : ""}
+              </summary>
               <dl className="dt-fields">
                 {outputEntries.map(([k, v]) => {
                   // Wide values — the markdown narrative (`text`) and JSON blocks —
@@ -3143,42 +3202,11 @@ function RunResultModal({
                   );
                 })}
               </dl>
-            </div>
-          )}
-          {(result.citedPrecedents?.length ?? 0) > 0 && (
-            <div className="rr-section">
-              <div className="rr-section-head">
-                Based on past cases ({result.citedPrecedents!.length})
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-                {result.citedPrecedents!.map((p, i) => (
-                  <span
-                    key={`${p.decision_id}-${i}`}
-                    className="chip"
-                    title={p.note ?? undefined}
-                    style={{
-                      border: "1px solid var(--citra-border, #e5e7eb)",
-                      borderRadius: 12,
-                      padding: "3px 10px",
-                      fontSize: 12,
-                      background:
-                        p.relation === "differs"
-                          ? "var(--citra-warn-bg, #fffbeb)"
-                          : "var(--citra-ok-bg, #f0fdf4)",
-                    }}
-                  >
-                    {p.relation === "differs" ? "≠" : "≈"} {p.decision_id}
-                    {p.note ? ` — ${p.note}` : ""}
-                  </span>
-                ))}
-              </div>
-            </div>
+            </details>
           )}
           {/* The decision block. Everything from here down is what the officer
-              ACTS on, and nothing long sits between the proposal and the
-              buttons any more — the agent's narrative used to, so the officer
-              read the change, scrolled through prose, then decided. */}
-          <TeamJudgements clauses={result.citedClauses ?? []} />
+              ACTS on. The facet strip stays here because it shows the scope a
+              correction typed below would teach. */}
           {isPending && <FacetStrip facets={result.caseFacets ?? []} />}
           {isPending && plannedWrites.length > 0 && (
             <div className="rr-section">
