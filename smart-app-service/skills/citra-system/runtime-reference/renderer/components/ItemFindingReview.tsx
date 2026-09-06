@@ -373,6 +373,42 @@ export function ItemFindingReview({
             </tbody>
           </table>
           {(() => {
+            // What the API returned. For a document the officer can open the
+            // original; for an API check the result IS the original. Without it
+            // this card showed a verdict on a score nobody could see.
+            if (finding.modality !== "api") return null;
+            const cite = (finding.citations || []).find(
+              (c) => c && (c as Record<string, unknown>).type === "api_result",
+            ) as { returned?: unknown; truncated?: boolean } | undefined;
+            if (!cite || cite.returned == null) return null;
+            const r = cite.returned;
+            const rows: Array<[string, string]> =
+              r && typeof r === "object" && !Array.isArray(r)
+                ? Object.entries(r as Record<string, unknown>).map(([k, v]) => [
+                    k,
+                    typeof v === "object" && v !== null ? JSON.stringify(v) : String(v ?? "—"),
+                  ])
+                : [["result", typeof r === "string" ? r : JSON.stringify(r)]];
+            return (
+              <details open={rows.length <= 8} style={{ fontSize: 12, marginBottom: 6 }}>
+                <summary style={{ cursor: "pointer", color: "var(--citra-muted, #6b7280)" }}>
+                  What the check returned ({rows.length} field{rows.length === 1 ? "" : "s"})
+                  {cite.truncated ? " — cut short" : ""}
+                </summary>
+                <table style={{ borderCollapse: "collapse", marginTop: 4 }}>
+                  <tbody>
+                    {rows.map(([k, v]) => (
+                      <tr key={k}>
+                        <td style={{ color: "var(--citra-muted, #6b7280)", paddingRight: 10, verticalAlign: "top" }}>{k}</td>
+                        <td style={{ fontFamily: "ui-monospace, Menlo, monospace", wordBreak: "break-all" }}>{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            );
+          })()}
+          {(() => {
             // Fraud evidence — the runtime collects artifact_flags into every
             // finding "so it MUST reach the officer's per-item review payload
             // structurally"; render it, or that promise ends at the API.

@@ -101,8 +101,11 @@ same — or use the database's container name if it is on the same network.
 Everything the interview writes, you can write. Some things only you can:
 
 - **REST/API sources** — introspected from an OpenAPI spec, and the spec does
-  not say how to *call* the API. `connection.base_url`, the auth `env_prefix`
-  and `options.invocation_template` are yours. See `source-mcp-template/docs/sources-file.md` §5.1.
+  not say how to *call* the API. `connection.base_url`, `connection.auth`
+  (`{type, env_prefix}` — the MCP reads `{PFX}_TOKEN` / `_API_KEY` / `_USER`+`_PASSWORD`
+  from its own environment) and each dataset's `input_schema` are yours. A
+  top-level `env_prefix` is not read for a REST source and the validator
+  refuses it. See `source-mcp-template/docs/sources-file.md` §5.1.
 - **`fraud_screening` and `artifact_role`** — never written by any guided flow,
   by design. Screening fingerprints real bytes across a whole corpus; whether it
   finds fraud or cries wolf depends on how alike your documents already are,

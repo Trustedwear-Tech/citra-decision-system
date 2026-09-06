@@ -604,6 +604,13 @@ class McpTool(_AgentToolBase):
     # semantic NL read; publish (W-09) rejects a required tool that is
     # unbound/semantic-only.
     required: bool = False
+    #: REST (API-as-dataset) reads only: the dataset's ``input_schema`` -- what a
+    #: caller must supply, e.g. ``pan`` -- copied from the catalogue at publish by
+    #: required_lookup_autowire. The runtime turns it into this tool's ``filters``
+    #: schema, so the model is handed the endpoint's contract instead of guessing
+    #: which key the bureau wants. The URL, the credentials and the response
+    #: mapping never leave the MCP. Unset for every other dataset kind.
+    lookup_inputs: Optional[Dict[str, Any]] = None
 
 
 class McpActionTool(_AgentToolBase):

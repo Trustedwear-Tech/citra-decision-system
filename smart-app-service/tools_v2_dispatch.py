@@ -1043,6 +1043,28 @@ def build_openai_tools_from_tools_v2(
                         "deterministic. Flat equality only (no operators)."
                     ),
                 }
+                # REST (API-as-dataset): `filters` IS the endpoint's input set, and
+                # there is no NL path for a REST read -- a model that wrote a
+                # `query` instead landed on a planner stub and the check never ran.
+                # So the schema is the dataset's own input_schema, copied at publish,
+                # and it is required. What to give, never where it goes.
+                _li = d.get("lookup_inputs")
+                if str(d.get("dataset_kind") or "").lower() == "rest" and isinstance(_li, dict):
+                    _props = _li.get("properties") if isinstance(_li.get("properties"), dict) else {}
+                    _req = [r for r in (_li.get("required") or []) if isinstance(r, str)]
+                    params["properties"]["filters"] = {
+                        "type": "object",
+                        "properties": {k: (v if isinstance(v, dict) else {"type": "string"})
+                                       for k, v in _props.items()},
+                        "required": _req,
+                        "additionalProperties": False,
+                        "description": (
+                            "The inputs this lookup needs -- give every required one"
+                            + (f" ({', '.join(_req)})" if _req else "")
+                            + ". This is a direct API lookup through the MCP; `query` is not used."
+                        ),
+                    }
+                    params["required"] = ["filters"]
             # A semantic (RAG) dataset can be read whole-document by doc_path — the
             # platform reader returns ALL sections of one doc, ordered, instead of
             # top-k passages. Only meaningful for semantic datasets.
@@ -1259,6 +1281,14 @@ def _default_description(entry: Dict[str, Any]) -> str:
             "once per check (e.g. credit, identity)."
         )
     if kind == "mcp":
+        _li = entry.get("lookup_inputs")
+        if str(entry.get("dataset_kind") or "").lower() == "rest" and isinstance(_li, dict):
+            _req = [r for r in (_li.get("required") or []) if isinstance(r, str)]
+            return (
+                f"Look up {entry.get('dataset_id')} -- a live external check served by "
+                f"the MCP. Give {', '.join(_req) if _req else 'its inputs'} in `filters`; "
+                "returns the mapped result fields."
+            )
         return (
             f"Invoke the {entry.get('source_id')}.{entry.get('tool_name')} "
             "MCP tool. Returns the dept-MCP query response."
@@ -1299,6 +1329,32 @@ def _default_description(entry: Dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 # Dispatch a single tool call
 # ---------------------------------------------------------------------------
+
+
+#: Bound on the copy of an API result carried on its finding. The officer's
+#: card shows a handful of fields; a bureau report can be far larger, and it
+#: rides the finding into Mongo and the audit row.
+_API_RESULT_CHARS = 2000
+
+
+def _api_result_citation(item_id: str, data: Any) -> Dict[str, Any]:
+    """The check result, bounded, so the officer sees what the API returned.
+
+    For a document the card offers "Open original"; for an API check the result
+    IS the original, and no finding carried it -- the card showed a verdict on
+    a score nobody could see. Kept flat when it fits; otherwise the serialised
+    text, cut, and said so.
+    """
+    import json as _json
+    try:
+        blob = _json.dumps(data, default=str, ensure_ascii=False)
+    except (TypeError, ValueError):
+        blob = str(data)
+    truncated = len(blob) > _API_RESULT_CHARS
+    returned: Any = data if (isinstance(data, dict) and not truncated) else {
+        "_text": blob[:_API_RESULT_CHARS]}
+    return {"type": "api_result", "ref": item_id, "returned": returned,
+            "truncated": truncated}
 
 
 async def dispatch_tools_v2_call(
@@ -2797,6 +2853,7 @@ async def dispatch_tools_v2_call(
                     confidence=0.0, rationale=(text or "")[:500],
                     rubric_version=rubric_version, media_ref=_media_ref,
                     sop_fingerprint=_sop_hash,
+                    citations=[_api_result_citation(item_id, data)],
                 )
             else:
                 try:
@@ -2813,6 +2870,7 @@ async def dispatch_tools_v2_call(
                     confidence=conf, rationale=str(parsed.get("rationale") or "")[:1000],
                     rubric_version=rubric_version, media_ref=_media_ref,
                     sop_fingerprint=_sop_hash,
+                    citations=[_api_result_citation(item_id, data)],
                 )
                 if _factor is not None:
                     # This check answers a declared factor — say so, so the

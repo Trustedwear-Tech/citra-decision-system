@@ -955,6 +955,46 @@ class RegistrySource(BaseModel):
                     f"rag.milvus_collection (the platform reader needs a corpus)."
                 )
             return self
+        if self.type == SourceType.rest_api:
+            conn = self.connection
+            if not conn or not getattr(conn, "base_url", None):
+                raise ValueError(
+                    f"source {self.source_id!r}: type=rest_api requires connection.base_url."
+                )
+            # The connector reads credentials from connection.auth and NOTHING
+            # else. Every shipped template once put env_prefix at the top of the
+            # connection block, where SQL sources keep it -- the file validated,
+            # and every call went out unauthenticated; the upstream 401 was the
+            # first sign. An API with no auth at all is legitimate (no env_prefix,
+            # no auth block); a credential declared where it is never read is not.
+            auth = getattr(conn, "auth", None)
+            if auth is None and conn.env_prefix:
+                raise ValueError(
+                    f"source {self.source_id!r}: a REST source's credentials are read from "
+                    f"connection.auth, not connection.env_prefix. As written every call "
+                    f"would carry NO credentials. Write: \"auth\": {{\"type\": "
+                    f"\"bearer\" | \"api_key\" | \"basic\", \"env_prefix\": "
+                    f"{conn.env_prefix!r}}} and drop the top-level env_prefix."
+                )
+            if auth is not None:
+                if not isinstance(auth, dict):
+                    raise ValueError(
+                        f"source {self.source_id!r}: connection.auth must be an object "
+                        f"{{type, env_prefix}}."
+                    )
+                atype = str(auth.get("type") or "").lower()
+                if atype not in ("bearer", "api_key", "basic", "none"):
+                    raise ValueError(
+                        f"source {self.source_id!r}: connection.auth.type must be one of "
+                        f"bearer | api_key | basic | none (got {auth.get('type')!r})."
+                    )
+                if atype != "none" and not str(auth.get("env_prefix") or "").strip():
+                    raise ValueError(
+                        f"source {self.source_id!r}: connection.auth.type={atype!r} needs "
+                        f"auth.env_prefix -- the MCP reads {{PFX}}_TOKEN / {{PFX}}_API_KEY / "
+                        f"{{PFX}}_USER+{{PFX}}_PASSWORD from its own environment."
+                    )
+            return self
         if self.type in (SourceType.structured, SourceType.mongodb):
             if not self.connection:
                 raise ValueError(

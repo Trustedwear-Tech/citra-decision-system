@@ -377,7 +377,11 @@ def main() -> int:
     all_depts = sorted({d.get("dept_id") for d in docs if d.get("dept_id")})
     prefixes: Dict[str, Tuple[str, str]] = {}
     for d in docs:
-        pfx = ((d.get("connection") or {}).get("env_prefix") or "").strip()
+        _conn = d.get("connection") or {}
+        # A REST source keeps its prefix under connection.auth (that is where the
+        # connector reads it); everything else keeps it at the top. Miss the
+        # first and the compose has no {PFX}_TOKEN line for the bureau.
+        pfx = (_conn.get("env_prefix") or (_conn.get("auth") or {}).get("env_prefix") or "").strip()
         if pfx and pfx not in prefixes:
             prefixes[pfx] = (_kind_of(d), d.get("source_id", "?"))
 

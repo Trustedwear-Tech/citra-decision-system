@@ -354,6 +354,31 @@ eight rounds lost to `phsical_name`, `colums`, `tye`, `is_forgeign_key`.
   the others in `notes` so the deployment at least records what else is in
   there, and say in your summary which function's vertical you used.
 
+## REST / API sources — declare the contract, the MCP holds the keys
+
+An external API (a credit bureau, an identity check, a fraud registry) is a
+source of `type: rest_api` whose datasets are `kind: rest`, one per endpoint.
+The agent that later reads it learns only what the endpoint is FOR and what
+to GIVE it. The URL, the credentials and the response mapping stay in the MCP.
+
+    "connection": {{ "base_url": "https://bureau.example.com",
+                    "auth": {{ "type": "bearer", "env_prefix": "BUREAU_API" }} }}
+
+  * `auth.type` is bearer | api_key | basic | none. `auth.env_prefix` names
+    the variables the MCP reads from ITS OWN environment: `{{PFX}}_TOKEN` or
+    `{{PFX}}_API_KEY` for bearer, `{{PFX}}_API_KEY` for api_key, `{{PFX}}_USER`
+    + `{{PFX}}_PASSWORD` for basic. A top-level `connection.env_prefix` is NOT
+    read for a REST source: the file validates and every call goes out with
+    no credentials. The validator now refuses that shape.
+  * each dataset carries `input_schema` — what a caller must supply, e.g.
+    `pan` (required) — and `read_via.extra.request` / `.response`: the method
+    and path template (`/v2/credit/{{{{pan}}}}`) and which JSON paths become
+    which columns. Ask the operator for the base URL, the auth type and the
+    endpoint contract. Never invent a path.
+  * `mandatory_when_used: true` on a dataset makes the platform refuse to
+    record a decision unless that lookup actually ran for the case. Ask
+    whether a check is policy-required before setting it.
+
 ## What you may infer without asking
 
 Types, primary keys, foreign keys, obvious descriptions, `semantic_type`, and

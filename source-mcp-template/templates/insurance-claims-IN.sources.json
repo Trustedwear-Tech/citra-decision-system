@@ -142,8 +142,8 @@
         "country": "IN"
       },
       "connection": {
-        "env_prefix": "FRAUD_REGISTRY_API",
-        "base_url": "https://REPLACE-registry.example.com"
+        "base_url": "https://REPLACE-registry.example.com",
+        "auth": { "type": "bearer", "env_prefix": "FRAUD_REGISTRY_API" }
       },
       "datasets": [
         {

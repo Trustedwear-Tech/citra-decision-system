@@ -66,6 +66,17 @@ def autowire_required_lookups(agent_spec: Any, catalogue: Any) -> int:
         if not ds_id:
             continue  # unbound → not anchorable (W-09) → skip
         entry = by_ref.get(ds_id)
+        # A REST dataset's contract rides onto its tool here too: same pass,
+        # same source of truth, same rule (fill only what the builder left
+        # unset). Without it the runtime advertised `filters` as a bare object
+        # and the model had to guess that `pan` is what the bureau wants.
+        if (entry and str(entry.get("kind") or "").lower() == "rest"
+                and isinstance(entry.get("input_schema"), dict) and entry.get("input_schema")
+                and not _tool_attr(tool, "lookup_inputs")):
+            _tool_set(tool, "lookup_inputs", dict(entry["input_schema"]))
+            changed += 1
+            logger.info("[required-autowire] dataset %r is a REST lookup -- copied its "
+                        "input_schema onto tool %r", ds_id, _tool_attr(tool, "name"))
         if not entry or entry.get("mandatory_when_used") is not True:
             continue
         if _required_explicitly_authored(tool):
