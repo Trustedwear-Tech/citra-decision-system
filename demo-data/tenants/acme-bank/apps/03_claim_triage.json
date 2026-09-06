@@ -201,9 +201,13 @@
             "query": {},
             "columns": [
               "claim_id",
+              "policy_no",
+              "customer_id",
               "claim_type",
-              "claimed_amount",
+              "loss_date",
+              "intimated_at",
               "intimation_delay_days",
+              "claimed_amount",
               "fir_number",
               "surveyor_id",
               "status"
