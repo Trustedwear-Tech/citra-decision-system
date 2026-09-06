@@ -54,8 +54,8 @@ const AdminUserService = {
   /**
    * GET /api/admin/users/impersonation-candidates
    *
-   * Super_admin-only. Returns demo personas grouped by demo tenant org
-   * (Acme Cement, etc.) so the picker can render them per company.
+   * Super_admin-only. Returns demo personas grouped by demo tenant org so
+   * the picker can render them per company.
    * Shape: { orgs: [{ id, name, domain, users: [...] }] }
    */
   async listImpersonationCandidates() {
@@ -158,7 +158,7 @@ const AdminUserService = {
   /**
    * GET /api/admin/orgs — orgs the caller can see. super_admin → all orgs;
    * org_admin/dept_admin → their own org only. Used by the halt console so a
-   * super_admin can freeze one organization (e.g. acme-power) on a hub box.
+   * super_admin can freeze a single organization on a hub box.
    */
   async listOrgs() {
     const url = `${CONFIG.USER_SERVICE_URL}/api/admin/orgs`;

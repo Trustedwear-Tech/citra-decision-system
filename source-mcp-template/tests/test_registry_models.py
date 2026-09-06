@@ -440,9 +440,9 @@ def test_organization_block_validation():
     from registry_models import Organization
 
     ok = Organization.model_validate({
-        "name": "Acme Power & Utilities Co.", "short_name": "Acme Power",
+        "name": "Acme Bank & Insurance Ltd", "short_name": "Acme Bank",
         "brand_color": "#0f6b3f"})
-    assert ok.short_name == "Acme Power"
+    assert ok.short_name == "Acme Bank"
     for bad in (
         {},                                        # name required
         {"name": ""},                              # empty name
@@ -464,10 +464,10 @@ def test_flatten_whitelist_carries_organization():
         "source_id": "s1", "type": "structured", "dept_id": "d", "org_id": "o",
         "name": "n", "description": "x",
         "connection": {"type": "postgres", "env_prefix": "P"},
-        "organization": {"name": "Acme Power & Utilities Co.",
-                         "short_name": "Acme Power"},
+        "organization": {"name": "Acme Bank & Insurance Ltd",
+                         "short_name": "Acme Bank"},
         "domain": {"vertical": "utility", "sub_vertical": "power_recovery",
                    "country": "US"},
     })
-    assert flat["organization"]["short_name"] == "Acme Power"
+    assert flat["organization"]["short_name"] == "Acme Bank"
     assert flat["domain"]["country"] == "US"

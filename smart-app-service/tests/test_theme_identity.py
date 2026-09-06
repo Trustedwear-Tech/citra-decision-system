@@ -30,11 +30,11 @@ def _run(coro):
 
 def test_theme_v2_tokens_are_closed_enums():
     ok = Theme.model_validate({
-        "primary": "#0f6b3f", "company_name": "Acme Power",
+        "primary": "#0f6b3f", "company_name": "Acme Bank",
         "font": "inter", "radius": "round", "density": "compact",
         "surface": "glass", "mode": "auto", "chart_palette": "brand",
     })
-    assert ok.company_name == "Acme Power"
+    assert ok.company_name == "Acme Bank"
     assert ok.mode == "auto"
     for bad in (
         {"font": "comic-sans"},
@@ -63,8 +63,8 @@ def test_resolve_org_identity_first_declared_wins(monkeypatch):
         "billing.bills": {"kind": "sql"},                          # no org block
         "field_operations.theft_cases": {
             "kind": "sql",
-            "organization": {"name": "Acme Power & Utilities Co.",
-                             "short_name": "Acme Power",
+            "organization": {"name": "Acme Bank & Insurance Ltd",
+                             "short_name": "Acme Bank",
                              "brand_color": "#0f6b3f"},
         },
     }
@@ -82,8 +82,8 @@ def test_resolve_org_identity_first_declared_wins(monkeypatch):
         SimpleNamespace(type="mcp", ref="field_operations.theft_cases"),
     ])
     org = _run(main._resolve_org_identity(
-        app_spec=app_spec, settings=None, auth_header=None, tenant_id="acme-power"))
-    assert org["short_name"] == "Acme Power"
+        app_spec=app_spec, settings=None, auth_header=None, tenant_id="acme-bank"))
+    assert org["short_name"] == "Acme Bank"
     assert org["brand_color"] == "#0f6b3f"
 
     # No source declares identity → None (publish leaves theme untouched).
@@ -91,4 +91,4 @@ def test_resolve_org_identity_first_declared_wins(monkeypatch):
         SimpleNamespace(type="mcp", ref="billing.bills")])
     assert _run(main._resolve_org_identity(
         app_spec=app_spec2, settings=None, auth_header=None,
-        tenant_id="acme-power")) is None
+        tenant_id="acme-bank")) is None

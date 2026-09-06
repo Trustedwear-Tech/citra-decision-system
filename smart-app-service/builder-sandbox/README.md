@@ -95,5 +95,5 @@ Resolved by the 2026-05-19 architectural refactor:
 - Smart-app builder persona moved here, paths fixed to `/srv/citra/workspace-seed/`.
 - `action-sandbox-host/config.py` `sandbox_image` default updated.
 
-See `smart-app-service/tests/integration/cement-e2e-report.md` for the
-diagnostic that surfaced the bug.
+The bug surfaced in a builder E2E run: the sandbox image carried a stale
+workspace seed, so the pod authored against paths the runtime no longer had.

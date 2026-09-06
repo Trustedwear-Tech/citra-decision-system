@@ -241,7 +241,7 @@ def test_value_stats_endpoint_admin_gate_and_shape(client, monkeypatch):
 
     def _mint(roles):
         return pyjwt.encode(
-            {"sub": "u1", "user_id": "u1", "tenant_id": "acme-power",
+            {"sub": "u1", "user_id": "u1", "tenant_id": "acme-bank",
              "roles": roles, "iat": int(time.time()),
              "exp": int(time.time()) + 600, "iss": "Citra-AI"},
             JWT_SECRET, algorithm="HS256")
@@ -300,24 +300,24 @@ def test_value_backfill_stamps_values_never_labels(client, monkeypatch):
     from tests._test_helpers import JWT_SECRET, _MemCol
 
     ledger = _MemCol([
-        {"decision_id": "d1", "tenant_id": "acme-power", "slug": "recovery-tracker",
+        {"decision_id": "d1", "tenant_id": "acme-bank", "slug": "recovery-tracker",
          "app_id": "app1", "agent_id": "ag1", "created_at": "2026-07-01",
          "outcome": {"label": "good"}},
-        {"decision_id": "d2", "tenant_id": "acme-power", "slug": "recovery-tracker",
+        {"decision_id": "d2", "tenant_id": "acme-bank", "slug": "recovery-tracker",
          "app_id": "app1", "agent_id": "ag1", "created_at": "2026-07-02",
          "outcome": {"label": "bad"}},
         # Already valued — must fall out of the query untouched.
-        {"decision_id": "d3", "tenant_id": "acme-power", "slug": "recovery-tracker",
+        {"decision_id": "d3", "tenant_id": "acme-bank", "slug": "recovery-tracker",
          "app_id": "app1", "agent_id": "ag1", "created_at": "2026-07-03",
          "outcome": {"label": "good", "value": {"amount": 1.0}}},
     ])
     agents = _MemCol([
-        {"agent_id": "ag1", "tenant_id": "acme-power",
+        {"agent_id": "ag1", "tenant_id": "acme-bank",
          "agent_spec": {"outcome_poll": {"enabled": True,
                                          "table": "field_operations.theft_cases"}}},
     ])
     apps = _MemCol([
-        {"app_id": "app1", "tenant_id": "acme-power", "slug": "recovery-tracker",
+        {"app_id": "app1", "tenant_id": "acme-bank", "slug": "recovery-tracker",
          "value_semantics": {"field_operations.theft_cases": {
              "value_kind": "recovered", "definition_version": "feed00000001"}}},
     ])
@@ -339,7 +339,7 @@ def test_value_backfill_stamps_values_never_labels(client, monkeypatch):
     monkeypatch.setattr(main, "_classify_decision_outcome", _fake_classify)
 
     tok = pyjwt.encode(
-        {"sub": "u1", "user_id": "u1", "tenant_id": "acme-power",
+        {"sub": "u1", "user_id": "u1", "tenant_id": "acme-bank",
          "roles": ["org_admin"], "iat": int(time.time()),
          "exp": int(time.time()) + 600, "iss": "Citra-AI"},
         JWT_SECRET, algorithm="HS256")
@@ -362,52 +362,6 @@ def test_value_backfill_stamps_values_never_labels(client, monkeypatch):
     d3 = next(d for d in ledger.docs if d["decision_id"] == "d3")
     assert d3["outcome"]["value"]["amount"] == 1.0  # untouched
 
-
-def test_seeded_recovery_roi_page_resolves_against_ledger(monkeypatch):
-    """The acme-power Recovery ROI page (V5 demo wiring) resolves its ledger
-    queue through the real resolve_panel_data dispatch — proving the seeded
-    spec, the decision_ledger data source, and the resolver agree."""
-    import json
-    from pathlib import Path
-
-    from tests._test_helpers import _MemCol
-    import main
-    import panel_data
-    from config import Settings
-    from models import AppSpec
-
-    seed = (Path(__file__).resolve().parents[2] / "demo-data" / "tenants"
-            / "acme-power" / "apps" / "02_recovery_tracker.json")
-    if not seed.exists():
-        pytest.skip("demo-data seed not present")
-    app_spec = AppSpec.model_validate(
-        json.loads(seed.read_text(encoding="utf-8"))["app_spec"])
-    app_spec.tenant_id = "acme-power"
-
-    col = _MemCol([{
-        "slug": "acme-power-recovery-tracker", "tenant_id": "acme-power",
-        "decision_id": "d1", "mode": "human_approved", "overrides": [],
-        "created_at": "2026-07-01T10:00:00+00:00",
-        "recommendation": {"decision": "Pursue recovery."},
-        "record_keys": [{"key_values": ["TC-1001"]}],
-        "outcome": {"label": "good",
-                    "value": {"amount": 1200.0, "kind": "recovered",
-                              "currency": "USD",
-                              "definition_version": "abc123abc123"}},
-    }])
-    monkeypatch.setattr(main, "get_decision_records_col", lambda: col)
-
-    resp = _run(panel_data.resolve_panel_data(
-        settings=Settings(jwt_secret="x", mongodb_uri="mongodb://x"),
-        app_spec=app_spec, panel_id="roi_ledger"))
-    assert resp.source_kind == "decision_ledger"
-    assert resp.total == 1
-    row = resp.rows[0]
-    assert row["case"] == "TC-1001"
-    assert row["value_amount"] == 1200.0
-    assert row["currency"] == "USD"
-
-
 def test_decision_ledger_resolver_flattens_stamped_values(monkeypatch):
     from tests._test_helpers import _MemCol
     import main
@@ -415,7 +369,7 @@ def test_decision_ledger_resolver_flattens_stamped_values(monkeypatch):
 
     col = _MemCol([
         {
-            "slug": "recovery-app", "tenant_id": "acme-power",
+            "slug": "recovery-app", "tenant_id": "acme-bank",
             "decision_id": "d1", "mode": "human_approved", "overrides": [],
             "created_at": "2026-07-01T10:00:00+00:00",
             "recommendation": {"decision": "Approve the payment claim."},
@@ -427,7 +381,7 @@ def test_decision_ledger_resolver_flattens_stamped_values(monkeypatch):
             "retrieval_count": 2,
         },
         {
-            "slug": "recovery-app", "tenant_id": "acme-power",
+            "slug": "recovery-app", "tenant_id": "acme-bank",
             "decision_id": "d2", "mode": "human_rejected",
             "overrides": [{"field": "x"}],
             "created_at": "2026-07-02T10:00:00+00:00",
@@ -435,11 +389,11 @@ def test_decision_ledger_resolver_flattens_stamped_values(monkeypatch):
             "record_keys": [{"key_values": ["DSP-2"]}],
             "outcome": {"label": "negative"},
         },
-        {"slug": "other-app", "tenant_id": "acme-power", "decision_id": "d3"},
+        {"slug": "other-app", "tenant_id": "acme-bank", "decision_id": "d3"},
     ])
     monkeypatch.setattr(main, "get_decision_records_col", lambda: col)
 
-    app_spec = SimpleNamespace(slug="recovery-app", tenant_id="acme-power")
+    app_spec = SimpleNamespace(slug="recovery-app", tenant_id="acme-bank")
     ds = SimpleNamespace(type="decision_ledger", ref="recovery-app")
     rows, total, truncated, note = _run(panel_data._resolve_decision_ledger_rows(
         app_spec=app_spec, ds=ds, limit=50))

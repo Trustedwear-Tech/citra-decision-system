@@ -22,7 +22,7 @@
 # Ported from the June 2026 draft (citra-ai-oss). Differences, all deliberate:
 #   - action-chat-service and skill-service are GONE (removed from the product
 #     in the 2026-08-08 Phase 0 split) — do not re-add them
-#   - the seeded demo is acme-bank, not acme-power
+#   - the seeded demo is acme-bank
 #   - collaboration-server is GONE (removed 2026-08-09 — unused, never wired
 #     into any live Citra-UI feature; see docs/open-source-release-plan.md)
 #

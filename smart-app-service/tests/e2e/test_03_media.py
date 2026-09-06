@@ -42,7 +42,7 @@ def _media(sas, token, col, key=None, key_field=None):
 
 @pytest.fixture()
 def tok(base_specs) -> str:
-    return mint_jwt(roles=["super_admin"], user_id="media@acme-power.citra.ai")
+    return mint_jwt(roles=["super_admin"], user_id="media@acme-bank.citra.ai")
 
 
 def test_media_streams_real_bytes(sas: httpx.Client, base_specs, tok: str):

@@ -18,8 +18,8 @@ x-common: &common
     # Pinned host port (was ephemeral) so dept-MCPs running on a DIFFERENT box
     # can register/heartbeat at http://<AI-1-private-ip>:9000. Demo-prod is one
     # box today so every MCP is local, but keep the pin: cross-host MCPs are
-    # normal in the customer topology (see docs/deployment-topology.md), and the
-    # acme-power demo MCP used this path when Citra-AI-Common existed.
+    # normal in the customer topology (see docs/deployment-topology.md), and a
+    # demo MCP on another box has used this path before.
     # Internal callers still use the docker network name
     # discovery-service-prod:9000 — unaffected.
     - "9000:9000"

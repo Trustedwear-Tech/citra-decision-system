@@ -17,7 +17,7 @@
 > Phase 0 (E4 doc-disambiguation F1/F2/F3/F6) + Phase 1 (`domain` block end-to-end,
 > ontology-driven locale) are implemented and tested. §2 note: the block lives on
 > the **source** (each dataset inherits; complete-block dataset override), not the
-> file top level — the bare-array file form has no top level. acme-power annotated
+> file top level — the bare-array file form has no top level. acme-bank annotated
 > `utility / power_recovery + metering_inspection / US` (it is the US-flavored demo).
 > Companion docs: `fraud-detection-coverage-matrix.md` (what we detect),
 > `fraud-detection-primitives-plan.md` (how), `wedge-strengthening-plan.md` (why).
@@ -188,7 +188,7 @@ These ship FIRST (Phase 0) — they close a live false-alarm risk in E4.
 | 8 | `smart-app-service/fraud_synthesis.py` | Pack-aware default weights (data table keyed by sub_vertical; existing `_POINTS_DEFAULTS` = the generic pack). |
 | 9 | `Citra-UI/screens/ScreeningHealthScreen.js` | Domain badge in header; catalogue group ordering by vertical (data-driven from a served field on `/org/screening-stats`). |
 | 10 | `source-mcp-template/docs/sources-file.md` | New §: the `domain` block — full field table, derivation rules, per-vertical annotation guides ("what a good loan_recovery ontology declares"). |
-| 11 | `demo-data/` | acme-power gains `domain: utility/metering_inspection/IN` (first live annotation); template starters per §6. |
+| 11 | `demo-data/` | acme-bank gains `domain: utility/metering_inspection/IN` (first live annotation); template starters per §6. |
 
 ## 6. Deploy templates — the targeting artifact
 
@@ -212,7 +212,7 @@ prospect's own vocabulary on day one.
 | Phase | Scope | Effort |
 |---|---|---|
 | **0** ✅ BUILT | F1 + F2 + F3 + F6 (E4 doc-disambiguation — closes a live false-alarm risk). Registry additionally REQUIRES the pairing at publish (`_payment_proof_needs_a_tagged_document`); autowire drops an unpinned config loudly; F2 sentence refreshes idempotently on reconcile. | done |
-| **1** ✅ BUILT | `Domain` ontology block end-to-end: registry `Domain` (closed enums, pairing validator, currency/date_order derivation fill) + describe/discovery mirrors + `_flatten` carry + catalogue `_effective_domain` normalization + schema regen + autowire `locale` stamp (set/flip/CLEAR) + dispatch threading into cross_check/validate_formats/exif/payment + acme-power annotation (US) + sources-file.md §2.1 | done |
+| **1** ✅ BUILT | `Domain` ontology block end-to-end: registry `Domain` (closed enums, pairing validator, currency/date_order derivation fill) + describe/discovery mirrors + `_flatten` carry + catalogue `_effective_domain` normalization + schema regen + autowire `locale` stamp (set/flip/CLEAR) + dispatch threading into cross_check/validate_formats/exif/payment + acme-bank annotation (US) + sources-file.md §2.1 | done |
 | **2** ✅ BUILT | Vertical packs: `VERTICAL_PACK_DEFAULTS` (metering/equipment inspection → 1 km GPS; insurance claims → 7-day payment window; explicit > pack > platform, enforced by making tolerances Optional end-to-end), missing-annotation advisories at create AND reconcile, domain triple stamped on screens → `/org/screening-stats.domains` → Screening Health badge + vertical-aware catalogue ordering (ordering only, nothing hidden) | done |
 | **3** ✅ BUILT | F4 `verify_against`: registry `VerifyAgainst`/`VerifyCompare` (unique slug, pinned to a role-tagged doc_column — publish-rejected otherwise) + autowire routing resolution (target_source_id/kind/description, per-comparison fail-loud drops) + generic comparator (amount/date/id/text, tolerance/window, not-found fact-grade, VERIFIED positive) + dispatch loop (doc-attached gate, server-side read-by-key, per-check results) + gate weights (not-found 3 / mismatch 2) + advisories + description sentence + education-catalogue entry | done |
 | **4** ✅ BUILT | Deploy templates under `source-mcp-template/templates/`: banking-loan_recovery-IN, insurance-claims-{IN,US}, utility-power_recovery-IN, field_service-equipment_inspection-US + README + CI validation test (every template must always parse; filename must match its domain cell). Demo SEED DATA per template still pending. | done (seeds pending) |

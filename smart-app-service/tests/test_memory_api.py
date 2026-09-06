@@ -45,7 +45,7 @@ JWT_SECRET = "smart-app-service-test-secret"
 os.environ["JWT_SECRET"] = JWT_SECRET
 os.environ.setdefault("JWT_ISSUER", "Citra-AI")
 
-TENANT = "acme-power"
+TENANT = "acme-bank"
 OWNER_SA = f"work-sa-{TENANT}-ops"
 SLUG = "memory-test-app"
 

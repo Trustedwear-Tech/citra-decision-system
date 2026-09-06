@@ -12,7 +12,7 @@
 
 **Audience:** sales engineering, solution architects, a technical evaluator.
 **Purpose:** the canonical description of the current design, using the
-acme-power deployment as the reference implementation.
+acme-bank deployment as the reference implementation.
 
 ---
 

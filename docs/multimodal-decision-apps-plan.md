@@ -83,7 +83,7 @@ compose into **one decision** with **one audit trail**.
 **`column_kind` on the catalogue column** — so every layer knows "this column is an image/file":
 - Add `column_kind: Optional[Literal["plain","url","image_url","document_url","file"]]` (+ optional `mime_hint`) to `ColumnSpec` (`source-mcp-template/models.py`) and `CatalogueColumn` (`data-discovery-service/models.py`).
 - Classifier heuristic: name contains photo/image/scan/doc/attachment + string type → infer kind; overridable in `sources.json`.
-- Backfill demo: mark `evidence_photo_url` etc. in `demo-data/tenants/acme-power/mcp/sources.json`.
+- Backfill demo: mark `evidence_photo_url` etc. in `demo-data/tenants/acme-bank/mcp/sources.json`.
 
 **Structured Finding contract** (the per-item analysis output) — new pydantic model in `smart-app-service/models.py`:
 ```python

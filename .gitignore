@@ -43,9 +43,8 @@ Citra-UI/.firebase-token
 
 # Per-tenant demo MCP secrets. These files hold the shared JWT_SECRET, the
 # MCP_API_KEY, embedding/LLM keys and bucket credentials — never commit them.
-# (acme-power / acme-cement / bihar-gov were committed before this rule; see
-# docs/acme-bank-demo-plan.md. Untracking them does NOT scrub git history, so
-# those values need rotating.)
+# (some were committed before this rule; untracking them does NOT scrub git
+# history, so those values need rotating.)
 demo-data/tenants/*/mcp/.env
 
 # Generated demo claim documents — rebuilt by generate_claim_documents.py

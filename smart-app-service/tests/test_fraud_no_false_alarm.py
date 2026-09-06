@@ -301,7 +301,7 @@ def test_unannotated_column_defaults_to_flagging_no_silent_weakening():
 #     LOW-ENTROPY text, so the entropy floor is the safety property to pin.
 # ─────────────────────────────────────────────────────────────────────────────
 _INVOICE = (
-    "Tax Invoice number INV-2026-00417 dated 14 March 2026. Vendor Acme Power "
+    "Tax Invoice number INV-2026-00417 dated 14 March 2026. Vendor Acme Supplies "
     "Services Private Limited, GSTIN 27AABCA1234F1Z5. Bill to Northern Grid "
     "Division. Description: replacement of distribution transformer bushing "
     "assembly, including labour and transport. Quantity 3 units at 18,500 each. "

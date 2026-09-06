@@ -356,7 +356,7 @@ function stringifyArgs(a) {
  * citra-app-publish/SKILL.md (e.g. "✅ Preview is up at <url>",
  * "✅ Live at <url> (version 1)", "Your app is live at **<url>**. Version 1.").
  * We parse that text to drive the preview/live deploy card, mirroring how
- * the cement_e2e harness recognises a publish.
+ * the builder E2E harness recognises a publish.
  *
  * A LIVE turn is terminal and also *mentions* the preview URL ("your preview
  * stays available"), so we detect "live at …" FIRST and only fall back to a

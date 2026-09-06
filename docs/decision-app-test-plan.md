@@ -11,7 +11,7 @@
 # Decision App Platform — End-to-End Test Plan
 
 Covers the three surfaces on `smart-app-service` (:9100) + `citra-app-runtime`
-(:3100) + `citra-app-builder` pod + dept-MCP (`mcp-demo-acme-power`):
+(:3100) + `citra-app-builder` pod + dept-MCP (`citra-ds-mcp-demo-acme-bank`):
 
 1. **Builder** — LLM authoring loop (`/build*`, `/apps/{slug}/edit`)
 2. **App-build output** — published AppSpec/AgentSpec + publish validators
@@ -20,7 +20,8 @@ Covers the three surfaces on `smart-app-service` (:9100) + `citra-app-runtime`
 5. **Governed decision loop** — recommend → approve → override → reject; auto-recommend / auto-process
 
 **Environments:** run the full matrix in **test** (`test_*` collections), promote a subset to **prod**.
-Use the **acme-power** demo only (source `field_operations.*`, `org_id=acme-power`, MCP `mcp-demo-acme-power`).
+Use the **acme-bank** demo only (sources `loan_origination.*`, `loan_servicing.*`,
+`insurance_claims.*`, `sales_crm.*`; `org_id=acme-bank`; MCP `citra-ds-mcp-demo-acme-bank`).
 
 The executable harness lives in [`smart-app-service/tests/e2e/`](../smart-app-service/tests/e2e/) — see its README to run.
 
@@ -30,9 +31,9 @@ The executable harness lives in [`smart-app-service/tests/e2e/`](../smart-app-se
 
 | Item | Detail |
 |---|---|
-| **Auth** | Mint HS256 JWTs with `JWT_SECRET` (Vault `prod/smart-app-service`). Role matrix: `super_admin`, `org_admin`, `dept_admin`, plain member; `org_id/tenant_id=acme-power`; SA membership via `service_account_admin_of`. |
+| **Auth** | Mint HS256 JWTs with `JWT_SECRET` (Vault `prod/smart-app-service`). Role matrix: `super_admin`, `org_admin`, `dept_admin`, plain member; `org_id/tenant_id=acme-bank`; SA membership via `service_account_admin_of`. |
 | **Runtime token** | `POST /apps/{slug}/runtime/token` → `?_t=` launch token + `citra_user_token` cookie. |
-| **Seed data** | `equipment_inspections` incl. fraud fixtures (3× reused photo, 2× reused report, backdated) + a clean CRUD source + a source with a media column. |
+| **Seed data** | `insurance_claims.claims` + `claim_documents` incl. fraud fixtures (a byte-identical estimate photo, a late intimation) + a clean CRUD source + a source with a media column. |
 | **Fixture apps** | (a) fraud screen, (b) form-CRUD, (c) dashboard, (d) overlay/thread — so every panel/tool kind is covered. |
 | **Golden files** | Snapshot each published AppSpec JSON + each runtime page accessibility snapshot for regression diffing. |
 

@@ -69,7 +69,7 @@ export default function AppShell({
           )}
           <div style={{ minWidth: 0 }}>
             {/* Company identity (Theme v2, inherited from the ontology's
-                organization block at publish): "Acme Power · Recovery Tracker"
+                organization block at publish): "Acme Bank · Claim Triage"
                 instead of a bare app name. */}
             {appSpec.theme?.company_name ? (
               <div className="app-title">

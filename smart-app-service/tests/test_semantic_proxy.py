@@ -70,10 +70,10 @@ async def test_service_run_mints_semantic_token(monkeypatch):
     monkeypatch.setattr("citra_auth.mint_semantic_read_token",
                         lambda **kw: f"MINTED:{kw['org_id']}:{kw.get('on_behalf_of_user_id')}")
     await call_citra_semantic_search(
-        settings=_settings(), user_jwt=None, org_id="acme-power",
+        settings=_settings(), user_jwt=None, org_id="acme-bank",
         on_behalf_of="agent-run:x", source_id="s", query="q",
     )
-    assert cap["headers"]["Authorization"] == "Bearer MINTED:acme-power:agent-run:x"
+    assert cap["headers"]["Authorization"] == "Bearer MINTED:acme-bank:agent-run:x"
 
 
 @pytest.mark.asyncio

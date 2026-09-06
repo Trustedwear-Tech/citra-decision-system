@@ -122,16 +122,16 @@ serving two lines of business is the only reason to override per dataset.
 ### 2.2 `organization` — the customer's display identity
 
 Declares WHO the customer is, for presentation: every app built on this source
-inherits the company name/logo — app headers ("Acme Power · Recovery
-Tracker"), browser titles, agent prompts ("Acme Power's recovery assistant"),
+inherits the company name/logo — app headers ("Acme Bank · Claim
+Triage"), browser titles, agent prompts ("Acme Bank's claims assistant"),
 and the Money-impact card. Declared **once by IT at connection time** so no BA
 ever types the company name into a spec; the builder may still override the
 resulting theme per app.
 
 ```json
 "organization": {
-  "name": "Acme Power & Utilities Co.",
-  "short_name": "Acme Power",
+  "name": "Acme Bank & Insurance Ltd",
+  "short_name": "Acme Bank",
   "logo_url": "https://…/acme-logo.svg",
   "brand_color": "#0f6b3f"
 }
@@ -221,7 +221,7 @@ A `mongodb` source with **no** `env_prefix`/`uri` **fails loud** (no shared-DB f
 ```json
 "connection": { "type": "mongodb", "env_prefix": "DEMO_MONGO",
                 "mongo_db": "acme", "collection": "claims",
-                "tenant_filter": { "org_id": "acme-power" } }
+                "tenant_filter": { "org_id": "acme-bank" } }
 ```
 
 A dict of fixed field/value pairs that scopes this source to one tenant partition. It is
@@ -475,14 +475,14 @@ structured config, just where its vectors live:
 
 ```json
 {
-  "source_id": "acme_power_policy_library",
-  "dept_id": "central_pmu",
-  "org_id": "acme-power",
+  "source_id": "acme_bank_policy_library",
+  "dept_id": "central_ops",
+  "org_id": "acme-bank",
   "type": "semantic",
-  "name": "Central PMU — Acme Power Policy Library",
+  "name": "Central Ops — Acme Bank Policy Library",
   "rag": {
     "milvus_collection": "mcp_dept_libraries",              // the Milvus collection to read
-    "s3_prefix": "power-distribution/acme-power/policy/"    // where originals live (Open button)
+    "s3_prefix": "acme-bank/policy/"                        // where originals live (Open button)
   },
   "visibility": { "roles_allowed": ["user","dept_admin","org_admin","super_admin"],
                   "public_within_org": true },
@@ -908,7 +908,7 @@ lookup that isn't bound.
 {
   "source_id": "billing",
   "dept_id": "billing_revenue",
-  "org_id": "acme-power",
+  "org_id": "acme-bank",
   "type": "structured",
   "is_active": true,
   "name": "Billing & Revenue — Consumer / Bill / Payment",
@@ -959,7 +959,7 @@ lookup that isn't bound.
 {
   "source_id": "warehouse",
   "dept_id": "ops",
-  "org_id": "acme-power",
+  "org_id": "acme-bank",
   "type": "structured",
   "name": "Ops Warehouse",
   "description": "Read-only ops warehouse.",
@@ -1026,7 +1026,7 @@ loader), `config.py` (env), `catalogue.py:119-176` (dataset resolution),
 `catalogue.py:506-542` (mongo connection), `connectors/sql_connector.py` (`env_prefix` →
 `{PFX}_*`), `connectors/rest_connector.py` (the REST read contract), `registration.py`
 (discovery payload), `smart-app-service/fraud_roles.py` (fraud auto-wiring). Real example:
-`demo-data/tenants/acme-power/mcp/sources.json`.*
+`demo-data/tenants/acme-bank/mcp/sources.json`.*
 
 
 ## 15. Validating the file

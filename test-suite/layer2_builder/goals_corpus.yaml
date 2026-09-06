@@ -63,7 +63,7 @@ goals:
 
   - id: docs_rag
     goal: >
-      A policy Q&A app over the acme_power_policy_library corpus — ask a question,
+      A policy Q&A app over the acme_bank_policy_library corpus — ask a question,
       get a grounded answer with citations, and browse the source documents.
     expects:
       panels: [agent_chat, document_view]

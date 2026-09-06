@@ -10,15 +10,16 @@
 
 # Acme Bank & Insurance — demo tenant build plan
 
-Status: **PLAN ONLY — nothing built.** Written 2026-07-28.
+Status: **BUILT.** Written 2026-07-28; the design below is what shipped.
 
-Clone the `acme-power` demo tenant into a second, India-flavoured BFSI demo:
-lending, collections, insurance claims and sales. Same machinery, different
-data. When it is proven in dev we switch the demo over from `acme-power`.
+An India-flavoured BFSI demo: lending, collections, insurance claims and sales.
+It is the only tenant this repository ships, and the platform runs one org at a
+time.
 
-Read `demo-data/tenants/acme-power/SPEC.md` alongside this — everything here is
-"the acme-power pattern, with these substitutions". Anything not mentioned is
-deliberately identical.
+The live contract is `demo-data/tenants/acme-bank/SPEC.md` — identifiers,
+schema, sources, apps and personas. This document is the reasoning behind it:
+why the numbers and the shape are what they are, and the gotchas that decided
+them.
 
 ---
 
@@ -39,48 +40,13 @@ rather than a coexistence plan:
 
 > **The platform runs ONE org at a time.** `data-discovery-service` pins
 > `ORG_ID` to a single scalar and `main.py` refuses to boot the crawler unless
-> it resolves to a real `orgs` row. So acme-power does not stay alongside
-> acme-bank: at cut-over its registrations and data are **removed**, not left
-> dormant. The repo fixture stays so the tenant can be rebuilt later; the
+> it resolves to a real `orgs` row. So a second tenant does not sit alongside
+> acme-bank: bringing one up means switching to it — its predecessor's
+> registrations and data are **removed**, not left dormant. The
 > databases do not. See §7.5.
 
 **Order of work: dev first, proven, then prod.** Nothing touches the prod
 database until the dev demo passes its E2E.
-
----
-
-## 0.5. Phase 0 — purge the stale `dept_sources` instructions ✅ DONE 2026-07-28
-
-Cleaned up before cloning anything, so the new tenant cannot inherit it.
-Corrected across all three tenants (acme-power, acme-manufacturing, public-sector):
-bring-up steps, folder tables, the generator's date-helper comment, and the
-prose that described the registry as living in Mongo. Dated run reports were
-left alone. Both `build_mcp_sources.py` generators still compile.
-
-`dept_sources` as a mongoimport step is **dead**. Sources now live in
-`sources.json`, mounted read-only as the MCP's `SOURCES_FILE`; the MCP
-publishes to discovery on boot. `build_mcp_sources.py` already says so
-("This file IS the MCP's source registry. No mongoimport.") — but several
-docs still instruct the opposite, and copying one into the new tenant would
-produce a phantom double registration.
-
-Files carrying live-but-stale instructions:
-
-| File | What to remove |
-|---|---|
-| `demo-data/tenants/acme-power/SPEC.md` | §10 step 3 — the `mongoimport … --upsertFields org_id,dept_id,source_id` step |
-| `demo-data/tenants/acme-power/README.md` (~line 101) | the `mongoimport --uri … --db dev` block |
-| `demo-data/tenants/acme-manufacturing/mcp/README.md` | step 5 "mongoimport … into dept_sources" and the two other references |
-| `demo-data/tenants/public-sector/mcp/README.md`, `mcp/docker-compose.yml` | same instruction in comments |
-| `demo-data/tenants/*/mcp/docker-compose.yml` (acme-power, acme-manufacturing) | header comments describing the registry as mongoimported |
-
-Leave alone: `E2E-RUN-*.md`, `STATUS.md`, `demo-data/results/*` — dated run
-records, not instructions. Also leave `build_mcp_sources.py`'s
-extended-JSON date helper (the format is still what discovery expects) but
-correct its comment, which explains itself in terms of mongoimport.
-
-Each replacement says the same thing: *the generated `sources.json` IS the
-registry; regenerate it and restart the MCP.*
 
 ---
 
@@ -92,19 +58,19 @@ Mirrors SPEC.md §1. All **decided**.
 |---|---|---|
 | Tenant / org id | `acme-bank` | decided — short, hyphen-light |
 | Org display name | `Acme Bank & Insurance Ltd` | carries the full title |
-| Domain | `acme-bank-demo.citra.ai` | matches the acme-power convention |
+| Domain | `acme-bank-demo.citra.ai` | `<org>-demo.citra.ai` |
 | Row-tag tenant_id | `acme-bank-demo` | |
 | Departments | `lending`, `collections`, `claims`, `sales_distribution`, `central_ops` | §2 |
-| Postgres container | `citra-ds-acme-bank-postgres`, host port **15444** → 5432 | decided — **separate container**, full isolation from acme-power |
+| Postgres container | `citra-ds-acme-bank-postgres`, host port **15444** → 5432 | decided — **separate container**, its own volume and role |
 | Postgres DB | `acme-bank` | |
 | Postgres user / pass | `acme_bank` / `acme_bank_demo_pw` | |
 | SQL env_prefix | `ACME_BANK_SQL` | |
 | MCP container | `citra-ds-mcp-demo-acme-bank` | |
-| MCP host port | `18504` → container `8090` | 8503 is acme-power |
-| Docker network / project | `acme-bank-demo` | pinned, as acme-power does |
+| MCP host port | `18504` → container `8090` | high port, no collision with a local MCP |
+| Docker network / project | `acme-bank-demo` | pinned, so `--fresh` in one checkout cannot wipe another |
 | MCP_API_KEY | `demo-acme-bank-mcp-key-local-only` | dev only |
 | Milvus collection | *(none new)* | dept libraries now share ONE collection, isolated by `org_id` — see §5 |
-| Deterministic seed | `20260728` | new seed so rows differ from acme-power |
+| Deterministic seed | `20260728` | fixed, so a re-seed reproduces the same rows |
 | Faker locale | `en_IN` | the India flavour |
 | Currency / units | INR, lakh/crore in copy | |
 
@@ -112,7 +78,7 @@ Mirrors SPEC.md §1. All **decided**.
 
 ## 2. Departments and the five sources
 
-acme-power has 4 structured + 1 semantic. Keep that shape exactly.
+Four structured sources and one semantic corpus.
 
 | source_id | type | dept_id | tables |
 |---|---|---|---|
@@ -122,8 +88,8 @@ acme-power has 4 structured + 1 semantic. Keep that shape exactly.
 | `sales_crm` | structured | `sales_distribution` | `leads`, `branches`, `agents`, `opportunities` |
 | `acme_bank_policy_library` | semantic | `central_ops` | RAG corpus (§5) |
 
-All four structured sources share ONE Postgres database, exactly as acme-power's
-four share theirs. `connection` block for each:
+All four structured sources share ONE Postgres database. `connection` block for
+each:
 
 ```json
 "connection": { "type": "postgres", "env_prefix": "ACME_BANK_SQL" }
@@ -191,7 +157,7 @@ life, so no persistency / underwriting-mortality tables.*
 - `leads` — lead_id, name, mobile_masked, city, product_interest, source (walk-in/digital/referral/campaign), created_at, status (new/contacted/qualified/converted/lost), assigned_agent_id, sla_due_at
 - `opportunities` — opportunity_id, lead_id, product, expected_value, stage, probability, expected_close
 
-### Volumes (target ≈ 250–300k rows, ~3 min seed — matching acme-power)
+### Volumes (target ≈ 250–300k rows, ~3 min seed)
 
 | Table | Rows |
 |---|---|
@@ -213,8 +179,8 @@ life, so no persistency / underwriting-mortality tables.*
 
 ### Needle rows (deterministic demo paths — non-negotiable)
 
-acme-power's demo works because specific rows are guaranteed to exist. Same
-discipline; these are the ones the scripted demo will drive:
+A demo works because specific rows are guaranteed to exist. These are the ones
+the scripted demo drives:
 
 - `LAN-NEEDLE-001` — loan application where **declared income looks healthy but
   the bureau/tax picture does not corroborate it at the stated identifiers.**
@@ -224,8 +190,8 @@ discipline; these are the ones the scripted demo will drive:
 - `LON-NEEDLE-002` — loan account at **DPD 61**, one bounced NACH, one broken
   PTP → the Collections app's priority case.
 - `CLM-NEEDLE-003` — motor claim whose **estimate photo is byte-identical to a
-  prior claim's** (reuse the acme-power duplicate-artifact trick, which the
-  fraud screen already detects) → claim triage + fraud evidence.
+  prior claim's** (the duplicate-artifact case the fraud screen already
+  detects) → claim triage + fraud evidence.
 - `CLM-NEEDLE-004` — health claim **intimated 40 days after loss date**, past
   the policy's intimation window → exclusion path.
 - `LED-NEEDLE-005` — high-value lead, SLA breached, unassigned → sales routing.
@@ -305,8 +271,8 @@ Every chunk tagged `tag=demo`, `industry=bfsi`,
 
 ## 6. Personas (`users.json`)
 
-Same shape as acme-power (placeholders, no passwords, reached via **Impersonate
-User → Demo personas**). Eight, one per demo path:
+Placeholders, no passwords, reached via **Impersonate User → Demo personas**.
+Eight, one per demo path:
 
 | Persona | Dept(s) | Role |
 |---|---|---|
@@ -332,7 +298,7 @@ Follows SPEC.md §10, minus the step Phase 0 deletes.
 | # | Step | Command |
 |---|---|---|
 | 0 | **Purge stale `dept_sources` docs** | §0.5 — do this first |
-| 1 | Scaffold the tenant folder | copy `demo-data/tenants/acme-power/` → `acme-bank/`, strip data |
+| 1 | Scaffold the tenant folder | `demo-data/tenants/acme-bank/` — apps, mcp, scripts, raw |
 | 2 | Write the tenant `SPEC.md` | identifiers + schema frozen before code |
 | 3 | Postgres container + schema + seed | `docker compose up -d citra-ds-acme-bank-postgres`, then `python scripts/seed_postgres.py` |
 | 4 | Generate the source registry | `python scripts/build_mcp_sources.py` → `mcp/sources.json` |
@@ -341,76 +307,58 @@ Follows SPEC.md §10, minus the step Phase 0 deletes.
 | 7 | Seed org + depts + users | `python demo-data/scripts/seed_tenant.py --tenant acme-bank` |
 | 8 | Author the 4 apps | via the builder; 1–3 must carry `case_signature` |
 | 9 | Seed demo memory | `scripts/seed_memory.py --apply` — evidence only, judgements formed by consolidation |
-| 10 | E2E | `python scripts/acme_bank_e2e.py` — mirror of `acme_power_e2e.py`, must pass before §7.5 |
+| 10 | E2E | `python scripts/acme_bank_e2e.py` — must pass before §7.5 |
 
-Note the ordering change from acme-power: **the data-discovery flip is no longer
-a build step.** It is the cut-over (§7.5), because it takes acme-power down.
+**The data-discovery flip is not a build step.** It is the last step (§7.5),
+because it is what makes this org the one the platform serves.
 
 ---
 
-## 7.5. Cut-over — one org in, one org out
+## 7.5. Bring-up — making acme-bank the org the platform serves
 
-Decided: we cannot keep two orgs at a time, so cut-over **removes acme-power
-from the running system**. The repo fixture
-(`demo-data/tenants/acme-power/`) stays, so the tenant can be rebuilt from
-scratch; its runtime data does not.
+`data-discovery-service` pins `ORG_ID` to one org, so this step is what puts the
+tenant into service. Run it in DEV first, verify, then repeat against PROD.
 
-Run in DEV first, verify, then repeat against PROD.
+1. `data-discovery-service`: set `ORG_ID=acme-bank` and restart. Record whatever
+   it was before — that value is the one-restart rollback.
+2. `POST /crawl/run` → the catalogue and the Milvus recall index are rebuilt for
+   acme-bank.
+3. Confirm the builder's dataset search returns acme-bank datasets, and nothing
+   from a tenant that is no longer served.
 
-**A — point discovery at the new org**
-1. `data-discovery-service`: `ORG_ID=acme-power` → `ORG_ID=acme-bank`, restart.
-   Record the old value; this is the one-restart rollback.
-2. `POST /crawl/run` → catalogue + Milvus recall index rebuilt for acme-bank.
-3. Confirm the builder's dataset search returns acme-bank datasets and no
-   acme-power ones.
+If an earlier tenant was running, it comes out at this point: stop its MCP
+first, then remove its registration from `discovery-service` (the MCP
+re-registers on boot, so a live container will simply re-appear), then delete
+its `data_catalogue` rows and recall vectors — otherwise the builder keeps
+surfacing datasets that no longer resolve. Deleting its Postgres volume, its
+Milvus rows (`org_id`-filtered; the dept-library collection is shared and must
+stay) and its Mongo rows is irreversible, so take a dump first and keep it until
+the new demo has been shown at least once.
 
-**B — deregister acme-power**
-4. `discovery-service`: remove acme-power's MCP registration and its source
-   entries (the MCP re-registers on boot, so stop `mcp-demo-acme-power` first
-   or it will re-appear).
-5. `data-discovery-service`: delete acme-power's `data_catalogue` rows and its
-   vectors from the recall index — otherwise the builder can still surface
-   datasets that no longer resolve.
-
-**C — delete acme-power data (dev, then prod)**
-6. Postgres: stop + remove `acme-power-postgres` and its volume.
-7. Milvus: delete the shared dept-library rows where `org_id = "acme-power"`
-   (scalar-filtered delete — the collection itself is shared and must stay).
-8. Mongo: drop acme-power's rows from `dept_sources` (if any remain),
-   `data_catalogue`, `smartapp_apps` + agents, `smartapp_clauses`,
-   `smartapp_corrections`, `decision_records`, `item_decision_records`.
-9. Citra-User-Service: deactivate the acme-power org, its depts and personas.
-
-**⚠ Step 8–9 are irreversible.** Precedent: the dev purge on 2026-06-28 that
-reduced dev to `citra-ai` + `acme-power` could not be undone. Before running
-either, take a Mongo dump of the acme-power collections and keep it until the
-new demo has been shown at least once. Confirm explicitly before execution —
-this plan does not authorise it.
-
-**Order matters:** A before B (discovery must already point elsewhere, or the
-crawler will re-file acme-power), and B before C (deleting the data under a
-live registration leaves the builder pointing at datasets that 500).
+**Order matters:** point discovery at the new org before deregistering the old
+one, or the crawler re-files it; and deregister before deleting, or the builder
+is left pointing at datasets that 500.
 
 ---
 
 ## 8. Gotchas that will bite, and the decisions they force
 
 **1. Separate Postgres container (decided).** `citra-ds-acme-bank-postgres` on host port
-`15444`, its own volume and role. Full isolation: acme-power's container can be
-destroyed at cut-over without touching the new demo. Port 15444 must be free —
-check before step 3, since it is baked into `sources.json` and the compose.
+`15444`, its own volume and role — so no other Postgres on the host is touched,
+and no other stack can destroy this one. Port 15444 must be free — check before
+step 3, since it is baked into `sources.json` and the compose.
 
-**2. The stale `dept_sources` mongoimport is removed in Phase 0**, before the
-clone, so the new tenant cannot inherit it. See §0.5.
+**2. The registry is the MCP's `sources.json`, not a Mongo collection.** There
+is no import step: regenerate the file and restart the MCP, which publishes its
+sources to discovery on boot.
 
-**3. Short org id (decided): `acme-bank`.** `acme-power`'s hyphen has bitten us
+**3. Short org id (decided): `acme-bank`.** A hyphen in an org id has bitten us
 before (Milvus naming, per-source timeouts). The shared dept-library collection
 removes the worst of it, but keep ids short anyway.
 
-**4. Single-org is a removal, not a coexistence.** Flipping `ORG_ID` is step A
-of the cut-over (§7.5), and it is followed by deregistering and deleting
-acme-power. Keep the old `ORG_ID` value written down: until step C runs, the
-whole thing is still one restart from being reversed.
+**4. Single-org is a removal, not a coexistence.** Flipping `ORG_ID` (§7.5) puts
+one org in and takes any other out. Keep the previous value written down: until
+data is actually deleted, the whole thing is one restart from being reversed.
 
 **5. Apps must carry `case_signature` at publish.** Otherwise corrections are
 uncoded and no judgement can ever form. The publish gate warns; treat that
@@ -424,12 +372,12 @@ must be seeded through the evidence path (`seed_memory.py` pattern), never by
 inserting clauses — hand-written clause text breaks the provenance the Memory
 screen shows underneath every judgement.
 
-**8. The point of no return is §7.5 step C.** Up to and including step B,
-rollback is: restore `ORG_ID`, restart `mcp-demo-acme-power`, re-crawl. Once
-the Postgres volume and the Mongo rows are gone, acme-power can only be
-rebuilt from the repo fixture — which means re-seeding 287k rows, re-ingesting
-the policy corpus, re-authoring the apps, and losing every decision record and
-judgement it accumulated. Take the dump first.
+**8. The point of no return is deleting the previous org's data.** Until then,
+rollback is: restore `ORG_ID`, restart its MCP, re-crawl. Once the Postgres
+volume and the Mongo rows are gone, that tenant can only be rebuilt from its
+repo fixture — re-seeding every row, re-ingesting the policy corpus,
+re-authoring the apps, and losing every decision record and judgement it
+accumulated. Take the dump first.
 
 ---
 
@@ -461,19 +409,16 @@ B and D are the real work; everything else is mechanical.
 - Insurance scope: **general only** (motor, health, property) — no life
 - Sales is a **dashboard page inside an app**, not a Decision App; the
   leadership briefing folds into it
-- Stale `dept_sources` instructions are purged **first**, as Phase 0
-- acme-power is **removed at cut-over** — deregistered from discovery and
-  data-discovery, and its data deleted in dev and prod. The repo fixture stays.
+- Any previously-served org is **removed at bring-up** — deregistered from
+  discovery and data-discovery, and its data deleted in dev and prod
 - **Dev first, tested, then prod**
 
-- **acme-power: code kept, ALL data deleted.** The repo fixture
-  (`demo-data/tenants/acme-power/`) stays so the tenant can be rebuilt; every
-  runtime trace goes — Decision Apps, decision records, learned judgements,
-  corrections, catalogue, sources, Postgres, Milvus rows, org and personas.
-  **Only acme-bank runs in the system.** §7.5 step C is the full delete, in
-  both dev and prod.
-- **Dedicated Postgres for acme-bank** (`citra-ds-acme-bank-postgres`, port 15444). The
-  acme-power container is destroyed at cut-over, not shared.
+- **Only acme-bank runs in the system.** Bringing it up removed every runtime
+  trace of what came before — Decision Apps, decision records, learned
+  judgements, corrections, catalogue, sources, Postgres, Milvus rows, org and
+  personas — in both dev and prod.
+- **Dedicated Postgres for acme-bank** (`citra-ds-acme-bank-postgres`, port 15444),
+  never shared with another stack.
 
 **Still open:**
 

@@ -18,7 +18,7 @@ service's own background crawler uses: org_admin + tenant_id, so MCP visibility 
 it read every source in the org) and POSTs `/crawl/run`. The crawler enumerates the
 org's registered MCPs and pulls each one's /datasets schemas into `data_catalogue`.
 
-  python scripts/build_catalogue.py --org acme-power
+  python scripts/build_catalogue.py --org acme-bank
 
 Note: query execution does NOT need the catalogue (the MCP serves NL->query straight
 from dept_sources); this only populates the builder's dataset palette / catalogue search.

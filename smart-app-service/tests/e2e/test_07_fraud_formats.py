@@ -61,7 +61,7 @@ _VALID = [
     ("validate_pan", "ABCPE1234F"),   # 4th char 'P' = valid holder-type
     ("validate_ifsc", "SBIN0001234"),
     ("validate_vin", "1HGBH41JXMN109186"),
-    ("validate_email", "officer@acme-power.co.in"),
+    ("validate_email", "officer@acme-bank.co.in"),
     ("validate_phone_in", "9876543210"),
     ("validate_phone_us", "4155551234"),
     ("validate_ssn", "123-45-6789"),

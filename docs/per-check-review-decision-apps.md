@@ -17,7 +17,7 @@ Decision App actually needs it (see [When](#when-to-build)).
 reviewable line — *"CIBIL check: looks good [accept/reject]", "Aadhaar match:
 looks good [accept/reject]"* — alongside the single overall application
 approve/reject, exactly the way analyzed **images/documents** already do in
-`acme-power-inspection-triage`.
+the claims app.
 
 ---
 

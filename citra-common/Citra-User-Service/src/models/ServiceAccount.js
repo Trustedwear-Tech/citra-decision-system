@@ -39,7 +39,7 @@ const serviceAccountSchema = new mongoose.Schema({
     unique: true,
     required: true,
     // svc:<purpose-slug>@<org-id>.citra.ai
-    // e.g. svc:plant-ops-ingestion@acme-cement.citra.ai
+    // e.g. svc:collections-ingestion@acme-bank.citra.ai
     validate: {
       validator: (v) => /^svc:[a-z0-9-]+@[a-z0-9-]+\.citra\.ai$/.test(v),
       message: 'service_account_id must match svc:<slug>@<org-id>.citra.ai',

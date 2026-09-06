@@ -216,7 +216,7 @@ Three aggregation lanes, each already having a home:
    moved. Any extra views the sponsor asked for along the way were generated
    against the same spine, so every number reconciles.
 
-**POC target**: acme-power theft/recovery. Annotate
+**POC target**: acme-bank collections/recovery. Annotate
 `field_operations.theft_cases` (or recovery dataset) with `value_kind:
 recovered`, realization = `billing.payments` by consumer_id, window 90d;
 backfill; show the Money-impact card + a builder-generated "Recovery ROI" page

@@ -8,7 +8,7 @@
 
 # ── Tenant identity ──────────────────────────────────────────────────────────
 variable "customer_id" {
-  description = "Short slug for this single-tenant deployment (e.g. \"acme-power\"). Names every resource."
+  description = "Short slug for this single-tenant deployment (e.g. \"acme-bank\"). Names every resource."
   type        = string
 }
 

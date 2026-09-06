@@ -33,11 +33,11 @@ def _decode(tok):
 
 
 def test_mints_semantic_service_token_with_min_privilege():
-    tok = mint_semantic_read_token(org_id="acme-power", on_behalf_of_user_id="ba@acme")
+    tok = mint_semantic_read_token(org_id="acme-bank", on_behalf_of_user_id="ba@acme")
     assert tok
     claims = _decode(tok)
     assert claims["semantic_service"] is True          # the ONE capability granted
-    assert claims["org_id"] == "acme-power"
+    assert claims["org_id"] == "acme-bank"
     assert claims["roles"] == ["user"]                 # no admin / IT-workflow
     assert claims["on_behalf_of_user_id"] == "ba@acme"  # audit provenance
     assert claims["purpose"] == "agent_semantic_read"
@@ -52,9 +52,9 @@ def test_requires_org_id():
 
 def test_returns_none_without_secret(monkeypatch):
     monkeypatch.delenv("JWT_SECRET", raising=False)
-    assert mint_semantic_read_token(org_id="acme-power") is None
+    assert mint_semantic_read_token(org_id="acme-bank") is None
 
 
 def test_carries_optional_dept_ids():
-    tok = mint_semantic_read_token(org_id="acme-power", dept_ids=["central_pmu"])
-    assert _decode(tok)["dept_ids"] == ["central_pmu"]
+    tok = mint_semantic_read_token(org_id="acme-bank", dept_ids=["central_ops"])
+    assert _decode(tok)["dept_ids"] == ["central_ops"]

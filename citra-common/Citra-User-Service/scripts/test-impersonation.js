@@ -10,7 +10,7 @@
  * Smoke-test for Phase A.3 — impersonation token mint + audit + revoke.
  *
  * Requires a real demo target user to exist in `users`. Looks for
- * one of the acme-cement personas; if none exist, creates a minimal
+ * one of the demo personas; if none exist, creates a minimal
  * one directly so the test is self-contained.
  *
  * Usage:  node scripts/test-impersonation.js [base_url]
@@ -38,9 +38,9 @@ const superToken = mint({
 });
 
 const orgAdminToken = mint({
-  user_id: 'anita-test@acme-cement.citra.ai',
-  email: 'anita-test@acme-cement.citra.ai',
-  org_id: 'acme-cement',
+  user_id: 'anita-test@acme-bank.citra.ai',
+  email: 'anita-test@acme-bank.citra.ai',
+  org_id: 'acme-bank',
   roles: ['org_admin', 'user'],
 });
 
@@ -71,13 +71,13 @@ function check(label, cond, detail) {
   // Ensure a target user exists by calling POST /api/admin/users
   // (existing admin API; idempotent upsert by email). super_admin token
   // bypasses the same-org scope check.
-  const targetEmail = 'impersonation-target@acme-cement.citra.ai';
+  const targetEmail = 'impersonation-target@acme-bank.citra.ai';
   {
     const r = await call('POST', '/api/admin/users', superToken, {
       email: targetEmail,
       name: 'Impersonation Target',
-      org_id: 'acme-cement',
-      dept_ids: ['plant_ops'],
+      org_id: 'acme-bank',
+      dept_ids: ['lending'],
       roles: ['user'],
     });
     if (r.status !== 200 && r.status !== 201) {
@@ -118,7 +118,7 @@ function check(label, cond, detail) {
     if (firstMint.token) {
       const decoded = jwt.verify(firstMint.token, SECRET);
       check('decoded.email = target', decoded.email === targetEmail, decoded);
-      check('decoded.org_id = target org', decoded.org_id === 'acme-cement', decoded);
+      check('decoded.org_id = target org', decoded.org_id === 'acme-bank', decoded);
       check('decoded.roles = target roles (not admin\'s)',
         Array.isArray(decoded.roles) && !decoded.roles.includes('super_admin'), decoded);
       check('decoded.act = admin email', decoded.act === 'rohit@trustedweartech.com', decoded);

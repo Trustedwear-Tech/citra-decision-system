@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tests._test_helpers import _MemCol  # type: ignore  # noqa: E402
 
 JWT_SECRET = "smart-app-service-test-secret"
-TENANT = "acme-power"
+TENANT = "acme-bank"
 OWNER_SA = f"work-sa-{TENANT}-cmd-asha"
 
 GROUNDING = {
@@ -302,14 +302,14 @@ def test_promote_carries_value_semantics_and_organization(env):
     doc = next(d for d in test_apps.docs if d["slug"] == "plain-app")
     doc["value_semantics"] = {"field_operations.theft_cases": {
         "value_kind": "recovered", "definition_version": "feed00000001"}}
-    doc["organization"] = {"name": "Acme Power & Utilities Co.",
-                           "short_name": "Acme Power"}
+    doc["organization"] = {"name": "Acme Bank & Insurance Ltd",
+                           "short_name": "Acme Bank"}
     r = _promote(env["client"], "plain-app")
     assert r.status_code == 200, r.text
     prod = next(d for d in env["apps"].docs if d["slug"] == "plain-app")
     assert prod["value_semantics"]["field_operations.theft_cases"][
         "definition_version"] == "feed00000001"
-    assert prod["organization"]["short_name"] == "Acme Power"
+    assert prod["organization"]["short_name"] == "Acme Bank"
 
 
 # ── case-signature gate (CS-04) on the copy that ships ────────────────────

@@ -45,7 +45,7 @@ def _rule_codes(resp: httpx.Response) -> list[str]:
 
 @pytest.fixture()
 def tok(base_specs) -> str:
-    return mint_jwt(roles=["super_admin"], user_id="validate@acme-power.citra.ai")
+    return mint_jwt(roles=["super_admin"], user_id="validate@acme-bank.citra.ai")
 
 
 def test_clean_base_passes(sas: httpx.Client, base_specs, tok: str):

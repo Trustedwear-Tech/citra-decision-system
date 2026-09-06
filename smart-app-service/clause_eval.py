@@ -34,8 +34,8 @@ learned layer actually costs per case now that it is selected rather than
 compressed.
 
 Usage:
-    python clause_eval.py --app acme-power
-    python clause_eval.py --app acme-power --holdout 200 --json
+    python clause_eval.py --app acme-bank-claim-triage
+    python clause_eval.py --app acme-bank-claim-triage --holdout 200 --json
 """
 from __future__ import annotations
 

@@ -33,14 +33,14 @@ _KEY = "test-internal-signing-key"
 
 
 def test_mints_a_verifiable_llm_scoped_tenant_key():
-    tok = mint_mcp_llm_key("acme-power", signing_key=_KEY)
+    tok = mint_mcp_llm_key("acme-bank", signing_key=_KEY)
     claims = verify_internal_bearer(signing_key=_KEY, bearer=tok)
     # scoped to ONLY the llm tool — the proxy's required_tool="llm" gate passes,
     # and nothing else (no mcp/rag/vision) is authorised by this key.
     assert claims.tools == ["llm"]
     # tenant-attributed (metering) + per-tenant subject (budget)
-    assert claims.tenant_id == "acme-power"
-    assert claims.subject == "mcp:acme-power"
+    assert claims.tenant_id == "acme-bank"
+    assert claims.subject == "mcp:acme-bank"
 
 
 def test_authorises_llm_but_not_other_tools():

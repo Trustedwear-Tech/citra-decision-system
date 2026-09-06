@@ -36,7 +36,7 @@ support — the exact thing the promotion gate exists to protect against.
 
 Usage:
     python backfill_clause_memory.py --dry-run
-    python backfill_clause_memory.py --app acme-power
+    python backfill_clause_memory.py --app acme-bank-claim-triage
     python backfill_clause_memory.py --all --classify
 """
 from __future__ import annotations

@@ -39,16 +39,16 @@ const superToken = mint({
 });
 
 const orgAdminToken = mint({
-  user_id: 'anita@acme-cement.citra.ai',
-  email: 'anita@acme-cement.citra.ai',
-  org_id: 'acme-cement',
+  user_id: 'anita@acme-bank.citra.ai',
+  email: 'anita@acme-bank.citra.ai',
+  org_id: 'acme-bank',
   roles: ['org_admin', 'user'],
 });
 
 const plainToken = mint({
-  user_id: 'vikram@acme-cement.citra.ai',
-  email: 'vikram@acme-cement.citra.ai',
-  org_id: 'acme-cement',
+  user_id: 'vikram@acme-bank.citra.ai',
+  email: 'vikram@acme-bank.citra.ai',
+  org_id: 'acme-bank',
   roles: ['user'],
 });
 
@@ -99,13 +99,13 @@ function check(label, cond, detail) {
   {
     const r = await call('GET', '/api/admin/orgs', superToken);
     check('super_admin GET / → 200 with seeded orgs', r.status === 200 && Array.isArray(r.body.orgs), r);
-    check('super_admin sees acme-cement + trustedweartech',
-      r.body.orgs && r.body.orgs.find(o => o.id === 'acme-cement') && r.body.orgs.find(o => o.id === 'trustedweartech'),
+    check('super_admin sees acme-bank + trustedweartech',
+      r.body.orgs && r.body.orgs.find(o => o.id === 'acme-bank') && r.body.orgs.find(o => o.id === 'trustedweartech'),
       r.body && r.body.orgs);
   }
   {
     const r = await call('GET', '/api/admin/orgs', orgAdminToken);
-    check('org_admin GET / → only their own org', r.status === 200 && r.body.orgs.length === 1 && r.body.orgs[0].id === 'acme-cement', r);
+    check('org_admin GET / → only their own org', r.status === 200 && r.body.orgs.length === 1 && r.body.orgs[0].id === 'acme-bank', r);
   }
 
   console.log('\n3. POST creation');
@@ -141,7 +141,7 @@ function check(label, cond, detail) {
     check('org_admin GET other org → 403', r.status === 403, r);
   }
   {
-    const r = await call('GET', '/api/admin/orgs/acme-cement', orgAdminToken);
+    const r = await call('GET', '/api/admin/orgs/acme-bank', orgAdminToken);
     check('org_admin GET own org → 200', r.status === 200, r);
   }
   {
@@ -165,10 +165,17 @@ function check(label, cond, detail) {
 
   console.log('\n6. DELETE /:orgId');
   {
-    const r = await call('DELETE', '/api/admin/orgs/acme-cement', superToken);
-    // acme-cement may or may not have users — accept 409 (has users) or 200 (no users yet)
-    check('DELETE acme-cement → 409 if users exist, else 200',
-      r.status === 409 || r.status === 200, r);
+    // Deleting an org that HAS users must 409. Only run it against an org the
+    // caller nominates: pointed at the demo org, a passing smoke test would
+    // delete the demo.
+    const populated = process.env.SMOKE_POPULATED_ORG_ID;
+    if (populated) {
+      const r = await call('DELETE', `/api/admin/orgs/${populated}`, superToken);
+      check(`DELETE ${populated} → 409 if users exist, else 200`,
+        r.status === 409 || r.status === 200, r);
+    } else {
+      console.log('   – skipped (set SMOKE_POPULATED_ORG_ID to exercise the has-users path)');
+    }
   }
   {
     const r = await call('DELETE', `/api/admin/orgs/${testOrgId}`, superToken);

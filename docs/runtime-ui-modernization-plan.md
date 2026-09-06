@@ -53,7 +53,7 @@ Extend `Theme` (all optional; defaults reproduce today's look):
   "primary": "#0f6b3f", "accent": "#d97706", "logo_url": "…",
   "locale": "en-US", "currency": "USD",
   // NEW ↓
-  "company_name": "Acme Power",        // default from ontology (Track E)
+  "company_name": "Acme Bank",        // default from ontology (Track E)
   "font": "inter",                      // inter | source-sans | ibm-plex | system (bundled, no external fetch)
   "radius": "soft",                     // sharp | soft | round      → --citra-radius
   "density": "comfortable",             // comfortable | compact     → spacing scale
@@ -120,8 +120,8 @@ New optional **envelope-level** block in `sources.json` (registry +
 
 ```jsonc
 "organization": {
-  "name": "Acme Power & Utilities Co.",   // required if block present
-  "short_name": "Acme Power",             // headers/nav; defaults to name
+  "name": "Acme Bank & Insurance Ltd",   // required if block present
+  "short_name": "Acme Bank",             // headers/nav; defaults to name
   "logo_url": "…",                         // optional
   "brand_color": "#0f6b3f"                 // optional seed for theme.primary
 }
@@ -133,9 +133,9 @@ New optional **envelope-level** block in `sources.json` (registry +
 - **Flow**: sources.json → catalogue → builder env (spec step defaults
   `theme.company_name` / `logo_url` / `primary` from it; BA may override) →
   publish stamps resolved values → runtime `AppShell` header renders
-  "Acme Power · Recovery Tracker", browser title, agent system prompt
-  ("Acme Power's recovery assistant"), Money-impact card ("Value recovered
-  for Acme Power").
+  "Acme Bank · Recovery Tracker", browser title, agent system prompt
+  ("Acme Bank's recovery assistant"), Money-impact card ("Value recovered
+  for Acme Bank").
 - Conflicting blocks across a tenant's sources → builder warning, first
   connected source wins (deterministic, visible).
 

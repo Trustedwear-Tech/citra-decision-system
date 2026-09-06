@@ -15,8 +15,8 @@
 # ⚠️ SINGLE-BOX ASSUMPTION — read before adding a second box.
 # Every target below is a docker container NAME on the citra-network bridge.
 # That is correct and preferred for demo-prod (one box): names survive box
-# replacement and private-IP changes, which is exactly the failure that took
-# the mcp-demo-acme-power scrape down in 2026-07.
+# replacement and private-IP changes, which is exactly the failure that once
+# took the demo-MCP scrape down.
 # Docker bridge names do NOT resolve off-host. In the customer topology
 # (Common box + N scale boxes, or Kubernetes) these must go back to private
 # IPs + security-group rules, or move to real service discovery — and that
@@ -108,16 +108,17 @@ scrape_configs:
         labels: {component: vault, host: citra-app}
 
   # ----- Demo MCP (source-mcp-template) -----
-  # Joined to BOTH acme-power-demo and citra-network, so Prometheus reaches it
-  # by container name on the container port (8090); the host publishes it as
-  # 8503, but that mapping is irrelevant from inside citra-network. The MCP
-  # exposes an unauthenticated /metrics (source-mcp-template/metrics.py:
-  # mcp_query_duration_seconds, mcp_query_total).
-  - job_name: mcp-demo-acme-power
+  # Joined to BOTH the demo stack's network and citra-network, so Prometheus
+  # reaches it by container name on the container port (8090); the host
+  # publishes it as 18504, but that mapping is irrelevant from inside
+  # citra-network. The MCP exposes an unauthenticated /metrics
+  # (source-mcp-template/metrics.py: mcp_query_duration_seconds,
+  # mcp_query_total).
+  - job_name: mcp-demo-acme-bank
     metrics_path: /metrics
     static_configs:
-      - targets: ["mcp-demo-acme-power:8090"]
-        labels: {component: mcp-demo, host: citra-app, tenant: acme-power}
+      - targets: ["citra-ds-mcp-demo-acme-bank:8090"]
+        labels: {component: mcp-demo, host: citra-app, tenant: acme-bank}
 
   # Services intentionally not scraped because they expose NO /metrics endpoint:
   # citra-user-service, discovery-service, action-chat-service, smart-app-service,

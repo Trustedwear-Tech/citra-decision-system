@@ -32,8 +32,8 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
 BASE = os.getenv("E2E_BASE", "http://127.0.0.1:9100")
-APP = "acme-power-complaint-auto-routing"
-TENANT = "acme-power"
+APP = "acme-bank-complaint-auto-routing"
+TENANT = "acme-bank"
 MOD, TT = "record", "decision"
 
 load_dotenv(".env")
@@ -50,7 +50,7 @@ def check(name, cond, detail=""):
 
 def token(roles=("super_admin",)):
     return jwt.encode(
-        {"sub": "e2e", "user_id": "e2e", "email": "e2e@acme-power.citra.ai",
+        {"sub": "e2e", "user_id": "e2e", "email": "e2e@acme-bank.citra.ai",
          "roles": list(roles), "tenant_id": TENANT, "org_id": TENANT,
          "exp": int(time.time()) + 1800},
         os.environ["JWT_SECRET"], algorithm=os.getenv("JWT_ALGORITHM", "HS256"))

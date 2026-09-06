@@ -236,7 +236,7 @@ fully in prod (§3), losing the collection isolation too.
 - **T1 — test source data.** Seeded, schema-identical, PII-scrubbed copy of each acme source
   system named in `sources.json` (§9 "test-data discipline" — the real cost). Reset = IT reseed
   (no inverse action, per Phase 4).
-- **T2 — test dept-MCP (`acme-power-mcp-test`).** Same GHCR MCP image; test `sources.json` =
+- **T2 — test dept-MCP (`acme-bank-mcp-test`).** Same GHCR MCP image; test `sources.json` =
   prod's with connections repointed at T1, keeping **identical dataset_ids / schemas / ontology**
   (`artifact_role`, `fraud_screening`, `write_actions`) so the shared catalogue stays valid.
   `DISCOVERY_URL` → T3, own service key, `CRAWL_ENABLED=true`, audit → `/api/audit/ingest` tagged

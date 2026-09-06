@@ -37,14 +37,14 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture()
 def tok(base_specs) -> str:
-    return mint_jwt(roles=["super_admin"], user_id="loop@acme-power.citra.ai")
+    return mint_jwt(roles=["super_admin"], user_id="loop@acme-bank.citra.ai")
 
 
 def _run(sas, tok) -> str:
     cid = new_corr()
     r = sas.post(f"/apps/{CFG.APP_SLUG}/run",
                  json={"action": os.environ["DA_RUN_ACTION"], "inputs": {},
-                       "correlation_id": cid, "user_id": "loop@acme-power.citra.ai"},
+                       "correlation_id": cid, "user_id": "loop@acme-bank.citra.ai"},
                  headers=auth(tok))
     assert r.status_code == 200, r.text[:400]
     return cid

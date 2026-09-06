@@ -32,8 +32,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   authService.getCurrentUser.mockReturnValue({
     user_id: 'u1',
-    org_id: 'acme-power',
-    dept_ids: ['central_pmu'],
+    org_id: 'acme-bank',
+    dept_ids: ['central_ops'],
     roles: ['org_admin'],
   });
   listAdminWorkflows.mockResolvedValue([]);

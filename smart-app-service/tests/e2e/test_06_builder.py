@@ -33,8 +33,8 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture()
 def tok() -> str:
     return mint_jwt(roles=["super_admin", "org_admin"],
-                    user_id="builder@acme-power.citra.ai",
-                    sa_admin_of=[os.getenv("DA_WORK_SA_ID", "sa_acme_power_work")])
+                    user_id="builder@acme-bank.citra.ai",
+                    sa_admin_of=[os.getenv("DA_WORK_SA_ID", "sa_acme_bank_work")])
 
 
 def test_build_session_spawns_and_streams(sas: httpx.Client, tok: str):

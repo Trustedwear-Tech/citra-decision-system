@@ -342,8 +342,8 @@ def test_O_impersonation_claims_in_audit(auth_module, signing_secret, monkeypatc
     import asyncio
 
     claims = {
-        "user_id": "anita@acme-cement.citra.ai",
-        "org_id": "acme-cement",
+        "user_id": "anita@acme-bank.citra.ai",
+        "org_id": "acme-bank",
         "dept_ids": ["plant_ops"],
         "roles": ["user"],
         "act": "rohit@trustedweartech.com",
@@ -365,7 +365,7 @@ def test_O_impersonation_claims_in_audit(auth_module, signing_secret, monkeypatc
     rec = captured_records[0]
     assert rec["act"] == "rohit@trustedweartech.com"
     assert rec["impersonation_id"] == "test-imp-123"
-    assert rec["user_id"] == "anita@acme-cement.citra.ai"
+    assert rec["user_id"] == "anita@acme-bank.citra.ai"
 
 
 # ---------------------------------------------------------------------------

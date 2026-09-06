@@ -31,7 +31,7 @@ learn them, cannot change them, and never overrules them. If §4.2 says a
 proposal breaching the exposure cap is declined, it is declined.
 
 The second is **judgement**. That is what your officers know and the SOP does
-not say. No clause anywhere in Acme Power's manual reads *"a theft report is
+not say. No clause anywhere in Acme Bank's manual reads *"a theft report is
 revenue protection's problem, not the line crew's"* — but every experienced
 officer in that room knows it, and they know it because they have watched line
 crews sit on theft reports for a fortnight.

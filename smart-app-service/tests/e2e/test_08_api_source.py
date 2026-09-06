@@ -12,7 +12,7 @@ Two kinds of test here:
   * OFFLINE unit tests of the `_coerce_rows` / `_is_unrenderable_object` fix —
     proving a non-columnar API object surfaces (not a silent-empty panel).
   * GATED live scaffolds documenting the SUPPORTED agentic path (`mcp` read via
-    the NL `/query`), since acme-power is SQL-only and has no API dataset.
+    the NL `/query`), since acme-bank is SQL-only and has no API dataset.
 
 See docs/decision-app-test-plan.md §7b for the full flow + the 5 gaps.
 """

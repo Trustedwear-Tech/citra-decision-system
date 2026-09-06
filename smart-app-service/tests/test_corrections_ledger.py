@@ -283,7 +283,7 @@ def test_clean_approve_records_nothing(col):
 # ── facet vocabulary guard ───────────────────────────────────────────────────
 # A facet whose family the app never declares can never appear on a real case,
 # so a judgement scoped to it fails `scope ⊆ case_facets` FOREVER while reading
-# "team judgement — 3 officers" on screen. That shipped in the acme-power demo.
+# "team judgement — 3 officers" on screen. That shipped in a demo app.
 def _declares(*families):
     """Stand in for the app lookup: these are the app's declared families."""
     async def _f(app_slug, tenant_id=None):

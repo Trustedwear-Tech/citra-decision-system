@@ -10,15 +10,15 @@
 
 # Media Resolution Architecture — Plan
 
-> **Status: PHASES 1–3 BUILT + verified on acme-power (S3 + http handlers); proxy
+> **Status: PHASES 1–3 BUILT + verified on the demo tenant (S3 + http handlers); proxy
 > streaming for blob/file/dms is the remaining future phase.** How `image_analyze`
 > / `doc_extract` (and any future media tool) get the photo/document a SoR record
 > points at, for **any** enterprise source — not just public-cloud S3.
 >
 > **Built (2026-06-30):** MCP `POST /resolve_media` (read ref by key under the
 > caller's PDP → presign-on-demand for `s3://`, passthrough for `http(s)://`);
-> runtime `call_dept_mcp_resolve_media` + rewired `_resolve_media_url`; acme-power
-> `equipment_inspections` columns migrated to `s3://` native refs. Verified
+> runtime `call_dept_mcp_resolve_media` + rewired `_resolve_media_url`; the demo
+> tenant's media columns migrated to `s3://` native refs. Verified
 > end-to-end: resolver → MCP → fresh presigned URL → fetched real image bytes; the
 > July-6 expiry cliff is gone.
 
@@ -30,7 +30,7 @@ reads the row by key, pulls a `url_column` **string**, and does a plain HTTP GET
 on it. That assumes the column holds an **HTTP(S)-reachable URL** the *cloud
 runtime* can fetch. Two failures:
 
-1. **It rots.** The acme-power fixture bakes a 7-day S3 presigned URL into the
+1. **It rots.** The original demo fixture baked a 7-day S3 presigned URL into the
    column; it 403s after expiry.
 2. **It only works for public/HTTP sources.** Real enterprise media lives behind
    the firewall — intranet file shares (UNC/SMB/NFS), DMS (SharePoint/Documentum/
@@ -147,8 +147,8 @@ new handler; the runtime, the tools, and the agent never change.
 
 ## 8. Migration
 
-- **Column contract:** store a native ref, not a presigned URL. For acme-power:
-  `defect_photo_url = s3://demo-source-citra/acme-power/inspections/defect_photo.jpg`
+- **Column contract:** store a native ref, not a presigned URL. For the demo:
+  `file_url = s3://demo-source-citra/acme-bank/claims/estimate.pdf`
   (and the report likewise), and let the MCP stream / presign-redirect on demand.
   This also **removes the July-6 expiry cliff** on the current fixture.
 - **Catalogue:** `column_kind` (`image_url`/`document_url`) already drives tool
@@ -178,7 +178,7 @@ new handler; the runtime, the tools, and the agent never change.
    fresh URL). *(`url_column → media_column` rename + the explicit
    point-the-model-vs-inline switch still TODO; today it's inline via the
    unchanged `_fetch_image_url`.)*
-3. ✅ **Migrated acme-power** `equipment_inspections` columns to `s3://` refs;
+3. ✅ **Migrated the demo tenant's** media columns to `s3://` refs;
    verified image_analyze resolver end-to-end (kills the expiry cliff).
 4. ⏳ **More handlers** — the `/media` streaming proxy + `blob`, `file`/`smb`,
    `dms`, as real sources need them.

@@ -782,11 +782,11 @@ Booted `smart-app-service` locally against the shared dev Atlas cluster. Not a s
 
 **One real bug found, which is what a dev run is for.** `_run_pass_one_env` summed a hardcoded tuple into a `totals` dict missing `performance_updated`, so a bucket that consolidated *successfully* was reported as an error and the rest of that environment's buckets were skipped. The multi-env merge above it had the same fixed-key shape and would have silently dropped new counters. Both now roll up dynamically (386c12a9).
 
-**Volume reality check.** The entire dev environment holds **5 legacy corrections across 3 buckets** (`acme-power-inspection-triage` image 2 / document 1, `acme-power-complaint-auto-routing` record 2). The eval gate needs 20 disputed cases minimum, so **no app can be cut over on dev data**. Prod volume is unmeasured — worth checking before investing further in the cutover path.
+**Volume reality check.** The entire dev environment holds **5 legacy corrections across 3 buckets** (an inspection-triage app, image 2 / document 1; a complaint-routing app, record 2). The eval gate needs 20 disputed cases minimum, so **no app can be cut over on dev data**. Prod volume is unmeasured — worth checking before investing further in the cutover path.
 
 ### Clustering-gate redesign (2026-07-27) — overlap coefficient, not Jaccard
 
-Reviewing the 12,960-cell warning on `acme-power-complaint-auto-routing` exposed that the warning's own rationale ("3 officers must hit the same cell") was wrong — and that the real mechanism had two genuine bugs:
+Reviewing the 12,960-cell warning on the complaint-routing app exposed that the warning's own rationale ("3 officers must hit the same cell") was wrong — and that the real mechanism had two genuine bugs:
 
 1. **Jaccard-over-union punished richer signatures.** Two corrections about the SAME lesson sharing 3 core facets but differing on 3 incidental ones (channel, status) scored 3/9 = 0.33 < 0.4 and never clustered — declaring more context made an app *slower* to learn. Replaced with the **overlap coefficient** (`|A∩B| / min(|A|,|B|)`, threshold 0.5), which only asks "of the facets you could share, how many do you?" and is immune to each side's extras.
 2. **Facetless history could never corroborate live evidence.** `jaccard([], [x]) = 0.0`, so every backfilled correction was silently unable to combine with post-migration corrections toward the promotion gate. Either side empty now passes the facet gate — absence of evidence is not disagreement; reason_code + text similarity still gate.
@@ -801,7 +801,7 @@ Real sandbox build (fresh pod, rebuilt image, scripted BA turns, real publish): 
 * reason codes include a domain-specific **`theft_misrouted`**, derived from the BA's own stated concern — the taxonomy is tailored, not templated
 * validated from the **published** app through the real gates: CS-01 clean, 8,370 cells (above the 5,000 soft warning, under the cap — acceptable post-overlap-coefficient)
 
-It took three rounds, and each failure taught something durable: **round 1** — build succeeded but no signature: a SKILL.md directive alone does not survive the real agent loop; the step must live in the AGENTS.md phase checklist the agent executes (plus the `case_signature_missing` publish warning as backstop). **Round 2** — `/build` reattached to round 1's still-live pod and tested nothing: rebuilding the image is not enough, the old pod must die first. Harness: `tests/integration/acme_power_builder_e2e.py`.
+It took three rounds, and each failure taught something durable: **round 1** — build succeeded but no signature: a SKILL.md directive alone does not survive the real agent loop; the step must live in the AGENTS.md phase checklist the agent executes (plus the `case_signature_missing` publish warning as backstop). **Round 2** — `/build` reattached to round 1's still-live pod and tested nothing: rebuilding the image is not enough, the old pod must die first. Harness: a builder E2E script driving the demo tenant (since removed with its tenant).
 
 ### Phase-2 plan: Rules vs Judgements (2026-07-27)
 
@@ -818,7 +818,7 @@ gate-reachability visibility, officer-taught quarantine, reason-code aliasing.
 
 ### Still not wired (honest gaps)
 
-* **No app sets `case_signature` yet.** Every app is on `mode='summary'`, so the clause path is inert against real data. Authoring one for `acme-power` is the next concrete step — but see the volume note above: without feedback history it will have nothing to learn from.
+* **No app sets `case_signature` yet.** Every app is on `mode='summary'`, so the clause path is inert against real data. Authoring one for the demo tenant is the next concrete step — but see the volume note above: without feedback history it will have nothing to learn from.
 * **Not deployed to prod.** Held deliberately: deploying adds `cited_clauses` to every agent's audit-block prompt and starts the batch spending tokens, for a feature no app can yet use. Ships when an app is actually switchable.
 * **§11 (neighbour re-ranking)** and **§19.2 items 1–6 (export, cohorts, MemoryScreen clause tab, HomePanel impact line, drift panel)** are untouched.
 * `clause_inventory`, `correction_stats`, `corrections_by_ids`, `is_stale` are implemented and tested but have no callers — they are the Phase F/G read surfaces, expected to be unwired until those phases.

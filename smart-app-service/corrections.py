@@ -168,9 +168,9 @@ def _guard_facets(
     ``scope ⊆ case_facets`` test forever. The result is a judgement that reads
     "team judgement — 3 officers" on the Memory screen while being incapable of
     ever firing, and ``fired_count: 0`` looks identical to "no matching cases
-    yet". Exactly that shipped in the acme-power demo (defect_type / oil_leak
-    on an app declaring neither) and went unnoticed until someone asked why the
-    app had ignored its own lesson.
+    yet". Exactly that shipped in a demo app (a facet family the app declared
+    nowhere) and went unnoticed until someone asked why the app had ignored
+    its own lesson.
 
     The correction is ALWAYS kept — evidence is sacred and an officer's reason
     must never be dropped. Only the unusable tokens are held back, and they are

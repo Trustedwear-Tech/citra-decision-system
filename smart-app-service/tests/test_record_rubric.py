@@ -49,9 +49,9 @@ def recorded(monkeypatch):
 
 # ── the canonical bucket key ─────────────────────────────────────────────────
 def test_rubric_tenant_prefers_app_org():
-    doc = {"app_spec": {"org_id": "acme-power", "tenant_id": "legacy"},
+    doc = {"app_spec": {"org_id": "acme-bank", "tenant_id": "legacy"},
            "tenant_id": "docten"}
-    assert ar.rubric_tenant_for_app(doc) == "acme-power"
+    assert ar.rubric_tenant_for_app(doc) == "acme-bank"
     assert ar.rubric_tenant_for_app({"app_spec": {}, "tenant_id": "docten"}) == "docten"
     assert ar.rubric_tenant_for_app(SimpleNamespace(org_id=None, tenant_id="t2")) == "t2"
     assert ar.rubric_tenant_for_app({"app_spec": {}}) is None
@@ -118,7 +118,7 @@ def test_broken_store_never_raises(monkeypatch):
 
 # ── the run-prompt prefetch ──────────────────────────────────────────────────
 def _app(**kw):
-    base = dict(slug="app", org_id="acme-power", tenant_id="jwt-org",
+    base = dict(slug="app", org_id="acme-bank", tenant_id="jwt-org",
                 dataset_directory=[], case_signature=None)
     base.update(kw)
     return SimpleNamespace(**base)
@@ -136,7 +136,7 @@ def test_prefetch_uses_the_app_anchored_key(monkeypatch):
     monkeypatch.setattr(cs, "select_clauses", _select)
     block, ids, facets, meta = asyncio.run(_prefetch_decision_clauses(_app(), {}))
     # the APP's org, never the JWT org — fold and read must agree
-    assert seen["tenant_id"] == "acme-power"
+    assert seen["tenant_id"] == "acme-bank"
     assert seen["modality"] == "record" and seen["task_type"] == "decision"
     assert block == "BLOCK" and ids == ["C-001"] and facets == []
 

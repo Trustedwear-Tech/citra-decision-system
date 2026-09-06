@@ -79,7 +79,7 @@ envs/<customer>/         one dir per deployment (module call + tfvars + remote s
 ## Usage
 
 ```bash
-cd envs/acme-power
+cd envs/example
 terraform init
 terraform validate
 terraform plan     # needs AWS creds for the tenant account

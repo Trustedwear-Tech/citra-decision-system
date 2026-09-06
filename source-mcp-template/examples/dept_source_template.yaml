@@ -27,7 +27,7 @@
 # ── Identity ────────────────────────────────────────────────────────────────
 source_id: TODO_source_id          # REQUIRED — stable slug, e.g. "plant-policies-and-sops"
 dept_id:   TODO_dept_id            # REQUIRED — matches dept-mcp's DEPT_IDS, e.g. "plant_ops"
-org_id:    TODO_org_id             # REQUIRED — tenant identifier, e.g. "acme-cement"
+org_id:    TODO_org_id             # REQUIRED — tenant identifier, e.g. "acme-bank"
 type:      semantic                # REQUIRED — semantic | structured | mongodb | rest_api
 is_active: true
 

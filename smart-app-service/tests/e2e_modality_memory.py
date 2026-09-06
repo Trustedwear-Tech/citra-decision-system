@@ -46,7 +46,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 BASE = os.getenv("E2E_BASE", "http://127.0.0.1:9100")
 APP = "zz-modality-probe"          # scratch: never a real app
-TENANT = "acme-power"
+TENANT = "acme-bank"
 
 load_dotenv(".env")
 DB_URI, DB_NAME = os.environ["MONGO_URI"], os.environ.get("MONGO_DB", "dev")
@@ -72,7 +72,7 @@ def check(name, cond, detail=""):
 
 def token():
     return jwt.encode(
-        {"sub": "e2e", "user_id": "e2e", "email": "e2e@acme-power.citra.ai",
+        {"sub": "e2e", "user_id": "e2e", "email": "e2e@acme-bank.citra.ai",
          "roles": ["super_admin"], "tenant_id": TENANT, "org_id": TENANT,
          "exp": int(time.time()) + 1800},
         os.environ["JWT_SECRET"], algorithm=os.getenv("JWT_ALGORITHM", "HS256"))

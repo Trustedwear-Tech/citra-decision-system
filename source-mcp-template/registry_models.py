@@ -20,9 +20,9 @@ Three sources of truth were reconciled to build this:
   1. docs/sources-file.md — the authoring contract.
   2. The code that actually READS the file — router._flatten, catalogue,
      registration, query_engine, the connectors.
-  3. The 19 real sources across demo-data/tenants/{acme-power,acme-cement,
-     bihar-gov} — 27 datasets, 256 columns. Where the doc and reality disagreed,
-     reality won and the doc was corrected (e.g. `type` values, `is_demo`).
+  3. The real sources under demo-data/tenants/ — every dataset and column the
+     demo ships. Where the doc and reality disagreed, reality won and the doc
+     was corrected (e.g. `type` values, `is_demo`).
 
 Two rules about strictness, chosen per-block rather than globally:
 
@@ -884,9 +884,9 @@ class Organization(BaseModel):
     conflicting blocks, consumption is first-wins (deterministic + visible)."""
     model_config = ConfigDict(extra="forbid")
 
-    #: Full legal/display name — "Acme Power & Utilities Co."
+    #: Full legal/display name — "Acme Bank & Insurance Ltd"
     name: str = Field(min_length=1)
-    #: Compact form for headers/nav ("Acme Power"). Defaults to ``name``.
+    #: Compact form for headers/nav ("Acme Bank"). Defaults to ``name``.
     short_name: Optional[str] = None
     logo_url: Optional[str] = None
     #: Seed for the app theme's primary color (builder may override per app).

@@ -53,14 +53,14 @@ def test_resolve_source_resolves_semantic_without_query_endpoint(monkeypatch):
     _patch(monkeypatch, [
         {"source_id": "billing", "query_endpoint": "http://mcp/query",
          "source_type": "structured"},
-        {"source_id": "acme_power_policy_library", "query_endpoint": "",
+        {"source_id": "acme_bank_policy_library", "query_endpoint": "",
          "source_type": "semantic", "rag_collection": "mcp_dept_libraries"},
     ])
     rs = asyncio.run(dc.resolve_source(
         discovery_url="http://discovery", user_jwt="jwt",
-        source_id="acme_power_policy_library",
+        source_id="acme_bank_policy_library",
     ))
-    assert rs.source_id == "acme_power_policy_library"
+    assert rs.source_id == "acme_bank_policy_library"
     assert rs.source_type == "semantic"
     assert rs.query_endpoint == ""      # empty is CORRECT for a semantic source
 

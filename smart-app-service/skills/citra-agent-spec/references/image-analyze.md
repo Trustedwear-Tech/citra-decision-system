@@ -107,7 +107,7 @@ machine-inspection app reuses the identical tooling with `task_type=machine-insp
   { "kind": "image_analyze", "name": "analyze_defect_photo",
     "task_type": "asset-inspection-defect",
     "data_source_id": "ds_inspections", "url_column": "defect_photo_url", "key_field": "inspection_id",
-    "sop_source": "acme_power_policy_library",
+    "sop_source": "acme_bank_policy_library",
     "sop_doc_path": "policy/dt_failure_response_sop.md",
     "field_schema": { "defect_type": "string", "severity": "none|minor|moderate|major", "component_affected": "string" } }
   ```

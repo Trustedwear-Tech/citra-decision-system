@@ -27,7 +27,7 @@ mutating = pytest.mark.skipif(
 
 @pytest.fixture()
 def tok(base_specs) -> str:
-    return mint_jwt(roles=["super_admin"], user_id="api@acme-power.citra.ai")
+    return mint_jwt(roles=["super_admin"], user_id="api@acme-bank.citra.ai")
 
 
 # ── Always-safe contract negatives ──────────────────────────────────────────

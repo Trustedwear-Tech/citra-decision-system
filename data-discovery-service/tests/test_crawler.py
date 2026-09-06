@@ -432,20 +432,20 @@ async def test_discover_semantic_sources_empty_is_noop():
 # Orphan prune — retiring rows the registry no longer backs
 #
 # The catalogue was upsert-only, so a source removed from sources.json kept its
-# row forever and /catalogue kept serving it. Found live in prod: acme-power's
-# `public_directory.user` was still served two weeks after the source was
-# retired, while discovery had already deactivated its tool.
+# row forever and /catalogue kept serving it. Found live in prod: a retired
+# `public_directory.user` was still served two weeks after its source was
+# removed, while discovery had already deactivated its tool.
 #
 # These tests weight the DANGEROUS direction: a false prune deletes a live
 # dataset, a missed one is merely stale.
 # ---------------------------------------------------------------------------
 
 
-def _row(source_id: str, dataset_id: str, tenant: str = "acme-power") -> Dict[str, Any]:
+def _row(source_id: str, dataset_id: str, tenant: str = "acme-bank") -> Dict[str, Any]:
     return {"tenant_id": tenant, "source_id": source_id, "dataset_id": dataset_id}
 
 
-async def _prune(col, *, live, seen, tenant="acme-power", settings=None):
+async def _prune(col, *, live, seen, tenant="acme-bank", settings=None):
     return await crawler_mod._prune_orphaned_entries(
         settings=settings or Settings(),
         catalogue_col=col,
@@ -501,10 +501,10 @@ async def test_prune_leaves_datasets_of_a_source_that_was_not_crawled_this_pass(
     col = _MemCol()
     col.docs = [
         _row("billing", "billing.bills"),
-        _row("acme_power_policy_library", "acme_power_policy_library"),
+        _row("acme_bank_policy_library", "acme_bank_policy_library"),
     ]
 
-    removed = await _prune(col, live={"billing", "acme_power_policy_library"},
+    removed = await _prune(col, live={"billing", "acme_bank_policy_library"},
                            seen={"billing": {"billing.bills"}})
 
     assert removed == 0
@@ -543,7 +543,7 @@ async def test_prune_drops_the_orphan_from_the_vector_index_too():
         catalogue_vectors.delete_entries = orig
 
     assert removed == 1
-    assert seen_keys == [("acme-power", "public_directory", "public_directory.user")]
+    assert seen_keys == [("acme-bank", "public_directory", "public_directory.user")]
 
 
 @pytest.mark.asyncio
@@ -551,7 +551,7 @@ async def test_crawl_all_skips_pruning_for_a_source_whose_crawl_errored(monkeypa
     """End-to-end guard: a describe failure must not delete the live rows of the
     source that failed — that would turn a transient blip into data loss."""
     tools = [{"tool_id": "t-billing", "source_id": "billing",
-              "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]}]
+              "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-bank"]}]
 
     async def fake_list(settings, auth_header):
         return tools
@@ -573,7 +573,7 @@ async def test_crawl_all_skips_pruning_for_a_source_whose_crawl_errored(monkeypa
 
     _reports, _total, pruned = await crawl_all(
         settings=Settings(), catalogue_col=col,
-        auth_header=None, tenant_id="acme-power",
+        auth_header=None, tenant_id="acme-bank",
     )
 
     assert pruned == 0
@@ -584,7 +584,7 @@ async def test_crawl_all_skips_pruning_for_a_source_whose_crawl_errored(monkeypa
 async def test_crawl_all_prunes_the_retired_source_on_a_clean_pass(monkeypatch):
     """The prod scenario, end to end through crawl_all."""
     tools = [{"tool_id": "t-billing", "source_id": "billing",
-              "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]}]
+              "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-bank"]}]
 
     async def fake_list(settings, auth_header):
         return tools
@@ -604,7 +604,7 @@ async def test_crawl_all_prunes_the_retired_source_on_a_clean_pass(monkeypatch):
 
     _reports, _total, pruned = await crawl_all(
         settings=Settings(), catalogue_col=col,
-        auth_header=None, tenant_id="acme-power",
+        auth_header=None, tenant_id="acme-bank",
     )
 
     assert pruned == 1
@@ -618,9 +618,9 @@ async def test_crawl_all_does_not_prune_a_source_seen_by_both_a_clean_and_a_fail
     still serves."""
     tools = [
         {"tool_id": "t-a", "source_id": "billing",
-         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-power"]},
+         "query_endpoint": "http://mcp-a:8503/query", "org_ids": ["acme-bank"]},
         {"tool_id": "t-b", "source_id": "billing",
-         "query_endpoint": "http://mcp-b:8504/query", "org_ids": ["acme-power"]},
+         "query_endpoint": "http://mcp-b:8504/query", "org_ids": ["acme-bank"]},
     ]
 
     async def fake_list(settings, auth_header):
@@ -646,7 +646,7 @@ async def test_crawl_all_does_not_prune_a_source_seen_by_both_a_clean_and_a_fail
 
     _reports, _total, pruned = await crawl_all(
         settings=Settings(), catalogue_col=col,
-        auth_header=None, tenant_id="acme-power",
+        auth_header=None, tenant_id="acme-bank",
     )
 
     assert pruned == 0

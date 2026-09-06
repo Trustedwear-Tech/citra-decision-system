@@ -38,12 +38,14 @@ class Cfg:
     RUNTIME = os.getenv("RUNTIME_BASE_URL", "http://localhost:3100").rstrip("/")
     JWT_SECRET = os.getenv("SAS_JWT_SECRET")  # from Vault prod/smart-app-service
     JWT_ISSUER = os.getenv("SAS_JWT_ISSUER", "Citra-AI")
-    ORG = os.getenv("DA_ORG_ID", "acme-power")
+    ORG = os.getenv("DA_ORG_ID", "acme-bank")
     # A published app used as the schema-valid "golden base" for mutation tests
     # and as the live target for media/runtime tests.
-    APP_SLUG = os.getenv("DA_APP_SLUG", "equipment-inspection-fraud-screen")
-    DS_ID = os.getenv("DA_DS_ID", "ds_inspections")
-    RECORD_ID = os.getenv("DA_RECORD_ID", "INS-2026-0013")
+    APP_SLUG = os.getenv("DA_APP_SLUG", "acme-bank-claim-triage")
+    DS_ID = os.getenv("DA_DS_ID", "ds_documents")
+    # No default: the id must name a row in the seeded claims table, and a
+    # stale literal here fails as "app broken" rather than "set this".
+    RECORD_ID = os.getenv("DA_RECORD_ID", "")
     KEY_FIELD = os.getenv("DA_KEY_FIELD", "inspection_id")
     MEDIA_COL = os.getenv("DA_MEDIA_COL", "defect_photo_url")
     TIMEOUT = float(os.getenv("DA_HTTP_TIMEOUT", "30"))
@@ -57,7 +59,7 @@ def mint_jwt(
     *,
     roles: Optional[List[str]] = None,
     org_id: Optional[str] = None,
-    user_id: str = "e2e@acme-power.citra.ai",
+    user_id: str = "e2e@acme-bank.citra.ai",
     sa_admin_of: Optional[List[str]] = None,
     dept_ids: Optional[List[str]] = None,
     ttl_seconds: int = 1800,
@@ -114,17 +116,17 @@ def stack_up(sas: httpx.Client) -> bool:
 # ── Role tokens ─────────────────────────────────────────────────────────────
 @pytest.fixture()
 def tok_super() -> str:
-    return mint_jwt(roles=["super_admin"], user_id="super@acme-power.citra.ai")
+    return mint_jwt(roles=["super_admin"], user_id="super@acme-bank.citra.ai")
 
 
 @pytest.fixture()
 def tok_org_admin() -> str:
-    return mint_jwt(roles=["org_admin"], user_id="orgadmin@acme-power.citra.ai")
+    return mint_jwt(roles=["org_admin"], user_id="orgadmin@acme-bank.citra.ai")
 
 
 @pytest.fixture()
 def tok_member() -> str:
-    return mint_jwt(roles=[], user_id="member@acme-power.citra.ai")
+    return mint_jwt(roles=[], user_id="member@acme-bank.citra.ai")
 
 
 @pytest.fixture()
@@ -142,7 +144,7 @@ def base_specs(sas: httpx.Client, stack_up: bool) -> Dict[str, Any]:
     always passes JSON-Schema/Pydantic and the mutation isolates the target
     publish rule. Skips the whole module if the app isn't present.
     """
-    token = mint_jwt(roles=["super_admin"], user_id="base@acme-power.citra.ai")
+    token = mint_jwt(roles=["super_admin"], user_id="base@acme-bank.citra.ai")
     r = sas.get(f"/apps/{CFG.APP_SLUG}", headers=auth(token))
     if r.status_code != 200:
         pytest.skip(

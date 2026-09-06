@@ -1057,7 +1057,7 @@ const requireSuperAdmin = (req, res, next) => {
  *
  * The "pick a demo persona" picker for super_admins. Returns all users
  * whose org is flagged `is_demo: true`, grouped by tenant org so the UI
- * can render them as "Acme Cement → Anita Rao / Vikram Singh / …".
+ * can render them as "Acme Bank → Anita Rao / Vikram Singh / …".
  *
  * Demo personas are seeded via demo-data/scripts/seed_demo_users.py;
  * they don't have passwords and can't log in directly. Impersonation is

@@ -38,7 +38,7 @@ export SAS_BASE_URL=http://localhost:9100          # or the TEST-env URL
 export RUNTIME_BASE_URL=http://localhost:3100
 export SAS_JWT_SECRET=<JWT_SECRET from Vault prod/smart-app-service>
 export SAS_JWT_ISSUER=Citra-AI                      # default
-export DA_ORG_ID=acme-power                         # default
+export DA_ORG_ID=acme-bank                         # default
 export DA_APP_SLUG=equipment-inspection-fraud-screen   # a PUBLISHED app = golden base
 export DA_DS_ID=ds_inspections
 export DA_RECORD_ID=INS-2026-0013

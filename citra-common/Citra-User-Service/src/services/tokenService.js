@@ -21,7 +21,7 @@ class TokenService {
    * **Also embeds the user's service-account membership** so downstream
    * services know which SAs this user can act on resources for:
    *
-   *   service_account_admin_of:  ["svc:plant-ops-ingestion@acme-cement.citra.ai", ...]
+   *   service_account_admin_of:  ["svc:collections-ingestion@acme-bank.citra.ai", ...]
    *   service_account_member_of: ["svc:claims-bot@acme-insurance.citra.ai", ...]
    *
    * @param {Object} user - Mongoose user document

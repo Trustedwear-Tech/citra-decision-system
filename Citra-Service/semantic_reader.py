@@ -43,7 +43,7 @@ _DEFAULT_MIN_COSINE = 0.10
 # personal vault's `dense_vector`), and everything else — including `text` — as
 # DYNAMIC fields. So we search `anns_field="vector"` and fetch `output_fields=["*"]`
 # to get the text + all metadata. Verified against a live demo collection
-# (demo_acme_power_central_pmu_acme_power_policy_library).
+# (demo_acme_bank_claims_acme_bank_policy_library).
 _VECTOR_FIELD = "vector"
 _OUTPUT_FIELDS = ["*"]
 
@@ -133,8 +133,8 @@ def _resolve_live_collection(client, dept_id: Optional[str], source_id: str,
 #   <prefix>_<safe(dept)>_<safe(source_id)>
 # and Citra-Service/dept_library.py `dept_library_collection_name`. The
 # ingestion side and this read side MUST derive the SAME name or dept RAG
-# content lands in a collection the reader never queries (the acme-power hyphen
-# gotcha lives here). Pinned by test_semantic_reader.
+# content lands in a collection the reader never queries (the
+# hyphen-in-an-org-id gotcha lives here). Pinned by test_semantic_reader.
 MCP_COLLECTION_PREFIX = "mcp"
 
 

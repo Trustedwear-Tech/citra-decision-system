@@ -71,8 +71,8 @@ SOP_SOURCE_PREFIX = "sop_library"
 def _safe_segment(name: str) -> str:
     """Sanitize an id into a Milvus collection-name segment — byte-identical to
     source-mcp-template/config.py ``_safe`` so a dept library's ingest
-    collection matches the name the MCP derives at query time (the acme-power
-    hyphen gotcha lives here)."""
+    collection matches the name the MCP derives at query time (the
+    hyphen-in-an-org-id gotcha lives here)."""
     return re.sub(r"[^a-zA-Z0-9]", "_", name or "")[:40].lower()
 
 
