@@ -292,9 +292,14 @@ eight rounds lost to `phsical_name`, `colums`, `tye`, `is_forgeign_key`.
                         check and can never be invoked by anyone. Map what they
                         say onto a real role and read the mapping back: "your
                         shift supervisors are dept_admin here -- so only they
-                        can approve it." If they name no approver, ask; do not
-                        default it.
-                        An action anyone may invoke is not a governed write.
+                        can approve it." The person who WORKS the case is a
+                        `user` -- an officer recording their own decision needs
+                        `user` on the list, or the app they use can never
+                        write. Reserve dept_admin-and-up for a release or
+                        approval step the operator says only a manager takes.
+                        If they name nobody, ask; do not default it.
+                        Governance comes from the action being declared and
+                        bound, not from requiring a manager to press Apply.
 
   A complete one — the table here is a work queue, and yours will be something
   else entirely; what carries over is the SHAPE. The operator named only
@@ -314,7 +319,7 @@ eight rounds lost to `phsical_name`, `colums`, `tye`, `is_forgeign_key`.
                               "x-citra-fill": "now"}}}},
           "required": ["work_order_id", "status"]}},
         "sql_template": "UPDATE work_orders SET status=:status, decided_by=:decided_by, decided_at=:decided_at WHERE work_order_id=:work_order_id",
-        "roles_allowed_write": ["dept_admin", "org_admin", "super_admin"]
+        "roles_allowed_write": ["user", "dept_admin", "org_admin", "super_admin"]
       }}]
 
   Every value is BOUND as a named parameter — `:status`, never a string built

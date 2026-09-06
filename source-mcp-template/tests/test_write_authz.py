@@ -52,12 +52,21 @@ def test_role_not_in_allowlist_denied():
     assert ei.value.status_code == 403
 
 
-def test_default_roles_block_plain_user():
-    # No roles_allowed_write -> DEFAULT_WRITE_ROLES (dept_admin+); a plain
-    # `user` must be denied.
-    assert "user" not in auth.DEFAULT_WRITE_ROLES
+def test_default_roles_admit_plain_user():
+    # No roles_allowed_write -> DEFAULT_WRITE_ROLES. The officer deciding a
+    # case holds only `user`; a declared action nobody narrowed must let them
+    # write. Narrowing is the action's job (see the explicit-roles tests).
+    assert "user" in auth.DEFAULT_WRITE_ROLES
+    auth.check_write_permission({"roles": ["user"]}, action_id="a")
+
+
+def test_explicit_roles_still_narrow_the_default():
+    # The default admits `user`, but an action that lists only dept_admin
+    # keeps a plain user out -- the narrowing is what a manager-only release
+    # step relies on.
     with pytest.raises(auth.AuthzError):
-        auth.check_write_permission({"roles": ["user"]}, action_id="a")
+        auth.check_write_permission({"roles": ["user"]},
+                                    roles_allowed_write=["dept_admin"], action_id="a")
 
 
 def test_default_roles_allow_dept_admin():

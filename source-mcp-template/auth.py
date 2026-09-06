@@ -252,7 +252,14 @@ def check_visibility(source: Dict[str, Any], claims: Dict[str, Any]) -> None:
     )
 
 
-DEFAULT_WRITE_ROLES = ("dept_admin", "org_admin", "super_admin")
+# Who may invoke a declared write action when the action itself names nobody.
+# "user" is here on purpose: every account holds it, and the officer who
+# decides a case is a user, not a manager. Governance of a write comes from
+# the action being DECLARED by IT (bound SQL, input_schema, x-citra-fill audit
+# fields) and from the read gate that already limits callers to the source's
+# own department -- not from requiring a manager's role to press Apply. An
+# action that must stay manager-only says so in its own roles_allowed_write.
+DEFAULT_WRITE_ROLES = ("user", "dept_admin", "org_admin", "super_admin")
 
 
 def check_write_permission(
@@ -268,8 +275,9 @@ def check_write_permission(
     may read quality results yet only a dept_admin may release a batch.
 
     ``roles_allowed_write`` is the action's own allow-list; when empty the
-    platform default applies — writes need dept_admin or above, so a plain
-    ``user`` cannot write unless an action explicitly lists "user".
+    platform default applies — anyone the read gate already admits may invoke
+    the declared action, ``user`` included. An action narrows that by listing
+    the roles it wants (e.g. ``["dept_admin"]`` for a release/approval step).
 
     Honours AUTHZ_ENFORCE: in dev (enforce=false) a denial is logged and
     allowed, exactly like check_visibility. Raises AuthzError(403) otherwise.

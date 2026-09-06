@@ -749,8 +749,9 @@ def _propose_writes_prompt(ds: Dict[str, Any]) -> str:
 
 
 # A sentinel role that NO user holds. An EMPTY roles_allowed_write would fall
-# back to the platform default (dept_admin+ MAY write — see auth.DEFAULT_WRITE_ROLES
-# / WriteAction docstring), i.e. NOT locked. IT replaces this with real roles.
+# back to the platform default (anyone the read gate admits MAY write, user and
+# up — see auth.DEFAULT_WRITE_ROLES / WriteAction docstring), i.e. NOT locked.
+# IT replaces this with real roles.
 _LOCKED_ROLE = "__locked_pending_it_review__"
 
 
@@ -816,7 +817,7 @@ def _apply_write_actions(ds: Dict[str, Any], obj: Dict[str, Any]) -> int:
             "key_fields": pk,
             "input_schema": _input_schema_from_set_fields(sf, pk),
             "description": a.get("description") or f"Update {ds['physical_name']} outcome fields.",
-            # LOCKED via a sentinel role nobody holds (an EMPTY list = dept_admin+ MAY write).
+            # LOCKED via a sentinel role nobody holds (an EMPTY list = user and up MAY write).
             "roles_allowed_write": [_LOCKED_ROLE],
         }
         if kind == "sql":                           # executes via sql_template

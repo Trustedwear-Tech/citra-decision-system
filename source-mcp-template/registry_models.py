@@ -479,7 +479,8 @@ class RegistryWriteAction(BaseModel):
     verb: str
     description: Optional[str] = None
     input_schema: Dict[str, Any] = Field(default_factory=dict)
-    #: Empty ⇒ the MCP's platform default (dept_admin and up), NOT "everyone".
+    #: Empty ⇒ the MCP's platform default: any role the read gate admits
+    #: (user and up). List roles here only to NARROW that, e.g. ["dept_admin"].
     roles_allowed_write: List[str] = Field(default_factory=list)
     key_fields: Optional[List[str]] = None
     idempotency_key_field: Optional[str] = None

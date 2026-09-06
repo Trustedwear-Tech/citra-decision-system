@@ -209,7 +209,8 @@ class WriteAction(BaseModel):
     # update / upsert / delete (the filter key). Ignored for `create`.
     key_fields: List[str] = Field(default_factory=list)
     # Write-authz gate — roles permitted to invoke THIS action, checked on
-    # top of the read visibility PDP. Empty = platform default (dept_admin+).
+    # top of the read visibility PDP. Empty = platform default (user and up,
+    # i.e. whoever the read gate admits); list roles only to narrow it.
     roles_allowed_write: List[str] = Field(default_factory=list)
 
 

@@ -36,9 +36,14 @@ The dept MCP now enforces **two separate gates** on every data-plane call:
 - `/query`, `/run_query`, `/datasets*` → read gate only.
 - `/execute_action` → read gate **and** write gate.
 - A write action with no `roles_allowed_write` defaults to
-  `DEFAULT_WRITE_ROLES = (dept_admin, org_admin, super_admin)` — i.e.
-  **writes are privileged by default; a plain `user` cannot write**
-  unless an action explicitly lists `"user"`.
+  `DEFAULT_WRITE_ROLES = (user, dept_admin, org_admin, super_admin)` — i.e.
+  **whoever the read gate admits may invoke a declared action**. The
+  officer who decides a case holds only `user`; requiring a manager's
+  role to record that decision was a defect, not governance. Governance
+  is the declaration itself (bound SQL, `input_schema`, `x-citra-fill`
+  audit fields) plus the department-scoped read gate. An action that
+  must stay manager-only **narrows** the set in its own
+  `roles_allowed_write`, e.g. `["dept_admin", "org_admin", "super_admin"]`.
 - Every outcome (read-deny, write-deny, exec-fail, success) is audited
   to `dept_query_audit`.
 
@@ -71,10 +76,12 @@ Until that lands, the `roles_allowed` (read) + `roles_allowed_write`
 
 ## For implementers
 
-- New dept-MCP write actions: always declare `roles_allowed_write`
-  (don't rely on the default) and keep it as narrow as the operation
-  warrants — see `demo-data/tenants/acme-bank/mcp/sources.json` for
-  worked examples (`release_batch`, `create_dispatch` →
-  dept_admin+; `update_dispatch_status` → also `user`).
+- New dept-MCP write actions: declare `roles_allowed_write` and keep it
+  as narrow as the operation warrants. The officer-level actions in
+  `demo-data/tenants/acme-bank/mcp/sources.json` (`record_credit_decision`,
+  `record_claim_decision`, `assign_surveyor`, `log_collection_activity`,
+  `assign_lead`) list `user` and up because the officer does the work; a
+  release or approval step that only a manager may take lists
+  `dept_admin` and up.
 - New SmartApp surfaces: treat read and write as separate authorization
   questions. Never gate a write with only a read/visibility check.

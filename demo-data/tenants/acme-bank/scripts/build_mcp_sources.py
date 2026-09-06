@@ -58,7 +58,9 @@ COMMON_VISIBILITY = {
     "public_within_org": False,
 }
 
-WRITE_ROLES = ["dept_admin", "org_admin", "super_admin"]
+# Every seeded write is an officer-level action (record a decision, assign,
+# log an activity), so the officer's own role -- user -- must be on the list.
+WRITE_ROLES = ["user", "dept_admin", "org_admin", "super_admin"]
 
 
 def _shared_dept_collection() -> str:

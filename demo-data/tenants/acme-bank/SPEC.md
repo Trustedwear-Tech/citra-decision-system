@@ -418,7 +418,7 @@ distribution is caught before a demo, not during one):
 
 ## 5. Write actions (`kind=sql`, parameterised `:name`)
 
-`roles_allowed_write: ["dept_admin","org_admin","super_admin"]`.
+`roles_allowed_write: ["user","dept_admin","org_admin","super_admin"]` — the officer who works the case records the outcome; nothing here is a manager-only release step.
 
 - `loan_origination` / `loan_applications` → **`record_credit_decision`**
   `UPDATE loan_applications SET status=:status, decision_reason=:decision_reason, decided_by=:decided_by, decided_at=:decided_at WHERE application_id=:application_id`
