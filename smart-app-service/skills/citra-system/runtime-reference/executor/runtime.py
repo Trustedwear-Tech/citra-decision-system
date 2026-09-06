@@ -1697,11 +1697,16 @@ async def _dispatch_mcp_tool(
 
 
 # Tool-call rounds the root agent gets before a forced synthesis turn.
-# Raised from 5 → 12 so a decide-then-write action (query data + cite a
-# policy clause + call an mcp_action write tool) has room to finish: a
-# read-only agent rarely needs more than 3-4 rounds, but a write-back
-# action spends rounds gathering evidence before it can act.
-_MAX_TOOL_ITERATIONS = 12
+# Raised 5 → 12 → 30. Twelve was set for decide-then-write (query data + cite
+# a policy clause + call an mcp_action write tool). Per-document review then
+# arrived, and every document costs ONE doc_extract call out of the same
+# budget: an application with six documents, two queries and a write plan
+# cannot have every document read, and the run ends with `tool_loop: error`
+# and a recommendation that quietly skipped some of the evidence. Thirty
+# covers the largest claim file in the demo corpus with room to spare. The
+# real ceiling is SMART_APP_RUN_MAX_TOKENS (200k) - a run that genuinely needs
+# thirty rounds is bounded by tokens long before it is bounded here.
+_MAX_TOOL_ITERATIONS = 30
 # Rounds the CHAT narrator may spend calling tools before it must answer. Named
 # so the loop and the no-reply error below can't drift apart — the error quotes
 # this number to tell the caller the agent ran out of budget mid-investigation.
