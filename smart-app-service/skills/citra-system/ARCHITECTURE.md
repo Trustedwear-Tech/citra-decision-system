@@ -165,6 +165,13 @@ the `validators/` rule that gates it. One-layer reading is how bugs survive.
    the whole tree.
 3. **Author the spec to match the real behavior** you just read — not what a prose
    skill once said, not what you'd assume a generic runtime does.
+3b. **For a decision app, propose the case signature and let the BA decide it.**
+   The facets (`app_spec.case_signature.facets`) are what scope every judgement
+   the app learns; they are derived at run time from the primary dataset's own
+   columns. Candidates come from the catalogue (`distinct_values` → enum,
+   `range` → band, nullable proof columns → presence); the values, groupings
+   (`value_map`) and band `edges` are the BA's call, asked for in plain words and
+   confirmed on the app's page. SKILL.md step 3b has the exact questions.
 4. **The gates are the floor.** `citra_spec_validate`, `static_checks`,
    `/builder/preview-smoke`, `/builder/smoke-run` exist to catch the rare miss — if
    you authored from understanding, they pass first try. If a gate fires, the fix is

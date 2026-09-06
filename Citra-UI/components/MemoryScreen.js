@@ -164,7 +164,7 @@ export default function MemoryScreen({ visible, onClose, theme, initialSlug = nu
         const d = await SmartAppService.getMemoryClauses(targetSlug);
         setClauses(d?.clauses || []);
         setClauseMeta({ inventory: d?.inventory, corrections: d?.corrections,
-          gateNotice: d?.gate_notice });
+          gateNotice: d?.gate_notice, drift: d?.drift, rejectedFacets: d?.rejected_facets });
       } else if (targetTab === 'precedents') {
         const d = await SmartAppService.getMemoryItems(targetSlug, {
           disposition: dispFilter || undefined,
@@ -525,6 +525,24 @@ export default function MemoryScreen({ visible, onClose, theme, initialSlug = nu
             {(clauseMeta.inventory?.dissented || []).length > 0 && (
               <Text style={{ color: AMBER, fontSize: 12, marginTop: 6 }}>
                 ⚠ {clauseMeta.inventory.dissented.length} judgement(s) your team disagrees about — these are shown to the app as an open question, not asserted.
+              </Text>
+            )}
+            {/* Facet drift: the signature says one thing, the data another. Until
+                this was shown, the only symptom was memory looking useless. */}
+            {(clauseMeta.drift?.families || []).filter((f) => (f.share || 0) >= 0.05).map((f) => (
+              <Text key={`drift-${f.family}`} style={{ color: AMBER, fontSize: 12, marginTop: 6, fontWeight: '600' }}>
+                ⚠ {String(f.family).replace(/_/g, ' ')}: {Math.round((f.share || 0) * 100)}% of the
+                last {clauseMeta.drift.runs} cases could not be classified — the values in the
+                data do not match what the signature declares. No judgement can be scoped by it
+                until the signature is fixed on the app's page ("What this app learns by").
+              </Text>
+            ))}
+            {Object.keys(clauseMeta.rejectedFacets || {}).length > 0 && (
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6 }}>
+                Officers' cases carried facets this app never declared:{' '}
+                {Object.entries(clauseMeta.rejectedFacets)
+                  .map(([k, v]) => `${String(k).replace(/_/g, ' ')} (${v})`).join(', ')}.
+                Add them to the signature if decisions turn on them.
               </Text>
             )}
           </View>

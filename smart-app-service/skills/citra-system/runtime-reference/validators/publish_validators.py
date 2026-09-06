@@ -1792,3 +1792,155 @@ def validate_item_tools_declare_task_type(agent_spec) -> List[Dict[str, Any]]:
             seen.setdefault(task_type, name)
 
     return out
+
+
+# ── CS-05 / CS-06 — the facet vocabulary, against the data ───────────────────
+#
+# The BA decides the facets at build time: which columns matter to the
+# decision, how raw values group into meaningful ones (value_map), where the
+# band edges fall. The catalogue's distinct_values and range are EVIDENCE for
+# that decision, never the decision. So the gate rejects exactly one thing -- a
+# raw value the column has never held, which is a typo, and would otherwise
+# turn every case into `family:__unknown` and leave the judgement unscopable --
+# and advises on everything else. A BA who declares a subset of the values, or
+# groups them under names of their own, is doing the job, not making an error.
+
+def _band_index(value: float, edges: List[float]) -> int:
+    """Which band a value falls in, counting from 0. Mirrors band_token."""
+    return sum(1 for e in edges if value >= e)
+
+
+def _as_float(v: Any) -> Optional[float]:
+    try:
+        return float(str(v).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def validate_facet_vocabulary(
+    app_spec,
+    catalogue_columns: Dict[str, Dict[str, Dict[str, Any]]],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Check the declared facet vocabulary against what the data holds.
+
+    ``catalogue_columns`` is ``{dataset_id: {column: {"distinct_values":
+    [...] | None, "range": {"min": .., "max": ..} | None}}}`` -- the crawler's
+    sample, as the catalogue entry carries it. A facet with no ``dataset_id``
+    resolves against every bound dataset, as CS-01 does.
+
+    Returns ``(errors, advisories)``. Errors are CS-06 and block: a declared
+    raw value -- an entry in ``values`` when there is no ``value_map``, or any
+    ``value_map`` key -- that the column's sample does not contain. Canonical
+    names on the mapped side are the BA's own and are never checked.
+    Advisories never block: a column with no sample (nothing to check, said
+    so), and a band whose edges put the whole observed range in one band.
+    """
+    from case_signature import normalize_value
+
+    errors: List[Dict[str, Any]] = []
+    advisories: List[Dict[str, Any]] = []
+    sig = getattr(app_spec, "case_signature", None)
+    if sig is None:
+        return errors, advisories
+
+    def _column(dataset_id: Optional[str], col: str) -> Optional[Dict[str, Any]]:
+        if dataset_id and dataset_id in catalogue_columns:
+            return catalogue_columns[dataset_id].get(col)
+        for by_name in catalogue_columns.values():
+            if col in by_name:
+                return by_name[col]
+        return None
+
+    for i, f in enumerate(list(getattr(sig, "facets", None) or [])):
+        family = str(getattr(f, "family", "") or "")
+        kind = str(getattr(f, "kind", "") or "")
+        col = str(getattr(f, "from_column", "") or "")
+        loc = f"case_signature.facets[{i}]"
+        if not col:
+            continue
+        info = _column(getattr(f, "dataset_id", None), col)
+
+        if kind == "enum":
+            sample = (info or {}).get("distinct_values")
+            if not sample:
+                advisories.append({
+                    "rule_id": "CS-06", "code": "case_signature_vocabulary_unchecked",
+                    "facet": family,
+                    "message": (f"facet {family!r}: the catalogue has no value sample "
+                                f"for column {col!r}, so its values were not checked "
+                                "against the data."),
+                })
+                continue
+            seen = {normalize_value(v) for v in sample}
+            vmap = getattr(f, "value_map", None) or {}
+            # With a value_map, `values` may be the BA's canonical names; only
+            # the RAW side is a claim about the data.
+            declared = list(vmap.keys()) if vmap else list(getattr(f, "values", None) or [])
+            for raw in declared:
+                if normalize_value(raw) not in seen:
+                    errors.append({
+                        "rule_id": "CS-06", "location": f"{loc}.{'value_map' if vmap else 'values'}",
+                        "code": "case_signature_value_not_in_data",
+                        "facet": family, "value": raw,
+                        "reason": (f"facet {family!r} declares {raw!r}, which column {col!r} "
+                                   f"has never held. Values seen: {sorted(sample)[:12]}. Every "
+                                   "case would derive __unknown for this family and no "
+                                   "judgement could be scoped by it."),
+                    })
+
+        elif kind == "band":
+            rng = (info or {}).get("range") or {}
+            lo, hi = _as_float(rng.get("min")), _as_float(rng.get("max"))
+            edges = [x for x in (_as_float(e) for e in (getattr(f, "edges", None) or [])) if x is not None]
+            if lo is None or hi is None or not edges:
+                advisories.append({
+                    "rule_id": "CS-06", "code": "case_signature_vocabulary_unchecked",
+                    "facet": family,
+                    "message": (f"facet {family!r}: the catalogue has no numeric range "
+                                f"for column {col!r}, so its bands were not checked."),
+                })
+                continue
+            if _band_index(lo, edges) == _band_index(hi, edges):
+                advisories.append({
+                    "rule_id": "CS-06", "code": "case_signature_band_degenerate",
+                    "facet": family,
+                    "message": (f"facet {family!r}: every value of {col!r} seen so far "
+                                f"({rng.get('min')} to {rng.get('max')}) falls in one band with "
+                                f"edges {edges}. The band will not distinguish anything until "
+                                "the edges sit inside the data."),
+                })
+    return errors, advisories
+
+
+def validate_decision_app_has_signature(app_spec, agent_spec) -> List[Dict[str, Any]]:
+    """CS-05 -- advisory. A decision app with no case signature will learn, but
+    every judgement it learns will apply to every case.
+
+    "Decision app" means the agent can act on a decision: it declares actions,
+    an mcp_action tool, or an approval policy. A read-only dashboard is exempt.
+    Advisory rather than a rejection, on the rule that the gate throws for one
+    thing only; but it is said at publish, where the BA can still act on it.
+    """
+    def _get(obj, name):
+        return obj.get(name) if isinstance(obj, dict) else getattr(obj, name, None)
+
+    sig = _get(app_spec, "case_signature")
+    facets = (_get(sig, "facets") if sig is not None else None) or []
+    if facets:
+        return []
+    if agent_spec is None:
+        return []
+    tools = _get(agent_spec, "tools_v2") or []
+    kinds = {(_get(t, "kind") or "") for t in tools}
+    acts = bool(_get(agent_spec, "actions") or []) or ("mcp_action" in kinds) \
+        or bool(_get(agent_spec, "hitl_policy"))
+    if not acts:
+        return []
+    return [{
+        "rule_id": "CS-05", "code": "case_signature_missing",
+        "message": ("this app makes decisions and learns from officer corrections, but "
+                    "declares no case signature. Without one, every judgement it learns "
+                    "applies to every case -- it will fire everywhere, be blamed "
+                    "everywhere, and retire itself. Declare the facets (the columns a "
+                    "decision turns on) and confirm them on the app's page."),
+    }]

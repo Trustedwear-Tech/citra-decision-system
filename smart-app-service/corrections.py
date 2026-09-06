@@ -443,6 +443,33 @@ async def export_corrections(
     ).to_list(100_000)
 
 
+async def rejected_facet_stats(
+    *, tenant_ids: List[str], app_slug: str, limit: int = 500,
+) -> Dict[str, int]:
+    """Facets that officers' cases carried and the app never declared, counted
+    by family over recent corrections.
+
+    A correction is stored with the facets the model saw; ones whose family the
+    signature does not declare are held back on the row as `rejected_facets`
+    (see _guard_facets). They are evidence the signature is missing a column
+    the runtime already treats as decision-relevant -- and until now they were
+    written and never read."""
+    counts: Dict[str, int] = {}
+    if not tenant_ids or not app_slug:
+        return counts
+    cur = _col().find(
+        {"tenant_id": {"$in": tenant_ids}, "app_slug": app_slug,
+         "rejected_facets.0": {"$exists": True}},
+        {"rejected_facets": 1},
+    ).sort("_id", -1).limit(limit)
+    async for row in cur:
+        for tok in (row.get("rejected_facets") or []):
+            fam = str(tok).partition(":")[0]
+            if fam:
+                counts[fam] = counts.get(fam, 0) + 1
+    return counts
+
+
 async def correction_stats(*, tenant_ids: List[str], app_slug: str) -> Dict[str, Any]:
     """Compact per-app counters for the Memory screen / metrics.
 

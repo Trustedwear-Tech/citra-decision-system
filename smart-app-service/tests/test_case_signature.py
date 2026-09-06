@@ -569,3 +569,91 @@ def test_confirmation_survives_a_round_trip_on_the_app_spec():
     again = AppSpec.model_validate(spec.model_dump())
     assert again.case_signature.confirmed_by == "ba@acme"   # optional provenance
     assert sorted(again.case_signature.confirmed_families) == ["amount_band", "product"]
+
+
+
+# ── CS-06 / CS-05 — vocabulary against the data; the BA's facets win ─────────
+def _cat(distinct=None, rng=None, col="loss_type", dataset="claims.motor"):
+    return {dataset: {col: {"distinct_values": distinct, "range": rng}}}
+
+
+def _sig_enum(values=None, value_map=None):
+    f = {"family": "loss_type", "kind": "enum", "from_column": "loss_type"}
+    if values is not None:
+        f["values"] = values
+    if value_map is not None:
+        f["value_map"] = value_map
+    return {**SIG, "facets": [f]}
+
+
+def test_cs06_rejects_only_a_value_the_data_never_held():
+    from publish_validators import validate_facet_vocabulary
+    app = _app(_sig_enum(values=["theft", "tehft"]), columns=_GOOD_COLS)
+    errs, adv = validate_facet_vocabulary(app, _cat(distinct=["theft", "fire"]))
+    assert [e["code"] for e in errs] == ["case_signature_value_not_in_data"]
+    assert errs[0]["value"] == "tehft"
+    assert adv == []
+
+
+def test_cs06_a_subset_of_the_data_is_the_ba_deciding_not_an_error():
+    from publish_validators import validate_facet_vocabulary
+    app = _app(_sig_enum(values=["theft"]), columns=_GOOD_COLS)
+    errs, adv = validate_facet_vocabulary(app, _cat(distinct=["theft", "fire", "flood"]))
+    assert errs == [] and adv == []
+
+
+def test_cs06_value_map_checks_the_raw_side_only():
+    from publish_validators import validate_facet_vocabulary
+    # canonical names are the BA's; raw keys must exist in the data
+    good = _app(_sig_enum(values=["dealer", "own"],
+                          value_map={"dsa": "dealer", "agent": "dealer", "branch": "own"}),
+                columns=_GOOD_COLS)
+    errs, _ = validate_facet_vocabulary(good, _cat(distinct=["dsa", "agent", "branch", "digital"]))
+    assert errs == []
+    bad = _app(_sig_enum(values=["dealer"], value_map={"dealr": "dealer"}), columns=_GOOD_COLS)
+    errs, _ = validate_facet_vocabulary(bad, _cat(distinct=["dsa", "branch"]))
+    assert [e["value"] for e in errs] == ["dealr"]
+
+
+def test_cs06_compares_normalised_values():
+    from publish_validators import validate_facet_vocabulary
+    app = _app(_sig_enum(values=["DSA", "Branch Office"]), columns=_GOOD_COLS)
+    errs, _ = validate_facet_vocabulary(app, _cat(distinct=["dsa", "branch_office"]))
+    assert errs == []
+
+
+def test_cs06_no_sample_is_an_advisory_never_a_rejection():
+    from publish_validators import validate_facet_vocabulary
+    app = _app(_sig_enum(values=["anything"]), columns=_GOOD_COLS)
+    errs, adv = validate_facet_vocabulary(app, _cat(distinct=None))
+    assert errs == []
+    assert [a["code"] for a in adv] == ["case_signature_vocabulary_unchecked"]
+    errs, adv = validate_facet_vocabulary(app, {})
+    assert errs == [] and adv and adv[0]["code"] == "case_signature_vocabulary_unchecked"
+
+
+def test_cs06_band_that_splits_nothing_is_an_advisory():
+    from publish_validators import validate_facet_vocabulary
+    sig = {**SIG, "facets": [{"family": "amt", "kind": "band",
+                              "from_column": "claim_amount", "edges": [500000, 1000000]}]}
+    app = _app(sig, columns=_GOOD_COLS)
+    errs, adv = validate_facet_vocabulary(
+        app, _cat(rng={"min": "12000", "max": "480000"}, col="claim_amount"))
+    assert errs == []
+    assert [a["code"] for a in adv] == ["case_signature_band_degenerate"]
+    errs, adv = validate_facet_vocabulary(
+        app, _cat(rng={"min": "12000", "max": "4800000"}, col="claim_amount"))
+    assert errs == [] and adv == []
+
+
+def test_cs05_decision_app_without_signature_is_advised_not_rejected():
+    from models import AppSpec
+    from publish_validators import validate_decision_app_has_signature
+    app = AppSpec.model_validate({"spec_version": "v0", "slug": "no-sig", "title": "A",
+                                  "headless": True, "agent_id": "ag_a"})
+    deciding = {"tools_v2": [{"kind": "mcp_action"}]}
+    adv = validate_decision_app_has_signature(app, deciding)
+    assert [a["code"] for a in adv] == ["case_signature_missing"]
+    dashboard = {"tools_v2": [{"kind": "mcp"}]}
+    assert validate_decision_app_has_signature(app, dashboard) == []
+    assert validate_decision_app_has_signature(_app(SIG, columns=_GOOD_COLS), deciding) == []

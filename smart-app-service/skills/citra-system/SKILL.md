@@ -54,6 +54,30 @@ runtime-reference/
 3. **Author the spec to match what the code actually does.** The field contract is
    `executor/models.py` (+ `renderer/types/spec.ts`); the rules that reject a spec
    are in `validators/`. Build to *those*, not to a remembered rule.
+3b. **Every decision app gets a case signature, and the BA decides it.** If the
+   agent can act on a decision (`actions`, an `mcp_action` tool, an approval
+   policy), the app learns from officer corrections — and a judgement it learns
+   is reused only on cases with the *same signature*. No signature means every
+   judgement applies to every case: it fires everywhere, is blamed everywhere,
+   and retires itself. So, before publish:
+   - Read the primary dataset's columns from the catalogue. Candidates are the
+     columns a decision turns on: low-cardinality columns with `distinct_values`
+     (→ `kind: enum`), numeric columns with a `range` (→ `kind: band`), and
+     nullable document/proof columns (→ `kind: presence`).
+   - Put the evidence to the BA in plain words and ASK — the catalogue is
+     evidence, the BA is the decision. For an enum: *"`sourcing_channel` holds
+     digital, dsa, bancassurance, branch. Does this matter to how a decision is
+     made? Do any of these mean the same thing to you?"* — write their grouping
+     as `value_map` (raw → their name) and their names as `values`. For a
+     number: *"`amount_requested` runs 50,000 to 48,00,000. What are the bands
+     your policy thinks in?"* — write those as `edges`, strictly increasing.
+   - Say once what the signature is for, in their words: *a lesson your team
+     teaches on one case is reused on other cases with the same signature, and
+     only those.* Then tell them it must be confirmed on the app's page
+     ("What this app learns by") before publish — CS-04 rejects an unconfirmed
+     signature, and CS-06 rejects a raw value the column has never held.
+   - Never rename a family without an `aliases` entry for the old name. A clause
+     scoped to the old name goes dark silently — observed in production.
 4. **Gates are the floor.** If `citra_spec_validate` / `static_checks` /
    `/builder/preview-smoke` / `/builder/smoke-run` fire, you skipped reading the
    slice that governs that behavior — go read it.
@@ -87,3 +111,6 @@ front (steps 1–3), not from the verifier catching you.
 - **Code > prose.** `runtime-reference/` is authoritative; skills are the guide to it.
 - **If the reference is missing**, STOP and report a builder-pod misconfiguration —
   do not fall back to guessing from memory.
+- **The BA owns the case signature.** You propose facets from the catalogue's
+  evidence and ask; you never decide the values, groupings or band edges for
+  them, and you never publish a decision app without one.

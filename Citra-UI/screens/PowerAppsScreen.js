@@ -34,6 +34,78 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import SmartAppService from '../services/SmartAppService';
 import AdminUserService from '../services/AdminUserService';
+
+// ── Case signature helpers ──────────────────────────────────────────────────
+// What a facet actually DOES, in one line, so the BA confirms values and band
+// edges rather than a family name. A confirmation of names is not a
+// confirmation of correctness: 5L/10L/25L bands on a book where every loan is
+// under 5L confirm fine and distinguish nothing.
+function facetDetail(f) {
+  if (!f) return '';
+  const k = f.kind;
+  if (k === 'enum') {
+    const vm = f.value_map && typeof f.value_map === 'object' ? Object.entries(f.value_map) : [];
+    if (vm.length) return vm.map(([raw, name]) => `${raw} → ${name}`).join(', ');
+    return (f.values || []).join(', ') || 'any value';
+  }
+  if (k === 'band') {
+    const e = (f.edges || []).map(String);
+    if (!e.length) return 'no edges';
+    const parts = [`< ${e[0]}`];
+    for (let i = 0; i < e.length - 1; i += 1) parts.push(`${e[i]}–${e[i + 1]}`);
+    parts.push(`≥ ${e[e.length - 1]}`);
+    return `bands: ${parts.join(', ')}`;
+  }
+  if (k === 'presence') return 'present / absent';
+  if (k === 'age_band') return `${(f.from_columns || []).join(' → ')}: ${(f.edges || []).join(', ')} days`;
+  if (k === 'signal') return `signal ${f.signal_id || ''}`;
+  return '';
+}
+
+// Editor ⇄ spec: the BA types comma lists and "raw = name" lines; the spec
+// stores arrays and a map. Kept symmetrical so a round trip changes nothing.
+function facetToDraft(f) {
+  return {
+    family: f.family || '',
+    kind: f.kind || 'enum',
+    from_column: f.from_column || '',
+    values: (f.values || []).join(', '),
+    value_map: f.value_map && typeof f.value_map === 'object'
+      ? Object.entries(f.value_map).map(([r, n]) => `${r} = ${n}`).join('\n') : '',
+    edges: (f.edges || []).join(', '),
+    _orig: f,
+  };
+}
+
+function draftToFacet(d) {
+  const base = { ...(d._orig || {}) };
+  base.family = String(d.family || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+  base.kind = d.kind;
+  base.from_column = String(d.from_column || '').trim() || null;
+  const list = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
+  if (d.kind === 'enum') {
+    const map = {};
+    String(d.value_map || '').split('\n').forEach((line) => {
+      const i = line.indexOf('=');
+      if (i > 0) {
+        const raw = line.slice(0, i).trim(); const name = line.slice(i + 1).trim();
+        if (raw && name) map[raw] = name;
+      }
+    });
+    base.value_map = Object.keys(map).length ? map : null;
+    const vals = list(d.values);
+    // With groupings, the values are the NAMES the BA chose; derive them if
+    // the BA left the list empty rather than asking for it twice.
+    base.values = vals.length ? vals : (Object.keys(map).length ? [...new Set(Object.values(map))] : null);
+    base.edges = null;
+  } else if (d.kind === 'band') {
+    base.edges = list(d.edges).map(Number).filter((n) => Number.isFinite(n));
+    base.values = null; base.value_map = null;
+  } else {
+    base.values = null; base.value_map = null; base.edges = null;
+  }
+  return base;
+}
 import authService from '../services/authService';
 import OperationsControlScreen from './OperationsControlScreen';
 import { highestAdminScopeForCurrentUser } from '../services/adminScope';
@@ -315,6 +387,9 @@ export default function PowerAppsScreen({
   const [specAgentText, setSpecAgentText] = useState('');
   const [specTab, setSpecTab] = useState('app');     // 'app' | 'agent'
   const [specEditing, setSpecEditing] = useState(false);
+  // Case-signature editor: null when closed, else an array of drafts.
+  const [sigEdit, setSigEdit] = useState(null);
+  const [sigNew, setSigNew] = useState({ family: '', kind: 'enum', from_column: '' });
   const [specSaving, setSpecSaving] = useState(false);
   const [specLoading, setSpecLoading] = useState(false);
   const [specError, setSpecError] = useState('');
@@ -418,16 +493,8 @@ export default function PowerAppsScreen({
   }, [specApp, caseSig, load]);
 
   // Validate + persist the edited spec, then refresh the list.
-  const saveSpec = useCallback(async () => {
-    if (!specApp) return;
-    let app_spec, agent_spec = null;
-    try {
-      app_spec = JSON.parse(specAppText);
-      agent_spec = specAgentText.trim() ? JSON.parse(specAgentText) : null;
-    } catch (e) {
-      setSpecError('Invalid JSON: ' + (e?.message || e));
-      return;
-    }
+  const persistSpec = useCallback(async (app_spec, agent_spec) => {
+    if (!specApp) return false;
     setSpecSaving(true); setSpecError('');
     try {
       const d = await SmartAppService.saveSpec(specApp.slug, { app_spec, agent_spec });
@@ -437,12 +504,55 @@ export default function PowerAppsScreen({
       Alert.alert('Saved', 'Spec validated and saved.');
       runLint(specApp.slug, false);   // refresh review against the saved spec
       load();
+      return true;
     } catch (e) {
       setSpecError(e?.message || 'Save failed (spec rejected by validation).');
+      return false;
     } finally {
       setSpecSaving(false);
     }
-  }, [specApp, specAppText, specAgentText, load, runLint]);
+  }, [specApp, load, runLint]);
+
+  const saveSpec = useCallback(async () => {
+    let app_spec, agent_spec = null;
+    try {
+      app_spec = JSON.parse(specAppText);
+      agent_spec = specAgentText.trim() ? JSON.parse(specAgentText) : null;
+    } catch (e) {
+      setSpecError('Invalid JSON: ' + (e?.message || e));
+      return;
+    }
+    await persistSpec(app_spec, agent_spec);
+  }, [specAppText, specAgentText, persistSpec]);
+
+  // Columns of the primary dataset, for adding a facet. The directory is on
+  // the app_spec the screen already holds; primary = the first data source.
+  const sigColumns = useMemo(() => {
+    try {
+      const spec = JSON.parse(specAppText || '{}') || {};
+      const dir = spec.dataset_directory || [];
+      const primary = (spec.data_sources || [])[0]?.ref;
+      const entry = dir.find((e) => e && e.dataset_id === primary) || dir[0];
+      return ((entry && entry.columns) || []).map((c) => ({ name: c.name, type: c.type }));
+    } catch { return []; }
+  }, [specAppText]);
+
+  const saveSig = useCallback(async () => {
+    if (!sigEdit) return;
+    let app_spec, agent_spec = null;
+    try {
+      app_spec = JSON.parse(specAppText);
+      agent_spec = specAgentText.trim() ? JSON.parse(specAgentText) : null;
+    } catch (e) {
+      setSpecError('Invalid JSON: ' + (e?.message || e));
+      return;
+    }
+    const facets = sigEdit.map(draftToFacet).filter((f) => f.family);
+    app_spec.case_signature = { ...(app_spec.case_signature || { version: 1 }), facets };
+    // Saving changes the list; CS-04 will ask for a fresh confirmation.
+    const ok = await persistSpec(app_spec, agent_spec);
+    if (ok) setSigEdit(null);
+  }, [sigEdit, specAppText, specAgentText, persistSpec]);
 
   useEffect(() => {
     if (visible) load();
@@ -1832,8 +1942,11 @@ export default function PowerAppsScreen({
                 {sigOpen && (
                   <View style={{ paddingHorizontal: 10, paddingBottom: 10, gap: 8 }}>
                     <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
-                      A lesson your team teaches on one case is re-used on other cases with the
-                      same signature — and only those. Check this is how you group them.
+                      When an officer corrects this app and says why, the lesson is reused on
+                      later cases that look the same — and only those. "Look the same" is
+                      decided by these columns, their values, and these bands. If a value or
+                      a band edge below is not how your policy thinks, the app will group
+                      cases wrongly and what it learns will not fire where it should.
                     </Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                       {caseSig.facets.map((f, i) => (
@@ -1841,7 +1954,7 @@ export default function PowerAppsScreen({
                           key={i}
                           style={{
                             borderWidth: 1, borderColor: colors.border, borderRadius: 6,
-                            paddingHorizontal: 8, paddingVertical: 4,
+                            paddingHorizontal: 8, paddingVertical: 4, maxWidth: 320,
                           }}
                         >
                           <Text style={{ color: colors.text, fontSize: 12 }}>
@@ -1850,9 +1963,131 @@ export default function PowerAppsScreen({
                           <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                             {f.kind}{f.from_column ? ` · ${f.from_column}` : ''}
                           </Text>
+                          <Text style={{ color: colors.text, fontSize: 10, marginTop: 2 }}>
+                            {facetDetail(f)}
+                          </Text>
                         </View>
                       ))}
                     </View>
+                    {!!specApp?.can_edit && !sigEdit && (
+                      <TouchableOpacity
+                        onPress={() => setSigEdit(caseSig.facets.map(facetToDraft))}
+                        style={[styles.footerBtnGhost, { borderColor: colors.border, alignSelf: 'flex-start' }]}
+                      >
+                        <Ionicons name="create-outline" size={14} color={colors.text} />
+                        <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Edit values and bands</Text>
+                      </TouchableOpacity>
+                    )}
+                    {!!sigEdit && (
+                      <View style={{ gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10 }}>
+                        {sigEdit.map((d, i) => (
+                          <View key={i} style={{ gap: 4 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', flex: 1 }}>
+                                {String(d.family || '').replace(/_/g, ' ')} · {d.kind}{d.from_column ? ` · ${d.from_column}` : ''}
+                              </Text>
+                              <TouchableOpacity onPress={() => setSigEdit(sigEdit.filter((_, j) => j !== i))}>
+                                <Text style={{ color: '#dc2626', fontSize: 11 }}>Remove</Text>
+                              </TouchableOpacity>
+                            </View>
+                            {d.kind === 'enum' && (
+                              <>
+                                <TextInput
+                                  value={d.values}
+                                  onChangeText={(t) => setSigEdit(sigEdit.map((x, j) => (j === i ? { ...x, values: t } : x)))}
+                                  placeholder="values, comma separated — e.g. dealer, branch, digital"
+                                  placeholderTextColor={colors.textSecondary}
+                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12 }}
+                                />
+                                <TextInput
+                                  value={d.value_map}
+                                  onChangeText={(t) => setSigEdit(sigEdit.map((x, j) => (j === i ? { ...x, value_map: t } : x)))}
+                                  placeholder={'groupings, one per line — e.g.\ndsa = dealer\nagent = dealer'}
+                                  placeholderTextColor={colors.textSecondary}
+                                  multiline
+                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12, minHeight: 48 }}
+                                />
+                              </>
+                            )}
+                            {d.kind === 'band' && (
+                              <TextInput
+                                value={d.edges}
+                                onChangeText={(t) => setSigEdit(sigEdit.map((x, j) => (j === i ? { ...x, edges: t } : x)))}
+                                placeholder="band edges, low to high — e.g. 500000, 1000000, 2500000"
+                                placeholderTextColor={colors.textSecondary}
+                                keyboardType="numeric"
+                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12 }}
+                              />
+                            )}
+                          </View>
+                        ))}
+                        <View style={{ gap: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
+                          <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Add a column the decision turns on</Text>
+                          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                            <TextInput
+                              value={sigNew.family}
+                              onChangeText={(t) => setSigNew({ ...sigNew, family: t })}
+                              placeholder="name, e.g. sourcing channel"
+                              placeholderTextColor={colors.textSecondary}
+                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12, minWidth: 160 }}
+                            />
+                            {['enum', 'band', 'presence'].map((k) => (
+                              <TouchableOpacity
+                                key={k}
+                                onPress={() => setSigNew({ ...sigNew, kind: k })}
+                                style={[styles.footerBtnGhost, { borderColor: sigNew.kind === k ? '#2563eb' : colors.border }]}
+                              >
+                                <Text style={[styles.footerBtnGhostText, { color: sigNew.kind === k ? '#2563eb' : colors.text }]}>
+                                  {k === 'enum' ? 'a set of values' : k === 'band' ? 'a number in bands' : 'present or not'}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                            {(sigColumns.length ? sigColumns : []).slice(0, 40).map((c) => (
+                              <TouchableOpacity
+                                key={c.name}
+                                onPress={() => setSigNew({ ...sigNew, from_column: c.name })}
+                                style={{ borderWidth: 1, borderColor: sigNew.from_column === c.name ? '#2563eb' : colors.border, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}
+                              >
+                                <Text style={{ color: colors.text, fontSize: 10 }}>{c.name}</Text>
+                              </TouchableOpacity>
+                            ))}
+                            {!sigColumns.length && (
+                              <TextInput
+                                value={sigNew.from_column}
+                                onChangeText={(t) => setSigNew({ ...sigNew, from_column: t })}
+                                placeholder="column name"
+                                placeholderTextColor={colors.textSecondary}
+                                style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 6, padding: 6, color: colors.text, fontSize: 12, minWidth: 160 }}
+                              />
+                            )}
+                          </View>
+                          <TouchableOpacity
+                            disabled={!sigNew.family.trim() || !sigNew.from_column.trim()}
+                            onPress={() => {
+                              setSigEdit([...sigEdit, facetToDraft({ family: sigNew.family, kind: sigNew.kind, from_column: sigNew.from_column })]);
+                              setSigNew({ family: '', kind: 'enum', from_column: '' });
+                            }}
+                            style={[styles.footerBtnGhost, { borderColor: colors.border, alignSelf: 'flex-start', opacity: (!sigNew.family.trim() || !sigNew.from_column.trim()) ? 0.5 : 1 }]}
+                          >
+                            <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Add</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity onPress={saveSig} disabled={specSaving} style={[styles.footerBtnGhost, { borderColor: '#2563eb', opacity: specSaving ? 0.6 : 1 }]}>
+                            <Text style={[styles.footerBtnGhostText, { color: '#2563eb' }]}>{specSaving ? 'Saving…' : 'Save signature'}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => setSigEdit(null)} style={[styles.footerBtnGhost, { borderColor: colors.border }]}>
+                            <Text style={[styles.footerBtnGhostText, { color: colors.text }]}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                          Saving is checked against the data: a value the column has never held is
+                          refused. After saving, confirm the list again.
+                        </Text>
+                      </View>
+                    )}
                     {caseSig.stale && (
                       <Text style={{ color: '#d97706', fontSize: 11 }}>
                         {caseSig.confirmedBy} confirmed a different list. Publishing will be

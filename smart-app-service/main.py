@@ -1801,6 +1801,57 @@ async def _snapshot_prior_version(
 
 
 @app.post("/publish", response_model=PublishResponse)
+async def _facet_vocabulary_against_catalogue(
+    app_spec, *, settings, auth_header: Optional[str], tenant_id: str,
+):
+    """Fetch the catalogue sample for every dataset the signature can resolve
+    against and run CS-06 over it. A catalogue that cannot be reached is an
+    advisory, never a rejection: the BA's facets are the decision, the sample is
+    evidence, and absent evidence must not block the decision."""
+    from catalogue_client import fetch_catalogue_entry
+    from publish_validators import validate_facet_vocabulary
+
+    advisories: List[Dict[str, Any]] = []
+    sig = getattr(app_spec, "case_signature", None)
+    facets = list(getattr(sig, "facets", None) or []) if sig is not None else []
+    if not facets:
+        return advisories, []
+
+    dataset_ids: List[str] = []
+    for f in facets:
+        did = getattr(f, "dataset_id", None)
+        if did and did not in dataset_ids:
+            dataset_ids.append(str(did))
+    for ds in (getattr(app_spec, "data_sources", None) or []):
+        ref = getattr(ds, "ref", None)
+        if ref and ref not in dataset_ids:
+            dataset_ids.append(str(ref))
+
+    columns: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    for did in dataset_ids:
+        try:
+            entry = await fetch_catalogue_entry(
+                settings=settings, auth_header=auth_header,
+                tenant_id=tenant_id, dataset_id=did)
+        except Exception as exc:  # noqa: BLE001 -- evidence unavailable, said below
+            logger.warning("[CS-06] catalogue entry %s unavailable: %s", did, exc)
+            entry = None
+        if not entry:
+            advisories.append({
+                "rule_id": "CS-06", "code": "case_signature_vocabulary_unchecked",
+                "message": (f"dataset {did!r}: no catalogue entry could be read, so "
+                            "facet values on it were not checked against the data."),
+            })
+            continue
+        columns[did] = {
+            str(c.get("name")): {"distinct_values": c.get("distinct_values"),
+                                 "range": c.get("range")}
+            for c in (entry.get("columns") or []) if isinstance(c, dict) and c.get("name")
+        }
+    errors, more = validate_facet_vocabulary(app_spec, columns)
+    return advisories + more, errors
+
+
 async def publish_app(
     payload: PublishRequest,
     request: Request,
@@ -2208,6 +2259,24 @@ async def publish_app(
             "silently learns nothing.",
             _b,
         )
+    # CS-06 -- the declared vocabulary against the data. The BA's facets are
+    # authoritative; the catalogue is evidence. This rejects one thing only: a
+    # raw value the column has never held. Bands that split nothing, columns
+    # with no sample, and a decision app with no signature at all (CS-05) are
+    # said, not enforced -- they reach the BA through the publish warnings.
+    _adv, _b = await _facet_vocabulary_against_catalogue(
+        layer_b_app, settings=settings, auth_header=auth_header,
+        tenant_id=publisher_tenant or "")
+    if _b:
+        _raise_layer_b(
+            "CS-06",
+            "a facet declares a value the data has never held — every case would "
+            "derive __unknown for that family and no judgement could be scoped by it.",
+            _b,
+        )
+    publish_warnings.extend(_adv)
+    from publish_validators import validate_decision_app_has_signature
+    publish_warnings.extend(validate_decision_app_has_signature(layer_b_app, layer_b_agent))
     _b = validate_rubric_finding_matches_declaration(layer_b_app)
     if _b:
         _raise_layer_b(
@@ -11758,6 +11827,42 @@ async def get_loop_metrics(
 # ---------------------------------------------------------------------------
 
 
+async def _facet_drift(slug: str, limit: int = 200) -> Dict[str, Any]:
+    """How often each facet family derived `__unknown` over recent runs.
+
+    `derive_facets` emits `family:__unknown` when the column holds a value the
+    signature does not declare, and the runtime logged it -- to the container
+    log, where no BA has ever looked. A signature the data no longer matches
+    is the one failure the Memory screen could not show: judgements simply
+    stop being scopable and memory looks useless. Read from the audit rows the
+    runtime already writes, so no run-path change is needed."""
+    from case_signature import UNKNOWN
+    seen: Dict[str, int] = {}
+    unknown: Dict[str, int] = {}
+    runs = 0
+    cur = get_app_run_audit_col().find(
+        {"slug": slug, "case_facets.0": {"$exists": True}},
+        {"case_facets": 1},
+    ).sort("_id", -1).limit(limit)
+    async for row in cur:
+        runs += 1
+        for tok in (row.get("case_facets") or []):
+            fam, _, val = str(tok).partition(":")
+            if not fam:
+                continue
+            seen[fam] = seen.get(fam, 0) + 1
+            if val == UNKNOWN:
+                unknown[fam] = unknown.get(fam, 0) + 1
+    return {
+        "runs": runs,
+        "families": [
+            {"family": f, "unknown": unknown[f], "seen": seen.get(f, 0),
+             "share": round(unknown[f] / max(1, seen.get(f, 0)), 3)}
+            for f in sorted(unknown)
+        ],
+    }
+
+
 def _memory_tenants(app_doc: dict) -> List[str]:
     """Both tenant-key candidates (app-org + legacy JWT-org buckets) — same
     dedupe the loop-metrics memory block uses."""
@@ -11832,6 +11937,18 @@ async def get_memory_clauses(slug: str, request: Request) -> Dict[str, Any]:
         "corrections": stats,
         "promotion_min_officers": gate,
     }
+    # Diagnostics for a signature the data disagrees with. Best-effort: the
+    # view must render without them, loudly in the log if they fail.
+    try:
+        out["drift"] = await _facet_drift(slug)
+    except Exception:  # noqa: BLE001 -- diagnostic, never fails the view
+        logger.exception("[memory] facet drift read failed for %s", slug)
+    try:
+        from corrections import rejected_facet_stats
+        out["rejected_facets"] = await rejected_facet_stats(
+            tenant_ids=tenants, app_slug=slug)
+    except Exception:  # noqa: BLE001
+        logger.exception("[memory] rejected-facet read failed for %s", slug)
     # J6: the gate-reachability notice. Informational, not a cliff — since J2,
     # a small team's judgements are USED as individual judgements, clearly
     # labeled; this just tells the admin why nothing says "team judgement" yet.
