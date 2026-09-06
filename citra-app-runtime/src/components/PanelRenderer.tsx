@@ -1536,6 +1536,61 @@ function QueuePanelView({
     [cols, panel.title_column],
   );
 
+  // Hydrate from the DATABASE whenever the rows change. The staging row a
+  // run writes holds the whole card and its fate (pending / applied / sent
+  // back), so a review made in another tab, by another officer, or before a
+  // rebuild shows up here. Keyed the same way rowKey() keys a row, by the
+  // first id-like column present; content-hash keys cannot be hydrated and
+  // keep whatever the tab remembers.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const rows = (data?.rows ?? []) as Record<string, unknown>[];
+    if (rows.length === 0) return;
+    const idCols = ["id", "_id", "record_id", "case_natural_key", "workflow_execution_id", titleCol];
+    const keyColumn = idCols.find((c) => c && rows.some((r) => r[c] != null && String(r[c]) !== ""));
+    if (!keyColumn) return;
+    const keys = Array.from(new Set(
+      rows.map((r) => r[keyColumn]).filter((v) => v != null && String(v) !== "").map((v) => String(v)),
+    ));
+    if (keys.length === 0) return;
+    const label = panel.actions?.[0]?.label ?? "Run";
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await runtimeFetch(`/api/apps/${encodeURIComponent(slug)}/queue-state`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key_column: keyColumn, keys }),
+        });
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as { results?: Record<string, Record<string, unknown>> };
+        const fromServer: Record<string, RunResult> = {};
+        for (const [k, b] of Object.entries(body.results ?? {})) {
+          const row = rows.find((r) => String(r[keyColumn]) === k);
+          fromServer[`r:${k}`] = runResultFromBody(b, {
+            rowKey: `r:${k}`,
+            rowTitle: formatCell(row?.[titleCol] ?? row?.["id"] ?? k),
+            label,
+            slug,
+          });
+        }
+        if (cancelled) return;
+        // The server is the record: every id-keyed entry is replaced by what it
+        // says (including "nothing" for a row it has no live card for), and
+        // only content-hash entries survive from the tab.
+        updateResults((m) => {
+          const kept: Record<string, RunResult> = {};
+          for (const [k, v] of Object.entries(m)) if (k.startsWith("h:")) kept[k] = v;
+          return { ...kept, ...fromServer };
+        });
+      } catch {
+        // Offline or older server: the tab's own memory stays in charge.
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, slug, panel.id, titleCol]);
+
   const searchCols = panel.searchable_columns?.length ? panel.searchable_columns : cols;
 
   // C5/C7 — declared badge colors + per-column display formats. The declared

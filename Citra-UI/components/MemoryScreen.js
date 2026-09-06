@@ -714,6 +714,14 @@ export default function MemoryScreen({ visible, onClose, theme, initialSlug = nu
                 <Text style={{ color: colors.text, fontSize: 12, lineHeight: 18 }}>
                   “{cr.reason_text || '(no reason recorded)'}”
                 </Text>
+                {/* Which facets the officer said the lesson is about. A judgement's
+                    own scope is the intersection of these across its corrections,
+                    so this is where "why is it scoped to just that?" is answered. */}
+                <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 3 }}>
+                  {(cr.scope_facets || []).length > 0
+                    ? `Officer scoped it to: ${cr.scope_facets.map((f) => String(f).replace(':', ': ').replace(/_/g, ' ')).join(' · ')}`
+                    : `Scope: every facet of that case (${(cr.case_facets || []).length})`}
+                </Text>
               </View>
             ))}
             {(openClause.corrections || []).length === 0 && (

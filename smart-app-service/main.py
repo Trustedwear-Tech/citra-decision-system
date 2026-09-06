@@ -10218,6 +10218,125 @@ _AUDIT_SUMMARY_FIELDS = {
 }
 
 
+_QUEUE_STATE_PENDING = ("pending_review", "pending_je_review", "pending_ae_review", "pending_ee_review")
+_QUEUE_STATE_SHOWN = _QUEUE_STATE_PENDING + ("applied", "rejected")
+
+
+def _queue_state_body(row: Dict[str, Any], *, now: Optional[datetime] = None) -> Optional[Dict[str, Any]]:
+    """The run-card body for one staged recommendation row, in the shape
+    ``/run`` returns, so the runtime maps it with the same function.
+
+    pending_*  -> pending_approval (plus a notice when the plan has expired:
+                  Apply would be refused, and the officer should re-run)
+    applied    -> completed, with the write events the approval recorded
+    rejected   -> rejected (the card shows the recommendation was sent back)
+    cancelled / expired / stale -> None: nothing to show, the row is over.
+    """
+    st = str(row.get("status") or "")
+    if st not in _QUEUE_STATE_SHOWN:
+        return None
+    now = now or datetime.now(timezone.utc)
+    pw = row.get("planned_writes") or []
+    notices = list(row.get("notices") or [])
+    if st in _QUEUE_STATE_PENDING:
+        status = "pending_approval"
+        exp = row.get("expires_at")
+        if isinstance(exp, datetime):
+            _exp = exp if exp.tzinfo else exp.replace(tzinfo=timezone.utc)
+            if _exp < now:
+                notices.append({
+                    "level": "warning", "code": "plan_expired",
+                    "text": "This proposal has expired and can no longer be applied. Run the review again.",
+                })
+        write_events: List[Dict[str, Any]] = []
+    elif st == "applied":
+        status = "completed"
+        _last = (row.get("audit_trail") or [{}])[-1] or {}
+        write_events = list(_last.get("write_events") or [])
+    else:
+        status = "rejected"
+        write_events = []
+    return {
+        "correlation_id": row.get("workflow_execution_id"),
+        "status": status,
+        "staged_status": st,
+        "decision": row.get("llm_recommendation_text"),
+        "reasoning": row.get("llm_reasoning"),
+        "outputs": {"text": row.get("llm_evidence_summary")},
+        "planned_writes": pw,
+        "plan_hash": compute_plan_hash(pw),
+        "write_events": write_events,
+        "case_facets": row.get("case_facets") or [],
+        "references": {
+            "case_facets": row.get("case_facets") or [],
+            "tool_calls": row.get("tool_calls") or [],
+            "retrieval_count": row.get("retrieval_count"),
+        },
+        "cited_precedents": row.get("cited_precedents") or [],
+        "cited_clauses": row.get("cited_clauses") or [],
+        "citations": row.get("citations") or [],
+        "item_findings": row.get("item_findings") or [],
+        "item_coverage": row.get("item_coverage") or {},
+        "scorecard": row.get("scorecard"),
+        "sop_sources": row.get("sop_sources") or [],
+        "notices": notices,
+        "created_at": row.get("created_at").isoformat() if isinstance(row.get("created_at"), datetime) else row.get("created_at"),
+        "resolved_at": row.get("resolved_at").isoformat() if isinstance(row.get("resolved_at"), datetime) else row.get("resolved_at"),
+        "applied_by": row.get("applied_by"),
+    }
+
+
+class QueueStateRequest(BaseModel):
+    """POST /apps/{slug}/queue-state body: which rows the queue is showing."""
+    key_column: str = Field(min_length=1, max_length=80)
+    keys: List[str] = Field(default_factory=list, max_length=500)
+
+
+@app.post("/apps/{slug}/queue-state")
+async def get_queue_state(slug: str, payload: QueueStateRequest, request: Request) -> Dict[str, Any]:
+    """The latest staged card per queue row, from the database.
+
+    A queue card's chip and modal used to live in the browser tab that ran the
+    review (sessionStorage); a second officer, another machine, or a new tab
+    saw nothing. The staging row already holds the whole card and its fate
+    (pending, applied, rejected), so the queue now asks for it on load and the
+    tab is a cache, not the record.
+
+    Rows are matched by the queue's own key column against the inputs the run
+    was made with (``display_context``), or by the natural key; the newest
+    row per key wins. Same visibility as reading the app.
+    """
+    user_id = get_secure_user_id(request)
+    user_tenant = get_tenant_id(request)
+    await _bind_app_env(slug)
+    app_doc = await get_apps_col().find_one({"slug": slug})
+    if not app_doc or not _can_render_app(app_doc, request, user_id, user_tenant):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="app not found")
+    keys = [str(k) for k in payload.keys if k not in (None, "")]
+    if not keys:
+        return {"slug": slug, "results": {}}
+    col = get_workflow_staging_col()
+    field = f"display_context.{payload.key_column}"
+    q = {
+        "slug": slug,
+        "source": "queue_action",
+        "$or": [{field: {"$in": keys}}, {"case_natural_key": {"$in": keys}}],
+    }
+    rows = await col.find(q).sort("created_at", -1).to_list(length=4000)
+    out: Dict[str, Any] = {}
+    now = datetime.now(timezone.utc)
+    for row in rows:                       # newest first: first hit per key wins
+        dc = row.get("display_context") or {}
+        key = dc.get(payload.key_column)
+        key = str(key) if key not in (None, "") else str(row.get("case_natural_key") or "")
+        if not key or key in out:
+            continue
+        body = _queue_state_body(row, now=now)
+        if body is not None:
+            out[key] = body
+    return {"slug": slug, "results": out}
+
+
 @app.get("/apps/{slug}/runs", response_model=AuditRunListResponse)
 async def list_app_runs(
     slug: str,
@@ -10554,6 +10673,11 @@ def _derive_case_natural_key(inputs: Any) -> Optional[str]:
         for k in (
             "record_id", "id", "case_id", "case_natural_key",
             "claim_id", "row_id", "entity_id", "ticket_id",
+            # Records are keyed by what the source calls them. Without these
+            # a loan's runs were keyed by correlation id, so every re-run of
+            # the same application piled up another pending row.
+            "application_id", "loan_account_no", "account_no", "lead_id",
+            "policy_no", "document_id", "opportunity_id",
         ):
             v = inputs.get(k)
             if v not in (None, ""):
