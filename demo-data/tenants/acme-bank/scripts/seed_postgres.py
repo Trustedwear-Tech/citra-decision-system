@@ -106,6 +106,27 @@ random.seed(SEED)
 #: structural decision identical in both environments; only the name strings
 #: differ. Found the hard way: 1082 vs 1062 queue rows across two venvs.
 _names = random.Random(SEED ^ 0x9E3779B9)
+#: The credit QUEUE's coherence draws from their own stream too. The queue
+#: rows are shaped AFTER every existing global draw (override, never skip), so
+#: adding or changing a profile rule here cannot shift claims, documents or
+#: leads — found the same way as the names stream: one extra random() moved
+#: every claim id.
+_lend = random.Random(SEED ^ 0x4C454E44)
+
+#: What the seeded Retail Credit Policy and Income Verification SOP check. A
+#: queue file is "clean" when it passes all of them; the agent then approves
+#: it, and an officer's hold on it is a real correction. Kept beside the
+#: generator so a policy edit and a data edit are one change.
+LTV_CAP = {"auto": 85.0, "lap": 65.0}                    # home is by ticket
+def _ltv_cap(product: str, amount: float) -> float:
+    if product == "home":
+        return 90.0 if amount <= 3_000_000 else 80.0 if amount <= 7_500_000 else 75.0
+    return LTV_CAP.get(product, 999.0)
+def _foir_cap(monthly_income: float) -> float:
+    return 45.0 if monthly_income <= 50_000 else 55.0 if monthly_income <= 150_000 else 60.0
+def _proof_for(occupation: str) -> str:
+    return "payslip" if occupation == "salaried" else "itr"
+OFFICER_LIMIT = 1_000_000.0                                # Policy §7
 
 try:
     from faker import Faker
@@ -299,6 +320,8 @@ def gen_loan_applications(customers: List[Dict[str, Any]],
                           branches: List[Dict[str, Any]],
                           n: int = 12000) -> List[Dict[str, Any]]:
     rows = []
+    good_customers = [c for c in customers
+                      if (c.get("cibil_score") or 0) >= 720 and c.get("kyc_status") == "verified"]
     for i in range(1, n + 1):
         cust = random.choice(customers)
         product = _pick(PRODUCTS, PRODUCT_W)
@@ -344,11 +367,72 @@ def gen_loan_applications(customers: List[Dict[str, Any]],
         else:
             status = "disbursed"
 
+        # The three draws below used to sit inside the row literal, in THIS
+        # order. They are hoisted so the queue can be shaped from their values,
+        # and the order is kept exactly: random.choice consumes a variable
+        # amount of RNG state, so even swapping two draws shifts every later
+        # row in every later table.
+        branch_code = random.choice(branches)["branch_code"]
+        channel = _pick(CHANNELS, CHANNEL_W)
+        ltv = (round(random.uniform(55, 90), 2)
+               if product in ("home", "auto", "lap") else None)
+
+        # ── Shape the QUEUE. Every global draw above has happened; from here
+        # only _lend is consulted, so the rest of the seed is untouched.
+        # Three profiles for an undecided file:
+        #   clean       — passes every seeded policy check; the agent approves.
+        #   one_defect  — clean but for exactly ONE named breach, so the
+        #                 agent's reasoning has one thing to say.
+        #   as_drawn    — the independent draws, warts and all.
+        profile = "as_drawn"
+        enq_hint = None
+        orig_customer = None
+        if status in ("new", "under_review"):
+            p = _lend.random()
+            profile = "clean" if p < 0.45 else "one_defect" if p < 0.80 else "as_drawn"
+        if profile in ("clean", "one_defect"):
+            # A shaped file needs a customer whose bureau and KYC are clean too;
+            # if the drawn one is not, take one that is (isolated stream).
+            if (not cust.get("cibil_score") or cust["cibil_score"] < 720
+                    or cust.get("kyc_status") != "verified"):
+                orig_customer = cust["customer_id"]
+                cust = _lend.choice(good_customers)
+                declared_annual = float(cust["monthly_income_declared"]) * 12
+            mi = float(cust["monthly_income_declared"])
+            proof = _proof_for(cust["occupation"])
+            itr_income = _round(declared_annual * _lend.uniform(0.94, 1.05), 1000)
+            if ltv is not None:
+                ltv = round(min(ltv, _ltv_cap(product, amount) - _lend.uniform(2.0, 9.0)), 2)
+            if product in ("personal", "auto", "business"):
+                amount = min(amount, _round(OFFICER_LIMIT * _lend.uniform(0.25, 0.98)))
+            # FOIR inside the cap for this income band: shrink the ticket until
+            # it fits, never below the product's floor.
+            cap = _foir_cap(mi)
+            for _ in range(12):
+                emi_est = amount / max(tenure, 1)
+                if (float(cust["existing_emi"]) + emi_est) / max(mi, 1) * 100 <= cap - 4:
+                    break
+                amount = _round(amount * 0.85)
+            enq_hint = _lend.randint(0, 4)
+        if profile == "one_defect":
+            defect = _lend.choice(["enquiries", "ltv", "proof", "income", "foir"])
+            if defect == "enquiries":
+                enq_hint = _lend.randint(7, 9)
+            elif defect == "ltv" and ltv is not None:
+                ltv = round(_ltv_cap(product, amount) + _lend.uniform(1.0, 6.0), 2)
+            elif defect == "proof":
+                proof = "itr" if cust["occupation"] == "salaried" else "bank_statement"
+            elif defect == "income":
+                itr_income = _round(declared_annual * _lend.uniform(0.55, 0.72), 1000)
+            else:  # foir: a ticket the income cannot carry
+                amount = _round(amount * _lend.uniform(1.6, 2.2))
+
         emi_est = amount / max(tenure, 1)
         foir = min(95.0, round(((float(cust["existing_emi"]) + emi_est)
                                 / max(float(cust["monthly_income_declared"]), 1)) * 100, 2))
         decided = status not in ("new", "under_review")
         rows.append({
+            "_profile": profile, "_enq_hint": enq_hint, "_orig_customer": orig_customer,
             "application_id": f"LAN-2026-{i:06d}",
             "customer_id": cust["customer_id"],
             "product": product,
@@ -356,12 +440,11 @@ def gen_loan_applications(customers: List[Dict[str, Any]],
             "tenure_months": tenure,
             "roi_offered": roi,
             "applied_at": applied,
-            "branch_code": random.choice(branches)["branch_code"],
-            "sourcing_channel": _pick(CHANNELS, CHANNEL_W),
+            "branch_code": branch_code,
+            "sourcing_channel": channel,
             "income_proof_type": proof,
             "itr_declared_income": itr_income,
-            "ltv_percent": (round(random.uniform(55, 90), 2)
-                            if product in ("home", "auto", "lap") else None),
+            "ltv_percent": ltv,
             "foir_percent": foir,
             "status": status,
             "decision_reason": ("FOIR above policy cap" if status == "rejected" and foir > 55
@@ -378,8 +461,13 @@ def gen_bureau_pulls(applications: List[Dict[str, Any]],
     for i, app in enumerate(applications, start=1):
         cust = customers_by_id[app["customer_id"]]
         score = cust["cibil_score"]
-        overdue = 0.0 if (score or 800) > 700 else _round(random.uniform(0, 180000), 100)
-        rows.append({
+        # The overdue draw happens only for a weak score. A shaped queue file
+        # may have swapped its customer for a clean one AFTER the global
+        # stream was consumed, so the draw decision must follow the customer
+        # that was originally drawn, or every later table shifts.
+        _draw_score = customers_by_id[app.get("_orig_customer") or app["customer_id"]]["cibil_score"]
+        overdue = 0.0 if (_draw_score or 800) > 700 else _round(random.uniform(0, 180000), 100)
+        row = {
             "pull_id": f"BPL-{i:07d}",
             "application_id": app["application_id"],
             "bureau": random.choice(["cibil", "experian", "crif"]),
@@ -387,9 +475,27 @@ def gen_bureau_pulls(applications: List[Dict[str, Any]],
             "enquiries_6m": random.randint(0, 9),
             "active_loans": random.randint(0, 6),
             "overdue_amount": overdue,
-            "writeoff_flag": bool(score and score < 620 and random.random() < 0.25),
+            # Same short-circuit as overdue: the draw exists only for a weak
+            # ORIGINAL score, so a swapped-in clean customer must not skip it.
+            "writeoff_flag": bool(_draw_score and _draw_score < 620 and random.random() < 0.25),
             "pulled_at": app["applied_at"] + timedelta(hours=random.randint(1, 48)),
-        })
+        }
+        # Queue coherence (see gen_loan_applications): the draws above still
+        # happen so the stream stays aligned; a shaped file then gets the
+        # bureau it was shaped for. A clean file with a 600 score is not clean.
+        profile = app.pop("_profile", "as_drawn")
+        enq_hint = app.pop("_enq_hint", None)
+        if app.pop("_orig_customer", None):
+            row["writeoff_flag"] = False       # the draw above belonged to the swapped-out customer
+        if profile in ("clean", "one_defect"):
+            if enq_hint is not None:
+                row["enquiries_6m"] = enq_hint
+            if profile == "clean" or row["enquiries_6m"] > 6:
+                # the only bureau defect one_defect may carry is enquiries
+                row["writeoff_flag"] = False
+                row["overdue_amount"] = 0.0
+                row["active_loans"] = min(row["active_loans"], 2)
+        rows.append(row)
     return rows
 
 
@@ -779,6 +885,52 @@ def add_needle_rows(customers, applications, bureau_pulls, disbursements, accoun
         "overdue_amount": 0.0, "writeoff_flag": False,
         "pulled_at": _days_ago(3) + timedelta(hours=4),
     })
+
+    # LAN-NEEDLE-101..103 — the memory demo's three dealer-sourced files.
+    # All clean (the agent approves each), all within the officer's own
+    # authority, all salaried with a NAMED employer (the hold is "verify with
+    # the employer"), and different in product / amount band / FOIR band so
+    # that three identical holds fold into ONE judgement scoped to
+    # sourcing_channel:dsa + income_proof:present and nothing narrower. Aged
+    # 38–44 days so they sit at the top of an oldest-first queue.
+    heroes = [
+        ("101", "Meera Kulkarni",  "Ben-Mane Logistics Pvt Ltd",   56_000.0,  4_200.0, 851, "personal",   228_000.0, 24, 12.9, 44),
+        ("102", "Arvind Bhosale",  "Dutta Mittal & Buch Chartered", 118_000.0, 18_000.0, 797, "auto",      840_000.0, 36, 9.9,  41),
+        ("103", "Nikhil Sathe",    "Bhatt Dua Sathe Engineering",   74_000.0,  3_100.0, 808, "business",   420_000.0, 36, 13.4, 38),
+    ]
+    for n, name, employer, income, emi, score, product, amount, tenure, roi, age in heroes:
+        customers.append({
+            "customer_id": f"CUS-NEEDLE-{n}",
+            "name_full": name,
+            "pan_masked": f"BKPXX{n}0Q", "aadhaar_last4": f"7{n}",
+            "mobile_masked": f"XXXXXX4{n}", "email": f"needle.{n}@example.in",
+            "city": "Pune", "state": "Maharashtra", "pin": "411045",
+            "occupation": "salaried", "employer_name": employer,
+            "monthly_income_declared": income, "existing_emi": emi,
+            "cibil_score": score, "kyc_status": "verified",
+            "customer_segment": "mass_affluent",
+            "onboarded_on": _days_ago(700).date(),
+        })
+        applications.append({
+            "application_id": f"LAN-NEEDLE-{n}",
+            "customer_id": f"CUS-NEEDLE-{n}",
+            "product": product, "amount_requested": amount,
+            "tenure_months": tenure, "roi_offered": roi,
+            "applied_at": _days_ago(age), "branch_code": br,
+            "sourcing_channel": "dsa",
+            "income_proof_type": "payslip",
+            "itr_declared_income": _round(income * 12 * 1.02, 1000),
+            "ltv_percent": (78.0 if product == "auto" else None),
+            "foir_percent": round((emi + amount / tenure) / income * 100, 2),
+            "status": "new",
+            "decision_reason": None, "decided_by": None, "decided_at": None,
+        })
+        bureau_pulls.append({
+            "pull_id": f"BPL-NEEDLE-{n}", "application_id": f"LAN-NEEDLE-{n}",
+            "bureau": "cibil", "score": score, "enquiries_6m": 1, "active_loans": 1,
+            "overdue_amount": 0.0, "writeoff_flag": False,
+            "pulled_at": _days_ago(age) + timedelta(hours=6),
+        })
 
     # LON-NEEDLE-002 — DPD 61, one bounce, one broken PTP. Collections case.
     acc = {
