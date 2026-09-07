@@ -374,48 +374,61 @@ your own book, and a closing section on what the evidence does not cover.
 
 ## Community edition and Citra Enterprise
 
-**Community is a complete, working decision system.** Not a demo tier and not
-a crippled one: the builder, the runtime, the governed ontology, the decision
-ledger, the memory curation UI and the automation controls are all here, all
-Apache-2.0. You can see what the system has learned, retire a judgement,
-exclude a precedent, read loop health, and start or stop every automated job,
-because a decision system you cannot inspect or switch off is not one anybody
-should run. Deploy it on your own infrastructure and operate it forever without
-ever talking to us.
+**Community is a complete, working decision system for one team running one
+deployment.** Not a demo tier and not a crippled one: the builder, the runtime,
+the governed ontology, the decision ledger, the memory curation UI and the
+automation controls are all here, all Apache-2.0. You can see what the system
+has learned, retire a judgement, exclude a precedent, read loop health, and
+start or stop every automated job, because a decision system you cannot inspect
+or switch off is not one anybody should run. Deploy it on your own
+infrastructure and operate it forever without ever talking to us.
+
+The licence does not limit how you use it. The design does: Community is one
+deployment, one node per service, one memory curated by its own officers, and
+observability you switch on yourself. The moment there is a second team with
+its own seniority levels, a second deployment to keep in step, or a memory too
+large to curate by hand, you are in Enterprise territory.
 
 **Citra Enterprise is a premium software product, not Community with a support
 contract.** It is built on these foundations and goes beyond them in two
 directions, which is why we call it Core+ and Memory+:
 
-- **Core+** is a more capable engine. Seniority-aware access, so a junior
-  officer sees and decides the files at their level while a senior officer's
-  queue, limits and overrides are different; separation between the people who
-  build an app and the people who work it; many apps and many deployments run
-  as one fleet; and the assurance artefacts a regulator asks for.
-- **Memory+** is judgement memory managed by the system instead of curated by
-  hand. Smarter and faster consolidation and promotion, conflict and drift
-  detection across officers and branches, seniority-weighted judgements,
-  retention and unlearning policies, all at a scale the single-node memory is
-  not designed for.
+- **Core+** is the engine at organisation scale. Seniority levels and sanction
+  limits, so a junior officer sees and decides the files at their level while
+  a senior officer's queue, limits and overrides are different, with escalation
+  between them; SAML, SCIM, MFA and session control on top of the SSO
+  Community already has; a fleet console that operates many deployments as one
+  estate; and blast-surface management, meaning halt, pause and rollback across
+  that estate from one place.
+- **Memory+** is judgement memory with a managed lifecycle. Retention and
+  unlearning policies, erasure of an officer's corrections with a re-fold of
+  what they taught, statistical drift detection run as a job rather than
+  computed on read, a tuning surface for promotion and merge thresholds, and
+  memory health across every deployment, not just the one you are looking at.
 
 | | Community (Apache-2.0) | Citra Enterprise (Core+ / Memory+) |
 |---|---|---|
-| **Decision engine, builder, ontology, ledger** | Complete and production-ready | Core+: the engine with more in it. Seniority-aware access, builder and consumer separation, fleet operation |
-| **Memory** | Full curation UI: judgements, precedents, loop health, retire and quarantine | Memory+: smarter, faster memory algorithms. Outcome-tuned consolidation and promotion, conflict and drift detection, retention and unlearning, managed at scale |
-| **Access control** | Roles: user, department admin, org admin, super admin | Seniority levels and limits per app, per-level queues and overrides, SAML/OIDC SSO, SCIM provisioning, fine-grained RBAC |
-| **Automation** | Full control: schedules, auto-run and auto-recommend jobs, kill switches | Fleet console across every app and deployment you run |
-| **Scale** | Single-node Compose | HA multi-node, sharded vector tier, horizontal workers, capacity planning |
-| **Security** | Standard | Encryption at rest with your KMS/HSM, air-gapped install, signed supply chain |
-| **Assurance** | The ledger, raw | Audit packs, tamper-evident export, regulator-ready artefacts |
-| **Continuity** | Your own backups | Point-in-time restore, verified restore drills, DR, multi-region |
+| **Built for** | One team, one deployment | Many teams, many apps, many deployments, run as one estate |
+| **Decision engine, builder, ontology, ledger** | Complete and production-ready | The same engine, plus everything below |
+| **Memory** | Full curation UI: judgements, precedents, provenance, loop health, retire, quarantine, challenge and adjudicate, precedent exclusion. Automated consolidation that merges, supersedes, detects contradictions and demotes on measured precision. Facet and SOP drift shown on read. Promotion threshold per app. Export to your bucket | Memory+: retention and unlearning, officer erasure with re-fold, statistical drift as a scheduled job, threshold tuning UI, memory health across deployments |
+| **Access control** | Six roles (user, IT workflow, decision-app builder, department admin, org admin, super admin) enforced at department and org scope. Builder and consumer separation with owner, team, department and org publish audiences | Seniority levels and sanction limits, per-level queues and overrides, escalation and delegation |
+| **Identity** | Local login, Google, and OIDC (Okta, Azure AD, Auth0, Keycloak) with IdP group to department and role sync on every login | SAML, SCIM provisioning, MFA, session management and revoke-all, login and failed-auth audit |
+| **Automation** | Cron, interval, poll and webhook triggers; recommend or auto-process with a fail-closed policy; test and prod isolation; kill switches at global, org, department and app scope; an operations console over every app on the deployment | Fleet console and blast-surface management across every deployment: halt, pause and roll back the estate from one place |
+| **Scale** | One node per service on Compose. Redis-backed queue with consumer groups and dead-letter, multi-worker containers, replica-safe rate limits and leader election. Terraform for multi-AZ Compose on EC2 | Kubernetes and Helm, clustered and sharded vector tier, per-tenant quotas, capacity planning |
+| **Observability** | Prometheus, Grafana, Loki, Tempo and Alertmanager with provisioned dashboards, shipped as an optional stack you set up yourself. Off by default | Observability+: on by default, decision-level telemetry (per app, per officer, per judgement), tuned alerting, and a single pane across deployments |
+| **Security** | Vault AppRole secret loading, CodeQL and secret scanning in CI, SBOM on release | Encryption at rest with your KMS or HSM, signed images and pinned digests, air-gapped install with local inference |
+| **Assurance** | Tamper-evident hash-chained run ledger, append-only. Ledger and memory export | Chain verifier, signed exports, audit packs and regulator-ready reports |
+| **Continuity** | Backup and restore scripts with an automated restore drill; Mongo replica set | Point-in-time restore, DR, multi-region |
 | **Hosting** | Your infrastructure | Dedicated private cloud, ours or yours (BYOC), single-tenant either way |
 | **SLA and maintenance** | Community issues | Contracted uptime and response, upgrades, migrations, patching |
 | **Roadmap** | Community roadmap | Prioritised engineering against the workflows you actually run |
 
 Community is not a trial of Enterprise, and nothing is taken out of it.
 Improvements to the shared foundation land here; the Core+ and Memory+
-capabilities are Enterprise software and stay there. Setup and deployment,
-ontology authoring and custom development are quoted separately.
+capabilities are Enterprise software and stay there. If you are one team with
+one deployment, Community is the right edition and we will not try to talk you
+out of it. Setup and deployment, ontology authoring and custom development are
+quoted separately.
 
 Talk to us at **[citra-ai.com](https://citra-ai.com)** or contact@citra-ai.com
 — or just ask in
