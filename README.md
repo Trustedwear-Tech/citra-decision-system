@@ -397,14 +397,16 @@ contract.** It is built on these foundations and adds what a regulated
 institution's risk, audit and technology committees ask for before a system
 that writes decisions is allowed into production. We call it Core+ and Memory+:
 
-- **Core+** is control and operation at organisation scale. Row-level access
-  enforced by the platform, so who sees which row follows seniority, manager
-  or user level whatever the app's pages look like; sanction limits and
-  segregation of duties enforced on the write at the data layer; escalation
-  and delegation between levels; case ownership, lifecycle
-  stages, turnaround targets and customer communication; versioned apps with
-  rollback and a validation record; a fleet console that operates many
-  deployments as one estate; and blast-surface management, meaning halt,
+- **Core+** is control and operation at organisation scale. In Community a
+  builder composes every control inside each app: maker-checker, approval
+  queues, row filters from the rules a business analyst gives. Core+ defines
+  them once for the organisation, in a registry of seniority levels, sanction
+  limits, segregation-of-duties rules and delegations, and the platform
+  enforces that registry across every app at the data layer, with an
+  attestation an auditor can read. It adds a shared case object across apps
+  (ownership, lifecycle, turnaround clocks, communication), versioned apps
+  with rollback and a validation record, a fleet console that operates many
+  deployments as one estate, and blast-surface management, meaning halt,
   pause and roll back across that estate from one place.
 - **Memory+** is judgement memory with a managed lifecycle. Retention and
   erasure policies that a data-protection officer can sign, an officer's
@@ -416,8 +418,8 @@ that writes decisions is allowed into production. We call it Core+ and Memory+:
 |---|---|---|
 | **Built for** | One team, one deployment | Many teams, many apps, many deployments, run as one estate |
 | **Decision engine, builder, ontology, ledger** | Complete and production-ready | The same engine, plus everything below |
-| **Control** | Six roles (user, IT workflow, decision-app builder, department admin, org admin, super admin) at department and org scope. The builder composes any control pattern as app pages: maker-checker, approval queues, four-eyes review, an approver list with no self-approval. Business users build too, and publish to whoever they choose (owner, team, department, org). Every control sits on the app card. Access is per app and per audience, not per row | Row-level access enforced by the platform: who sees which row by seniority, manager or user level, whatever the app's pages look like. Sanction limits and segregation of duties (rules about the caller against the row) enforced on the write at the data layer, so no app design can bypass them. Escalation and delegation between levels |
-| **Case operations** | A queue, a run, a review, a write. State beyond that is prose in the reason field | Case ownership, pick-up and lock, lifecycle stages and hand-offs, turnaround targets and ageing, conditional and partial decisions, customer and partner communication |
+| **Control** | Six roles (user, IT workflow, decision-app builder, department admin, org admin, super admin) at department and org scope. The builder composes any control as app logic: maker-checker, approval queues, four-eyes review, an approver list with no self-approval, and row filters from the rules a business analyst gives (who sees which rows, up to what amount). Business users build too, and publish to whoever they choose (owner, team, department, org). Every control sits on the app card. Each app carries its own controls | The same controls defined once for the organisation: a registry of seniority levels, sanction limits, segregation-of-duties rules and delegations, enforced by the platform across every app at the data layer whatever a builder wrote, with an attestation an auditor can read showing every app is covered |
+| **Case operations** | The builder composes case handling inside each app: assignment, stages, pending states, reminders and turnaround as pages and fields of that app | A shared case object across apps and deployments: ownership and locks, lifecycle stages and hand-offs, turnaround clocks and ageing, conditional and partial decisions, customer and partner communication, managed once and reported across the estate |
 | **Memory** | Full curation UI: judgements, precedents, provenance, loop health, retire, quarantine, challenge and adjudicate, precedent exclusion. Automated consolidation that merges, supersedes, detects contradictions and demotes on measured precision. Facet and SOP drift shown on read. Promotion threshold per app. Export to your bucket | Memory+: retention and erasure policies, officer erasure with re-fold, statistical drift as a scheduled job, threshold tuning UI, memory health across deployments |
 | **Model governance** | One live spec per app, test and prod environments, promote when ready | Versioned apps with rollback, a validation record per version for the model-risk file, champion and challenger runs, approval workflow for a change to a live app |
 | **Assurance** | Tamper-evident hash-chained run ledger, append-only. Ledger and memory export. One reason per decision | Chain verifier, signed exports, audit packs and regulator-ready reports. A customer-facing reason, an audit reason and a regulatory code from each decision |
