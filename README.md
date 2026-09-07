@@ -393,35 +393,38 @@ its own seniority levels, a second deployment to keep in step, or a memory too
 large to curate by hand, you are in Enterprise territory.
 
 **Citra Enterprise is a premium software product, not Community with a support
-contract.** It is built on these foundations and goes beyond them in two
-directions, which is why we call it Core+ and Memory+:
+contract.** It is built on these foundations and adds what a regulated
+institution's risk, audit and technology committees ask for before a system
+that writes decisions is allowed into production. We call it Core+ and Memory+:
 
-- **Core+** is the engine at organisation scale. Seniority levels and sanction
-  limits, so a junior officer sees and decides the files at their level while
-  a senior officer's queue, limits and overrides are different, with escalation
-  between them; SAML, SCIM, MFA and session control on top of the SSO
-  Community already has; a fleet console that operates many deployments as one
-  estate; and blast-surface management, meaning halt, pause and rollback across
-  that estate from one place.
+- **Core+** is control and operation at organisation scale. Maker-checker with
+  thresholds, segregation of duties and sanction limits enforced on the write;
+  seniority levels with escalation and delegation; case ownership, lifecycle
+  stages, turnaround targets and customer communication; versioned apps with
+  rollback and a validation record; a fleet console that operates many
+  deployments as one estate; and blast-surface management, meaning halt,
+  pause and roll back across that estate from one place.
 - **Memory+** is judgement memory with a managed lifecycle. Retention and
-  unlearning policies, erasure of an officer's corrections with a re-fold of
-  what they taught, statistical drift detection run as a job rather than
-  computed on read, a tuning surface for promotion and merge thresholds, and
-  memory health across every deployment, not just the one you are looking at.
+  erasure policies that a data-protection officer can sign, an officer's
+  corrections removed with a re-fold of what they taught, statistical drift
+  detection run as a job, champion and challenger runs, a tuning surface for
+  promotion and merge thresholds, and memory health across every deployment.
 
 | | Community (Apache-2.0) | Citra Enterprise (Core+ / Memory+) |
 |---|---|---|
 | **Built for** | One team, one deployment | Many teams, many apps, many deployments, run as one estate |
 | **Decision engine, builder, ontology, ledger** | Complete and production-ready | The same engine, plus everything below |
-| **Memory** | Full curation UI: judgements, precedents, provenance, loop health, retire, quarantine, challenge and adjudicate, precedent exclusion. Automated consolidation that merges, supersedes, detects contradictions and demotes on measured precision. Facet and SOP drift shown on read. Promotion threshold per app. Export to your bucket | Memory+: retention and unlearning, officer erasure with re-fold, statistical drift as a scheduled job, threshold tuning UI, memory health across deployments |
-| **Access control** | Six roles (user, IT workflow, decision-app builder, department admin, org admin, super admin) enforced at department and org scope. Builder and consumer separation with owner, team, department and org publish audiences | Seniority levels and sanction limits, per-level queues and overrides, escalation and delegation |
-| **Identity** | Local login, Google, and OIDC (Okta, Azure AD, Auth0, Keycloak) with IdP group to department and role sync on every login | SAML, SCIM provisioning, MFA, session management and revoke-all, login and failed-auth audit |
-| **Automation** | Cron, interval, poll and webhook triggers; recommend or auto-process with a fail-closed policy; test and prod isolation; kill switches at global, org, department and app scope; an operations console over every app on the deployment | Fleet console and blast-surface management across every deployment: halt, pause and roll back the estate from one place |
-| **Scale** | One node per service on Compose. Redis-backed queue with consumer groups and dead-letter, multi-worker containers, replica-safe rate limits and leader election. Terraform for multi-AZ Compose on EC2 | Kubernetes and Helm, clustered and sharded vector tier, per-tenant quotas, capacity planning |
+| **Control** | Six roles (user, IT workflow, decision-app builder, department admin, org admin, super admin) at department and org scope. Builder and consumer separation with owner, team, department and org publish audiences. An approver list per app and no self-approval | Maker-checker with amount thresholds, segregation of duties (rules about the caller against the row), sanction limits enforced on the write, seniority levels with per-level queues, escalation and delegation |
+| **Case operations** | A queue, a run, a review, a write. State beyond that is prose in the reason field | Case ownership, pick-up and lock, lifecycle stages and hand-offs, turnaround targets and ageing, conditional and partial decisions, customer and partner communication |
+| **Memory** | Full curation UI: judgements, precedents, provenance, loop health, retire, quarantine, challenge and adjudicate, precedent exclusion. Automated consolidation that merges, supersedes, detects contradictions and demotes on measured precision. Facet and SOP drift shown on read. Promotion threshold per app. Export to your bucket | Memory+: retention and erasure policies, officer erasure with re-fold, statistical drift as a scheduled job, threshold tuning UI, memory health across deployments |
+| **Model governance** | One live spec per app, test and prod environments, promote when ready | Versioned apps with rollback, a validation record per version for the model-risk file, champion and challenger runs, approval workflow for a change to a live app |
+| **Assurance** | Tamper-evident hash-chained run ledger, append-only. Ledger and memory export. One reason per decision | Chain verifier, signed exports, audit packs and regulator-ready reports. A customer-facing reason, an audit reason and a regulatory code from each decision |
+| **Identity** | Local login, Google, and OIDC (Okta, Azure AD, Auth0, Keycloak) with IdP group to department and role sync on every login | SAML, SCIM provisioning, MFA enforcement, session management and revoke-all, login and failed-auth audit |
+| **Automation and estate** | Cron, interval, poll and webhook triggers; recommend or auto-process with a fail-closed policy; test and prod isolation; kill switches at global, org, department and app scope; an operations console over every app on the deployment | Fleet console and blast-surface management across every deployment: halt, pause and roll back the estate from one place |
+| **Scale** | One node per service on Compose. Redis cache and a Redis-backed job queue with consumer groups and dead-letter, multi-worker containers, replica-safe rate limits and leader election. Terraform for multi-AZ Compose on EC2 | Kubernetes and Helm, clustered and sharded vector tier, per-tenant quotas, capacity planning |
 | **Observability** | Prometheus, Grafana, Loki, Tempo and Alertmanager with provisioned dashboards, shipped as an optional stack you set up yourself. Off by default | Observability+: on by default, decision-level telemetry (per app, per officer, per judgement), tuned alerting, and a single pane across deployments |
 | **Security** | Vault AppRole secret loading, CodeQL and secret scanning in CI, SBOM on release | Encryption at rest with your KMS or HSM, signed images and pinned digests, air-gapped install with local inference |
-| **Assurance** | Tamper-evident hash-chained run ledger, append-only. Ledger and memory export | Chain verifier, signed exports, audit packs and regulator-ready reports |
-| **Continuity** | Backup and restore scripts with an automated restore drill; Mongo replica set | Point-in-time restore, DR, multi-region |
+| **Resilience** | Snapshot backups on a schedule with an automated restore drill; up to one interval of loss (six hours by default); Mongo replica set | Recovery time and recovery point commitments in the contract, point-in-time restore, DR, multi-region |
 | **Hosting** | Your infrastructure | Dedicated private cloud, ours or yours (BYOC), single-tenant either way |
 | **SLA and maintenance** | Community issues | Contracted uptime and response, upgrades, migrations, patching |
 | **Roadmap** | Community roadmap | Prioritised engineering against the workflows you actually run |
