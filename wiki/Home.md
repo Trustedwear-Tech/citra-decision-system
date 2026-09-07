@@ -34,7 +34,10 @@ short version. This wiki is the detail.
 |---|---|
 | [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/tree/main/docs/Descision-System-Memory) | Method, results, the null result, and the limits -- the dedicated record, not a retelling |
 | [Configuration](Configuration) | Environment variables |
-| [Operations](Operations) | Running it, upgrading, backups |
+| [Operations](Operations) | Running it, upgrading, health |
+| [Backups](Backups) | What holds state, the encrypted backup sidecar, restore, the monthly restore drill |
+| [Observability](Observability) | Prometheus, Grafana, Loki, Tempo and alerts: off by default, how to switch them on |
+| [OIDC login](OIDC-login) | Your own IdP signs officers in; directory groups drive departments and roles |
 | [Troubleshooting](Troubleshooting) | When something will not start |
 
 ## A note on where things live

@@ -367,7 +367,10 @@ your own book, and a closing section on what the evidence does not cover.
 | [Why this exists](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Why-this-exists) | The argument: why a fine-tune does not close it |
 | [The experiment](https://github.com/Trustedwear-Tech/citra-decision-system/blob/main/docs/Citra-Decision-Memory-Credit-Note.pdf) | Method, results, the null result, limits |
 | [Configuration](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Configuration) | Every environment variable |
-| [Operations](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Operations) | Running it, upgrading, backups |
+| [Operations](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Operations) | Running it, upgrading, health |
+| [Backups](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Backups) | What holds state, the backup sidecar, restore, the restore drill |
+| [Observability](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Observability) | Metrics, logs, traces and alerts; off by default |
+| [OIDC login](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/OIDC-login) | Your own IdP, with directory groups driving departments and roles |
 | [Troubleshooting](https://github.com/Trustedwear-Tech/citra-decision-system/wiki/Troubleshooting) | When something will not start |
 
 ---

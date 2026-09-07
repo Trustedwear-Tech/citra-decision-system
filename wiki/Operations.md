@@ -77,6 +77,10 @@ What holds state, and what you actually need to copy:
 `make down` keeps every one of them. Only `make down ARGS=-v` removes them,
 and it does so without a second prompt — there is no undo.
 
+How to copy them by hand, the scheduled encrypted backup sidecar, restoring,
+and the monthly restore drill are on [Backups](Backups). Metrics, logs and
+alerts are on [Observability](Observability).
+
 ## Upgrading
 
 Releases are source archives; nothing is published to a container registry, so
