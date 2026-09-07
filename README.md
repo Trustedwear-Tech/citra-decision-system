@@ -374,37 +374,48 @@ your own book, and a closing section on what the evidence does not cover.
 
 ## Community edition and Citra Enterprise
 
-**The core is a complete, standalone production deployment.** Not a demo tier
-and not a crippled one: the builder, the runtime, the governed ontology, the
-decision ledger, the memory curation UI and the automation controls are all
-here, all Apache-2.0. You can see what the system has learned, retire a
-judgement, exclude a precedent, read loop health, and start or stop every
-automated job — because a decision system you cannot inspect or switch off
-is not one anybody should run. Deploy it on your own infrastructure and
-operate it forever without ever talking to us.
+**Community is a complete, working decision system.** Not a demo tier and not
+a crippled one: the builder, the runtime, the governed ontology, the decision
+ledger, the memory curation UI and the automation controls are all here, all
+Apache-2.0. You can see what the system has learned, retire a judgement,
+exclude a precedent, read loop health, and start or stop every automated job,
+because a decision system you cannot inspect or switch off is not one anybody
+should run. Deploy it on your own infrastructure and operate it forever without
+ever talking to us.
 
-**Citra Enterprise** is the same core plus what an institution needs once that
-deployment is load-bearing and there is more than one of them — scale,
-identity, assurance, continuity, and judgement memory managed rather than
-curated by hand:
+**Citra Enterprise is a premium software product, not Community with a support
+contract.** It is built on these foundations and goes beyond them in two
+directions, which is why we call it Core+ and Memory+:
 
-| | Community (Apache-2.0) | Citra Enterprise |
+- **Core+** is a more capable engine. Seniority-aware access, so a junior
+  officer sees and decides the files at their level while a senior officer's
+  queue, limits and overrides are different; separation between the people who
+  build an app and the people who work it; many apps and many deployments run
+  as one fleet; and the assurance artefacts a regulator asks for.
+- **Memory+** is judgement memory managed by the system instead of curated by
+  hand. Smarter and faster consolidation and promotion, conflict and drift
+  detection across officers and branches, seniority-weighted judgements,
+  retention and unlearning policies, all at a scale the single-node memory is
+  not designed for.
+
+| | Community (Apache-2.0) | Citra Enterprise (Core+ / Memory+) |
 |---|---|---|
-| **Decision engine, builder, ontology, ledger** | Everything | The same core |
-| **Memory** | Full curation UI — judgements, precedents, loop health, retire and quarantine | Adds fleet-wide health, drift detection, automated clause hygiene, retention and unlearning at scale, promotion tuning |
-| **Automation** | Full control — schedules, auto-run and auto-recommend jobs, kill switches | Adds a fleet console across every deployment you run |
+| **Decision engine, builder, ontology, ledger** | Complete and production-ready | Core+: the engine with more in it. Seniority-aware access, builder and consumer separation, fleet operation |
+| **Memory** | Full curation UI: judgements, precedents, loop health, retire and quarantine | Memory+: smarter, faster memory algorithms. Outcome-tuned consolidation and promotion, conflict and drift detection, retention and unlearning, managed at scale |
+| **Access control** | Roles: user, department admin, org admin, super admin | Seniority levels and limits per app, per-level queues and overrides, SAML/OIDC SSO, SCIM provisioning, fine-grained RBAC |
+| **Automation** | Full control: schedules, auto-run and auto-recommend jobs, kill switches | Fleet console across every app and deployment you run |
 | **Scale** | Single-node Compose | HA multi-node, sharded vector tier, horizontal workers, capacity planning |
-| **Identity** | Local auth | SAML/OIDC SSO, SCIM provisioning, fine-grained RBAC |
 | **Security** | Standard | Encryption at rest with your KMS/HSM, air-gapped install, signed supply chain |
-| **Assurance** | The ledger, raw | Audit packs, tamper-evident export, regulator-ready artifacts |
+| **Assurance** | The ledger, raw | Audit packs, tamper-evident export, regulator-ready artefacts |
 | **Continuity** | Your own backups | Point-in-time restore, verified restore drills, DR, multi-region |
-| **Hosting** | Your infrastructure | Dedicated private cloud — ours or yours (BYOC), single-tenant either way |
+| **Hosting** | Your infrastructure | Dedicated private cloud, ours or yours (BYOC), single-tenant either way |
 | **SLA and maintenance** | Community issues | Contracted uptime and response, upgrades, migrations, patching |
 | **Roadmap** | Community roadmap | Prioritised engineering against the workflows you actually run |
 
-Setup and deployment, ontology authoring and custom development are quoted
-separately. Nothing above is removed from Community: it is a complete system
-that you run yourself.
+Community is not a trial of Enterprise, and nothing is taken out of it.
+Improvements to the shared foundation land here; the Core+ and Memory+
+capabilities are Enterprise software and stay there. Setup and deployment,
+ontology authoring and custom development are quoted separately.
 
 Talk to us at **[citra-ai.com](https://citra-ai.com)** or contact@citra-ai.com
 — or just ask in
