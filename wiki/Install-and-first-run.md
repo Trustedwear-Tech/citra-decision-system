@@ -88,8 +88,8 @@ cd citra-decision-system
 
 ```bash
 # Or download the release — no git needed
-curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.6.1.tar.gz | tar xz
-cd citra-decision-system-0.6.1
+curl -sSL https://github.com/Trustedwear-Tech/citra-decision-system/archive/refs/tags/v0.7.0.tar.gz | tar xz
+cd citra-decision-system-0.7.0
 ```
 
 ### Step 3 — run the wizard
